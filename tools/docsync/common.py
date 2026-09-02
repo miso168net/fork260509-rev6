@@ -34,15 +34,31 @@ def _scalar(raw):
 
 
 def parse_front_matter(text):
-    """回 (meta, body)；無 front-matter → ({}, text)。只認頂層 `key: value` 純量與 [a, b] 單行清單。"""
+    """回 (meta, body)；無 front-matter → ({}, text)。認頂層 `key: value` 純量、[a, b] 單行清單、與一層巢狀對映（`key:` 空值＋兩空格縮排子鍵）。"""
     m = RE_FM.match(text or "")
     if not m:
         return {}, text
     meta = {}
-    for line in m.group(1).splitlines():
-        if ":" in line and not line.startswith(" "):
-            k, v = line.split(":", 1)
-            meta[k.strip()] = _scalar(v)
+    lines = m.group(1).splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not line.strip() or line.startswith(" ") or ":" not in line:
+            i += 1
+            continue
+        k, v = line.split(":", 1)
+        k, v = k.strip(), v.strip()
+        if v == "":
+            sub, j = {}, i + 1
+            while j < len(lines) and lines[j].startswith("  ") and ":" in lines[j]:
+                sk, sv = lines[j].strip().split(":", 1)
+                sub[sk.strip()] = _scalar(sv)
+                j += 1
+            meta[k] = sub if sub else ""
+            i = j
+            continue
+        meta[k] = _scalar(v)
+        i += 1
     return meta, text[m.end():]
 
 

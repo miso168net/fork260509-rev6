@@ -9,6 +9,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 # 路徑常數名冊（相對 ROOT）
 EVENTS = "docs/ops/events.jsonl"
+NOTES = "docs/ops/NOTES.md"
 RULES = "docs/ops/RULES.md"
 BACKLOG = "docs/ops/BACKLOG.md"
 BACKLOG_DEFERRED = "docs/ops/BACKLOG-DEFERRED.md"

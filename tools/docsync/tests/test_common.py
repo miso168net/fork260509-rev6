@@ -17,6 +17,12 @@ class TestFrontMatter(unittest.TestCase):
         self.assertEqual(meta["supersedes"], [])
         self.assertTrue(body.startswith("\n## 背景"))
 
+    def test_nested_map_one_level(self):
+        meta, _ = common.parse_front_matter('---\nsection: 3\nrad_ai: [E1]\nrad_ai_map:\n  AI Components Inventory: AI 元件清冊\n  Failure Modes: 失效模式\nprocess: P-E1-boundary.md\n---\nx\n')
+        self.assertEqual(meta["rad_ai"], ["E1"])
+        self.assertEqual(meta["rad_ai_map"], {"AI Components Inventory": "AI 元件清冊", "Failure Modes": "失效模式"})
+        self.assertEqual(meta["process"], "P-E1-boundary.md")
+
     def test_no_front_matter(self):
         self.assertEqual(common.parse_front_matter("# x\n"), ({}, "# x\n"))
 

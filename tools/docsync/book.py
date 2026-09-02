@@ -6,7 +6,7 @@ book.py（一）：GT-05 ID 家族（BL／LL／RL 三帳＋ADR 檔名）、現�
 import os
 import re
 
-from . import BACKLOG, BACKLOG_DEFERRED, LESSONS_INDEX, LESSONS_DIR, RULES, ADR_DIR, EVENTS, SUBMODULES, CONSTITUTION
+from . import BACKLOG, BACKLOG_DEFERRED, LESSONS_INDEX, LESSONS_DIR, RULES, ADR_DIR, EVENTS, NOTES, SUBMODULES, CONSTITUTION, COMPOSE_FILES
 from .common import ERROR, WARN, SKIP, finding
 
 ID_FAMILIES = {"BL": (BACKLOG, [BACKLOG_DEFERRED]), "LL": (LESSONS_INDEX, [LESSONS_DIR]), "RL": (RULES, [])}
@@ -317,3 +317,193 @@ def errata_scan(ctx, keyword):
                 if len(parts) >= 4 and parts[0].startswith("HEAD"):
                     hits.append((f"{sub}/{parts[1]}", int(parts[2]), parts[3]))
     return hits
+
+
+# ---------------------------------------------------------------------------
+# （三）GT-10 文件形制閘（§3.4；Day-1 豁免 GT-10.doc-skeleton-absent）
+# ---------------------------------------------------------------------------
+FORM_FACE = BOOK_FACE
+AIV_KEYS = tuple(f"AIV-1{c}" for c in "abcdefgh") + tuple(f"AIV-2{c}" for c in "abcdefgh") + tuple(f"AIV-{n}" for n in range(3, 10))
+E_SUBSECTIONS = {
+    "E1": ("AI Components Inventory", "System Boundary Diagram", "Four-Part Boundary Contract", "Failure Modes", "External AI Dependencies"),
+    "E2": ("Model Inventory Table", "Per-Model Detail Sections", "Integration with Model Cards", "Integration with Model Registry Tools"),
+    "E3": ("Pipeline Overview Diagram", "Pipeline Inventory Table", "Quality Gates", "Feature Store Documentation", "Feedback Loops", "Integration with Data Cards"),
+    "E4": ("Responsible AI Concern Matrix", "Fairness", "Explainability", "Human Oversight", "Transparency", "Privacy", "Safety"),
+    "E5": ("Model Alternatives Considered", "Dataset Characteristics", "Fairness and Bias Trade-offs", "Expected Model Lifetime", "Retraining Trigger", "Explainability Requirements", "Regulatory Compliance"),
+    "E6": ("Quality Attribute Definitions", "Model Freshness", "Drift Tolerance", "Explainability", "Fairness", "Robustness", "Scenario Format", "Cross-Component Scenarios"),
+    "E7": ("Boundary Erosion", "Entanglement", "Hidden Feedback Loops", "Data Dependency Debt", "Pipeline Debt", "Configuration Debt", "Model Staleness", "Register Entry Format", "Debt Summary Dashboard", "Review Cadence"),
+    "E8": ("Monitoring", "Retraining Policy", "Deployment Strategy", "Rollback Policy", "Incident Response"),
+    "C4-E1": ("Stereotype Definitions", "Mermaid Conventions", "Annotation Guidelines", "Template"),
+    "C4-E2": ("Data Source Inventory", "Lineage Diagram", "Lineage Details", "Freshness Requirements", "Privacy Flow", "Schema Registry"),
+    "C4-E3": ("Boundary Overview", "Boundary Interfaces", "Confidence Thresholds", "Degradation Behavior", "Propagation Rules", "Testing Implications"),
+}
+NO_AI_SENTENCE = "目前無 AI 元件"
+TENSION = "類比張力："
+CHECKLIST = "docs/compliance/annex-iv-checklist.md"
+C4_L2 = "docs/c4/C4-L2-container.md"
+SKELETON_ANCHOR = "docs/arc42/01-introduction-and-goals.md"
+# 佔位三腿＋裸方括號：判準以拆分構造寫，避免本檔（現在式面）被規則定義文自撞
+RE_PLACEHOLDERS = (
+    ("星號佔位", re.compile("\\*" + "\\[")),
+    ("底線佔位", re.compile("_" + "{5,}")),
+    ("未勾核取佔位", re.compile("- " + "\\[ \\]")),
+    ("裸方括號佔位", re.compile("\\[" + "[A-Z][A-Za-z ]+" + "\\]" + "(?!\\()")),
+)
+RE_TODO_WAVE = re.compile("TODO" + r"\(波\s*(\d+)\)")
+RE_WAVE = re.compile(r"^<!--\s*wave:\s*(\d+)\s*-->")
+RE_MERMAID = re.compile(r"```mermaid\n(.*?)```", re.S)
+RE_NODE = re.compile(r"\b([A-Za-z_][\w-]*)\s*(\[\(|\(\(|\[|\(|\{)\s*\"?([^\]\)\}\"\n]+?)\"?\s*(\)\]|\)\)|\]|\)|\})")
+RE_TABLE_ROW = re.compile(r"^\|\s*([^|\n]+?)\s*\|", re.M)
+RE_BACKTICK = re.compile(r"`([^`\n]+)`")
+RE_H3 = re.compile(r"^###\s+")
+
+
+def current_wave(ctx):
+    """「現在波」唯一真源＝docs/ops/NOTES.md 首行 `<!-- wave: N -->`；缺席→None。"""
+    text = ctx.text(NOTES)
+    if not text:
+        return None
+    m = RE_WAVE.match(text.split("\n", 1)[0])
+    return int(m.group(1)) if m else None
+
+
+def compose_services(ctx):
+    names = set()
+    for rel in COMPOSE_FILES:
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        inside = False
+        for line in text.split("\n"):
+            if line.startswith("services:"):
+                inside = True
+                continue
+            if inside and line and not line.startswith(" "):
+                inside = False
+            if inside:
+                m = re.match(r"^  ([A-Za-z0-9_.-]+):\s*$", line)
+                if m:
+                    names.add(m.group(1))
+    return names
+
+
+def _clean_cell(s):
+    return s.strip().strip("*`★ ").strip()
+
+
+def _table_first_cells(text):
+    cells = set()
+    for m in RE_TABLE_ROW.finditer(text):
+        c = _clean_cell(m.group(1))
+        if c and not set(c) <= set("-: "):
+            cells.add(c)
+    return cells
+
+
+def _mermaid_nodes(text):
+    """回 {(id, label)}；label 缺席時 label=id。"""
+    nodes = set()
+    for blk in RE_MERMAID.findall(text):
+        for m in RE_NODE.finditer(blk):
+            nodes.add((m.group(1), m.group(3).strip()))
+    return nodes
+
+
+def gt_10(ctx):
+    """GATE:
+      id=GT-10
+      rule=RL-0035
+      source=ADR-00004
+      drift=佔位與樣板文、子項名冊、圖表對賬
+      face=BOOK_FACE（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process）
+      trigger=pre-commit
+      rc=1
+      breaks-if-removed=RAD-AI 表可空殼交卷（22/22 假滿分重演）
+    """
+    out = []
+    files = [(rel, ctx.text(rel)) for rel in ctx.tracked if rel.endswith(".md") and is_book(rel)]
+    files = [(r, t) for r, t in files if t is not None]
+    if not files:
+        return [finding(SKIP, "GT-10", "docs/arc42", f"GT-10.doc-skeleton-absent：活書家族尚無檔（Day-1；{SKELETON_ANCHOR} 存在即解除）")]
+    wave = current_wave(ctx)
+    if wave is None:
+        out.append(finding(ERROR, "GT-10", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->（現在波唯一真源）"))
+    for rel, text in files:
+        from .common import parse_front_matter
+        meta, body = parse_front_matter(text)
+        stripped = strip_code(body)
+        for i, line in enumerate(stripped.split("\n"), 1):
+            for name, rx in RE_PLACEHOLDERS:
+                for m in rx.finditer(line):
+                    out.append(finding(ERROR, "GT-10", f"{rel}:{i}", f"{name}「{m.group(0)}」——模板是起手結構不是表單：無實體即一句「目前無」附理由"))
+            for m in RE_TODO_WAVE.finditer(line):
+                k = int(m.group(1))
+                if wave is not None and k < wave:
+                    out.append(finding(ERROR, "GT-10", f"{rel}:{i}", f"TODO(波 {k}) 已到期（現在波 {wave}；波 {k} 出口＝該標記歸零）"))
+        if rel.startswith("docs/process/"):
+            lines = body.split("\n")
+            for i, line in enumerate(lines):
+                if RE_H3.match(line):
+                    nxt = next((l for l in lines[i + 1:] if l.strip()), "")
+                    if TENSION not in nxt:
+                        out.append(finding(ERROR, "GT-10", f"{rel}:{i + 1}", f"流程層子節「{line.strip()}」首句缺「{TENSION}」"))
+        rad = meta.get("rad_ai")
+        if isinstance(rad, list) and NO_AI_SENTENCE not in body:
+            keys = set(meta.get("rad_ai_map", {}).keys()) if isinstance(meta.get("rad_ai_map"), dict) else set()
+            for e in rad:
+                need = set(E_SUBSECTIONS.get(e, ()))
+                missing = sorted(need - keys)
+                if missing:
+                    out.append(finding(ERROR, "GT-10", rel, f"{e} 子項名冊缺：{'、'.join(missing)}（frontmatter rad_ai_map 鍵集須 ⊇ reference 子節）"))
+        nodes = _mermaid_nodes(text)
+        if nodes:
+            cells = _table_first_cells(text)
+            for nid, label in sorted(nodes):
+                if label not in cells and nid not in cells:
+                    out.append(finding(ERROR, "GT-10", rel, f"圖內節點「{label}」不在同檔表格首欄（圖表對賬：節點 ⊆ 表列）"))
+    tracked = {r for r, _ in files}
+    if CHECKLIST in tracked:
+        text = ctx.text(CHECKLIST)
+        rows = {}
+        for line in text.split("\n"):
+            if not line.startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            key = _clean_cell(cells[0]) if cells else ""
+            if key.startswith("AIV-"):
+                rows[key] = cells
+        for k in AIV_KEYS:
+            if k not in rows:
+                out.append(finding(ERROR, "GT-10", CHECKLIST, f"Annex IV 檢核表缺鍵 {k}（23 鍵齊全＝附錄 G）"))
+        for k, cells in rows.items():
+            ev = cells[5] if len(cells) > 5 else ""
+            if not ev or ev in ("—", "-", "TBD") or any(rx.search(ev) for _, rx in RE_PLACEHOLDERS):
+                out.append(finding(ERROR, "GT-10", f"{CHECKLIST}｜{k}", "Evidence 欄佔位——填「See `<檔>`, `<具名表>` — …」或「不適用：<理由>」"))
+                continue
+            if ev.startswith("不適用"):
+                if len(ev) < 5:
+                    out.append(finding(ERROR, "GT-10", f"{CHECKLIST}｜{k}", "Evidence「不適用」須附理由"))
+                continue
+            refs = RE_BACKTICK.findall(ev)
+            if not refs:
+                out.append(finding(ERROR, "GT-10", f"{CHECKLIST}｜{k}", "Evidence 欄未引 `<檔>`（反引號路徑）"))
+                continue
+            target = refs[0]
+            if not ctx.exists(target):
+                out.append(finding(ERROR, "GT-10", f"{CHECKLIST}｜{k}", f"Evidence 所引檔不存在：{target}"))
+                continue
+            if len(refs) > 1 and refs[1] not in (ctx.text(target) or ""):
+                out.append(finding(ERROR, "GT-10", f"{CHECKLIST}｜{k}", f"Evidence 具名表「{refs[1]}」標題字面未命中 {target}"))
+    services = compose_services(ctx)
+    if any(r.startswith("docs/c4/") for r in tracked):
+        if C4_L2 not in tracked:
+            out.append(finding(ERROR, "GT-10", C4_L2, "C4-L2 缺席：docs/c4/ 已有檔但 C4-L2-container.md 不存在（compose 服務對賬無面）"))
+        elif not services:
+            out.append(finding(ERROR, "GT-10", C4_L2, "compose 三檔無 services（掃描面空集合、對賬未執行）"))
+        else:
+            nodes = _mermaid_nodes(ctx.text(C4_L2))
+            names = {n for pair in nodes for n in pair} | {n.replace("_", "-") for pair in nodes for n in pair}
+            missing = sorted(services - names)
+            if missing:
+                out.append(finding(ERROR, "GT-10", C4_L2, f"C4-L2 節點缺 compose 服務：{'、'.join(missing)}（節點 ⊇ compose 三檔 services）"))
+    return out
