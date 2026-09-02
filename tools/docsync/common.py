@@ -1,4 +1,4 @@
-"""守 RL-（Task 3 定號後回填）：閘回報一律 finding 錨形、機器生成檔一律帶固定檔頭。
+"""守 RL-0051／RL-0049：閘回報一律 finding 錨形、機器生成檔一律帶固定檔頭。
 
 共用底座：Finding 形、Ctx（工作樹／HEAD 讀檔＋git 助手）、front-matter 解析、Day-1 豁免載體。
 """

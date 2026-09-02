@@ -1,4 +1,4 @@
-"""守 RL-（Task 3 定號後回填）：三材質各有唯一的家、generated 禁手改。
+"""守 RL-0049：三材質各有唯一的家、generated 禁手改。
 
 tools/docsync：rev6 治理工具 package（純標準庫）。子命令見 __main__.py。
 """

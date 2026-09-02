@@ -1,4 +1,4 @@
-"""守 RL-（Task 3 定號後回填）：generate／check／lint／rules／errata／test 六子命令單一入口。
+"""守 RL-0049／RL-0053：generate／check／lint／rules／errata／test 六子命令單一入口。
 
 用法：python3 tools/docsync <子命令> …（以目錄執行；sys.path 先補 tools/ 使 `docsync` 可 import）。
 """
@@ -17,6 +17,19 @@ def _not_implemented(_args):
     return 2
 
 
+def _cmd_rules_emit(args):
+    from docsync import RULES, rules
+    text = open(os.path.join(ROOT, RULES), encoding="utf-8").read()
+    if args.format == "js":
+        sys.stdout.write(rules.emit_js(text))
+    else:
+        if args.scope not in rules.SCOPES:
+            print(f"scope 值域外：{args.scope}（可用：{'／'.join(rules.SCOPES)}）", file=sys.stderr)
+            return 2
+        sys.stdout.write(rules.emit(text, args.scope))
+    return 0
+
+
 def _cmd_test(_args):
     tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests")
     suite = unittest.defaultTestLoader.discover(tests_dir, top_level_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,9 +46,9 @@ def build_parser():
     rules = sub.add_parser("rules", help="RULES.md 工具")
     rsub = rules.add_subparsers(dest="rules_cmd", required=True)
     emit = rsub.add_parser("emit", help="依 scope 輸出規則塊＋RULES-VERSION")
-    emit.add_argument("--scope", required=True)
+    emit.add_argument("--scope", default="implementer", help="implementer／review／fix／主線／人（--format js 時忽略）")
     emit.add_argument("--format", choices=("text", "js"), default="text")
-    emit.set_defaults(fn=_not_implemented)
+    emit.set_defaults(fn=_cmd_rules_emit)
     errata = sub.add_parser("errata", help="跨檔假述枚舉")
     errata.add_argument("term")
     errata.set_defaults(fn=_not_implemented)
