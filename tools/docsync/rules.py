@@ -6,8 +6,8 @@ import hashlib
 import os
 import re
 
-from . import RULES, ADR_DIR
-from .common import ERROR, finding
+from . import RULES, ADR_DIR, LESSONS_DIR
+from .common import ERROR, SKIP, finding
 
 RE_NEXT = re.compile(r"<!--\s*next:\s*RL-(\d{4})\s*-->")
 RE_CAPS = re.compile(r"上限[^：]*：([^\n]+)")
@@ -89,7 +89,7 @@ def gt_08(ctx):
       rule=RL-0049
       source=rev5:ADR 0024
       drift=RULES↔LESSONS 對賬
-      face=docs/ops/RULES.md；docs/ops/LESSONS/*.md；docs/ops/LESSONS.md
+      face=docs/ops/RULES.md；docs/ops/LESSONS/*.md
       trigger=pre-commit
       rc=1
       breaks-if-removed=規則層可無來源、可超上限、教訓可不指向規則
@@ -114,6 +114,50 @@ def gt_08(ctx):
             out.append(finding(ERROR, "GT-08", where, f"scope 值域外：{sorted(extra)}"))
         if len(r.rule.splitlines()) > 2:
             out.append(finding(ERROR, "GT-08", where, "規則句超過 2 行"))
+    out += _lessons_side(ctx, {r.id for r in rows})
+    return out
+
+
+PROMOTION_SURFACES = ("rules", "gate", "code", "none")
+RE_LL_FILE = re.compile(r"^(LL-\d{5})-[a-z0-9][a-z0-9-]*\.md$")
+
+
+def _lesson_files(ctx):
+    names = {os.path.basename(p) for p in ctx.tracked if p.startswith(LESSONS_DIR + "/")}
+    d = os.path.join(ctx.root, LESSONS_DIR)
+    if os.path.isdir(d):
+        names |= set(os.listdir(d))
+    return sorted(n for n in names if n.endswith(".md"))
+
+
+def _lessons_side(ctx, rule_ids):
+    """GT-08 LESSONS 側：檔名↔正文首行 ID、rule_id 指向存在（或 none：理由）、promotion_surface 值域、recurrence_of 指向存在。"""
+    from .common import parse_front_matter
+    names = _lesson_files(ctx)
+    if not names and not ctx.exists(LESSONS_DIR):
+        return [finding(SKIP, "GT-08", LESSONS_DIR, "GT-08.lessons-absent：LESSONS/ 目錄尚未建（Day-1；首條 LL 落地即解除）")]
+    out = []
+    ll_ids = {RE_LL_FILE.match(n).group(1) for n in names if RE_LL_FILE.match(n)}
+    for n in names:
+        rel = f"{LESSONS_DIR}/{n}"
+        m = RE_LL_FILE.match(n)
+        if not m:
+            out.append(finding(ERROR, "GT-08", rel, "檔名須為 LL-NNNNN-<slug>.md"))
+            continue
+        lid = m.group(1)
+        meta, body = parse_front_matter(ctx.text(rel) or "")
+        first = next((ln for ln in body.split("\n") if ln.strip()), "")
+        if not first.startswith(f"{lid}｜"):
+            out.append(finding(ERROR, "GT-08", rel, f"正文首行須為「{lid}｜<坑名>」（檔名↔正文 ID 相等）"))
+        rid = str(meta.get("rule_id", ""))
+        if not (rid in rule_ids or rid.startswith("none")):
+            out.append(finding(ERROR, "GT-08", rel, f"rule_id 須指向存在的 RL 或「none：<理由>」：{rid!r}"))
+        ps = meta.get("promotion_surface")
+        if ps not in PROMOTION_SURFACES:
+            out.append(finding(ERROR, "GT-08", rel, f"promotion_surface 須為 {'/'.join(PROMOTION_SURFACES)}：{ps!r}"))
+        rec = meta.get("recurrence_of")
+        if rec not in (None, "") and str(rec) not in rule_ids and str(rec) not in ll_ids:
+            out.append(finding(ERROR, "GT-08", rel, f"recurrence_of 指向不存在的 LL／RL：{rec!r}"))
     return out
 
 

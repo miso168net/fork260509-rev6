@@ -69,6 +69,14 @@ class Ctx:
             raise GitError(p.stderr.strip())
         return p.stdout
 
+    def git_try(self, *args, cwd=None):
+        """同 git() 但不 raise：回 (rc, stdout)。給「非零＝無命中」型命令（git grep）用。"""
+        p = subprocess.run(
+            ["git", "-C", cwd or self.root, *args],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        return p.returncode, p.stdout
+
     def exists(self, rel):
         return os.path.exists(os.path.join(self.root, rel))
 

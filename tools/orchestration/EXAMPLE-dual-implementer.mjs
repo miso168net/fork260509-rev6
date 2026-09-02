@@ -181,7 +181,7 @@ const CONTEXT = [
 
 
 const IMPL1_PROMPT = [
-  '你是 008-audit-settings-pages 之 **U4 執行單元**的 **implementer-1（purge 本體）**。本單元分兩支 serial implementer，你做前半：**T014**。',
+  '你是 rev5:008-audit-settings-pages 之 **U4 執行單元**的 **implementer-1（purge 本體）**。本單元分兩支 serial implementer，你做前半：**T014**。',
   '',
   CONTEXT,
   '',
@@ -219,7 +219,7 @@ const IMPL1_PROMPT = [
 
 function impl2Prompt(impl1Report) {
   return [
-    '你是 008-audit-settings-pages 之 **U4 執行單元**的 **implementer-2（接線與裁判）**。前一支已完成 T014（purge 本體＋詞彙第九值），你做 **T015～T017**。',
+    '你是 rev5:008-audit-settings-pages 之 **U4 執行單元**的 **implementer-2（接線與裁判）**。前一支已完成 T014（purge 本體＋詞彙第九值），你做 **T015～T017**。',
     '',
     CONTEXT,
     '',
@@ -264,7 +264,7 @@ function impl2Prompt(impl1Report) {
 }
 
 const SPEC_REVIEW_PROMPT = [
-  '你是 008-audit-settings-pages 之 **U4 執行單元**的**規格對照審查員**。',
+  '你是 rev5:008-audit-settings-pages 之 **U4 執行單元**的**規格對照審查員**。',
   '',
   CONTEXT,
   '',
@@ -293,7 +293,7 @@ const SPEC_REVIEW_PROMPT = [
 ].join('\n')
 
 const QUALITY_REVIEW_PROMPT = [
-  '你是 008-audit-settings-pages 之 **U4 執行單元**的**碼品質審查員**。前一輪規格對照審查已收斂，本輪看品質與可維護性。',
+  '你是 rev5:008-audit-settings-pages 之 **U4 執行單元**的**碼品質審查員**。前一輪規格對照審查已收斂，本輪看品質與可維護性。',
   '',
   CONTEXT,
   '',
@@ -340,7 +340,7 @@ function fixPrompt(blockers, roundNo) {
     return '' + (i + 1) + '. 檔案：' + b.file + '\n   缺陷：' + b.summary + '\n   證據與建議：' + b.detail
   })
   return [
-    '你是 008-audit-settings-pages 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
+    '你是 rev5:008-audit-settings-pages 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
     '',
     CONTEXT,
     '',

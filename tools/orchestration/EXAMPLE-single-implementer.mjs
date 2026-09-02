@@ -148,7 +148,7 @@ const CONTEXT = [
 ].join('\n')
 
 const IMPL1_PROMPT = [
-  '你是 008-audit-settings-pages 之 **U4b 執行單元**的 implementer。本單元是**行為不變的重構**：把已經在跑的 purge DELETE 從 handler 下沉到 facade。',
+  '你是 rev5:008-audit-settings-pages 之 **U4b 執行單元**的 implementer。本單元是**行為不變的重構**：把已經在跑的 purge DELETE 從 handler 下沉到 facade。',
   '',
   CONTEXT,
   '',
@@ -175,7 +175,7 @@ const IMPL1_PROMPT = [
 ].join('\n')
 
 const SPEC_REVIEW_PROMPT = [
-  '你是 008-audit-settings-pages 之 **U4b 執行單元**的**規格對照審查員**。本單元是行為不變的重構（purge DELETE 下沉 facade，user 親決取 (a)）。',
+  '你是 rev5:008-audit-settings-pages 之 **U4b 執行單元**的**規格對照審查員**。本單元是行為不變的重構（purge DELETE 下沉 facade，user 親決取 (a)）。',
   '',
   CONTEXT,
   '',
@@ -198,7 +198,7 @@ const SPEC_REVIEW_PROMPT = [
 ].join('\n')
 
 const QUALITY_REVIEW_PROMPT = [
-  '你是 008-audit-settings-pages 之 **U4b 執行單元**的**碼品質審查員**。前一輪規格對照審查已收斂。',
+  '你是 rev5:008-audit-settings-pages 之 **U4b 執行單元**的**碼品質審查員**。前一輪規格對照審查已收斂。',
   '',
   CONTEXT,
   '',
@@ -240,7 +240,7 @@ function fixPrompt(blockers, roundNo) {
     return '' + (i + 1) + '. 檔案：' + b.file + '\n   缺陷：' + b.summary + '\n   證據與建議：' + b.detail
   })
   return [
-    '你是 008-audit-settings-pages 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
+    '你是 rev5:008-audit-settings-pages 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
     '',
     CONTEXT,
     '',
