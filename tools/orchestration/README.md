@@ -6,7 +6,7 @@
 |---|---|
 | `_sk_head.js` | 防呆①args 斷言／②guard／③保險絲推導＋自我斷言／④兩套 schema（WORK＝status，REVIEW＝agentStatus）；`IMPLEMENTERS = 2` |
 | `_sk_head1.js` | 同上、`IMPLEMENTERS = 1` |
-| `_sk_rules.js` | 通用不可違反項（zh-TW／不 push／rev5 唯讀／容器 serial／cargo fmt／空間邊界／status 分值／grep 枚舉逐處判別／rev5: 前綴／TDD 先紅後綠） |
+| `_sk_rules.js` | **機器生成**（`python3 tools/docsync generate`＝`rules emit --format js`）：`RULES`（implementer 塊）／`RULES_REVIEW`／`RULES_FIX` 三個樣板字串常數，各以 `RULES-VERSION: <12hex>` 收尾；規則本體住 docs/ops/RULES.md、**不再手維護陣列**；PreToolUse hook 對賬版本串、不符即擋 |
 | `_sk_cycle.js` | `rejectedBlock`＋`fixPrompt`＋`cycle`（含確認輪、⑤收斂偵測、**rev5:L-078 的 done_with_escalation 分支**）。★內含 `UNIT` 變數引用，組裝時 fixPrompt 那句要參數化 |
 | `_sk_main.js` | 雙 implementer 主流程（已參數化 `UNIT`／`PH1`／`PH2`／`LBL1`／`LBL2`／`START_LOG`） |
 | `_sk_main1.js` | 單 implementer 主流程（同參數化；★它引用 `IMPL_PROMPT`，若變動段命名為 `IMPL1_PROMPT` 要於組裝時替換） |
@@ -22,6 +22,8 @@
 ```
 vars + head + allowed + rules + context + prompts + cycle + main
 ```
+
+`rules` 段＝`tools/orchestration/_sk_rules.js` 原樣（generate 產物；RULES.md 改動後先 `python3 tools/docsync generate` 再重組，否則 PreToolUse hook 以 RULES-VERSION 不符擋下）。
 
 拼完必跑三道：①`node --check`（包進 async fn、`export const meta`→`const meta`）
 ②前單元字樣殘留檢查（`U2 執行單元`／`unit: 'U2'`／`u2:implementer` 等）
