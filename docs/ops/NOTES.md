@@ -1,17 +1,14 @@
-<!-- wave: 1 -->
+<!-- wave: 2 -->
 # NOTES — 當前意圖／下一步
 
-## 現況（波 1 後段）
+## 現況（波 1 出口已過、波 2 起手）
 
-治理工具落地中：`tools/docsync` 骨架、RULES.md 首版（73 條、ADR-00004）、憲法 1.0.0（ADR-00003）已入 `000-w1-governance-tooling` 分支；
-events／adr／book／references／gates 六模組與 GT-01～GT-12、掃描防線（.githooks、.gitleaks.toml）、README 與正式版 CLAUDE.md 依計畫
-`docs/brainstorms/000-w1-governance-tooling.md` 逐 Task 落地。
+波 1 治理工具全數落地並 merge 回 `rev6-admin-root`（misc 收單事件帶 merge SHA）：憲法 1.0.0、RULES 73 條、GT-01～GT-12、generate／check／lint、
+掃描防線與 hooks、README／CLAUDE.md 正式版。Day-1 豁免餘六筆（GT-03／05／06／08／10／12），全數於波 2 骨架與首刀收刀時解除。
 
 ## 下一步
 
-- 波 1 出口：`python3 tools/docsync lint` 零 ERROR、Day-1 豁免逐筆有解除謂詞、GT-12 首值在預算內、pre-commit 實跑守門；
-  `merge --no-ff` 回 `rev6-admin-root`＋misc 事件收單。
-- 波 2：arc42 12 節檔＋§13＋ARCHITECTURE.md 索引、C4 五檔、compliance 兩檔、process 九檔骨架、ops 帳本空檔（啟動書 §5）。
+- 波 2（本波）：arc42 12 節檔＋§13＋ARCHITECTURE.md 索引、C4 五檔、compliance 兩檔、process 九檔骨架、ops 帳本空檔（啟動書 §5）。
 
 ## 未決
 
