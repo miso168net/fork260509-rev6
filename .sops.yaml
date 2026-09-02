@@ -13,3 +13,6 @@ creation_rules:
   - path_regex: ^deploy/secrets\.dev\.enc\.yaml$
     age:
       - age1e3y94d7p4wuk9rl7d4nkjmvcjmdw6drlemcvc363pyk9v735u3ks8kx4zn
+      # ↓ 離線復原鑰（承 rev5:B-041／rev5:ADR 0015 子題三）：私鑰檔＋passphrase 離線保管、不駐任何開發機；
+      #   災難動用＝RV6_AGE_KEY_FILE 指向該檔的 host 絕對路徑後照常跑 python3 deploy/decrypt-secrets.py
+      - age130ny8zzsvz89rkacw34c3nkpe9h9d36n7xvq8wecfym9jnf5js6sgj9dc5
