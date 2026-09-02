@@ -2,7 +2,7 @@
 id: "ADR-00001"
 title: host 埠配號 3xxxx 世代制——首碼 2→3、尾碼不動，D12 六值補全為十二值
 date: 2026-09-03
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "啟動書 D12（2026-09-02 拍板 3xxxx、點名六值）；形制承 rev5:ADR 0004（世代首碼＋well-known 尾碼，其母版 rev4:0019）"
@@ -56,4 +56,4 @@ rev5_id: "rev5:ADR 0004"
   全 3xxxx、渲染輸出零 `rev5` 字面、網路 `rev6_net`。
 - rev6 無 0004 號 ADR：前代判例一律以 `rev5:ADR 0004` 前綴形引用；裸「ADR 0004」在 rev6 現在式文件＝違規（GT-05）。
 - D12 六值不變、只補全；rev3 若日後復活需另擇世代碼，本 ADR 不處理。
-- 本 ADR 為 proposed：user 確認十二值對映後改 accepted。
+- user 2026-09-03 確認十二值對映→accepted。
