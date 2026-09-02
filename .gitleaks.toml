@@ -1,0 +1,24 @@
+# .gitleaks.toml — rev6 三 repo 共用機密掃描設定（自 rev5 改寫、rule id 換世代；血緣＝rev4:019 U1）
+#
+# ★僅用 gitleaks 子集欄位（[extend]／[[rules]]／[[rules.allowlists]]／頂層 [[allowlists]] 的 targetRules）
+#   ——禁 Betterleaks 專屬 CEL 欄位（validate／filter／tokenEfficiency），保 Betterleaks 與 gitleaks 雙向可攜。
+# ★[extend] useDefault：自訂 config 會「取代」內建規則庫——必須以 extend 保留預設規則，否則 KEY=value
+#   廣譜偵測全滅＝防線自廢。
+# ★allowlist 紀律：逐條 condition = "AND"＋paths×regexes 並用＋顯式 regexTarget；嚴禁整檔放行——condition
+#   預設 OR、漏寫即退化為過寬放行且不報錯（本 schema 最大靜默失效點）。
+# ★每條 allowlist 收錄前必雙向突變實證（加豁免→rc 0、拔豁免→回到命中）並記入 commit 訊息。
+# rev6 誤報基線（2026-09-03 全史預設規則掃描零命中）：首版**零 allowlist**。已知會在日後出現的兩條
+#   （承 rev5 基線、屆時實證後才收）：①docs/ops/events.jsonl 之 merge／pins 40-hex SHA 撞 generic-api-key
+#   （首刀 feature_close 時）②rust-api vendored sea-orm-adapter 測試碼假 DSN（該 crate 拷入時）。
+
+[extend]
+useDefault = true
+
+# ── 自訂規則：DSN 帳密 URL（承 rev5 同棧規則、rev4:research R6）──
+# 本專案 3 支 composite（database_url／redis_url／reaper_database_url）正是此形、落在預設規則庫盲區。
+# 密碼段首字元排除 $／<／{ ——`${VAR}`、`$(cmd)`、`<pw>`、`{name}` 屬結構性佔位、必非真值；user 段可空。
+[[rules]]
+id = "rev6-dsn-credential-url"
+description = "DSN 帳密 URL（postgres(ql)/redis/mysql 的 user:password@ 形連線字串）"
+regex = '''(?i)\b(?:postgres(?:ql)?|redis|mysql)://[^:@/\s'"]*:[^$<{@\s'"][^@\s'"]*@'''
+keywords = ["postgres://", "postgresql://", "redis://", "mysql://"]
