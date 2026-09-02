@@ -2,7 +2,7 @@
 
 ★本檔為**過渡版**（啟動書 D10）：只承 rev5 CLAUDE.md 的 §2 編排紀律與 §6 硬禁令、改為 rev6 語境；
 節號刻意保留 §2／§6（三支 hook 的訊息指向 `CLAUDE.md §2`），§1／§3～§5／§7 留給波 1 末的正式版。
-啟動書＝`tmp/rev5-handoff/rev6-000-doc-architecture.md`（波 0 搬入 `docs/brainstorms/000-*.md` 後改指該處）。
+啟動書＝`docs/brainstorms/000-doc-architecture.md`（自 rev5 交接包搬入；`tmp/rev5-handoff/` 副本留至波 5 tmp-clean）。
 本檔引用的 `tools/docs-sync.py`、`docs/ops/events.jsonl`、三閘、RUNBOOK 等載體在波 1 內逐步落地；
 未落地前該步驟不可執行——以人紀律記帳、正式版校正。行數只報表不擋（D8）。
 引 rev5 帳本一律 `rev5:` 前綴（D4）；rev5 四本帳不遷入、唯讀引用（D5）。
