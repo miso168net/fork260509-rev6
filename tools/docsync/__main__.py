@@ -43,6 +43,16 @@ def _cmd_check(_args):
     return 1 if n else 0
 
 
+def _cmd_lint(_args):
+    from docsync import gates
+    from docsync.common import Ctx
+    fs, summary = gates.run_lint(Ctx(ROOT))
+    order = {"ERROR": 0, "WARN": 1, "SKIP": 2}
+    n = _print_findings(sorted(fs, key=lambda f: (order.get(f[0], 9), f[1], f[2])))
+    print(summary)
+    return 1 if n else 0
+
+
 def _cmd_rules_emit(args):
     from docsync import RULES, rules
     text = open(os.path.join(ROOT, RULES), encoding="utf-8").read()
@@ -84,7 +94,7 @@ def build_parser():
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("generate", help="由真源重算 docs/generated/").set_defaults(fn=_cmd_generate)
     sub.add_parser("check", help="generated 零漂移比對（GT-01）").set_defaults(fn=_cmd_check)
-    sub.add_parser("lint", help="跑 GT-01～GT-12").set_defaults(fn=_not_implemented)
+    sub.add_parser("lint", help="跑 GT-01～GT-12").set_defaults(fn=_cmd_lint)
     rules = sub.add_parser("rules", help="RULES.md 工具")
     rsub = rules.add_subparsers(dest="rules_cmd", required=True)
     emit = rsub.add_parser("emit", help="依 scope 輸出規則塊＋RULES-VERSION")
