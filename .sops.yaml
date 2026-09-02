@@ -11,4 +11,5 @@
 #   （fail-loud）、不會靜默用錯鑰。
 creation_rules:
   - path_regex: ^deploy/secrets\.dev\.enc\.yaml$
-    age: []
+    age:
+      - age1e3y94d7p4wuk9rl7d4nkjmvcjmdw6drlemcvc363pyk9v735u3ks8kx4zn
