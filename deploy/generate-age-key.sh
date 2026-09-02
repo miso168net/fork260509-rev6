@@ -114,7 +114,7 @@ if [ -z "$ARMOR" ] || [ -z "$PUBKEY" ]; then
   exit 1
 fi
 
-# ---- 落檔（★先寫 .new 再 mv：任何中途失敗都不會讓半截內容成為 $KEYS）----
+# ---- 落檔（★先寫 .new 再 mv：任何中途失敗都不會讓半截內容成為 ${KEYS}）----
 ( umask 077; printf '%s\n' "$ARMOR" > "$KEYS.new" )
 mv "$KEYS.new" "$KEYS"
 chmod 600 "$KEYS"

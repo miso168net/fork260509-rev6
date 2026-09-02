@@ -18,7 +18,7 @@ function fixPrompt(blockers, roundNo) {
     return '' + (i + 1) + '. 檔案：' + b.file + '\n   缺陷：' + b.summary + '\n   證據與建議：' + b.detail
   })
   return [
-    '你是 008-audit-settings-pages 之 **U2 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
+    '你是 rev5:008-audit-settings-pages 之 **U2 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
     '',
     CONTEXT,
     '',

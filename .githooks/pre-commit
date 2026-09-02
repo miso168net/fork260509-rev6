@@ -1,0 +1,76 @@
+#!/bin/sh
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測。
+# 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
+# 被擋時：錯誤訊息附去處；同回合修復後重試。
+#
+# ★兩種語意（承 rev5 hook 契約、rev4:019 scan-gates）：
+#   事件型（機密掃描）：--no-verify 繞過＝機密「真進 git 歷史」、不可逆——僅剩 pre-push 第二層同套規則補攔；
+#     被誤擋一律修 .gitleaks.toml allowlist（AND＋paths×regexes 圈定）、絕不養成 --no-verify 慣性。
+#   狀態型（docsync check／lint 與工具自測）：--no-verify 只延後、下次 commit 檢查不消失。
+#
+# 樣式掃描：★--redact 不可省（預設 0＝明文噴進終端與 scrollback）；★一律 git 子命令；★原生二進位、禁容器形式
+# （容器不帶 GIT_INDEX_FILE → `git commit -a` 掃 0 bytes 靜默漏報）；exit code 分流＝2 機密命中／其餘非零＝掃描器
+# 本身異常（含 127 缺 binary）。★`--config` 顯式帶、不靠自動探索：探索不到 config 時 betterleaks 靜默降級為內建
+# 規則庫並回 rc 0（自訂 DSN 規則一併下線）；顯式帶則 config 缺席即 rc 1 落入「掃描器異常」分支＝吵鬧失敗。
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# ── 全鏈時間門檻（承 rev5:ADR 0044 雙錨：WARN 45＝最壞合法實測進位、FAIL 90＝病態）──────────
+# ★門檻調整走 ADR、不得就地改數字；收刀簿記型 commit 的實測值每刀 append 一筆 close_bookkeeping perf 事件
+#   （人讀 docs/generated/reference/perf.md），連續兩刀 ≥60s 即強制「優化慢路徑／再立 ADR／縮減名冊」三者之一。
+PRECOMMIT_WARN_SEC=45
+PRECOMMIT_FAIL_SEC=90
+PRECOMMIT_T0=$(date +%s)
+# ── 並行 harness（承 rev5:ADR 0061）：各閘唯讀、無共享可變狀態，並行派發讓 drvfs（9p）I/O 延遲重疊；
+#   語意不變（任一閘非零即 exit 1）、不 fail-fast——全部跑完後依派發順序回放輸出，一次看齊所有問題。
+#   ★betterleaks 刻意留在序列最前：事件型、失敗要最先最顯眼地擋下。輸出各存暫存檔、回放不交錯。
+PC_TMP=$(mktemp -d) || { echo "[pre-commit] ✗ 無法建立暫存目錄" >&2; exit 1; }
+trap 'rm -rf "$PC_TMP"' EXIT
+PC_ORDER=""
+pc_run() {
+  _pc_label=$1; shift
+  PC_ORDER="$PC_ORDER $_pc_label"
+  ( "$@" >"$PC_TMP/$_pc_label.out" 2>&1; echo $? >"$PC_TMP/$_pc_label.rc" ) &
+}
+pc_join() {
+  wait
+  _pc_fail=0
+  for _pc_l in $PC_ORDER; do
+    [ -s "$PC_TMP/$_pc_l.out" ] && cat "$PC_TMP/$_pc_l.out"
+    _pc_rc=$(cat "$PC_TMP/$_pc_l.rc" 2>/dev/null || echo 1)
+    if [ "$_pc_rc" -ne 0 ]; then
+      echo "[pre-commit] ✗ 閘「${_pc_l}」失敗（exit ${_pc_rc}）——處置見其上方輸出" >&2
+      _pc_fail=1
+    fi
+  done
+  return $_pc_fail
+}
+betterleaks git --config "$HOOK_DIR/../.gitleaks.toml" --pre-commit --staged --redact --verbose --exit-code 2
+scan_rc=$?
+if [ "$scan_rc" -eq 2 ]; then
+  echo "[pre-commit] ✗ 機密樣式命中（上方輸出含 rule id 與檔案行、值已遮蔽）——自 staged 移除後重試；誤報→修 .gitleaks.toml allowlist（AND＋paths×regexes 圈定）、絕不 --no-verify" >&2
+  exit 1
+elif [ "$scan_rc" -ne 0 ]; then
+  echo "[pre-commit] ✗ 掃描器本身異常（exit ${scan_rc}）、非機密命中——跑 bash tools/bootstrap.sh 檢修（安裝／釘版斷言）" >&2
+  exit 1
+fi
+# 值比對層（機密現值 × tracked 文字檔）住 docsync lint 的 GT-07（樣式四組自測＋SECRETS_DIR 實值）——與 check／lint 並行跑。
+pc_run "docsync-check" python3 "$HOOK_DIR/../tools/docsync" check
+pc_run "docsync-lint" python3 "$HOOK_DIR/../tools/docsync" lint
+# 守門工具自測條件觸發：staged 含某工具本體才跑該支、平時零開銷（名冊與 GT-09／bootstrap 對賬）。
+staged=$(git diff --cached --name-only)
+if echo "$staged" | grep -q '^tools/docsync/'; then
+  pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
+fi
+for t in tools/wf-watchdog.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
+  if echo "$staged" | grep -qxF "$t"; then
+    pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
+  fi
+done
+pc_join || exit 1
+# ── 全鏈耗時評估（僅在全部閘通過後執行）──────────────────────────────────────
+PRECOMMIT_ELAPSED=$(( $(date +%s) - PRECOMMIT_T0 ))
+if [ "$PRECOMMIT_ELAPSED" -gt "$PRECOMMIT_FAIL_SEC" ]; then
+  echo "[pre-commit] ✗ 全鏈耗時 ${PRECOMMIT_ELAPSED}s 超出硬上限 ${PRECOMMIT_FAIL_SEC}s——所有檢查已通過，擋下的是效能劣化：①先量哪段吃時間再優化 ②立 ADR 調門檻並記錄劣化理由。★狀態型：--no-verify 只延後（解「調門檻的 commit 被自己擋住」死結）。" >&2
+  exit 1
+elif [ "$PRECOMMIT_ELAPSED" -gt "$PRECOMMIT_WARN_SEC" ]; then
+  echo "[pre-commit] ⚠ 全鏈耗時 ${PRECOMMIT_ELAPSED}s 超出警戒線 ${PRECOMMIT_WARN_SEC}s（硬上限 ${PRECOMMIT_FAIL_SEC}s）——劣化趨勢訊號，放行不擋。" >&2
+fi

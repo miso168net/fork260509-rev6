@@ -17,9 +17,12 @@
 - 閘：恰 12 條 GT-01～GT-12（一進一出）；每條至少一正一反自證；掃描面空集合即紅（§4.2 橫切）；非 vacuous 自證（承 rev5:ADR 0024）。
 - 名冊：閘的存在＝`finding(LEVEL,"GT-NN")` 錨形掃源；語意＝docstring `GATE:` 區塊；GT-12 斷言錨形集合 ⊆ 區塊集合，且 GATES.md／pre-commit 檔頭範圍字串／RUNBOOK 工具表三處相等（RUNBOOK 缺席＝Day-1 豁免）。
 - 編號：BL-／LL-／ADR-（五碼）、RL-（四碼）、GT-（二碼）；引 rev5 一律 `rev5:` 前綴；裸刀號禁（附錄 E）。
-- 數量預算（D8）：lint 條數 ≤12；RULES 上限＝首版實算去重後 ＋25%（本計畫 Task 2 定值，寫進 ADR-00004）；BACKLOG 開放 ≤25；波 1～5 為 WARN、波 6 起 ERROR（判準＝events 有無 feature_close）。
+- 面（掃描面名詞，全計畫同義）：**活書家族**＝docs/arc42（不含 decisions/）、docs/c4、docs/compliance、docs/process；**現在式面**＝活書家族＋docs/ops、docs/generated、README.md、CLAUDE.md、.specify/memory/constitution.md、tools/、deploy/、.githooks/、.claude/hooks 與 .claude/settings.json；**史料面**＝docs/brainstorms/、specs/、docs/reviews/；**第三方面**＝.claude/skills/、.specify/（constitution 除外）；**語料面**＝tools/docsync/tests/。史料／第三方／語料三面不受 GT-05 裸編號、GT-06 時態、GT-10 形制掃描；GT-06 連結與 GT-07 機密仍掃全部 tracked。
+- 提及 vs 使用（user 拍板）：行內程式碼跨度（反引號）與「」引號內的裸編號視為**提及**、GT-05 不判；fenced code 與行內程式碼內的連結／行號形 GT-06 不判。
+- 波標記（user 拍板）：`docs/ops/NOTES.md` 首行 `<!-- wave: N -->` 為「現在波」唯一真源（波 1 建檔＝1）；GT-10 以 `k < N` 判 `TODO(波 k)` 到期；GT-12 以 N ≥ 6 切 ERROR，且 specs/ 含 `NNN-*` 目錄而 N < 6 即 ERROR「波標記落後」；bump 標記＝波次出口動作、由 pre-commit 守。
+- 數量預算（D8）：閘數 ≤12；RULES 上限＝首版實算去重後 ＋25%（本計畫 Task 3 定值，寫進 ADR-00004）；BACKLOG 開放 ≤25；波 1～5 為 WARN、波 6 起 ERROR（判準＝NOTES.md 波標記）。
 - 機器生成檔一律檔頭 `<!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->`。
-- git：可自行 commit；不 push、不 merge；每 Task 末一顆 commit；commit 訊息 zh-TW。
+- git：工作分支 `000-w1-governance-tooling`（輕量軌形，收單時 `merge --no-ff` 回 `rev6-admin-root`，合併需 user 同意）；可自行 commit；不 push；每 Task 末一顆 commit；commit 訊息 zh-TW。
 - 環境：/mnt/d drvfs——跑過 docker bind mount 後同 shell 先重新 `cd`；exec bit 以 `git update-index --chmod=+x` 落 index。
 
 ---
@@ -39,13 +42,14 @@ tools/docsync/gates.py           ROSTER、parse_gate_blocks、derive_anchor_code
 tools/docsync/tests/test_common.py … test_gates.py（每模組一檔）＋ tests/fixtures/（合成語料）
 docs/ops/RULES.md                規則層首版（人寫）
 docs/ops/events.jsonl            事件源（波 1 創世 misc 事件起）
+docs/ops/NOTES.md                波標記 `<!-- wave: 1 -->`＋當前意圖（人寫；波 1 建）
 docs/arc42/decisions/ADR-00003-constitution-1.0.0.md   憲法定版
 docs/arc42/decisions/ADR-00004-rules-first-edition-and-budgets.md   RULES 首版與數量上限
 .specify/memory/constitution.md  rev6 1.0.0（§3.8 逐條表）
 .gitleaks.toml、.githooks/{pre-commit,pre-push,lib/scan-range.sh}、.githooks-submodule/{pre-commit,pre-push}
-tools/bootstrap.sh               回填 §1 掃描防線、§3b 子庫 hooksPath、§5 docsync 自測與條款數
+tools/bootstrap.sh               回填 §1 掃描防線、§3b 子庫 hooksPath、§5 docsync 自測與閘數
 .claude/hooks/pre-workflow-gate.py   升級：RULES-VERSION 對賬
-tools/orchestration/_sk_rules.js     改為 generate 產物（GENERATED_FILES 名冊）
+tools/orchestration/_sk_rules.js     改為 generate 產物（GENERATED_FILES 名冊；三 scope 區塊 RULES／RULES_REVIEW／RULES_FIX）
 README.md、CLAUDE.md             文件地圖（GT-09 對賬面）與正式版操作手冊
 docs/generated/{STATE,MILESTONES,DECISIONS-INDEX,GATES}.md、docs/generated/reference/{ports,perf}.md
 ```
@@ -74,14 +78,31 @@ class Day1Exemption:  # key, reason, released(ctx)->bool, registered("YYYY-MM-DD
 ```
 GATE:
   id=GT-02
-  rule=RL-0031
+  rule=RL-0055
   source=rev5:ADR 0012
   drift=事件帳形制、SHA 實證、pin↔worktree
-  scope=docs/ops/events.jsonl；外層 index gitlink；兩 worktree HEAD
+  face=docs/ops/events.jsonl；外層 index gitlink；兩 worktree HEAD
   trigger=pre-commit
   rc=1
   breaks-if-removed=事件帳可寫入任意形、假 SHA 入帳不察、pin 漂移靜默
 ```
+
+（`face=` 即 §4.1 的「掃描面」欄；RULES 的 `scope` 一詞專指角色、兩者不混用。）閘→規則對照（GATE 區塊 `rule=`／`source=` 的定值；規則列見 Task 3）：
+
+| 閘 | rule | source |
+|---|---|---|
+| GT-01 | RL-0049 | rev5:ADR 0052 |
+| GT-02 | RL-0055 | rev5:ADR 0012 |
+| GT-03 | RL-0053 | rev5:ADR 0075 |
+| GT-04 | RL-0047 | rev5:ADR 0012 |
+| GT-05 | RL-0050 | rev5:ADR 0012 |
+| GT-06 | RL-0048 | rev5:ADR 0012 |
+| GT-07 | RL-0054 | rev5:ADR 0003 |
+| GT-08 | RL-0049 | rev5:ADR 0024 |
+| GT-09 | RL-0057 | rev5:L-061 |
+| GT-10 | RL-0035 | ADR-00004 |
+| GT-11 | RL-0056 | rev5:L-001 |
+| GT-12 | RL-0052 | rev5:ADR 0024 |
 
 ---
 
@@ -138,7 +159,7 @@ Expected: FAIL（ModuleNotFoundError: docsync）
 
 ```python
 # tools/docsync/__init__.py
-"""守 RL-（Task 2 定號後回填）：三材質各有唯一的家、generated 禁手改。"""
+"""守 RL-（Task 3 定號後回填）：三材質各有唯一的家、generated 禁手改。"""
 import os
 VERSION = "0.1.0"
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
@@ -197,7 +218,7 @@ class Day1Exemption:
         self.key, self.reason, self.released, self.registered = key, reason, released, registered
 ```
 
-`__main__.py`：`argparse` 子命令 `generate／check／lint／rules／errata／test`；`rules` 再收 `emit --scope S --format {text,js}`；未實作的子命令先回 `print("尚未實作", file=sys.stderr); return 2`（Task 8／9 回填）；`test` 子命令：`sys.path.insert(0, tools 目錄)`、discover `docsync/tests`、失敗回 1。檔尾 `if __name__ == "__main__": sys.exit(main(sys.argv[1:]))`；`python3 tools/docsync …` 以目錄執行時 `sys.path[0]` 為 `tools/docsync` 本身，故 `__main__.py` 首段 `sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))` 再 `from docsync import …`。
+`__main__.py`：`argparse` 子命令 `generate／check／lint／rules／errata／test`；`rules` 再收 `emit --scope S --format {text,js}`；未實作的子命令先回 `print("尚未實作", file=sys.stderr); return 2`（Task 9／10 回填）；`test` 子命令：`sys.path.insert(0, tools 目錄)`、discover `docsync/tests`、失敗回 1。檔尾 `if __name__ == "__main__": sys.exit(main(sys.argv[1:]))`；`python3 tools/docsync …` 以目錄執行時 `sys.path[0]` 為 `tools/docsync` 本身，故 `__main__.py` 首段 `sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))` 再 `from docsync import …`。
 
 - [ ] **Step 4: 跑測試確認通過**
 
@@ -213,14 +234,40 @@ git commit -m "feat(docsync): package 骨架——Finding／Ctx／frontmatter／
 
 ---
 
-### Task 2: RULES.md 首版＋rules.py（解析、emit、版本串、GT-08 RULES 側）＋ADR-00004
+### Task 2: 憲法 1.0.0（§3.8 逐條表）＋ADR-00003＋spec-kit 產物入版控
+
+**Files:**
+- Modify: `.specify/memory/constitution.md`（以 rev5 v1.10.0 為藍本重寫）
+- Create: `docs/arc42/decisions/ADR-00003-constitution-1.0.0.md`
+- Add to index: `.claude/skills/**`、`.specify/**`（user 決定：與憲法同批）
+
+**逐節改寫清單（每項可核）：**
+1. 標頭：「rev6-admin (fork260509-rev6) Constitution」；v1.0.0 由 rev5 v1.10.0 依啟動書 §3.8 逐條表搬入、user 親審 diff 定版（記錄＝ADR-00003）；活書改指 `docs/arc42/`（12 節＋§13）。
+2. §I.1／§I.2／§I.3／§I.6：承襲；分支名 `rev6-admin-base-web`、token `rev6-inline`；內文引 rev5 ADR 一律 `rev5:ADR 00NN`（例 §I.2 之 ADR 0005、§I.6 之 rev4:ADR 0085 保留）。
+3. §I.4：只留方向性四句（brainstorm→SDD→TDD→finishing；merge 回 `rev6-admin-root`；push／merge 不得早於 finishing；簿記三步）；「詳細操作＝RULES.md＋CLAUDE.md §2」。
+4. §I.5 改寫：rust-api 自源倉 main `32c5254` 起全新寫；**前代＝rev5（唯讀對照）、rev4 溯源**；拷貝禁止；註解重寫為 rev6 語境、rev5 出處帶 `rev5:` 前綴；防回歸＝rev6 拍板已推翻的行為不得帶回；例外 `sea-orm-adapter`／`xdb` 整檔拷貝（承 rev5）。
+5. §I.7：保留進場規則段；「已入憲行為島」段改為**承襲指針**：列 rev5 十座 A～J（名稱＋rev5 入憲 ADR：A/B/C/D/E＝rev5:ADR 0028、F＝rev5 v1.4.0～1.6.2、G＝rev5:ADR 0054、H＝rev5 v1.7.0、I＝rev5:ADR 0063、J＝rev5:ADR 0077）為各刀 brainstorm 直接輸入；島體隨刀以 MINOR Amendment 重新進場（user 拍板 2026-09-03）。
+6. §I.8 新增：「AI 代理產物必經人審與機器閘；review agent 只讀；push／merge 需 user 明確同意」（反轉＝MAJOR）。
+7. §II：三筆承襲，逐筆核 `tmp/rev5-handoff/rev5-adr-digest.md` 有無被翻案（grep「unknown header」「auth route」「/api」），被翻者改為現行拍板。
+8. §III：fork-delta 紀律 token 改 `rev6-inline`；生成檔紀律引 `rev5:ADR 0052`；§III.1 三軌道（wrapper 前綴 `rev6-*.ts`）；§III.2 只留機制骨架＋補完判準＋表外三項宣告＋空表頭（「首批軌道隨首刀 Amendment 開立」）＋承襲指針列 rev5 八條軌道名（user 拍板 2026-09-03）。
+9. §IV 九題：第 2 題 token `rev6-inline`；第 5 題「§I.5 前代＝rev5」；其餘承襲。
+10. §V.1 權威鏈納 RULES：constitution ＞ ADR accepted ＞ RULES.md ＞ arc42／c4／compliance／process ＞ generated；§V.2 第 4 步 `python3 tools/docsync generate`；§V.3 承襲；Version 1.0.0｜Ratified 2026-09-03；Amendment log 只一筆 1.0.0。
+11. 全檔零裸 rev5 編號（`.specify/memory/constitution.md` 屬現在式面，Task 6 的 GT-05 落地後對本檔補跑一次 lint；提及形一律用反引號或「」）。
+
+- [ ] **Step 1: 產 diff 供 user 親審**：`diff -u ../fork260509-rev5/.specify/memory/constitution.md .specify/memory/constitution.md > tmp/constitution-1.0.0.diff`，逐節對照上表；以 Task 6 的 `BARE_REV5` 正則（含 MENTION 豁免）對憲法預掃零命中（一行 python，正式閘於 Task 6 落地）。
+- [ ] **Step 2: ADR-00003**（accepted、provenance＝啟動書 §3.8＋user 親審日期；body 含逐條表摘要與 §I.7／§III.2 骨架＋承襲指針之拍板）。
+- [ ] **Step 3: user 親審通過後 Commit**（獨立 commit，含 spec-kit 產物）`docs(constitution): rev6 1.0.0 定版（§3.8 逐條表；ADR-00003）＋spec-kit 1.0.3 產物入版控`
+
+---
+
+### Task 3: RULES.md 首版＋rules.py（解析、emit、版本串、GT-08 RULES 側）＋ADR-00004
 
 **Files:**
 - Create: `docs/ops/RULES.md`、`docs/arc42/decisions/ADR-00004-rules-first-edition-and-budgets.md`
 - Create: `tools/docsync/rules.py`、`tools/docsync/tests/test_rules.py`
 
 **Interfaces:**
-- Produces: `parse_rules(text) -> (header: dict, rows: list[Rule])`，`Rule` 具 `id, rule, scopes:set[str], carrier, source`；`rules_version(text) -> str`（12 hex）；`emit(text, scope, fmt="text") -> str`；`gt_08(ctx)`（本 Task 只做 RULES 側三腿：欄位形制、上限、source 指向存在；LESSONS 側在 Task 5 補）。
+- Produces: `parse_rules(text) -> (header: dict, rows: list[Rule])`，`Rule` 具 `id, rule, scopes:set[str], carrier, source`；`rules_version(text) -> str`（12 hex）；`emit(text, scope) -> str`（文字塊）；`emit_js(text) -> str`（`const RULES = \`<implementer 塊>\`; const RULES_REVIEW = …; const RULES_FIX = …;`，識別字 `RULES` 沿用、既有消費者 `_sk_cycle.js` 不改）；`gt_08(ctx)`（本 Task 只做 RULES 側三腿：欄位形制、上限、source 指向存在；LESSONS 側在 Task 6 補）。
 - RULES.md 表形（GT-08 解析錨＝以 `| RL-` 起的表列）：
 
 ```
@@ -295,8 +342,17 @@ carrier ∈ prompt／lint／checklist；source ∈ LL-NNNNN／ADR-NNNNN／rev5:L
 | RL-0051 | 每條閘一正一反自證、掃描面空集合即紅；Day-1 豁免逐筆帶解除謂詞、到期即紅 | implementer,review | lint | rev5:ADR 0024 |
 | RL-0052 | 數量預算超限只擋新增、不可調數字；一進一出或走 ADR；波 6 前 WARN、之後 ERROR | 主線,人 | lint | ADR-00004 |
 | RL-0053 | 收刀簿記＝events append→NOTES→generate 一顆 commit，排在 merge 之後 | 主線 | checklist | ADR-00004 |
+| RL-0054 | 機密實值與憑證樣式永不入版控面；`CHANGE-ME` 起首佔位值不算機密 | implementer,fix,主線 | lint | rev5:ADR 0003 |
+| RL-0055 | 事件帳一行一事件、逐型 schema、SHA 逐列向 git 實證；feature_close 帶序號 window | 主線 | lint | rev5:ADR 0012 |
+| RL-0056 | bash 內 `$VAR` 後不得緊接非 ASCII；shebang 只用白名單形 | implementer,fix | lint | rev5:L-001 |
+| RL-0057 | README 目錄樹、hook 註冊、exec bit 名冊與實檔集機器對賬；名冊改動同刀改齊 | implementer,主線 | lint | rev5:L-061 |
+| RL-0058 | Workflow script 的 args 只傳短純量、首段逐欄斷言型別與非空，不符零派發即 throw | 主線 | prompt | ADR-00004 |
+| RL-0059 | 派發前斷言渲染後 prompt 非空、開頭無 undefined／null、必含 zh-TW 字面 | 主線 | prompt | ADR-00004 |
+| RL-0060 | fix agent 允許檔清單寫死 script 常數、不取自 args；次輪只縮不擴 | 主線 | prompt | ADR-00004 |
+| RL-0061 | Workflow launch 與 Monitor 看門狗同一回合原子成對發射，兩 call 間零其他動作 | 主線 | checklist | ADR-00004 |
+| RL-0062 | 保險絲值由同檔 script 常數推導並自我斷言，MUST ≥ 結構最壞值、不得手挑 | 主線 | prompt | rev5:L-068 |
 
-實算：53 條 → 上限 ceil(53×1.25)＝67；per-scope 上限＝各 scope 實數 ×1.25 進位（起草完由 Step 4 的測試印出實數後回填檔頭；上表 scope 分布為草案、最終以檔為準）。`RL-0053` 之後 `<!-- next: RL-0054 -->`。另附 `## 名詞` 段（刀＝spec-kit feature；單元＝一支 Workflow 執行單元；收刀＝merge --no-ff 後簿記；輕量軌＝不開 SDD 的維護批；拍板級＝schema／scope／破紀律／user 可見行為）。
+實算：62 條（六件套與看門狗紀律全入 RULES＝user 拍板；CLAUDE.md §2 只留步驟骨架＋指針）→ 上限 ceil(62×1.25)＝78；per-scope 上限＝各 scope 實數 ×1.25 進位（起草完由 Step 4 的測試印出實數後回填檔頭；上表 scope 分布為草案、最終以檔為準）。`RL-0062` 之後 `<!-- next: RL-0063 -->`。另附 `## 名詞` 段（刀＝spec-kit feature；單元＝一支 Workflow 執行單元；收刀＝merge --no-ff 後簿記；輕量軌＝不開 SDD 的維護批；拍板級＝schema／scope／破紀律／user 可見行為；波＝啟動書 §5 階段、現在波＝NOTES.md 首行標記；活書家族／現在式面／史料面／第三方面／語料面＝本計畫 Global Constraints 之定義；提及＝反引號或「」內的引用、不算使用）。
 
 - [ ] **Step 2: 寫失敗測試（解析、上限、source 形、emit、版本串）**
 
@@ -325,9 +381,10 @@ class TestParse(unittest.TestCase):
         self.assertNotIn("RL-0002", rules.emit(GOOD, "主線"))
         self.assertEqual(len(rules.rules_version(GOOD)), 12)
     def test_js_format(self):
-        js = rules.emit(GOOD, "implementer", fmt="js")
-        self.assertTrue(js.startswith("// 機器生成：python3 tools/docsync rules emit"))
-        self.assertIn("RULES-VERSION: " + rules.rules_version(GOOD), js)
+        js = rules.emit_js(GOOD)
+        self.assertTrue(js.startswith("// 機器生成：python3 tools/docsync generate"))
+        for name in ("const RULES = `", "const RULES_REVIEW = `", "const RULES_FIX = `"): self.assertIn(name, js)
+        self.assertEqual(js.count("RULES-VERSION: " + rules.rules_version(GOOD)), 3)
 class TestGt08RulesSide(unittest.TestCase):
     def _ctx(self, text):
         c = common.Ctx.__new__(common.Ctx); c.root = "/nonexistent"; c.tracked = ["docs/ops/RULES.md"]; c._cache = {"docs/ops/RULES.md": text}
@@ -335,11 +392,11 @@ class TestGt08RulesSide(unittest.TestCase):
         return c
     def test_green(self):
         self.assertEqual([f for f in rules.gt_08(self._ctx(GOOD)) if f[0] == "ERROR"], [])
-    def test_over_cap_and_bad_source(self):
-        bad = GOOD.replace("總 3", "總 1").replace("rev5:L-003", "L-003")
-        codes = {f[3][:6] for f in rules.gt_08(self._ctx(bad)) if f[0] == "ERROR"}
-        self.assertTrue(any("超出上限" in f[3] for f in rules.gt_08(self._ctx(bad))))
+    def test_bad_source_and_budget_counts(self):
+        bad = GOOD.replace("rev5:L-003", "L-003")
         self.assertTrue(any("source 形制" in f[3] for f in rules.gt_08(self._ctx(bad))))
+        counts, caps = rules.budget_counts(GOOD.replace("總 3", "總 1"))
+        self.assertEqual((counts["總"], counts["implementer"], caps["總"]), (2, 2, 1))
     def test_empty_face_is_red(self):
         c = self._ctx(""); c.exists = lambda rel: False
         self.assertTrue(any("掃描面空集合" in f[3] for f in rules.gt_08(c)))
@@ -377,22 +434,22 @@ def parse_rules(text):
     return hdr, rows
 def _canonical(rows): return "\n".join(f"{r.id}|{r.rule}|{','.join(sorted(r.scopes))}|{r.carrier}|{r.source}" for r in sorted(rows, key=lambda r: r.id))
 def rules_version(text): return hashlib.sha256(_canonical(parse_rules(text)[1]).encode("utf-8")).hexdigest()[:12]
-def emit(text, scope, fmt="text"):
+def emit(text, scope):
     _, rows = parse_rules(text); ver = rules_version(text)
     sel = [r for r in rows if scope in r.scopes]
     body = "\n".join(f"{r.id}｜{r.rule}" for r in sel)
-    block = f"=== RULES scope={scope}（{len(sel)} 條）===\n{body}\nRULES-VERSION: {ver}\n"
-    if fmt == "text": return block
-    esc = block.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
-    return ("// 機器生成：python3 tools/docsync rules emit --scope %s --format js——嚴禁手改；差異由 pre-commit check 攔下\n"
-            "const RULES_BLOCK = `%s`;\nconst RULES_SCOPE = '%s';\n" % (scope, esc, scope))
+    return f"=== RULES scope={scope}（{len(sel)} 條）===\n{body}\nRULES-VERSION: {ver}\n"
+def _js_str(block): return block.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
+def emit_js(text):
+    head = "// 機器生成：python3 tools/docsync generate（自 docs/ops/RULES.md 之 rules emit）——嚴禁手改；差異由 pre-commit check 攔下\n"
+    return head + "".join(f"const {name} = `{_js_str(emit(text, scope))}`;\n" for name, scope in (("RULES", "implementer"), ("RULES_REVIEW", "review"), ("RULES_FIX", "fix")))
 def gt_08(ctx):
     """GATE:
       id=GT-08
       rule=RL-0049
       source=rev5:ADR 0024
-      drift=RULES↔LESSONS 對賬、規則數量預算
-      scope=docs/ops/RULES.md；docs/ops/LESSONS/*.md；docs/ops/LESSONS.md
+      drift=RULES↔LESSONS 對賬
+      face=docs/ops/RULES.md；docs/ops/LESSONS/*.md；docs/ops/LESSONS.md
       trigger=pre-commit
       rc=1
       breaks-if-removed=規則層可無來源、可超上限、教訓可不指向規則
@@ -408,12 +465,12 @@ def gt_08(ctx):
             out.append(finding(ERROR, "GT-08", f"{RULES}｜{r.id}", f"source 指向不存在的 {r.source}"))
         if not r.scopes - set(SCOPES) == set() : out.append(finding(ERROR, "GT-08", f"{RULES}｜{r.id}", f"scope 值域外：{sorted(r.scopes - set(SCOPES))}"))
         if len(r.rule.splitlines()) > 2: out.append(finding(ERROR, "GT-08", f"{RULES}｜{r.id}", "規則句超過 2 行"))
-    caps = hdr["caps"]; level = ERROR  # 波判準由 gates.gt_12 統一；本閘只報「超出上限」事實、層級由呼叫端依波換算
-    if caps.get("總") is not None and len(rows) > caps["總"]: out.append(finding(WARN, "GT-08", RULES, f"超出上限：總 {len(rows)} > {caps['總']}（D8 只擋新增）"))
-    for s in SCOPES:
-        n = sum(1 for r in rows if s in r.scopes)
-        if caps.get(s) is not None and n > caps[s]: out.append(finding(WARN, "GT-08", RULES, f"超出上限：{s} {n} > {caps[s]}"))
     return out
+def budget_counts(text):
+    """給 gates.gt_12 的計數（數量預算由 GT-12 統一定級與回報；本閘不報上限）。回 ({"總": n, <scope>: n…}, caps)。"""
+    hdr, rows = parse_rules(text or "")
+    counts = {"總": len(rows)}; counts.update({s: sum(1 for r in rows if s in r.scopes) for s in SCOPES})
+    return counts, hdr["caps"]
 def _adr_file_exists(ctx, adr_id):
     import os
     d = os.path.join(ctx.root, ADR_DIR)
@@ -434,18 +491,18 @@ Expected: 全綠；印出各實數，據以改 RULES.md 檔頭「上限」行與
 
 - [ ] **Step 6: 寫 ADR-00004（accepted；user 於本 Task 檢視 RULES 表後確認）**
 
-frontmatter 照 ADR-00001 形（id/title/date/status/supersedes/superseded_by/provenance/tags）。body：背景（§3.6、D8、R2-F12／F13；候選來源三處）／決策驅動因子／考慮過的替代案（照搬 rev5 CLAUDE.md 全段＝通道重塞滿；只收 RAD-AI 八條＝丟失 rev5 已驗證防法）／決定（首版 53 條；上限總 N 與 per-scope；去重併入表：L-058→RL-0001、L-052→RL-0014、L-086→RL-0031、L-085→RL-0032）／後果（GT-08 首值、emit 進骨架、CLAUDE.md §2 規則句改指針）／翻案觸發器（連續兩刀 emit 塊超過 prompt 預算或 scope 上限被撞三次＝重審上限）。
+frontmatter 照 ADR-00001 形（id/title/date/status/supersedes/superseded_by/provenance/tags）。body：背景（§3.6、D8、R2-F12／F13；候選來源三處）／決策驅動因子／考慮過的替代案（照搬 rev5 CLAUDE.md 全段＝通道重塞滿；只收 RAD-AI 八條＝丟失 rev5 已驗證防法）／決定（首版 62 條；上限總 N 與 per-scope；去重併入表：L-058→RL-0001、L-052→RL-0014、L-086→RL-0031、L-085→RL-0032；六件套與看門狗紀律入 RULES＝user 拍板 2026-09-03）／後果（GT-08 首值、emit 進骨架、CLAUDE.md §2 規則句改指針）／翻案觸發器（連續兩刀 emit 塊超過 prompt 預算或 scope 上限被撞三次＝重審上限）。
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add docs/ops/RULES.md docs/arc42/decisions/ADR-00004-rules-first-edition-and-budgets.md tools/docsync/rules.py tools/docsync/tests/test_rules.py
-git commit -m "feat(rules): RULES.md 首版 53 條＋上限實算（ADR-00004）；docsync rules 解析／emit／RULES-VERSION／GT-08 RULES 側"
+git commit -m "feat(rules): RULES.md 首版 62 條＋上限實算（ADR-00004）；docsync rules 解析／emit／emit_js／RULES-VERSION／GT-08 RULES 側"
 ```
 
 ---
 
-### Task 3: events.py——rev6 事件 schema、GT-02、GT-03、三指標；創世事件
+### Task 4: events.py——rev6 事件 schema、GT-02、GT-03、三指標；創世事件
 
 **Files:**
 - Create: `tools/docsync/events.py`、`tools/docsync/tests/test_events.py`、`docs/ops/events.jsonl`
@@ -499,7 +556,7 @@ class TestMetrics(unittest.TestCase):
 
 - [ ] **Step 2: 跑測試確認失敗** → Expected: ImportError
 
-- [ ] **Step 3: 實作 events.py**（要點：`EVENT_SCHEMAS` dict `{type: {"required": (...), "optional": (...)}}`；`_check_event(e)` 照 rev5 形逐型驗、正則換 rev6 五碼／四碼；`parse_events` 逐行 `json.loads`、空行報「空行」、行界只用 `split("\n")`；`gt_02`：schema 錯誤→ERROR；SHA 實證＝`git cat-file -e <sha>^{commit}`（pins 對子庫 `git -C base-web`，子庫缺席→SKIP 具名）；pin 互證＝`git ls-files -s <sub>` 之 gitlink 與 `git -C <sub> rev-parse HEAD` 相等，否則 WARN；window 單調＝第 k 筆 feature_close 的 window 必為 k；`metrics`：gov_ratio＝misc.category=governance 數／feature_close 數（0→n/a，round 2）；lessons_dup_rate＝recurrence_of 非空／全部（零檔→n/a）；backlog_net＝最近 3 個 feature_close 窗內 Σbacklog_add−Σbacklog_done（含窗內 misc；不足 3 刀→仍計但 STATE 標「（不足 3 刀）」？——**否**：規格寫不足 3 刀 n/a；測試 `test_values` 只有 1 刀卻期望 1 → 改為：`metrics(events, lessons, min_window=3)`，測試傳 `min_window=1`；預設 3。）
+- [ ] **Step 3: 實作 events.py**（要點：`EVENT_SCHEMAS` dict `{type: {"required": (...), "optional": (...)}}`；`_check_event(e)` 照 rev5 形逐型驗、正則換 rev6 五碼／四碼；`parse_events` 逐行 `json.loads`、空行報「空行」、行界只用 `split("\n")`；`gt_02`：schema 錯誤→ERROR；SHA 實證＝`git cat-file -e <sha>^{commit}`（pins 對子庫 `git -C base-web`，子庫缺席→SKIP 具名）；pin 互證＝外層 index 之 gitlink（`git ls-files -s <sub>`）與 `git -C <sub> rev-parse HEAD` 相等，不等即 ERROR（承 rev5 收尾序④⑤：外層 commit 時 pin 必已 staged）；window 單調＝第 k 筆 feature_close 的 window 必為 k；`metrics`：gov_ratio＝misc.category=governance 數／feature_close 數（0→n/a，round 2）；lessons_dup_rate＝recurrence_of 非空／全部（零檔→n/a）；backlog_net＝最近 `min_window`（預設 3）個 feature_close 窗內 Σbacklog_add−Σbacklog_done（含窗內 misc）；feature_close 不足 min_window→n/a；簽名 `metrics(events, lessons, min_window=3)`，測試 `test_values` 傳 `min_window=1` 驗值。`window`＝該 feature_close 序號（user 拍板）：gt_02 斷言第 k 筆 feature_close 之 window == k。）
 
 - [ ] **Step 4: 建 `docs/ops/events.jsonl` 首筆（波 1 創世 misc）**
 
@@ -507,18 +564,20 @@ class TestMetrics(unittest.TestCase):
 {"type": "misc", "date": "2026-09-03", "summary": "rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f）", "category": "governance", "backlog_add": [], "notes": "波 1 前段；治理工具與憲法／RULES 於後續 commit 落地"}
 ```
 
+- [ ] **Step 4b: 建 `docs/ops/NOTES.md`**（人寫）：首行 `<!-- wave: 1 -->`，其後「# NOTES — 當前意圖／下一步」與一段現況（波 1 後段：治理工具落地中；下一步＝波 2 骨架）。
+
 - [ ] **Step 5: 跑測試確認通過** → `python3 tools/docsync test` OK
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tools/docsync/events.py tools/docsync/tests/test_events.py docs/ops/events.jsonl
+git add tools/docsync/events.py tools/docsync/tests/test_events.py docs/ops/events.jsonl docs/ops/NOTES.md
 git commit -m "feat(docsync): events schema（rev6 欄位）＋GT-02／GT-03＋三指標算式；events.jsonl 創世首筆（§4.3）"
 ```
 
 ---
 
-### Task 4: adr.py——GT-04 與 DECISIONS-INDEX
+### Task 5: adr.py——GT-04 與 DECISIONS-INDEX
 
 **Files:**
 - Create: `tools/docsync/adr.py`、`tools/docsync/tests/test_adr.py`
@@ -529,67 +588,67 @@ git commit -m "feat(docsync): events schema（rev6 欄位）＋GT-02／GT-03＋�
 
 - [ ] **Step 1: 寫失敗測試**（臨時 git repo：commit 一份 accepted ADR → 改 body → gt_04 紅「accepted 後 body 不可變」；改 status 為 superseded 並加 superseded_by → 綠；刪檔 → 紅「禁刪除」；A.supersedes=[B] 但 B 未標 superseded → 紅「supersede 不對稱」；空目錄 → 紅「掃描面空集合」；`gen_decisions_index` 對兩份 ADR 產表、feature 欄由 events.adrs 反查、查無印「輕量軌」。）
 
-- [ ] **Step 2: 確認失敗 → Step 3: 實作**（docstring GATE 區塊：rule=RL-0047 source=rev5:ADR 0012 drift=ADR 不可變與 supersede 對稱 scope=docs/arc42/decisions/*.md breaks-if-removed=拍板全文可被改寫、翻案可單向）→ **Step 4: 全綠** → **Step 5: Commit** `feat(docsync): adr——GT-04 不可變／對稱／禁刪除＋DECISIONS-INDEX（§3.5）`
+- [ ] **Step 2: 確認失敗 → Step 3: 實作**（docstring GATE 區塊：rule=RL-0047 source=rev5:ADR 0012 drift=ADR 不可變與 supersede 對稱 face=docs/arc42/decisions/*.md breaks-if-removed=拍板全文可被改寫、翻案可單向）→ **Step 4: 全綠** → **Step 5: Commit** `feat(docsync): adr——GT-04 不可變／對稱／禁刪除＋DECISIONS-INDEX（§3.5）`
 
 ---
 
-### Task 5: book.py（一）——GT-05 ID 家族與跨代裸編號＋GT-08 LESSONS 側
+### Task 6: book.py（一）——GT-05 ID 家族與跨代裸編號＋GT-08 LESSONS 側
 
 **Files:**
 - Create: `tools/docsync/book.py`、`tools/docsync/tests/test_book_ids.py`
 - Modify: `tools/docsync/rules.py`（gt_08 加 LESSONS 側三腿）
 
 **Interfaces:**
-- Produces: `gt_05(ctx)`；`ID_FAMILIES = {"BL": (BACKLOG, [BACKLOG_DEFERRED]), "LL": (LESSONS_INDEX, [LESSONS_DIR/*]), "RL": (RULES, [])}`；`RE_NEXT_ID = r"<!--\s*next:\s*(BL|LL|RL)-(\d{4,5})\s*-->"`；`BARE_REV5 = re.compile(r"(?<![A-Za-z0-9:_/-])(B-\d{3}|L-\d{3}|ADR 0\d{3}|Lint\d{2}|\d{3}-[a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![A-Za-z0-9-])")`；`PRESENT_TENSE_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/", "docs/ops/", "docs/generated/", "README.md", "CLAUDE.md", "tools/", "deploy/", ".githooks/", ".claude/")`；`HISTORY_FACE = ("docs/brainstorms/", "specs/", "docs/reviews/")`。
-- 判準：(a) 各家族 next-id 存在、條目唯一、皆 < next、next 對 HEAD 單調、現有而 HEAD 無之號 ≥ HEAD next（不回收）；家族檔缺席→SKIP 具名 Day-1 鍵 `GT-05.ledgers-absent`（BL／LL）；RL 必在。(b) 現在式面（含 tools/、deploy/ 文字檔）命中 `BARE_REV5` 即 ERROR，除非該刀名 ∈ rev6 刀集（specs/ 子目錄名 ∪ events.feature）或為 `000-` 起首之創世史料家族（啟動書、本計畫）；史料面豁免。(c) 子庫碼面：`git -C <sub> grep -nE '(^|[^A-Za-z0-9:_-])(B-[0-9]{3}|L-[0-9]{3})([^0-9]|$)' HEAD --` 命中即 ERROR；子庫缺席→SKIP。ADR 家族：目錄檔名數字唯一且與 frontmatter 相等（GT-04 已管 id；此處只管唯一單調）。
+- Produces: `gt_05(ctx)`；`ID_FAMILIES = {"BL": (BACKLOG, [BACKLOG_DEFERRED]), "LL": (LESSONS_INDEX, [LESSONS_DIR/*]), "RL": (RULES, [])}`；`RE_NEXT_ID = r"<!--\s*next:\s*(BL|LL|RL)-(\d{4,5})\s*-->"`；`BARE_REV5 = re.compile(r"(?<![A-Za-z0-9:_/-])(B-\d{3}|L-\d{3}|ADR 0\d{3}|Lint\d{2}|\d{3}-[a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![A-Za-z0-9-])")`；`PRESENT_TENSE_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/", "docs/ops/", "docs/generated/", "README.md", "CLAUDE.md", ".specify/memory/constitution.md", "tools/", "deploy/", ".githooks/", ".claude/hooks/", ".claude/settings.json")`；`HISTORY_FACE = ("docs/brainstorms/", "specs/", "docs/reviews/")`；`THIRD_PARTY_FACE = (".claude/skills/", ".specify/")`；`FIXTURE_FACE = ("tools/docsync/tests/",)`；`BOOK_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/")`（arc42 排除 decisions/）；`MENTION = re.compile(r"`[^`\n]*`|「[^」\n]*」")`（命中落在 MENTION 跨度內＝提及、不判）。
+- 判準：(a) 各家族 next-id 存在、條目唯一、皆 < next、next 對 HEAD 單調、現有而 HEAD 無之號 ≥ HEAD next（不回收）；家族檔缺席→SKIP 具名 Day-1 鍵 `GT-05.ledgers-absent`（BL／LL）；RL 必在。(b) 現在式面（含 tools/、deploy/ 文字檔）命中 `BARE_REV5` 即 ERROR，除非該刀名 ∈ rev6 刀集（specs/ 子目錄名 ∪ events.feature）或為 `000-` 起首之創世史料家族（啟動書、本計畫）；命中落在 `MENTION` 跨度內不判（user 拍板：提及≠使用）；史料面／第三方面／語料面豁免。本 Task 同時把 `tools/orchestration/` 內 rev5 刀名 `008-audit-settings-pages`（EXAMPLE 兩檔＋`_sk_cycle.js`、共 12 處）補 `rev5:` 前綴。(c) 子庫碼面：`git -C <sub> grep -nE '(^|[^A-Za-z0-9:_-])(B-[0-9]{3}|L-[0-9]{3})([^0-9]|$)' HEAD --` 命中即 ERROR；子庫缺席→SKIP。ADR 家族：目錄檔名數字唯一且與 frontmatter 相等（GT-04 已管 id；此處只管唯一單調）。
 
-- [ ] **Step 1: 失敗測試**：合成 BACKLOG（next 3、條目 BL-00001／BL-00002 綠；重複號紅；BL-00005≥next 紅；HEAD next 4→現 3 紅「單調」）；裸 `L-011` 在 docs/ops/x.md 紅、在 docs/brainstorms/x.md 綠、`rev5:L-011` 綠、`001-foo` 在無 specs 時紅、有 `specs/001-foo/` 時綠；子庫命中案用臨時 repo 當 base-web 樁（Ctx.git cwd 參數）。
-- [ ] **Step 2/3/4**：實作＋全綠。docstring：rule=RL-0050 source=rev5:ADR 0012 drift=配號唯一單調、跨代裸編號 scope=docs/ops 三帳＋現在式文件面＋兩子庫 pin 樹 breaks-if-removed=號碼可回收、rev5 編號走私入 rev6 現在式文件。
+- [ ] **Step 1: 失敗測試**：合成 BACKLOG（next 3、條目 BL-00001／BL-00002 綠；重複號紅；BL-00005≥next 紅；HEAD next 4→現 3 紅「單調」）；裸 `L-011` 在 docs/ops/x.md 紅、在 docs/brainstorms/x.md 綠、在 .claude/skills/x.md 綠、`rev5:L-011` 綠、反引號內 `L-011` 綠、「L-011」綠、`001-foo` 在無 specs 時紅、有 `specs/001-foo/` 時綠、`000-x-y` 綠；子庫命中案用臨時 repo 當 base-web 樁（Ctx.git cwd 參數）。
+- [ ] **Step 2/3/4**：實作＋全綠。docstring：rule=RL-0050 source=rev5:ADR 0012 drift=配號唯一單調、跨代裸編號 face=docs/ops 三帳＋現在式面＋兩子庫 pin 樹 breaks-if-removed=號碼可回收、rev5 編號走私入 rev6 現在式文件。
 - [ ] **Step 5: gt_08 補 LESSONS 側**：`LESSONS/LL-NNNNN-<slug>.md` 檔名↔正文首行 `LL-NNNNN｜` 相等；frontmatter `rule_id`（RL-NNNN 存在或 `none：<理由>`）與 `promotion_surface ∈ rules/gate/code/none`；`recurrence_of`（選填）指向存在的 LL 或 RL；目錄缺席→SKIP 具名 `GT-08.lessons-absent`。測試三案（合形綠／rule_id 指向不存在紅／目錄缺席 SKIP）。
 - [ ] **Step 6: Commit** `feat(docsync): GT-05 ID 家族＋雙 pattern 跨代裸編號＋子庫碼面；GT-08 LESSONS 側（附錄 E）`
 
 ---
 
-### Task 6: book.py（二）——GT-06 引用健康＋GT-11 bash 面＋errata
+### Task 7: book.py（二）——GT-06 引用健康＋GT-11 bash 面＋errata
 
 **Files:**
 - Modify: `tools/docsync/book.py`；Create: `tools/docsync/tests/test_book_refs.py`
 
 **Interfaces:**
 - Produces: `gt_06(ctx)`、`gt_11(ctx)`、`errata_scan(ctx, keyword) -> list[(rel, lineno, line)]`（外層 tracked 文字檔＋兩子庫 `git grep`）。
-- GT-06 判準：md 相對連結目標存在（`http(s)://`、`mailto:`、`#` 不驗；連結解析相對於該檔目錄）；禁 `\S+\.md:\d+`；禁 `(BACKLOG(-[A-Za-z0-9-]+)?|NOTES|STATE)\.md#`；禁 `(~|/home/[^/\s]+|/Users/[^/\s]+)/\.claude/`；活書家族（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process）時態禁詞 `待決／TBD／⏳／已完成／下一步` ERROR、預告詞 `屆時／日後／將由` WARN；活書家族缺席→SKIP 具名 `GT-06.book-absent`（其餘腿照跑）。
+- GT-06 判準：先剝除 fenced code 與行內程式碼（連結／行號腿不看程式碼內文字；user 拍板之提及原則）；語料面不掃；md 相對連結目標存在（`http(s)://`、`mailto:`、`#` 不驗；連結解析相對於該檔目錄）；禁 `\S+\.md:\d+`；禁 `(BACKLOG(-[A-Za-z0-9-]+)?|NOTES|STATE)\.md#`；禁 `(~|/home/[^/\s]+|/Users/[^/\s]+)/\.claude/`；活書家族（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process）時態禁詞 `待決／TBD／⏳／已完成／下一步` ERROR、預告詞 `屆時／日後／將由` WARN；活書家族缺席→SKIP 具名 `GT-06.book-absent`（其餘腿照跑）。
 - GT-11 判準：面＝tracked `*.sh` ∪ 首行 shebang 含 `sh` 之檔（含 `.githooks/*`）；`\$[A-Za-z_][A-Za-z0-9_]*` 後緊接非 ASCII 字元→ERROR；shebang 白名單 `#!/usr/bin/env bash`／`#!/bin/sh`／`#!/usr/bin/env sh`／`#!/bin/bash`；面空→ERROR。
 
 - [ ] **Step 1: 失敗測試**：連結存在綠／不存在紅；`x.md:12` 紅；`BACKLOG.md#a` 紅；`/home/u/.claude/x` 紅；活書檔含「下一步」紅、含「日後」WARN、brainstorms 含「下一步」綠；bash `"$VAR全形"` 紅、`"${VAR}全形"` 綠、`#!/usr/bin/python3` 當 shebang 之 `.sh` 紅；errata 對合成 repo 回 (rel, lineno)。
-- [ ] **Step 2/3/4**：實作＋全綠。docstring GT-06：rule=RL-0048 source=rev5:ADR 0012 drift=引用斷鏈、時態混入 scope=tracked *.md；活書家族 breaks-if-removed=死連結與未來式靜默入書。GT-11：rule=RL-0051 source=rev5:L-001 drift=bash 黏字與 shebang scope=外層 tracked bash 面（含 deploy/、.githooks/）breaks-if-removed=macOS bash 3.2 unbound variable 炸在 preflight。
+- [ ] **Step 2/3/4**：實作＋全綠。docstring GT-06：rule=RL-0048 source=rev5:ADR 0012 drift=引用斷鏈、時態混入 face=tracked *.md；活書家族 breaks-if-removed=死連結與未來式靜默入書。GT-11：rule=RL-0056 source=rev5:L-001 drift=bash 黏字與 shebang face=外層 tracked bash 面（含 deploy/、.githooks/）breaks-if-removed=macOS bash 3.2 unbound variable 炸在 preflight。
 - [ ] **Step 5: `__main__` 接 `errata`** 子命令：印 `rel:行號：行`，零命中印「零命中」、rc 0；子庫掃描未執行（缺席）印具名警示、rc 3。
 - [ ] **Step 6: Commit** `feat(docsync): GT-06 引用健康＋GT-11 bash 面＋errata（§4.2）`
 
 ---
 
-### Task 7: book.py（三）——GT-10 文件形制閘（Day-1 豁免承載）
+### Task 8: book.py（三）——GT-10 文件形制閘（Day-1 豁免承載）
 
 **Files:**
 - Modify: `tools/docsync/book.py`；Create: `tools/docsync/tests/test_book_form.py`、`tools/docsync/tests/fixtures/form/`（合成 arc42／c4／compliance／process 語料各一檔）
 
 **Interfaces:**
-- Produces: `gt_10(ctx)`；常數 `FORM_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/")`（arc42 排除 decisions/）、`AIV_KEYS`（附錄 G 23 鍵）、`E_SUBSECTIONS = {"E1": ("AI Components Inventory","System Boundary Diagram","Four-Part Boundary Contract","Failure Modes","External AI Dependencies"), "E2": (...八欄 Inventory 表＋Per-Model Detail Sections＋Integration with Model Cards＋Integration with Model Registry Tools), "E3": (...), "E4": (...六節), "E5": (...五 ####), "E6": (...), "E7": (...七類＋Register Entry Format＋Debt Summary Dashboard＋Review Cadence), "E8": ("Monitoring","Retraining Policy","Deployment Strategy","Rollback Policy","Incident Response")}`（英文原名只當 frontmatter `rad_ai_map` 的對照鍵，不入正文）。
-- 七腿：①佔位三腿 `\*\[`、`_{5,}`、`- \[ \]`＋裸 `\[[A-Z][A-Za-z ]+\](?!\()`；②`TODO(波 N)` 只在波 N 未出口前合法（波號 ≤ 當前波：當前波＝events 內 `wave_exit` 標記？——**定案**：當前波＝`docs/ops/NOTES.md` 首行 `<!-- wave: N -->`，缺席視為 1；`TODO(波 k)` 且 k ≤ 當前波→ERROR）；③process 檔每個 `###` 子節首句含「類比張力：」；④系統層段非「目前無 AI 元件」句時，frontmatter `rad_ai_map` 的鍵集 ⊇ `E_SUBSECTIONS[E]`；⑤compliance/annex-iv-checklist.md 含全部 23 鍵且每鍵 Evidence 欄非佔位、所引 `<檔>` 存在且 `<具名表>` 標題字面命中該檔；⑥同檔 mermaid 節點標籤 ⊆ 同檔表格首欄集合；⑦`docs/c4/C4-L2-container.md` mermaid 節點 ⊇ compose 三檔 services 名（解析 `services:` 下二層鍵）；面缺席→SKIP 具名 `GT-10.doc-skeleton-absent`（解除謂詞＝`docs/arc42/01-introduction-and-goals.md` 存在）。
+- Produces: `gt_10(ctx)`；常數 `FORM_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/")`（arc42 排除 decisions/）、`AIV_KEYS`（附錄 G 23 鍵）、`E_SUBSECTIONS = {"E1": ("AI Components Inventory","System Boundary Diagram","Four-Part Boundary Contract","Failure Modes","External AI Dependencies"), "E2": ("Model Inventory Table","Per-Model Detail Sections","Integration with Model Cards","Integration with Model Registry Tools"), "E3": ("Pipeline Overview Diagram","Pipeline Inventory Table","Quality Gates","Feature Store Documentation","Feedback Loops","Integration with Data Cards"), "E4": ("Responsible AI Concern Matrix","Fairness","Explainability","Human Oversight","Transparency","Privacy","Safety"), "E5": ("Model Alternatives Considered","Dataset Characteristics","Fairness and Bias Trade-offs","Expected Model Lifetime","Retraining Trigger","Explainability Requirements","Regulatory Compliance"), "E6": ("Quality Attribute Definitions","Model Freshness","Drift Tolerance","Explainability","Fairness","Robustness","Scenario Format","Cross-Component Scenarios"), "E7": ("Boundary Erosion","Entanglement","Hidden Feedback Loops","Data Dependency Debt","Pipeline Debt","Configuration Debt","Model Staleness","Register Entry Format","Debt Summary Dashboard","Review Cadence"), "E8": ("Monitoring","Retraining Policy","Deployment Strategy","Rollback Policy","Incident Response"), "C4-E1": ("Stereotype Definitions","Mermaid Conventions","Annotation Guidelines","Template"), "C4-E2": ("Data Source Inventory","Lineage Diagram","Lineage Details","Freshness Requirements","Privacy Flow","Schema Registry"), "C4-E3": ("Boundary Overview","Boundary Interfaces","Confidence Thresholds","Degradation Behavior","Propagation Rules","Testing Implications")}`（英文原名只當 frontmatter `rad_ai_map` 的對照鍵，不入正文）。
+- 七腿：①佔位三腿 `\*\[`、`_{5,}`、`- \[ \]`＋裸 `\[[A-Z][A-Za-z ]+\](?!\()`；②`TODO(波 k)`：現在波 N 取 `docs/ops/NOTES.md` 首行 `<!-- wave: N -->`（缺席→ERROR「波標記缺席」）；k < N → ERROR「到期」、k ≥ N 合法；③process 檔每個 `###` 子節首句含「類比張力：」；④系統層段非「目前無 AI 元件」句時，frontmatter `rad_ai_map` 的鍵集 ⊇ `E_SUBSECTIONS[E]`；⑤compliance/annex-iv-checklist.md 含全部 23 鍵且每鍵 Evidence 欄非佔位、所引 `<檔>` 存在且 `<具名表>` 標題字面命中該檔；⑥同檔 mermaid 節點標籤 ⊆ 同檔表格首欄集合；⑦`docs/c4/C4-L2-container.md` mermaid 節點 ⊇ compose 三檔 services 名（解析 `services:` 下二層鍵）；面缺席→SKIP 具名 `GT-10.doc-skeleton-absent`（解除謂詞＝`docs/arc42/01-introduction-and-goals.md` 存在）。
 
-- [ ] **Step 1: 失敗測試**（fixtures 各腿一紅一綠：`*[待填]` 紅；`_____` 紅；`- [ ]` 紅；`[Owner]` 紅、`[link](x)` 綠；`TODO(波 1)` 於 wave 1 紅、`TODO(波 3)` 綠；process 子節缺「類比張力：」紅；rad_ai_map 少鍵紅；checklist 缺 `AIV-2h` 紅、Evidence 引不存在檔紅；mermaid 節點 `X` 不在表格紅；C4-L2 缺 `postgres` 紅（compose 樁）；面缺席 SKIP）。
-- [ ] **Step 2/3/4**：實作＋全綠（解析器以拆分構造寫，避免規則定義文自撞：正則字面在測試檔以字串串接構造）。docstring：rule=RL-0035 source=ADR-00004 drift=佔位與樣板文、子項名冊、圖表對賬 scope=FORM_FACE breaks-if-removed=RAD-AI 表可空殼交卷（22/22 假滿分重演）。
+- [ ] **Step 1: 失敗測試**（fixtures 各腿一紅一綠：`*[待填]` 紅；`_____` 紅；`- [ ]` 紅；`[Owner]` 紅、`[link](x)` 綠；標記 1 時 `TODO(波 1)` 綠、`TODO(波 3)` 綠；標記 2 時 `TODO(波 1)` 紅；NOTES 缺席紅「波標記缺席」；process 子節缺「類比張力：」紅；rad_ai_map 少鍵紅；checklist 缺 `AIV-2h` 紅、Evidence 引不存在檔紅；mermaid 節點 `X` 不在表格紅；C4-L2 缺 `postgres` 紅（compose 樁）；面缺席 SKIP）。
+- [ ] **Step 2/3/4**：實作＋全綠（解析器以拆分構造寫，避免規則定義文自撞：正則字面在測試檔以字串串接構造）。docstring：rule=RL-0035 source=ADR-00004 drift=佔位與樣板文、子項名冊、圖表對賬 face=BOOK_FACE breaks-if-removed=RAD-AI 表可空殼交卷（22/22 假滿分重演）。
 - [ ] **Step 5: Commit** `feat(docsync): GT-10 文件形制閘七腿（§3.4；波 1 Day-1 豁免）`
 
 ---
 
-### Task 8: references.py——generate／check 本體（GT-01）、STATE／MILESTONES／ports／perf
+### Task 9: references.py——generate／check 本體（GT-01）、STATE／MILESTONES／ports／perf
 
 **Files:**
 - Create: `tools/docsync/references.py`、`tools/docsync/tests/test_references.py`
 - Modify: `tools/docsync/__main__.py`（接 generate／check）
 
 **Interfaces:**
-- Produces: `GENERATED_FILES = ("docs/generated/STATE.md","docs/generated/MILESTONES.md","docs/generated/DECISIONS-INDEX.md","docs/generated/GATES.md","docs/generated/reference/ports.md","docs/generated/reference/perf.md","tools/orchestration/_sk_rules.js")`；`compute_generated(ctx) -> dict[rel, text]`；`check_generated(ctx, computed) -> list[Finding]`（缺／多／drift 三分支，多＝`docs/generated/**` tracked 但不在名冊）；`gen_reference_ports(ctx)`（解析三檔 `ports:` 之 `"127.0.0.1:HHHHH:CCCC"` 形；輸出表 服務｜host｜容器內側｜檔；非 3xxxx 首碼→在表尾附「★非本代世代」列並由 GT-01 之外的 bootstrap 斷言擋）；`gen_reference_perf(events)`；`gen_state(ctx)`（git 段：default branch＋pins；constitution 版本（自檔尾 `**Version**:`）；帳面統計：ADR 各 status 數、RULES 條數／上限、BACKLOG 開放（缺檔印「未建」）、LESSONS 數、events 各型數；三指標；數量預算對賬表（項目｜現值｜上限｜狀態）；最近事件尾 3）；`gen_milestones(events)`（非 perf、新在前）；`cmd_generate(ctx)`（先 `adr.backfill_superseded_by` 再寫檔；冪等）；`cmd_check(ctx)`（＝GT-01；`_sk_rules.js` 由 `rules.emit(…, "implementer", "js")` 產）。
+- Produces: `GENERATED_FILES = ("docs/generated/STATE.md","docs/generated/MILESTONES.md","docs/generated/DECISIONS-INDEX.md","docs/generated/GATES.md","docs/generated/reference/ports.md","docs/generated/reference/perf.md","tools/orchestration/_sk_rules.js")`；`compute_generated(ctx) -> dict[rel, text]`；`check_generated(ctx, computed) -> list[Finding]`（缺／多／drift 三分支，多＝`docs/generated/**` tracked 但不在名冊）；`gen_reference_ports(ctx)`（解析三檔 `ports:` 之 `"127.0.0.1:HHHHH:CCCC"` 形；輸出表 服務｜host｜容器內側｜檔；非 3xxxx 首碼→在表尾附「★非本代世代」列並由 GT-01 之外的 bootstrap 斷言擋）；`gen_reference_perf(events)`；`gen_state(ctx)`（git 段：default branch＋pins；constitution 版本（自檔尾 `**Version**:`）；帳面統計：ADR 各 status 數、RULES 條數／上限、BACKLOG 開放（缺檔印「未建」）、LESSONS 數、events 各型數；三指標；數量預算對賬表（項目｜現值｜上限｜狀態）；最近事件尾 3）；`gen_milestones(events)`（非 perf、新在前）；`cmd_generate(ctx)`（先 `adr.backfill_superseded_by` 再寫檔；冪等）；`cmd_check(ctx)`（＝GT-01；`_sk_rules.js` 由 `rules.emit_js(RULES 全文)` 產）。`gen_state` 另印「現在波：N（NOTES 標記）」與「CLAUDE.md 行數：n（只報表）」。
 
 - [ ] **Step 1: 失敗測試**：ports 解析對本 repo 三檔實掃得 12 列且全 3xxxx（真檔案）；合成 compose 含 `"127.0.0.1:22080:80"` 時列入且標記；`gen_state` 對合成 ctx 印「n/a」三指標；`check_generated`：缺檔紅、多檔紅、drift 紅、全等綠；generate 兩次逐位元組相同（冪等）。
 - [ ] **Step 2/3/4**：實作＋全綠；`python3 tools/docsync generate` 真跑產出七檔；`python3 tools/docsync check` rc 0。
@@ -597,45 +656,19 @@ git commit -m "feat(docsync): events schema（rev6 欄位）＋GT-02／GT-03＋�
 
 ---
 
-### Task 9: gates.py——名冊、GT-07、GT-09、GT-12、Day-1 豁免、GATES.md、lint 入口
+### Task 10: gates.py——名冊、GT-07、GT-09、GT-12、Day-1 豁免、GATES.md、lint 入口
 
 **Files:**
 - Create: `tools/docsync/gates.py`、`tools/docsync/tests/test_gates.py`
 - Modify: `tools/docsync/__main__.py`（接 lint）
 
 **Interfaces:**
-- Produces: `ROSTER = (gates.gt_01, events.gt_02, events.gt_03, adr.gt_04, book.gt_05, book.gt_06, gates.gt_07, rules.gt_08, gates.gt_09, book.gt_10, book.gt_11, gates.gt_12)`；`parse_gate_blocks(source_text) -> dict[id, dict]`；`derive_anchor_codes(source_text) -> set[str]`（正則 `finding\(\s*(?:ERROR|WARN|SKIP)\s*,\s*"(GT-\d{2})"`）；`DAY1_EXEMPTIONS: dict[key, Day1Exemption]`（初版六筆：`GT-03.no-close-events`、`GT-05.ledgers-absent`、`GT-06.book-absent`、`GT-08.lessons-absent`、`GT-10.doc-skeleton-absent`、`GT-12.runbook-absent`；解除謂詞皆為檔／目錄存在或事件存在）；`run_lint(ctx) -> (findings, summary_line)`（到期即紅：豁免鍵之 `released(ctx)` 為 True 仍在表→ERROR；SKIP 必列明細；末行「lint：X 錯誤／Y 警告／Z 條款跳過」）；`gen_gates_md(ctx) -> str`（欄＝§4.1 九欄；Day-1 狀態欄＝該閘有無未解除豁免鍵）；`gt_01`（呼叫 `references.check_generated`）；`gt_07`（樣式四組＋自測紅綠樣本執行期串接；值比對：SECRETS_DIR 三級解析→讀 `*.txt` 非 `CHANGE-ME` 起首值→tracked 文字檔（跳二進位：前 8KB 含 NUL）含該值即 ERROR；落點缺席→SKIP 具名）；`gt_09`（README ```text 樹解析：`├──`／`└──` 行之路徑（目錄以 `/` 結尾；含 `、` 分隔多檔者逐一拆）與 tracked `tools/**`、`deploy/**`、`.githooks/**`、`.claude/**` 雙向對賬；shebang 檔 index mode 必 100755；`.claude/settings.json` 內三支 hook 命令所指檔存在、且 `.claude/hooks/*` 每檔被引用）；`gt_12`（錨形集合 ⊆ 區塊集合；區塊 id 集合 == ROSTER id 集合 == 恰 12；三處：GATES.md id 集合、`.githooks/pre-commit` 檔頭範圍字串 `GT-01～GT-12`（半／全形波浪皆收）、`docs/ops/RUNBOOK.md` 工具表（缺席→SKIP 具名）；預算：閘數 ≤12、RULES 總／per-scope（讀 rules.gt_08 的 WARN 轉本閘統一定級）、BACKLOG 開放 ≤25；級別＝events 無 feature_close→WARN、有→ERROR）。
+- Produces: `ROSTER = (gates.gt_01, events.gt_02, events.gt_03, adr.gt_04, book.gt_05, book.gt_06, gates.gt_07, rules.gt_08, gates.gt_09, book.gt_10, book.gt_11, gates.gt_12)`；`parse_gate_blocks(source_text) -> dict[id, dict]`；`derive_anchor_codes(source_text) -> set[str]`（正則 `finding\(\s*(?:ERROR|WARN|SKIP)\s*,\s*"(GT-\d{2})"`）；`DAY1_EXEMPTIONS: dict[key, Day1Exemption]`（初版七筆：`GT-03.no-close-events`、`GT-05.ledgers-absent`、`GT-06.book-absent`、`GT-08.lessons-absent`、`GT-10.doc-skeleton-absent`、`GT-12.runbook-absent`、`GT-12.precommit-absent`（解除謂詞＝`.githooks/pre-commit` 存在、Task 11 落地即解除）；解除謂詞皆為檔／目錄存在或事件存在）；`run_lint(ctx) -> (findings, summary_line)`（到期即紅：豁免鍵之 `released(ctx)` 為 True 仍在表→ERROR；SKIP 必列明細；末行「lint：X 錯誤／Y 警告／Z 閘跳過」）；`gen_gates_md(ctx) -> str`（欄＝§4.1 九欄；Day-1 狀態欄＝該閘有無未解除豁免鍵）；`gt_01`（呼叫 `references.check_generated`）；`gt_07`（樣式四組＋自測紅綠樣本執行期串接；值比對：SECRETS_DIR 三級解析→讀 `*.txt` 非 `CHANGE-ME` 起首值→tracked 文字檔（跳二進位：前 8KB 含 NUL）含該值即 ERROR；落點缺席→SKIP 具名）；`gt_09`（README ```text 樹解析：`├──`／`└──` 行之路徑（目錄以 `/` 結尾；含 `、` 分隔多檔者逐一拆）與 tracked `tools/**`、`deploy/**`、`.githooks/**`、`.claude/**` 雙向對賬；`EXEC_REQUIRED` 名冊（`.githooks/pre-commit`、`.githooks/pre-push`、`.githooks-submodule/pre-commit`、`.githooks-submodule/pre-push`、`deploy/sops.sh`、`deploy/generate-age-key.sh`、`deploy/generate-dev-cert.sh`、`tools/bootstrap.sh`）index mode 必 100755、名冊本身屬本閘掃描面；`.claude/settings.json` 內三支 hook 命令所指檔存在、且 `.claude/hooks/*` 每檔被引用）；`gt_12`（錨形集合 ⊆ 區塊集合；區塊 id 集合 == ROSTER id 集合 == 恰 12；三處：GATES.md id 集合、`.githooks/pre-commit` 檔頭範圍字串 `GT-01～GT-12`（半／全形波浪皆收）、`docs/ops/RUNBOOK.md` 工具表（缺席→SKIP 具名）；預算：閘數 ≤12、RULES 總／per-scope（自 `rules.budget_counts` 取數、本閘統一定級回報）、BACKLOG 開放 ≤25；級別＝NOTES 波標記 N<6→WARN、N≥6→ERROR；specs/ 含 `NNN-*` 目錄而 N<6→ERROR「波標記落後」）。
 
-- [ ] **Step 1: 失敗測試**：`parse_gate_blocks` 對本 package 真原始碼得 12 鍵且必填鍵齊；`derive_anchor_codes` 對真原始碼 ⊆ 區塊集合；合成一段含 `finding(ERROR, "GT-13", …)` 的源碼→gt_12 紅「錨形不在區塊」；ROSTER 長度 12；Day-1 到期即紅（樁 released=True 仍在表→紅）；gt_07 紅綠樣本自測＋值比對（臨時 SECRETS_DIR 放值 `s3cr3tV4lue`、tracked 檔含之→紅；`CHANGE-ME-x` 值不比對）；gt_09 README 樹漏列 `tools/x.py`→紅、樹列不存在檔→紅、shebang 檔 100644→紅、settings.json 指向缺檔→紅；`run_lint` 末行格式。
-- [ ] **Step 2/3/4**：實作＋全綠；docstring GT-01：rule=RL-0049 source=rev5:ADR 0052 drift=generated↔真源 scope=GENERATED_FILES；GT-07：rule=RL-0044? ——**改**：rule=RL-0051 不合；新增規則 `RL-0054｜機密實值與憑證樣式永不入版控面；佔位值不算機密`（source rev5:ADR 0003）於 Task 2 表尾（上限實算含之）；GT-09：rule=RL-0049 source=rev5:L-061 drift=接線與實檔集 scope=README 樹、tools/deploy/.githooks/.claude、settings.json；GT-12：rule=RL-0051 source=rev5:ADR 0024 drift=名冊同源與數量預算 scope=tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK。
-- [ ] **Step 5: 真跑** `python3 tools/docsync lint`：預期 0 ERROR、若干 WARN／SKIP（六筆 Day-1 逐筆列明細）；`generate` 重算含 GATES.md；`check` rc 0。
-- [ ] **Step 6: Commit** `feat(docsync): gates 名冊＋GT-01／07／09／12＋Day-1 豁免六筆＋GATES.md；lint 入口全鏈綠（§4.1／§4.6）`
-
----
-
-### Task 10: 憲法 1.0.0（§3.8 逐條表）＋ADR-00003＋spec-kit 產物入版控
-
-**Files:**
-- Modify: `.specify/memory/constitution.md`（以 rev5 v1.10.0 為藍本重寫）
-- Create: `docs/arc42/decisions/ADR-00003-constitution-1.0.0.md`
-- Add to index: `.claude/skills/**`、`.specify/**`（user 決定：與憲法同批）
-
-**逐節改寫清單（每項可核）：**
-1. 標頭：「rev6-admin (fork260509-rev6) Constitution」；v1.0.0 由 rev5 v1.10.0 依啟動書 §3.8 逐條表搬入、user 親審 diff 定版（記錄＝ADR-00003）；活書改指 `docs/arc42/`（12 節＋§13）。
-2. §I.1／§I.2／§I.3／§I.6：承襲；分支名 `rev6-admin-base-web`、token `rev6-inline`；內文引 rev5 ADR 一律 `rev5:ADR 00NN`（例 §I.2 之 ADR 0005、§I.6 之 rev4:ADR 0085 保留）。
-3. §I.4：只留方向性四句（brainstorm→SDD→TDD→finishing；merge 回 `rev6-admin-root`；push／merge 不得早於 finishing；簿記三步）；「詳細操作＝RULES.md＋CLAUDE.md §2」。
-4. §I.5 改寫：rust-api 自源倉 main `32c5254` 起全新寫；**前代＝rev5（唯讀對照）、rev4 溯源**；拷貝禁止；註解重寫為 rev6 語境、rev5 出處帶 `rev5:` 前綴；防回歸＝rev6 拍板已推翻的行為不得帶回；例外 `sea-orm-adapter`／`xdb` 整檔拷貝（承 rev5）。
-5. §I.7：保留進場規則段；「已入憲行為島」段改為**承襲指針**：列 rev5 十座 A～J（名稱＋rev5 入憲 ADR：A/B/C/D/E＝rev5:ADR 0028、F＝rev5 v1.4.0～1.6.2、G＝rev5:ADR 0054、H＝rev5 v1.7.0、I＝rev5:ADR 0063、J＝rev5:ADR 0077）為各刀 brainstorm 直接輸入；島體隨刀以 MINOR Amendment 重新進場（**user 拍板項 Q2**）。
-6. §I.8 新增：「AI 代理產物必經人審與機器閘；review agent 只讀；push／merge 需 user 明確同意」（反轉＝MAJOR）。
-7. §II：三筆承襲，逐筆核 `tmp/rev5-handoff/rev5-adr-digest.md` 有無被翻案（grep「unknown header」「auth route」「/api」），被翻者改為現行拍板。
-8. §III：fork-delta 紀律 token 改 `rev6-inline`；生成檔紀律引 `rev5:ADR 0052`；§III.1 三軌道（wrapper 前綴 `rev6-*.ts`）；§III.2 只留機制骨架＋補完判準＋表外三項宣告＋空表頭（「首批軌道隨首刀 Amendment 開立」）＋承襲指針列 rev5 八條軌道名（**user 拍板項 Q3**）。
-9. §IV 九題：第 2 題 token `rev6-inline`；第 5 題「§I.5 前代＝rev5」；其餘承襲。
-10. §V.1 權威鏈納 RULES：constitution ＞ ADR accepted ＞ RULES.md ＞ arc42／c4／compliance／process ＞ generated；§V.2 第 4 步 `python3 tools/docsync generate`；§V.3 承襲；Version 1.0.0｜Ratified 2026-09-03；Amendment log 只一筆 1.0.0。
-11. 全檔零裸 rev5 編號（GT-05 面含 `.specify/`？——**否**：`.specify/memory/constitution.md` 加入 `PRESENT_TENSE_FACE`，本 Task 同步改 book.py 常數）。
-
-- [ ] **Step 1: 產 diff 供 user 親審**：`diff -u ../fork260509-rev5/.specify/memory/constitution.md .specify/memory/constitution.md > tmp/constitution-1.0.0.diff`，逐節對照上表；`python3 tools/docsync lint` 對憲法零 GT-05 紅。
-- [ ] **Step 2: ADR-00003**（accepted、provenance＝啟動書 §3.8＋user 親審日期；body 含逐條表摘要與 Q2／Q3 拍板結果）。
-- [ ] **Step 3: user 親審通過後 Commit**（獨立 commit，含 spec-kit 產物）`docs(constitution): rev6 1.0.0 定版（§3.8 逐條表；ADR-00003）＋spec-kit 1.0.3 產物入版控`
+- [ ] **Step 1: 失敗測試**：`parse_gate_blocks` 對本 package 真原始碼得 12 鍵且必填鍵齊；`derive_anchor_codes` 對真原始碼 ⊆ 區塊集合；合成一段含 `finding(ERROR, "GT-13", …)` 的源碼→gt_12 紅「錨形不在區塊」；ROSTER 長度 12；Day-1 到期即紅（樁 released=True 仍在表→紅）；gt_07 紅綠樣本自測＋值比對（臨時 SECRETS_DIR 放值 `s3cr3tV4lue`、tracked 檔含之→紅；`CHANGE-ME-x` 值不比對）；gt_09 README 樹漏列 `tools/x.py`→紅、樹列不存在檔→紅、`EXEC_REQUIRED` 內檔 100644→紅、settings.json 指向缺檔→紅；gt_12 波標記 5 且 specs/001-x/ 存在→紅「波標記落後」、標記 6 時預算超限為 ERROR、標記 1 時為 WARN；`run_lint` 末行格式。
+- [ ] **Step 2/3/4**：實作＋全綠；docstring GT-01：rule=RL-0049 source=rev5:ADR 0052 drift=generated↔真源 face=GENERATED_FILES；GT-07：rule=RL-0054 source=rev5:ADR 0003 drift=機密入版控 face=tracked 文字檔＋SECRETS_DIR 實值；GT-09：rule=RL-0057 source=rev5:L-061 drift=接線與實檔集 face=README 樹、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED；GT-12：rule=RL-0052 source=rev5:ADR 0024 drift=名冊同源與數量預算 face=tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、NOTES 波標記。
+- [ ] **Step 5: 真跑** `python3 tools/docsync lint`：預期 0 ERROR、若干 WARN／SKIP（七筆 Day-1 逐筆列明細）；`generate` 重算含 GATES.md；`check` rc 0。
+- [ ] **Step 6: Commit** `feat(docsync): gates 名冊＋GT-01／07／09／12＋Day-1 豁免七筆＋GATES.md；lint 入口全鏈綠（§4.1／§4.6）`
 
 ---
 
@@ -644,7 +677,7 @@ git commit -m "feat(docsync): events schema（rev6 欄位）＋GT-02／GT-03＋�
 **Files:**
 - Create: `.gitleaks.toml`（自 rev5 改寫：rule id `rev6-dsn-credential-url`；allowlist 逐條以雙向突變實證後才收：①`docs/ops/events.jsonl` SHA 欄 ②啟動書 `docs/brainstorms/000-doc-architecture.md` 若實測命中）
 - Create: `.githooks/pre-commit`、`.githooks/pre-push`、`.githooks/lib/scan-range.sh`、`.githooks-submodule/pre-commit`、`.githooks-submodule/pre-push`
-- Modify: `tools/bootstrap.sh`（§1：hooksPath＋betterleaks 1.7.3 釘版 die 級＋兩 worktree hooksPath 指外層 `.githooks-submodule` 絕對路徑＋pre-commit／pre-push 指紋＝HEAD blob；§5：`python3 tools/docsync test`＋`check`＋`lint` 零 ERROR＋條款數斷言＝`derive_anchor_codes` 得 12）
+- Modify: `tools/bootstrap.sh`（§1：hooksPath＋betterleaks 1.7.3 釘版 die 級＋兩 worktree hooksPath 指外層 `.githooks-submodule` 絕對路徑＋pre-commit／pre-push 指紋＝HEAD blob；§5：`python3 tools/docsync test`＋`check`＋`lint` 零 ERROR＋閘數斷言＝`derive_anchor_codes` 得 12）
 - Modify: `README.md` 尚未存在→Task 13；本 Task 先讓 gt_09 對 `.githooks/**` 的面由 Task 13 補樹。
 
 **pre-commit 形（承 rev5 ADR 0061 並行 harness、ADR 0044 雙錨 45／90 秒）：**
@@ -668,7 +701,7 @@ git commit -m "feat(docsync): events schema（rev6 欄位）＋GT-02／GT-03＋�
 
 **Files:**
 - Modify: `.claude/hooks/pre-workflow-gate.py`（保留 zh-TW 字面斷言；新增：自 script 抽 `RULES-VERSION: <12hex>`，缺→擋；與 `python3 tools/docsync rules emit --scope implementer` 現算版本不符→擋，訊息附「重跑 rules emit 重組骨架」）
-- Modify: `tools/orchestration/README.md`（組裝法：`rules` 段＝`python3 tools/docsync rules emit --scope implementer --format js` 產物 `_sk_rules.js`，不再手維護陣列）；`tools/orchestration/_sk_rules.js` 由 generate 產（Task 8 已列入 GENERATED_FILES）；`EXAMPLE-*.mjs` 改引 `RULES_BLOCK`（把手寫十條陣列改為 `RULES_BLOCK.split('\n')` 過濾 `RL-` 起首行）；`harness-test.mjs` 十案照跑。
+- Modify: `tools/orchestration/README.md`（組裝法：`rules` 段＝`python3 tools/docsync rules emit --scope implementer --format js` 產物 `_sk_rules.js`，不再手維護陣列）；`tools/orchestration/_sk_rules.js` 由 generate 產（Task 9 已列入 GENERATED_FILES；`RULES` 字串識別字沿用、`_sk_cycle.js` 消費形不改、另供 `RULES_REVIEW`／`RULES_FIX`）；`EXAMPLE-*.mjs` 兩檔以新產物重組 `rules` 段；`harness-test.mjs` 十案照跑。hook 對**所有** Workflow script 一律要求 RULES-VERSION（user 拍板；純研究型亦須貼一塊 emit 產出）。
 
 - [ ] **Step 1: 失敗測試**（pre-workflow-gate 以 stdin 餵 JSON `{"tool_input":{"script":"…"}}`：含 zh-TW 但缺 RULES-VERSION→rc 2 訊息含「RULES-VERSION」；版本錯→rc 2；正確→rc 0。測試住 `tools/docsync/tests/test_hook_gate.py`，以 subprocess 跑 hook。）
 - [ ] **Step 2/3**：實作；`node harness-test.mjs EXAMPLE-dual-implementer.mjs` 與 single 皆十案 rc 0；`python3 tools/docsync check` 對 `_sk_rules.js` 綠。
@@ -698,7 +731,7 @@ git commit -m "feat(docsync): events schema（rev6 欄位）＋GT-02／GT-03＋�
 
 ## Self-Review
 
-- **Spec coverage**：§3.5（Task 4）、§3.6（Task 2／5／12）、§3.8（Task 10）、§4.1（Task 9）、§4.2 十二條（Task 3～9 逐條）、§4.3（Task 3／8）、§4.4（結構、預算 Task 14）、§4.5（bootstrap Task 11）、§4.6（Task 9）、§5 波 1 產物「rules emit」（Task 2／12）「GATES 名冊」（Task 9）「CLAUDE.md」（Task 13）、D15 README 一句（Task 13）。未涵蓋且刻意延後：`reference/rev5-blueprint-map`（波 3）、`tools/walkthrough-baseline.py`（世代 DoD、波 6 前）、`reference/agents.md`（P-E2、波 2／3）、RUNBOOK（波 2；GT-12 第三處以 Day-1 承載）。
-- **Placeholder scan**：本檔無 TBD／TODO；Task 3 的 `min_window` 與 Task 7 的「當前波」判準已定案於文內。
-- **Type consistency**：`finding()` 四元組；`Ctx.text/head_text/exists/md_texts/git` 全檔同名；`gt_NN(ctx)`；`rules.parse_rules/emit/rules_version`；`events.metrics(events, lessons, min_window=3)`；`references.GENERATED_FILES` 含 `_sk_rules.js`（Task 8 與 Task 12 一致）。
-- **待 user 拍板（阻塞 Task 10）**：Q2 §I.7 十島島體是否全文搬入 1.0.0；Q3 §III.2 ★ 軌道表是否搬入。Task 1～9 不受影響。
+- **Spec coverage**：§3.5（Task 5）、§3.6（Task 3／6／12）、§3.8（Task 2）、§4.1（Task 10）、§4.2 十二條（Task 4～10 逐條）、§4.3（Task 4／9）、§4.4（結構、預算 Task 14）、§4.5（bootstrap Task 11）、§4.6（Task 10）、§5 波 1 產物「rules emit」（Task 3／12）「GATES 名冊」（Task 10）「CLAUDE.md」（Task 13）、D15 README 一句（Task 13）。未涵蓋且刻意延後：`reference/rev5-blueprint-map`（波 3）、`tools/walkthrough-baseline.py`（世代 DoD、波 6 前）、`reference/agents.md`（P-E2、波 2／3）、RUNBOOK（波 2；GT-12 第三處以 Day-1 承載）。
+- **Placeholder scan**：本檔無 TBD／TODO；Task 4 的 `min_window` 與 Task 8 的「現在波」判準已定案於文內；E_SUBSECTIONS 十一組已逐項列出。
+- **Type consistency**：`finding()` 四元組；`Ctx.text/head_text/exists/md_texts/git` 全檔同名；`gt_NN(ctx)`；`rules.parse_rules/emit/rules_version`；`events.metrics(events, lessons, min_window=3)`；`references.GENERATED_FILES` 含 `_sk_rules.js`（Task 9 與 Task 12 一致）。
+- **grill 拍板（2026-09-03，七題）**：史中 DSN 字面已 amend 清除；憲法先於 RULES（Task 順序已調）；六件套與看門狗紀律入 RULES；RULES-VERSION 全 script 必帶；波標記＝NOTES.md 首行＋GT-12 一致性斷言；`window`＝feature_close 序號；提及（反引號／「」）不算使用。事實查核修正：第三方面與語料面豁免、GT-06 剝程式碼、pin 互證 ERROR、exec bit 名冊、`_sk_rules.js` 三區塊、E_SUBSECTIONS 補齊、GT-12.precommit-absent 豁免、閘→規則對照表。

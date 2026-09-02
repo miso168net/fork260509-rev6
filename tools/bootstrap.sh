@@ -6,8 +6,7 @@
 #       ②rust-api 源倉 main @ 32c5254（D17 分支點；分歧只警告）
 #       ③rev5 對照樹三處 HEAD＝凍結 SHA（D17 凍結三件套之 bootstrap 腿；rev5＝唯讀對照基準）
 #       ④pin 一致性；舊機重跑＝純體檢。斷言失敗→exit 2＋指名處置；分歧類只警告（⚠）不自動 reset、絕不半套。
-# 波 1 暫缺（隨後續產物回填；缺席期以 ⚠ 明示、絕不靜默）：掃描防線（.githooks／betterleaks／
-#       兩源倉 hooksPath＋指紋斷言）、治理 lint（tools/docsync）、條款數斷言、GATES 名冊對賬。
+# 掃描防線（.githooks／betterleaks 釘版／兩 worktree hooksPath＋指紋斷言）與治理 lint（tools/docsync test／check／lint＋閘數斷言）已回填（波 1）。
 # 不含：機密實值（僅體檢 SECRETS_DIR 下缺檔；重建走 deploy/secrets/README.md 的產鑰→生成→加密流程）。
 # 測試掛點：RV6_BASEWEB_SRC_URL／RV6_RUSTAPI_SRC_URL 覆寫 clone 來源（file:// 亦可）；
 #       RV6_REV5_ROOT 覆寫 rev5 對照樹路徑（負向自測：指向 HEAD≠凍結 SHA 的 repo 必須 exit 2）。
@@ -47,16 +46,34 @@ case "$origin_url" in
   *) die "外層 origin（${origin_url}）不含 fork260509-rev6——請在 rev6 傘狀 repo 根下跑" ;;
 esac
 
-# ── 1. 掃描防線（波 1 暫缺；落地後本節回填 rev5 形：hooksPath＋betterleaks 釘版＋指紋斷言）──
-if [ -d "$ROOT/.githooks" ]; then
-  git -C "$ROOT" config core.hooksPath .githooks
-  ok "core.hooksPath=.githooks"
-else
-  warn "掃描防線未落地（.githooks 缺）——CLAUDE.md §6「防線就位前不落 commit」僅 D10 首顆例外；GT-01～GT-12 落地後回填本節"
-fi
-command -v betterleaks >/dev/null 2>&1 \
-  && ok "betterleaks 在機（$(betterleaks version 2>/dev/null || echo '版本讀不到')；釘版斷言隨掃描防線落地）" \
-  || warn "betterleaks 缺席——掃描防線落地時為 die 級（rev5 釘版 1.7.3、rev6 值隨 RUNBOOK 拍板）"
+# ── 1. 掃描防線（承 rev5 形：hooksPath＋betterleaks 釘版＋hooks 指紋斷言；★die 級）──────────
+[ -d "$ROOT/.githooks" ] || die ".githooks 缺席——掃描防線標的不存在；git checkout -- .githooks 還原並追查來源"
+git -C "$ROOT" config core.hooksPath .githooks
+[ "$(git -C "$ROOT" config core.hooksPath)" = ".githooks" ] || die "外層 core.hooksPath 讀值異常——自癒：git config core.hooksPath .githooks"
+ok "core.hooksPath=.githooks"
+# 掃描器斷言（★die 級——缺席時 hook 會以 exit 127 擋掉每次 commit 且訊息難解，體檢須先 fail-loud；
+# 釘版值＝rev5 釘定沿用、升版先立 ADR 再改此值）
+BETTERLEAKS_VER="1.7.3"
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64)  BL_ASSET="linux_x64";  BL_SUMCMD="sha256sum -c checksums.txt --ignore-missing" ;;
+  Darwin-arm64)  BL_ASSET="darwin_arm64"; BL_SUMCMD="shasum -a 256 -c checksums.txt --ignore-missing" ;;
+  *) die "未支援平台 $(uname -s)-$(uname -m)——請對照官方 release 資產名補 case 分支" ;;
+esac
+BETTERLEAKS_GET="處置：下載 https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VER}/betterleaks_${BETTERLEAKS_VER}_${BL_ASSET}.tar.gz 與同頁 checksums.txt → ${BL_SUMCMD} 驗證 → 解壓 betterleaks 至 ~/.local/bin"
+command -v betterleaks >/dev/null 2>&1 || die "betterleaks 缺席（掃描防線之樣式層）——${BETTERLEAKS_GET}"
+bl_ver="$(betterleaks version 2>/dev/null || true)"
+[ "$bl_ver" = "$BETTERLEAKS_VER" ] || die "betterleaks 版本（${bl_ver:-讀不到}）≠ 釘定 ${BETTERLEAKS_VER}——${BETTERLEAKS_GET}"
+ok "betterleaks ${BETTERLEAKS_VER} 就緒（釘版斷言過）"
+# hooks 標的檔內容指紋斷言（承 rev5、rev4:B-124：simple-git-hooks 類若覆寫標的檔、hooksPath 指標值不變仍印 ok＝防線靜默失效）。
+# 法＝逐檔 git hash-object 對 git rev-parse HEAD:路徑 比對——逐 byte 級 blob 指紋、失敗逐檔指名；缺檔獨立分支指名。
+for hf in .githooks/pre-commit .githooks/pre-push .githooks/lib/scan-range.sh .githooks-submodule/pre-commit .githooks-submodule/pre-push; do
+  [ -f "$ROOT/$hf" ] || die "$hf 缺檔——hooks 防線標的不存在；疑遭覆寫／誤刪：git checkout -- $hf 還原並追查來源"
+  head_blob="$(git -C "$ROOT" rev-parse "HEAD:$hf" 2>/dev/null || echo '')"
+  [ -n "$head_blob" ] || die "$hf 不在外層 HEAD——hooks 標的無版控基準；確認內容後 commit 該檔再重跑"
+  wt_blob="$(git -C "$ROOT" hash-object "$hf")"
+  [ "$wt_blob" = "$head_blob" ] || die "$hf 工作樹內容 ≠ HEAD 版本——a) 非本人改動＝疑遭覆寫：git diff HEAD -- $hf 查看、確認後 git checkout -- $hf 還原並追查覆寫源；b) 本人正在改 hooks（未 commit）：commit 後重跑即綠"
+done
+ok "hooks 標的檔內容＝HEAD 版本（五檔指紋一致）"
 
 # ── 2. 源倉（缺才 clone、幂等）────────────────────────────────────────
 ensure_src() { # $1=目錄 $2=URL $3=名
@@ -81,7 +98,7 @@ if [ "$cur" != "$BASELINE_BRANCH" ]; then
 fi
 bw_head="$(git -C "$BASEWEB_SRC" rev-parse HEAD)"
 is_ancestor_or_same "$BASEWEB_SRC" "$BASEWEB_BASE_SHA" "$bw_head" \
-  || die "base-web 源倉 $BASELINE_BRANCH HEAD（${bw_head:0:7}）≠ D14 基線 $BASEWEB_BASE_SHA——rev6 沿用 rev5 基線、不前進 upstream；要前進須先立 ADR 再改本值；回退：git -C $BASEWEB_SRC checkout -B $BASELINE_BRANCH $BASEWEB_BASE_SHA"
+  || die "base-web 源倉 $BASELINE_BRANCH HEAD（${bw_head:0:7}）≠ D14 基線 ${BASEWEB_BASE_SHA}——rev6 沿用 rev5 基線、不前進 upstream；要前進須先立 ADR 再改本值；回退：git -C $BASEWEB_SRC checkout -B $BASELINE_BRANCH $BASEWEB_BASE_SHA"
 ok "最原始源基線＝${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}（D14）"
 if ! git -C "$BASEWEB_SRC" remote get-url upstream >/dev/null 2>&1; then
   git -C "$BASEWEB_SRC" remote add upstream "$UPSTREAM_URL"
@@ -112,7 +129,7 @@ ensure_worktree() { # $1=源倉 $2=目錄名 $3=分支 $4=分支點 SHA
   if git -C "$src" show-ref --verify -q "refs/heads/$br"; then
     git -C "$src" worktree add "$tgt" "$br"
   elif git -C "$src" show-ref --verify -q "refs/remotes/origin/$br"; then
-    git -C "$src" worktree add --track -b "$br" "$tgt" "origin/$br" || die "$2 worktree 掛載失敗（origin/$br）"
+    git -C "$src" worktree add --track -b "$br" "$tgt" "origin/$br" || die "$2 worktree 掛載失敗（origin/${br}）"
   else
     git -C "$src" worktree add -b "$br" "$tgt" "$base" || die "$2 worktree 自分支點 $base 新建失敗"
   fi
@@ -120,22 +137,30 @@ ensure_worktree() { # $1=源倉 $2=目錄名 $3=分支 $4=分支點 SHA
 }
 ensure_worktree "$BASEWEB_SRC" "base-web" "$BASEWEB_BR" "$BASEWEB_BASE_SHA"
 ensure_worktree "$RUSTAPI_SRC" "rust-api" "$RUSTAPI_BR" "$RUSTAPI_BASE_SHA"
+# 兩 worktree hooksPath 佈署＋讀值斷言（承 rev5；per-machine git config、源倉工作樹零改動）：★絕對路徑指向外層
+# .githooks-submodule（相對路徑會相對於源倉根、必錯）；冪等；他機 clone 未跑 bootstrap＝源倉無防線，由本斷言暴露。
+for wt in base-web rust-api; do
+  git -C "$ROOT/$wt" config core.hooksPath "$ROOT/.githooks-submodule"
+  hp="$(git -C "$ROOT/$wt" config core.hooksPath || echo '')"
+  [ "$hp" = "$ROOT/.githooks-submodule" ] || die "$wt core.hooksPath 讀值（${hp:-未設}）≠ 預期——自癒：git -C $ROOT/$wt config core.hooksPath $ROOT/.githooks-submodule"
+done
+ok "兩 worktree core.hooksPath＝外層 .githooks-submodule（樣式掃描防線就位）"
 
 # ── 3b. rev5 凍結斷言（D17 凍結三件套之 bootstrap 腿；rev5 三處 HEAD＝凍結 SHA、工作樹不得有已追蹤改動）──
 if [ -d "$REV5_ROOT/.git" ]; then
   for pair in $REV5_FROZEN; do
     sub="${pair%%:*}"; sha="${pair##*:}"; dir="$REV5_ROOT/$sub"
-    [ -e "$dir/.git" ] || die "rev5 對照樹缺 $sub（$dir）——凍結面不完整；rev5 為唯讀對照基準（D17）"
+    [ -e "$dir/.git" ] || die "rev5 對照樹缺 ${sub}（${dir}）——凍結面不完整；rev5 為唯讀對照基準（D17）"
     head="$(git -C "$dir" rev-parse HEAD)"
     [ "${head:0:7}" = "$sha" ] \
-      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 $sha——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書／README-rev6-handoff 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
+      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 ${sha}——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書／README-rev6-handoff 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
   done
   ok "rev5 凍結 SHA 斷言過（外層 7eab28a／base-web 9833308／rust-api 92919b9）"
   dirty="$(git -C "$REV5_ROOT" status --porcelain --untracked-files=no 2>/dev/null || true)"
   [ -z "$dirty" ] && ok "rev5 對照樹已追蹤檔零改動" \
     || warn "rev5 對照樹有已追蹤檔改動（$(echo "$dirty" | wc -l | tr -d ' ') 筆）——rev5 應唯讀；請 git -C $REV5_ROOT status 查明並還原"
 else
-  warn "rev5 對照樹不在本機（$REV5_ROOT）——凍結斷言跳過；對照 stack（埠 2xxxx）需 rev5 樹"
+  warn "rev5 對照樹不在本機（${REV5_ROOT}）——凍結斷言跳過；對照 stack（埠 2xxxx）需 rev5 樹"
 fi
 
 # ── 4. pin 一致性（分歧只警告；判讀＝先判方向、兩向處置相反，承 rev5:CLAUDE.md §3）──
@@ -158,6 +183,16 @@ run_tool_test() { # $1=工具相對路徑；失敗才吐明細
   fi
   ok "$1 自測綠"
 }
+# 治理 lint（tools/docsync）：自測→check（GT-01 零漂移）→lint（GT-01～GT-12 零 ERROR）；閘數斷言取自 derive_anchor_codes 掃源現算、不落字面。
+docsync_out="$(python3 "$ROOT/tools/docsync" test 2>&1)" || { echo "$docsync_out" >&2; die "tools/docsync 自測未過——見上方明細"; }
+ok "tools/docsync 自測綠"
+docsync_out="$(python3 "$ROOT/tools/docsync" check 2>&1)" || { echo "$docsync_out" >&2; die "docsync check 有漂移——跑 python3 tools/docsync generate 後 commit"; }
+ok "docsync check 零漂移"
+docsync_out="$(python3 "$ROOT/tools/docsync" lint 2>&1)" || { echo "$docsync_out" >&2; die "docsync lint 有 ERROR——見上方明細"; }
+ok "docsync lint 零 ERROR（$(echo "$docsync_out" | tail -1)）"
+GATE_COUNT="$(cd "$ROOT/tools" && python3 -c 'from docsync import gates; print(len(gates.derive_anchor_codes("\n".join(gates.package_sources().values()))))' 2>/dev/null || echo 0)"
+[ "$GATE_COUNT" = "12" ] || die "閘數推導得 ${GATE_COUNT} ≠ 12——掃源錨形與 ROSTER 不同步（GT-12 應已紅；恰 12、一進一出）"
+ok "閘數斷言過（掃源推導 12＝GT-01～GT-12）"
 run_tool_test tools/wf-watchdog.py
 run_tool_test deploy/preflight-secrets.py
 run_tool_test deploy/generate-secrets.py
@@ -223,4 +258,4 @@ else
 fi
 
 # ── 摘要 ─────────────────────────────────────────────────────────────
-echo "[bootstrap] ── 完成：源倉×2／worktree×2／基線 ${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}／rev5 凍結斷言／隨遷工具自測；警告 $WARNS 項$([ "$WARNS" -gt 0 ] && echo '（見上方 ⚠；掃描防線與治理 lint 隨波 1 後續回填）' || echo '')"
+echo "[bootstrap] ── 完成：掃描防線／源倉×2／worktree×2／基線 ${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}／rev5 凍結斷言／docsync 三段＋閘數／隨遷工具自測；警告 $WARNS 項$([ "$WARNS" -gt 0 ] && echo '（見上方 ⚠）' || echo '')"
