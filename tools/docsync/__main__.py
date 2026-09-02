@@ -17,6 +17,32 @@ def _not_implemented(_args):
     return 2
 
 
+def _cmd_generate(_args):
+    from docsync import references
+    from docsync.common import Ctx
+    written = references.cmd_generate(Ctx(ROOT))
+    for rel in written:
+        print(f"寫入 {rel}")
+    print(f"generate：{len(written)} 檔更新（其餘與真源重算相等）")
+    return 0
+
+
+def _print_findings(findings):
+    for level, code, where, msg in findings:
+        print(f"{level}｜{code}｜{where}｜{msg}")
+    n_err = sum(1 for f in findings if f[0] == "ERROR")
+    return n_err
+
+
+def _cmd_check(_args):
+    from docsync import references
+    from docsync.common import Ctx
+    fs = references.cmd_check(Ctx(ROOT))
+    n = _print_findings(fs)
+    print("check：零漂移" if not fs else f"check：{n} 錯誤")
+    return 1 if n else 0
+
+
 def _cmd_rules_emit(args):
     from docsync import RULES, rules
     text = open(os.path.join(ROOT, RULES), encoding="utf-8").read()
@@ -56,8 +82,8 @@ def _cmd_test(_args):
 def build_parser():
     p = argparse.ArgumentParser(prog="docsync", description=f"rev6 治理工具 {VERSION}（root={ROOT}）")
     sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("generate", help="由真源重算 docs/generated/").set_defaults(fn=_not_implemented)
-    sub.add_parser("check", help="generated 零漂移比對（GT-01）").set_defaults(fn=_not_implemented)
+    sub.add_parser("generate", help="由真源重算 docs/generated/").set_defaults(fn=_cmd_generate)
+    sub.add_parser("check", help="generated 零漂移比對（GT-01）").set_defaults(fn=_cmd_check)
     sub.add_parser("lint", help="跑 GT-01～GT-12").set_defaults(fn=_not_implemented)
     rules = sub.add_parser("rules", help="RULES.md 工具")
     rsub = rules.add_subparsers(dest="rules_cmd", required=True)
