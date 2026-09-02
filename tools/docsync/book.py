@@ -7,7 +7,7 @@ import os
 import re
 
 from . import BACKLOG, BACKLOG_DEFERRED, LESSONS_INDEX, LESSONS_DIR, RULES, ADR_DIR, EVENTS, SUBMODULES, CONSTITUTION
-from .common import ERROR, SKIP, finding
+from .common import ERROR, WARN, SKIP, finding
 
 ID_FAMILIES = {"BL": (BACKLOG, [BACKLOG_DEFERRED]), "LL": (LESSONS_INDEX, [LESSONS_DIR]), "RL": (RULES, [])}
 RE_NEXT_ID = re.compile(r"<!--\s*next:\s*(BL|LL|RL)-(\d{4,5})\s*-->")
@@ -177,3 +177,143 @@ def gt_05(ctx):
         elif rc not in (0, 1):
             out.append(finding(ERROR, "GT-05", sub, f"子庫 git grep 失敗 rc={rc}（掃描未執行即紅）"))
     return out
+
+
+# ---------------------------------------------------------------------------
+# （二）GT-06 引用健康／GT-11 bash 面／errata
+# ---------------------------------------------------------------------------
+FENCE = re.compile(r"```.*?```", re.S)
+INLINE = re.compile(r"`[^`\n]*`")
+LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+RE_LINENO = re.compile(r"\S+\.md:\d+")
+RE_DEEP = re.compile(r"(BACKLOG(-[A-Za-z0-9-]+)?|NOTES|STATE)\.md#")
+RE_HOME = re.compile(r"(~|/home/[^/\s]+|/Users/[^/\s]+)/\.claude/")
+TENSE_ERR = ("待決", "TBD", "⏳", "已完成", "下一步")
+TENSE_WARN = ("屆時", "日後", "將由")
+RE_SHEBANG_SH = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:/bin/|/usr/bin/)?(?:ba)?sh\b")
+SHEBANG_OK = ("#!/usr/bin/env bash", "#!/bin/sh", "#!/usr/bin/env sh", "#!/bin/bash")
+RE_GLUE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]")
+
+
+def strip_code(text):
+    """剝除 fenced code（保留行數）與行內程式碼——連結／行號／路徑腿不看程式碼內文字（提及原則）。"""
+    return INLINE.sub("", FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), text or ""))
+
+
+def gt_06(ctx):
+    """GATE:
+      id=GT-06
+      rule=RL-0048
+      source=rev5:ADR 0012
+      drift=引用斷鏈、時態混入
+      face=tracked *.md；活書家族
+      trigger=pre-commit
+      rc=1
+      breaks-if-removed=死連結與未來式靜默入書
+    """
+    out = []
+    book_seen = False
+    for rel in ctx.tracked:
+        if not rel.endswith(".md") or face_of(rel) == "fixture":
+            continue
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        base = os.path.dirname(rel)
+        book = is_book(rel)
+        book_seen = book_seen or book
+        for i, line in enumerate(strip_code(text).split("\n"), 1):
+            where = f"{rel}:{i}"
+            for m in LINK.finditer(line):
+                t = m.group(1)
+                if t.startswith(("http://", "https://", "mailto:", "#")):
+                    continue
+                t = t.split("#", 1)[0]
+                if t and not ctx.exists(os.path.normpath(os.path.join(base, t))):
+                    out.append(finding(ERROR, "GT-06", where, f"連結目標不存在：{t}（相對於 {base or '.'}）"))
+            for m in RE_LINENO.finditer(line):
+                out.append(finding(ERROR, "GT-06", where, f"行號形引用「{m.group(0)}」——跨檔引用不用行號（用節名或整檔）"))
+            for m in RE_DEEP.finditer(line):
+                out.append(finding(ERROR, "GT-06", where, f"帳本 deep-link「{m.group(0)}」——BACKLOG／NOTES／STATE 只可整檔引用"))
+            for m in RE_HOME.finditer(line):
+                out.append(finding(ERROR, "GT-06", where, f"per-machine 路徑「{m.group(0)}」——repo 文件不引用本機 .claude 路徑"))
+            if book:
+                for w in TENSE_ERR:
+                    if w in line:
+                        out.append(finding(ERROR, "GT-06", where, f"活書家族時態禁詞「{w}」（未來式住 ops、過去式住 git＋events）"))
+                for w in TENSE_WARN:
+                    if w in line:
+                        out.append(finding(WARN, "GT-06", where, f"活書家族預告詞「{w}」——預告必標成預告並附回填義務"))
+    if not book_seen:
+        out.append(finding(SKIP, "GT-06", "docs/arc42", "GT-06.book-absent：活書家族尚無檔（Day-1；波 2 骨架即解除）——連結／行號／路徑腿照跑"))
+    return out
+
+
+def _bash_face(ctx):
+    for rel in ctx.tracked:
+        if face_of(rel) == "fixture":
+            continue
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        first = text.split("\n", 1)[0]
+        if rel.endswith(".sh") or RE_SHEBANG_SH.match(first):
+            yield rel, text, first
+
+
+def gt_11(ctx):
+    """GATE:
+      id=GT-11
+      rule=RL-0056
+      source=rev5:L-001
+      drift=bash 黏字與 shebang
+      face=外層 tracked bash 面（*.sh ∪ sh shebang；含 deploy/、.githooks/）
+      trigger=pre-commit
+      rc=1
+      breaks-if-removed=macOS bash 3.2 unbound variable 炸在 preflight
+    """
+    out = []
+    n = 0
+    for rel, text, first in _bash_face(ctx):
+        n += 1
+        if first.startswith("#!") and first.strip() not in SHEBANG_OK:
+            out.append(finding(ERROR, "GT-11", f"{rel}:1", f"shebang「{first.strip()}」不在白名單 {'／'.join(SHEBANG_OK)}"))
+        for i, line in enumerate(text.split("\n"), 1):
+            for m in RE_GLUE.finditer(line):
+                out.append(finding(ERROR, "GT-11", f"{rel}:{i}", f"$VAR 後緊接非 ASCII「{m.group(0)}」會黏進變數名（bash 3.2）——改 ${{VAR}} 形"))
+    if n == 0:
+        out.append(finding(ERROR, "GT-11", ".", "掃描面空集合：無 *.sh 亦無 sh shebang 檔——bootstrap／hooks 必須存在"))
+    return out
+
+
+def errata_scan(ctx, keyword):
+    """跨檔假述枚舉：外層 tracked 文字檔（大小寫不敏感子串）＋兩子庫 pin 樹 git grep；回 [(rel, lineno, line)]。
+    子庫缺席不入本表（CLI 另印「掃描未執行」警示、rc 3——未執行≠零命中）。"""
+    kw = keyword.lower()
+    hits = []
+    for rel in ctx.tracked:
+        p = os.path.join(ctx.root, rel)
+        try:
+            with open(p, "rb") as f:
+                if b"\x00" in f.read(8192):
+                    continue
+        except OSError:
+            continue
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        for i, line in enumerate(text.split("\n"), 1):
+            if kw in line.lower():
+                hits.append((rel, i, line))
+    for sub in SUBMODULES:
+        if not ctx.exists(os.path.join(sub, ".git")):
+            continue
+        rc, stdout = ctx.git_try("grep", "-n", "-i", "-F", "-e", keyword, "HEAD", "--", cwd=os.path.join(ctx.root, sub))
+        if rc == 0:
+            for l in stdout.split("\n"):
+                if not l:
+                    continue
+                parts = l.split(":", 3)
+                if len(parts) >= 4 and parts[0].startswith("HEAD"):
+                    hits.append((f"{sub}/{parts[1]}", int(parts[2]), parts[3]))
+    return hits

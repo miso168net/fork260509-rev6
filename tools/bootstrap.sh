@@ -81,7 +81,7 @@ if [ "$cur" != "$BASELINE_BRANCH" ]; then
 fi
 bw_head="$(git -C "$BASEWEB_SRC" rev-parse HEAD)"
 is_ancestor_or_same "$BASEWEB_SRC" "$BASEWEB_BASE_SHA" "$bw_head" \
-  || die "base-web 源倉 $BASELINE_BRANCH HEAD（${bw_head:0:7}）≠ D14 基線 $BASEWEB_BASE_SHA——rev6 沿用 rev5 基線、不前進 upstream；要前進須先立 ADR 再改本值；回退：git -C $BASEWEB_SRC checkout -B $BASELINE_BRANCH $BASEWEB_BASE_SHA"
+  || die "base-web 源倉 $BASELINE_BRANCH HEAD（${bw_head:0:7}）≠ D14 基線 ${BASEWEB_BASE_SHA}——rev6 沿用 rev5 基線、不前進 upstream；要前進須先立 ADR 再改本值；回退：git -C $BASEWEB_SRC checkout -B $BASELINE_BRANCH $BASEWEB_BASE_SHA"
 ok "最原始源基線＝${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}（D14）"
 if ! git -C "$BASEWEB_SRC" remote get-url upstream >/dev/null 2>&1; then
   git -C "$BASEWEB_SRC" remote add upstream "$UPSTREAM_URL"
@@ -112,7 +112,7 @@ ensure_worktree() { # $1=源倉 $2=目錄名 $3=分支 $4=分支點 SHA
   if git -C "$src" show-ref --verify -q "refs/heads/$br"; then
     git -C "$src" worktree add "$tgt" "$br"
   elif git -C "$src" show-ref --verify -q "refs/remotes/origin/$br"; then
-    git -C "$src" worktree add --track -b "$br" "$tgt" "origin/$br" || die "$2 worktree 掛載失敗（origin/$br）"
+    git -C "$src" worktree add --track -b "$br" "$tgt" "origin/$br" || die "$2 worktree 掛載失敗（origin/${br}）"
   else
     git -C "$src" worktree add -b "$br" "$tgt" "$base" || die "$2 worktree 自分支點 $base 新建失敗"
   fi
@@ -125,17 +125,17 @@ ensure_worktree "$RUSTAPI_SRC" "rust-api" "$RUSTAPI_BR" "$RUSTAPI_BASE_SHA"
 if [ -d "$REV5_ROOT/.git" ]; then
   for pair in $REV5_FROZEN; do
     sub="${pair%%:*}"; sha="${pair##*:}"; dir="$REV5_ROOT/$sub"
-    [ -e "$dir/.git" ] || die "rev5 對照樹缺 $sub（$dir）——凍結面不完整；rev5 為唯讀對照基準（D17）"
+    [ -e "$dir/.git" ] || die "rev5 對照樹缺 ${sub}（${dir}）——凍結面不完整；rev5 為唯讀對照基準（D17）"
     head="$(git -C "$dir" rev-parse HEAD)"
     [ "${head:0:7}" = "$sha" ] \
-      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 $sha——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書／README-rev6-handoff 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
+      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 ${sha}——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書／README-rev6-handoff 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
   done
   ok "rev5 凍結 SHA 斷言過（外層 7eab28a／base-web 9833308／rust-api 92919b9）"
   dirty="$(git -C "$REV5_ROOT" status --porcelain --untracked-files=no 2>/dev/null || true)"
   [ -z "$dirty" ] && ok "rev5 對照樹已追蹤檔零改動" \
     || warn "rev5 對照樹有已追蹤檔改動（$(echo "$dirty" | wc -l | tr -d ' ') 筆）——rev5 應唯讀；請 git -C $REV5_ROOT status 查明並還原"
 else
-  warn "rev5 對照樹不在本機（$REV5_ROOT）——凍結斷言跳過；對照 stack（埠 2xxxx）需 rev5 樹"
+  warn "rev5 對照樹不在本機（${REV5_ROOT}）——凍結斷言跳過；對照 stack（埠 2xxxx）需 rev5 樹"
 fi
 
 # ── 4. pin 一致性（分歧只警告；判讀＝先判方向、兩向處置相反，承 rev5:CLAUDE.md §3）──

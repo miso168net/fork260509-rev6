@@ -39,4 +39,4 @@ fix `blocked` 立即 return／最壞路徑支數 < `AGENT_FUSE`／**fix `done_wi
 - 陣列元素用單引號時，**元素內含單引號**（如 TS 字面 `'true' | 'false'`）會斷字串 → 該元素改用雙引號包。
 - shell quoted heredoc 裡**不能用** `'"'"'` 轉義（會原樣寫入而斷 JS）；要表達單引號用 `\x27`（JS 轉義、渲染正確）或改雙引號元素。
 - 批次改寫引號的腳本會**誤傷字串拼接**（`'…第 ' + roundNo + ' 輪…'` 被當撞引號改寫，插值靜默失效而 `node --check` 照樣綠）→ 改完逐行看被改的是哪幾行。
-- model 字串：`fable[1m]`＝claude-fable-5(1M)、`opus[1m]`＝claude-opus-5[1m](1M)，皆已冒煙實證。
+- model 字串：`fable[1m]`＝`claude-fable-5`（1M）、`opus[1m]`＝`claude-opus-5[1m]`（1M），皆已冒煙實證。
