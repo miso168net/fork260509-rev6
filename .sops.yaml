@@ -1,0 +1,14 @@
+# .sops.yaml — 加密規則（承 rev5 形；契約源＝rev4:019-secrets-sops contracts/secret-pipeline.md rev4:§P2）
+# rev4:P2.1 path_regex 錨定式：sops 比對用 MatchString＝非錨定子字串命中、必須 ^…$
+# rev4:P2.2 僅一條 creation_rules（first-match-wins、第二條起被靜默忽略）
+# rev4:P2.4 不設六個範圍選項任一：預設 unencrypted_suffix="_unencrypted"＝全加密
+# rev4:P2.5 連帶紀律：加密檔 key 名禁 _unencrypted 後綴（該後綴無法藉「不設定」規避）
+# recipient＝age 公鑰清單（YAML 清單形；公鑰非機密）。
+# ★rev6 世代錯開（D17；承 rev5 紀律「不沿用前代 recipient——沿用＝前代私鑰能解本代密文」）：
+#   rev5 三把 recipient 一律不帶入、rev5 的 deploy/secrets.dev.enc.yaml 不搬。rev6 首把由
+#   `bash deploy/generate-age-key.sh keys-fork260509-rev6.txt` 產出後填入下列 age 清單，
+#   再依 deploy/secrets/README.md 生成並加密 rev6 自己的密文。清單為空時 sops 立即報錯
+#   （fail-loud）、不會靜默用錯鑰。
+creation_rules:
+  - path_regex: ^deploy/secrets\.dev\.enc\.yaml$
+    age: []
