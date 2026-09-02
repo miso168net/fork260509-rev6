@@ -5,3 +5,4 @@
 
 | date | kind | wall_s | rc | commit | notes |
 |---|---|---|---|---|---|
+| 2026-09-03 | close_bookkeeping | 6.33 | 0 | cdc11c5 | 波 1 收單簿記型 commit（events＋NOTES＋generated、零 gitlink 零工具本體）；量法＝date +%s.%N 包 git commit 整命令、單次；pre-commit 全鏈含 betterleaks、docsync check、lint 並行。 |

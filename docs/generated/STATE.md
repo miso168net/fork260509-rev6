@@ -16,7 +16,7 @@
 - RULES：73 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 41/52、人 9/12）
 - BACKLOG 開放：未建｜滯後：未建
 - LESSONS：0 筆（未建）
-- events：2 筆（misc 2）
+- events：3 筆（misc 2、perf 1）
 - CLAUDE.md 行數：156（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -39,5 +39,6 @@
 | BACKLOG 開放 | 未建 | 25 | — |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-03｜perf｜—｜
 - 2026-09-03｜misc｜governance｜rev6 波 1 後段收單：憲法 1.0.0（ADR-00003）＋RULES 首版 73 條（ADR-00004）＋tools/docsync（GT-01～G
 - 2026-09-03｜misc｜governance｜rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 dep
