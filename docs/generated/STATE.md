@@ -16,7 +16,7 @@
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：7｜滯後：0
 - LESSONS：0 筆（未建）
-- events：14 筆（misc 7、perf 5、review 2）
+- events：15 筆（misc 7、perf 6、review 2）
 - CLAUDE.md 行數：159（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -39,6 +39,6 @@
 | BACKLOG 開放 | 7 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 6.51 秒 rc=0
 - 2026-09-04｜misc｜governance｜rev6 獨立 review 輪 000-r1 文件治理架構體檢收單：四支唯讀 Workflow（探索 14／驗證 41／補漏 12）＋修單 run 8 支；c
 - 2026-09-04｜review｜doc-governance｜findings 80（修 75／BL 4／ADR 1）；BL-00001、BL-00003、BL-00004、BL-00005、ADR-00008
-- 2026-09-03｜perf｜close_bookkeeping｜close_bookkeeping 8.5 秒 rc=0

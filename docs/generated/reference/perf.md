@@ -10,3 +10,4 @@
 | 2026-09-03 | close_bookkeeping | 6.9 | 0 | 0727dbc | 波 3 收單簿記型 commit（events＋generated、零 gitlink 零工具本體）；量法＝date +%s.%N 包 git commit 整命令、單次；pre-commit 全鏈含 betterleaks、docsync check、lint 並行（Day-1 餘 2、GENERATED_FILES 12）。 |
 | 2026-09-03 | close_bookkeeping | 7.7 | 0 | 578cef9 | 波 4 收單簿記型 commit（events＋generated、零 gitlink 零工具本體）；量法＝date +%s.%N 包 git commit 整命令、單次；pre-commit 全鏈含 betterleaks、docsync check、lint 並行（Day-1 餘 2、GENERATED_FILES 12、ADR 7）。 |
 | 2026-09-03 | close_bookkeeping | 8.5 | 0 | c8985e3 | 波 5 收單簿記型 commit（events＋generated、零 gitlink 零工具本體）；量法＝date +%s.%N 包 git commit 整命令、單次；pre-commit 全鏈含 betterleaks、docsync check、lint 並行（Day-1 餘 1、GENERATED_FILES 12、ADR 7、events 11）。 |
+| 2026-09-04 | close_bookkeeping | 6.51 | 0 | 6339433 | 000-r1 收單簿記型 commit（events＋generated＋計畫複本、零 gitlink 零工具本體）；量法＝date +%s.%N 包 git commit 整命令、單次；pre-commit 全鏈含 betterleaks、docsync check、lint 並行（Day-1 餘 1、GENERATED_FILES 12、ADR 8、events 14）。 |
