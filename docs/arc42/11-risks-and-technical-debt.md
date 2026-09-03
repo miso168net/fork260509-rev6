@@ -18,7 +18,7 @@ rev5_blueprint:
 | rev5 對照樹被誤寫 | 在 `../fork260509-rev5/` 下 commit 或改 stack 設定 | bootstrap 凍結 SHA 斷言（ADR-00002）；CLAUDE.md §6 硬禁令 |
 | 子庫分支只在本機源倉、換機不可得 | 新機器 clone 外層 | `tools/bootstrap.sh` 重建源倉 clone 與 worktree（RUNBOOK §1） |
 | 治理工具鏈超出預算 | docsync 邏輯行逼近上限、閘數增加 | STATE 預算對賬（D8）；GT-12 閘數 12 固定 |
-| Day-1 豁免到期未解 | 首刀收刀／首條 LL 落地時忘記解除鍵 | GT-03／GT-08 解除謂詞（檔或事件存在即到期紅）；名冊＝`docs/generated/GATES.md` |
+| Day-1 豁免到期未解 | 首條 LL 落地時忘記解除鍵 | GT-08 解除謂詞（檔存在即到期紅）；名冊＝`docs/generated/GATES.md` |
 
 ## ※11.2 技術債
 
@@ -26,7 +26,7 @@ rev5_blueprint:
 
 | 債 | 現況 | 去處 |
 |---|---|---|
-| Day-1 豁免兩筆（GT-03.no-close-events、GT-08.lessons-absent） | 閘腿以豁免鍵跳過、解除謂詞具名 | 首刀收刀事件／首條 LL 檔落地同 commit 移除 |
+| Day-1 豁免一筆（GT-08.lessons-absent） | 閘腿以豁免鍵跳過、解除謂詞具名 | 首條 LL 檔落地同 commit 移除 |
 | 編排範本的版本字面耦合 | `EXAMPLE-*.mjs` 烤入 RULES-VERSION 字面，規則列一改即過期、hook 擋發射 | 改規則列時同批重烤（`python3 tools/docsync rules emit`） |
 | 骨架多份變體 | `_sk_head*.js`／`_sk_main*.js` 三份變體各持一組 `*_OPTS` | 名冊＝`docs/generated/reference/agents.md`；收斂隨首個編排刀 |
 

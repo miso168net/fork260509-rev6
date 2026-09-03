@@ -9,7 +9,7 @@ import json
 import os
 import re
 
-from . import RULES, NOTES, BACKLOG, LESSONS_INDEX, LESSONS_DIR, EVENTS
+from . import RULES, NOTES, BACKLOG, LESSONS_INDEX, LESSONS_DIR
 from .common import ERROR, WARN, SKIP, Day1Exemption, GENERATED_HEADER, GitError, finding
 from . import events as ev_mod
 from . import adr as adr_mod
@@ -81,13 +81,7 @@ def gate_id(fn):
 # ---------------------------------------------------------------------------
 # Day-1 具名豁免（§4.6 四欄：鍵→理由、解除謂詞、到期即紅、登記日）
 # ---------------------------------------------------------------------------
-def _has_close_events(ctx):
-    evs, _ = ev_mod.parse_events(ctx.text(EVENTS))
-    return any(e.get("type") in ("feature_close", "review") for e in evs)
-
-
 DAY1_EXEMPTIONS = {
-    "GT-03.no-close-events": Day1Exemption("GT-03.no-close-events", "波 1 尚無 feature_close／review 事件", _has_close_events, "2026-09-03"),
     "GT-08.lessons-absent": Day1Exemption("GT-08.lessons-absent", "首條 LL 教訓尚未落地", lambda ctx: ctx.exists(LESSONS_DIR), "2026-09-03"),
 }
 
