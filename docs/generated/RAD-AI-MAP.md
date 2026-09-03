@@ -13,7 +13,7 @@
 | E6 | — | — | [P-E6-quality-scenarios.md](../process/P-E6-quality-scenarios.md) | 0/8 | — |
 | E7 | — | — | [P-E7-agent-debt.md](../process/P-E7-agent-debt.md) | 0/10 | — |
 | E8 | — | — | [P-E8-operations.md](../process/P-E8-operations.md) | 0/5 | — |
-| C4-E1 | — | — | — | — | — |
-| C4-E2 | — | — | — | — | — |
-| C4-E3 | — | — | [P-C4-E3-materials-boundary.md](../process/P-C4-E3-materials-boundary.md) | 0/6 | — |
+| C4-E1 | [C4-E1-ai-component-stereotypes.md](../c4/C4-E1-ai-component-stereotypes.md) | 目前無 | — | — | 1 |
+| C4-E2 | [C4-E2-data-lineage-overlay.md](../c4/C4-E2-data-lineage-overlay.md) | 目前無 | — | — | 3 |
+| C4-E3 | [C4-E3-non-determinism-boundary.md](../c4/C4-E3-non-determinism-boundary.md) | 目前無 | [P-C4-E3-materials-boundary.md](../process/P-C4-E3-materials-boundary.md) | 0/6 | 2 |
 | ANNEX-IV | — | — | — | — | — |
