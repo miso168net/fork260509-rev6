@@ -58,6 +58,8 @@ flowchart LR
 | 換版頻率 | 排程／事件／連續／靜態 | 事件觸發：規則列改動→RULES-VERSION 變；換模＝改 `*_OPTS` 的一次 commit |
 | fallback | 規則預設／快取／人工升級／降級／斷路 | 人工升級：`blocked` 立即回主線、`done_with_escalation` 帶升級項回（RL-0012）；斷路＝保險絲與 TaskStop（RL-0060／RL-0017） |
 
+圖級同源＝`docs/c4/C4-E3-non-determinism-boundary.md` 邊界介面欄「三性質契約」（信心規格／fallback 策略／降級輪廓）；元件級四段與圖級三性質互指、不合併。
+
 ### 失效模式
 
 類比張力：對得上——RAD-AI 列的失效模式在流程層都真實發生過（rev5 教訓），各有機器守。
