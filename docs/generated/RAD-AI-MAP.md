@@ -5,10 +5,10 @@
 
 | RAD-AI 項目 | 系統層檔 | 系統層子節 | 流程層檔 | 流程層子節 | 採用階段 |
 |---|---|---|---|---|---|
-| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 0/5 | 1 |
-| E2 | [05-building-block-view.md](../arc42/05-building-block-view.md) | 目前無 | [P-E2-agent-registry.md](../process/P-E2-agent-registry.md) | 0/4 | 1 |
-| E3 | [06-runtime-view.md](../arc42/06-runtime-view.md) | 目前無 | [P-E3-doc-pipeline.md](../process/P-E3-doc-pipeline.md) | 0/6 | 3 |
-| E4 | [08-crosscutting-concepts.md](../arc42/08-crosscutting-concepts.md) | 目前無 | [P-E4-responsible-agent.md](../process/P-E4-responsible-agent.md) | 0/7 | 3 |
+| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 5/5 | 1 |
+| E2 | [05-building-block-view.md](../arc42/05-building-block-view.md) | 目前無 | [P-E2-agent-registry.md](../process/P-E2-agent-registry.md) | 4/4 | 1 |
+| E3 | [06-runtime-view.md](../arc42/06-runtime-view.md) | 目前無 | [P-E3-doc-pipeline.md](../process/P-E3-doc-pipeline.md) | 6/6 | 3 |
+| E4 | [08-crosscutting-concepts.md](../arc42/08-crosscutting-concepts.md) | 目前無 | [P-E4-responsible-agent.md](../process/P-E4-responsible-agent.md) | 7/7 | 3 |
 | E5 | [09-architecture-decisions.md](../arc42/09-architecture-decisions.md) | 目前無 | — | — | 2 |
 | E6 | [10-quality-requirements.md](../arc42/10-quality-requirements.md) | 目前無 | [P-E6-quality-scenarios.md](../process/P-E6-quality-scenarios.md) | 0/8 | 2 |
 | E7 | [11-risks-and-technical-debt.md](../arc42/11-risks-and-technical-debt.md) | 目前無 | [P-E7-agent-debt.md](../process/P-E7-agent-debt.md) | 0/10 | 3 |
