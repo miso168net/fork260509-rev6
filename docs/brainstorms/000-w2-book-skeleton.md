@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 把啟動書 §3.2 的活書骨架落成 tracked 檔，形制對得上 GT-10 七腿；三個例外註冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`、`docs/generated/RAD-AI-MAP.md`）由 generate 產出；ops 帳本三檔建檔；Day-1 豁免解除四筆；波 2 出口＝`python3 tools/docsync lint` 零 ERROR、`TODO(波 3)` 為唯一合法殘留、波標記 bump 3。
+**Goal:** 把啟動書 §3.2 的活書骨架落成 tracked 檔，形制對得上 GT-10 八腿（第八腿＝本波加、Q4）；三個例外註冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`、`docs/generated/RAD-AI-MAP.md`）由 generate 產出；ops 帳本三檔建檔；Day-1 豁免解除四筆；波 2 出口＝`python3 tools/docsync lint` 零 ERROR、`TODO(波 3)` 為唯一合法殘留、波標記 bump 3。
 
-**Architecture:** 活書家族（arc42／c4／compliance／process）每檔 frontmatter 是機器讀的真源：`section`／`summary` 餵 ARCHITECTURE.md 索引，`rad_ai`／`rad_ai_stage`／`rad_ai_map` 餵 RAD-AI 對照總表與 GT-10 子項名冊腿。系統層（arc42 E 子節、c4、compliance）本波一律「目前無 AI 元件」句＋指針；流程層（process 八檔）本波只到 `###` 子節骨架、每子節首句「類比張力：TODO(波 3)」。生成器住 `tools/docsync/references.py`、名冊 GENERATED_FILES 7→10。
+**Architecture:** 活書家族（arc42／c4／compliance／process）每檔 frontmatter 是機器讀的真源：`section`／`summary` 餵 ARCHITECTURE.md 索引，`rad_ai`／`rad_ai_stage`／`rad_ai_map` 餵 RAD-AI 對照總表（子節填實計數）與 GT-10 子項名冊腿（鍵集＋值↔標題）。系統層（arc42 E 子節、c4、compliance）本波一律「目前無 AI 元件」句＋指針；流程層（process 八檔）本波只到 `###` 子節骨架、每子節首句「類比張力：TODO(波 3)」。生成器住 `tools/docsync/references.py`、名冊 GENERATED_FILES 7→10。
 
 **Tech Stack:** python 3.12 標準庫（既有 docsync package）；Markdown＋Mermaid（D7）；git。
 
@@ -20,13 +20,16 @@
 |---|---|---|---|
 | Q1 | LESSONS 索引 next-id 住哪 | **A：索引全生成、next-id＝`LESSONS/LL-*.md` 檔集最大號＋1、由 generate 寫進索引檔頭** | 零人工計數器、零雙向對賬；「永不回收」靠 GT-05 既有單調腿（現 next ＜ HEAD next 即紅、不跑 generate 則 GT-01 漂移紅）、不加新腿；立 ADR-00005 記載 |
 | Q2 | GT-10 逼出的三項提前 | **A：照閘做、閘不放寬**——波 2 直接填 compliance 23 鍵「不適用：…」、C4-L1／L2 首版自 compose 畫齊 17 節點、arc42 E 子節「目前無」句＋指針寫齊 | 放寬閘＝調規＋例外形、波 2 出口「GT-10 零佔位」意義變弱；三項皆一句話級成本 |
+| Q3（grill） | RAD-AI-MAP「子項」欄語意 | **A：填實計數、兩層兩欄**——「系統層子節」「流程層子節」各 `已填實/N`；已填實＝該檔 `###` 標題 ∈ map 值且子節正文零 `TODO(波 k)`；系統層「目前無」時顯示「目前無」 | 鍵集計數恆 N/N 空轉；DoD A1「非佔位」得到機器面 |
+| Q4（grill） | map 值↔`###` 標題字面一致誰守 | **A：GT-10 加第八腿**——有 `rad_ai_map` 的檔，每個 map 值必須是同檔某 `###` 標題字面（反向不要求）；缺＝ERROR | Q3 計數靠它認子節；不加閘不加規則、約 6 行＋一正一反測 |
+| Q5（grill） | RUNBOOK §15 在波 2 寫到多深 | **B：全指針**——§15 只寫資產一段＋「程序見 `deploy/secrets/README.md`、細節承 rev5:RUNBOOK §15 同節、隨首個機密事件補實」；§15.2／§15.4 只留標題與一句 rev5 指針 | 波 2 是骨架；多數節未在 rev6 實跑、不放未實跑命令 |
 
 ### 0.2 主線工程判斷（報備；user 可翻）
 
 1. **對照總表落點**＝`docs/generated/RAD-AI-MAP.md`（與 STATE／GATES 同級的名冊型帳；不入 `reference/`——它是驗收清單不是查表）。欄＝RAD-AI 項目｜系統層檔｜系統層狀態（目前無／填實）｜流程層檔｜子項（n/N）｜採用階段。啟動書 §3.3 的「非驗收列」（三階段採用路徑、Glossary）不可自 frontmatter 推導、不入表；§3.3 仍為設計來源。
 2. **ARCHITECTURE.md 索引**欄＝節｜檔（連結＋標題）｜摘要｜掛載 E｜流程層檔。標題唯一家＝各節檔 H1（`# §N 標題`，索引剝 `§N`）；摘要唯一家＝frontmatter `summary`；流程層檔由 `rad_ai` 值 join 推導——**不設 `process:` frontmatter 鍵**（啟動書 §3.2 列了它，但 join 可得＝鏡像；鏡像不存在）。
 3. **frontmatter 單一家**：`rad_ai_map`（英文原名→中文子節名）只住**有該組子節標題的檔**——本波＝process 八檔與 c4 E 三檔；arc42 E 檔在「目前無」期間不帶 map（GT-10 見該句即跳過鍵集腿）、AI 功能刀進場時連同子節一起補。`rad_ai_stage` 只住系統層檔（arc42 E 檔／c4 E 檔／compliance）。
-4. **RUNBOOK 章節編號承 rev5 §1～§16**：`deploy/secrets/README.md` 與 `docs/ops/NOTES.md` 已以 §7 抬頭／§15／§15.2／§15.4 指向它，重編號＝四處 errata 換零收益。創世期最小章承 rev5 形制宣告（rev5 為 §1／§12／§14／§15）：rev6＝**§1／§7 抬頭／§12／§14／§15**，其餘各章一行「隨對應刀補實文」；走查還原契約＝§9c（CLAUDE.md §7 以節名引）。
+4. **RUNBOOK 章節編號承 rev5 §1～§16**：`deploy/secrets/README.md` 與 `docs/ops/NOTES.md` 已以 §7 抬頭／§15／§15.2／§15.4 指向它，重編號＝四處 errata 換零收益。創世期最小章承 rev5 形制宣告（rev5 為 §1／§12／§14／§15）：rev6＝**§1／§7 抬頭／§12／§14**（§15 依 Q5 為資產段＋指針），其餘各章一行「隨對應刀補實文」；走查還原契約＝§9c（CLAUDE.md §7 以節名引）。§7 抬頭的 SECRETS_DIR 取值片段在 T1 實跑一次（無需 docker）才入章。
 5. **BACKLOG 兩卷零條目**建檔；NOTES「未決」兩條（remote 時機、`alert_webhook_url` 真值）留 NOTES——它們是 user 待拍的決定、不是可排程工項。
 6. **`docs/ops/LESSONS/` 目錄本波不建**（git 不追蹤空目錄）；GT-08.lessons-absent 依啟動書留到首條 LL 落地（本波若踩坑即自然解除）。
 7. **process 八檔本波只到骨架**（啟動書 §5 波 3＝流程層填實）：`###` 子節齊全、首句「類比張力：TODO(波 3)」。啟動書 §5 波 2 列寫「process 九檔」、§3.2 樹實列八支（E1～E4、E6～E8、C4-E3）——E5 的流程層＝ADR 用 E5 形（§3.3）、無獨立檔；以樹為準、「九」為計數滑差、不補第九檔。
@@ -36,13 +39,16 @@
 11. **GT-05 LL 家族雙計數**（brainstorm 中發現的潛在自撞）：`_family_state` 把索引條目與 `LESSONS/` 檔名都算進 ids，索引若以 `- LL-NNNNN｜` 形列條目＝每條重複配號 ERROR。處置＝生成索引用**表格列**（`| LL-NNNNN | …`，不合 RE_ENTRY）、ids 只來自檔名；加一測斷言「生成索引零 RE_ENTRY 命中、N 檔恰 N 個 id」。RE_ENTRY 的 LL 形保留＝防有人手加條目（GT-01 亦會攔）。
 12. **ADR-00005**（accepted；provenance＝本檔 Q1）：三件例外註冊生成物、LL next-id 自檔集推導、RAD-AI-MAP 落點與欄。
 13. **分支**＝`000-w2-book-skeleton`（輕量軌）；每 Task 一顆 commit；收單 `merge --no-ff` 需 user 同意、不 push。
+14. **名詞段補三詞**（domain-modeling 產出；家＝RULES.md 名詞段、不另建 CONTEXT.md）：**系統層**＝arc42 E 子節、c4、compliance 所述之 rev6 系統本體；**流程層**＝`docs/process/` 所述之開發流程 AI 代理（D16）；**例外註冊**＝住 `docs/generated/` 之外但入 GENERATED_FILES 名冊的生成物（ARCHITECTURE.md、LESSONS.md）。名詞段不入 RULES-VERSION 雜湊（只雜湊規則列、已查 `rules_version`）。
+15. **生成序**：ARCHITECTURE.md／RAD-AI-MAP 讀 `ctx.tracked`——新建活書檔一律**先 `git add` 再 `generate`**，否則索引缺列、pre-commit 才發現漂移。
+16. **「截至 <日期>」＝該句落地日**、不設定期刷新；事實改變（AI 元件進場）時整句換掉。
 
 ### 0.3 波次表縮編紀錄（不改啟動書；波 3／4 brainstorm 以此為準）
 
 | 波 | 啟動書原列 | 本波已吸收 | 剩餘 |
 |---|---|---|---|
 | 3 | 流程層填實；系統層各節骨架＋「目前無」句＋指針；blueprint-map；C4-L1／L2 首版 | E 子節「目前無」句＋指針；C4-L1／L2 首版（自 compose）；官方子節標題 | 流程層填實（`TODO(波 3)` 歸零）；官方子節內容（自 rev5 藍本消化）；`reference/rev5-blueprint-map.md`；C4-L1／L2 修訂；C4-E 三檔規則與表填實；12 名詞表 |
-| 4 | RAD-AI 23 筆取捨 ADR；埠配號 ADR；RULES 首版定稿；compliance 填「不適用」列；四本帳自零起 | compliance 不適用列（本波）；四本帳自零起（本波）；埠配號 ADR＝ADR-00001、RULES 定稿＝ADR-00004（波 1） | RAD-AI 23 筆取捨 ADR（附錄 A 進 ADR）；DECISIONS-INDEX 首批已存在、波 4 改為「AI-ADR 形制首用」 |
+| 4 | RAD-AI 23 筆取捨 ADR；埠配號 ADR；RULES 首版定稿；compliance 填「不適用」列；四本帳自零起 | compliance 不適用列（本波）；四本帳自零起（本波）；埠配號 ADR＝ADR-00001、RULES 定稿＝ADR-00004（波 1） | RAD-AI 23 筆取捨 ADR（附錄 A 進 ADR） |
 
 ---
 
@@ -59,7 +65,7 @@
 - 工具：只用 python 標準庫；`tools/docsync/` 邏輯行 ≤4,000（現 1,872）；閘數恆 12、不加閘；每個新生成器一正一反自證。
 - git：分支 `000-w2-book-skeleton`；commit 訊息 zh-TW、含反引號一律 `git commit -F <暫存檔>`；每步後以 `git rev-parse HEAD`／`git status --porcelain` 自證；merge 需 user 同意；不 push。
 - 環境：/mnt/d drvfs——跑過 docker bind mount 後同 shell 先重新 `cd`；`set -e` 在工具鏈裡靠不住、以工件自證。
-- 單元收尾序（CLAUDE.md §2）：③落帳早於⑤generate；每 Task 末 `python3 tools/docsync generate && git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md` 再 commit。
+- 單元收尾序（CLAUDE.md §2）：③落帳早於⑤generate；每 Task 末＝新檔 `git add` → `python3 tools/docsync generate` → `git add docs/generated`＋例外註冊兩檔（存在者）→ commit。
 
 ---
 
@@ -68,13 +74,15 @@
 ```
 docs/ops/BACKLOG.md                       人寫；<!-- next: BL-00001 -->；零條目（T1）
 docs/ops/BACKLOG-DEFERRED.md              人寫；無 next-id；零條目（T1）
-docs/ops/RUNBOOK.md                       人寫；§1～§16 承 rev5 編號＋§9c；最小章 §1／§7 抬頭／§12／§14／§15（T1）
+docs/ops/RUNBOOK.md                       人寫；§1～§16 承 rev5 編號＋§9c；最小章 §1／§7 抬頭／§12／§14；§15 資產段＋指針（T1）
+docs/ops/RULES.md                         名詞段 +3 詞（系統層／流程層／例外註冊；T1）
 docs/ops/LESSONS.md                       生成（例外註冊）；next-id＋表格索引（T2）
 docs/arc42/ARCHITECTURE.md                生成（例外註冊）；13 節索引（T2 產生器、T6 填列）
 docs/generated/RAD-AI-MAP.md              生成；RAD-AI 項目對照總表（T2 產生器、T3～T6 逐步填列）
 docs/arc42/decisions/ADR-00005-generated-indexes-and-ll-next-id.md   accepted（T2）
 tools/docsync/references.py               gen_lessons_index／gen_architecture_index／gen_rad_ai_map；GENERATED_FILES 10 件（T2）
 tools/docsync/tests/test_references.py    三生成器正反自證＋名冊 10 件＋LL 零雙計數（T2）
+tools/docsync/book.py                     GT-10 第八腿：map 值 ⊆ 同檔 ### 標題（T2）；tests/test_book_form.py 一正一反
 tools/docsync/gates.py                    DAY1_EXEMPTIONS 6→2（T1 解除 GT-12.runbook-absent；T2 解除 GT-05.ledgers-absent、GT-06.book-absent；T6 解除 GT-10.doc-skeleton-absent）
 docs/process/P-E1-boundary.md … P-E8-operations.md、P-C4-E3-materials-boundary.md   八檔骨架（T3）
 docs/c4/C4-L1-system-context.md、C4-L2-container.md、C4-E1-ai-component-stereotypes.md、C4-E2-data-lineage-overlay.md、C4-E3-non-determinism-boundary.md   （T4）
@@ -98,7 +106,7 @@ docs/ops/events.jsonl                     misc 收單事件（T7）＋perf 事�
 | `summary` | 一句（≤60 字、現在式、無禁詞） | arc42 節檔 | ARCHITECTURE.md 索引 |
 | `rad_ai` | `[E1]`…`[E8]`、`[C4-E1]`…`[C4-E3]`、`[ANNEX-IV]` | 有掛載的檔（arc42 E 檔、c4 E 檔、compliance 兩檔、process 八檔） | GT-10 鍵集腿；RAD-AI-MAP；ARCHITECTURE.md「掛載 E」 |
 | `rad_ai_stage` | `1`／`2`／`3`／`compliance` | 系統層檔（arc42 E 檔、c4 E 檔、compliance） | RAD-AI-MAP「採用階段」 |
-| `rad_ai_map` | 一層對映：英文原名→中文子節名（鍵集＝`book.E_SUBSECTIONS[項目]`） | process 八檔、c4 E 三檔（本波）；arc42 E 檔於填實時 | GT-10 鍵集腿；RAD-AI-MAP「子項 n/N」 |
+| `rad_ai_map` | 一層對映：英文原名→中文子節名（鍵集＝`book.E_SUBSECTIONS[項目]`） | process 八檔、c4 E 三檔（本波）；arc42 E 檔於填實時 | GT-10 鍵集腿＋值↔標題腿；RAD-AI-MAP 兩層「已填實/N」 |
 
 ### 1.2 中文子節名對照（`rad_ai_map` 的值＝各檔 `###` 標題字面；D15 改寫）
 
@@ -207,12 +215,12 @@ rad_ai_map:
 <!-- 機器生成：… -->
 # RAD-AI-MAP — RAD-AI 項目對照總表（啟動書 §3.3 的機器版；DoD A1 驗收面）
 
-| RAD-AI 項目 | 系統層檔 | 系統層狀態 | 流程層檔 | 子項 | 採用階段 |
+| RAD-AI 項目 | 系統層檔 | 系統層子節 | 流程層檔 | 流程層子節 | 採用階段 |
 |---|---|---|---|---|---|
-| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 5/5 | 1 |
+| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 0/5 | 1 |
 ```
 
-項目序＝E1～E8、C4-E1～E3、ANNEX-IV；系統層檔＝非 process 之含該 `rad_ai` 值的檔（多檔以「、」連）；狀態＝正文含 `book.NO_AI_SENTENCE` →「目前無」、否則「填實」；子項＝`len(rad_ai_map)/len(E_SUBSECTIONS[項目])`（取 process 檔的 map、無則系統層檔的、皆無則 `0/N`；ANNEX-IV 無子項→「—」）；採用階段＝系統層檔 `rad_ai_stage`（缺→「—」）。
+項目序＝E1～E8、C4-E1～E3、ANNEX-IV；系統層檔＝非 process 之含該 `rad_ai` 值的檔（多檔以「、」連）；**子節欄（Q3）**＝該層檔的 `已填實/N`，N＝`len(E_SUBSECTIONS[項目])`，已填實＝檔內 `###` 標題 ∈ 該檔 `rad_ai_map` 值、且子節正文（到下一個任意層級標題前）零 `TODO(波 k)` 命中；系統層正文含 `book.NO_AI_SENTENCE` → 顯示「目前無」；無檔→「—」；有檔無 map→`0/N`；ANNEX-IV→「—」。採用階段＝系統層檔 `rad_ai_stage`（缺→「—」）。
 
 ---
 
@@ -268,13 +276,15 @@ E 子節與 §13 的固定句：「目前無 AI 元件（截至 2026-09-03）；
 
 ### 2.4 09 §9.1 E5 對映表（本波寫齊）
 
-| 模板五子節（AI-ADR 模板 `####`） | reference 七欄 |
+| 模板五子節（AI-ADR 模板 `####`、皆在「AI 特定考量」節下） | reference 七欄 |
 |---|---|
-| 考慮過的模型替代案 | 1. Model Alternatives Considered |
 | 資料集特性 | 2. Dataset Characteristics |
 | 公平與偏誤取捨 | 3. Fairness and Bias Trade-offs |
-| 生命週期（壽命＋再訓練觸發） | 4. Expected Model Lifetime＋5. Retraining Trigger |
-| 可解釋與合規 | 6. Explainability Requirements＋7. Regulatory Compliance |
+| 模型生命週期 | 4. Expected Model Lifetime＋5. Retraining Trigger |
+| 可解釋 | 6. Explainability Requirements |
+| 法規合規 | 7. Regulatory Compliance |
+
+reference 欄 1「Model Alternatives Considered」對應模板 body 節「考慮過的替代案」（模板 `###` 層、非 `####`；grill 事實查核修正）。填實時 09 以 `###` 承載七鍵、Lifetime 與 Retraining Trigger 兩鍵同值「模型生命週期」（Q4 腿允許多鍵同值）。
 
 形制句：AI-ADR 不另開號空間（rev6 五碼 id＋frontmatter `rad_ai: [E5]`＋標題前綴「AI-ADR」；啟動書 §3.5）；目前 AI-ADR 零份。
 
@@ -295,7 +305,7 @@ E 子節與 §13 的固定句：「目前無 AI 元件（截至 2026-09-03）；
 | §7 機密輪替表 | 抬頭＝SECRETS_DIR 取值片段（`sed -n 's/^SECRETS_DIR=//p' .env`、取不到印 FAIL、不設回退）＋一句指針「十三機密表＝`deploy/secrets/README.md`」 | rev5:RUNBOOK §7 抬頭；`deploy/secrets/README.md` |
 | §12 工具鏈速查 | 表：`python3 tools/docsync generate`／`check`／`lint`（GT-01～GT-12）／`rules emit --scope`／`errata`／`test`；`python3 tools/wf-watchdog.py`；`bash tools/bootstrap.sh`；deploy 六支 CLI＋`sops.sh`＋兩支 `.sh`；`tools/orchestration/cdp.mjs`、harness-test；欄＝命令｜作用｜需運行中 stack | README「操作快速入口」；rev5:RUNBOOK §12 表形 |
 | §14 埠與帳號 | 真相源指針（`docs/generated/reference/ports.md`）；帳號表隨 001 型刀（`reference/accounts.md` 尚未產） | rev5:RUNBOOK §14 |
-| §15 SOPS 機密營運 | 15.1 資產與紀律（鑰檔 `keys-fork260509-rev6.txt`、`.sops.yaml` 兩 recipient、`RV6_AGE_KEY_FILE`／`RV6_DECRYPT_MANUAL`）；15.2 加人四步；15.3 撤銷與輪替（準則一句＋指針）；15.4 值變更回寫（路徑 (a) 全套重建的實跑序列）；15.5 遺失與災難復原四情境表；15.6 輪替表→`deploy/secrets/README.md`；15.7 手動 wrapper 三步 | rev5:RUNBOOK §15.1～15.7；`deploy/sops.sh` 變數名；`deploy/decrypt-secrets.py` |
+| §15 SOPS 機密營運（Q5 全指針） | 資產一段（鑰檔 `keys-fork260509-rev6.txt`、`.sops.yaml` 兩 recipient、`RV6_AGE_KEY_FILE`／`RV6_DECRYPT_MANUAL`）＋「程序見 `deploy/secrets/README.md`；細節承 rev5:RUNBOOK §15 同節、隨首個機密事件補實」；§15.2／§15.4 只留標題＋一句 rev5 指針（被 deploy README 引用、須存在） | `deploy/sops.sh` 變數名；`deploy/secrets/README.md` |
 | 其餘 §2～§6、§8～§11、§13、§16、§9c | 各一行：章旨＋「隨對應刀補實文」（§13 指針 LESSONS.md；§9c 指針 CLAUDE.md §7） | rev5:RUNBOOK 章名 |
 
 ---
@@ -323,18 +333,19 @@ E 子節與 §13 的固定句：「目前無 AI 元件（截至 2026-09-03）；
 
 BACKLOG-DEFERRED.md：同形說明、無 next-id、「配號永遠只在主檔；移入／移回＝整行搬＋滯後戳記；完成＝刪列＋事件 backlog_done」。
 
-- [ ] **Step 2: 寫 RUNBOOK 骨架**（§2.6；抬頭宣告「創世期最小章＝§1／§7 抬頭／§12／§14／§15；其餘隨對應刀補實文；章內不放未經實跑的命令」；§12 表含 `GT-01～GT-12` 字面）
+- [ ] **Step 2: 寫 RUNBOOK 骨架**（§2.6；抬頭宣告「創世期最小章＝§1／§7 抬頭／§12／§14；§15 為指針；其餘隨對應刀補實文；章內不放未經實跑的命令」；§12 表含 `GT-01～GT-12` 字面；§7 抬頭片段先實跑一次）
+- [ ] **Step 2b: RULES 名詞段補三詞**（§0.2-14；`python3 tools/docsync rules emit --scope implementer | tail -1` 前後版本串相同＝名詞段不入雜湊的實證）
 - [ ] **Step 3: 解除 Day-1**：`gates.py` 刪 `GT-12.runbook-absent` 一行 → verify: `python3 tools/docsync lint` 對 GT-12 零 SKIP、零「已到期」ERROR
-- [ ] **Step 4: README docs 行**：`docs/ops/BACKLOG.md、LESSONS/` 行改為兩行（BACKLOG 兩卷／LESSONS.md＋LESSONS/）、加 `docs/ops/RUNBOOK.md` 行、活書行去「波 2 骨架」字樣；「想知道 X 看 Y」加「怎麼操作→RUNBOOK」
+- [ ] **Step 4: README docs 行**：`docs/ops/BACKLOG.md、LESSONS/` 行改為兩行（BACKLOG 兩卷／LESSONS.md＋LESSONS/）、加 `docs/ops/RUNBOOK.md` 行；「想知道 X 看 Y」加「怎麼操作→RUNBOOK」（活書行的「波 2 骨架」字樣留到 T6 拿掉）
 - [ ] **Step 5: generate＋check＋lint 全綠** → verify: `python3 tools/docsync lint; echo rc=$?` 為 0；GATES.md Day-1 表 5 筆
 - [ ] **Step 6: Commit**（`-F` 暫存檔）→ verify: `git log -1 --stat`
 
-### Task 2: 生成器三支（TDD）＋名冊 10 件＋ADR-00005＋Day-1 GT-05／GT-06 兩筆解除
+### Task 2: 生成器三支（TDD）＋GT-10 第八腿＋名冊 10 件＋ADR-00005＋Day-1 GT-05／GT-06 兩筆解除
 
 **Files:**
-- Modify: `tools/docsync/references.py`（`GENERATED_FILES` 加 `docs/ops/LESSONS.md`、`docs/arc42/ARCHITECTURE.md`、`docs/generated/RAD-AI-MAP.md`；新函式 `gen_lessons_index(ctx)`、`gen_architecture_index(ctx)`、`gen_rad_ai_map(ctx)`；`compute_generated` 三鍵）、`tools/docsync/gates.py`（刪 `GT-05.ledgers-absent`、`GT-06.book-absent`）、`CLAUDE.md`（§4 三材質句加「＋docs/arc42/ARCHITECTURE.md、docs/ops/LESSONS.md（例外註冊）」；§2 落帳句「踩坑→LESSONS 一坑一檔＋generate」）、`README.md`（generated 行加 RAD-AI-MAP；「想知道 X 看 Y」加「系統長怎樣→ARCHITECTURE.md」「RAD-AI 導入到哪→RAD-AI-MAP.md」）
+- Modify: `tools/docsync/book.py`（`gt_10` 第八腿：有 `rad_ai_map` 的檔，每個 map 值須為同檔某 `###` 標題字面，缺＝`finding(ERROR, "GT-10", rel, "map 值「X」無對應 ### 標題")`）、`tools/docsync/references.py`（`GENERATED_FILES` 加 `docs/ops/LESSONS.md`、`docs/arc42/ARCHITECTURE.md`、`docs/generated/RAD-AI-MAP.md`；新函式 `gen_lessons_index(ctx)`、`gen_architecture_index(ctx)`、`gen_rad_ai_map(ctx)`；`compute_generated` 三鍵）、`tools/docsync/gates.py`（刪 `GT-05.ledgers-absent`、`GT-06.book-absent`）、`CLAUDE.md`（§4 三材質句加「＋docs/arc42/ARCHITECTURE.md、docs/ops/LESSONS.md（例外註冊）」；§2 落帳句「踩坑→LESSONS 一坑一檔＋generate」）、`README.md`（generated 行加 RAD-AI-MAP；「想知道 X 看 Y」加「系統長怎樣→ARCHITECTURE.md」「RAD-AI 導入到哪→RAD-AI-MAP.md」）
 - Create: `docs/arc42/decisions/ADR-00005-generated-indexes-and-ll-next-id.md`
-- Test: `tools/docsync/tests/test_references.py`
+- Test: `tools/docsync/tests/test_references.py`、`tools/docsync/tests/test_book_form.py`
 
 **Interfaces:**
 - Produces: `references.gen_lessons_index(ctx) -> str`、`gen_architecture_index(ctx) -> str`、`gen_rad_ai_map(ctx) -> str`；`GENERATED_FILES` 長度 10。
@@ -368,8 +379,15 @@ class TestGeneratedIndexes(unittest.TestCase):
         files = {"docs/arc42/03-context-and-scope.md": "---\nsection: 3\nrad_ai: [E1]\nrad_ai_stage: 1\n---\n# §3\n\n目前無 AI 元件（截至 2026-09-03）。\n",
                  "docs/process/P-E1-boundary.md": f"---\nrad_ai: [E1]\nrad_ai_map:\n{pmap}---\n# P-E1\n"}
         out = references.gen_rad_ai_map(stub(files))
-        self.assertIn("| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 5/5 | 1 |", out)
-        self.assertIn("| E2 | — | — | — | 0/4 | — |", out)
+        self.assertIn("| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 0/5 | 1 |", out)
+        self.assertIn("| E2 | — | — | — | — | — |", out)
+
+    def test_rad_ai_map_counts_filled_subsections_only(self):
+        keys = book.E_SUBSECTIONS["E1"]
+        pmap = "".join(f"  {k}: 中文{i}\n" for i, k in enumerate(keys))
+        body = "# P-E1\n\n### 中文0\n\n類比張力：真句。\n\n### 中文1\n\n類比張力：TODO(波 3)\n\n### 中文2\n\n類比張力：真句。\n\n## 其他\n\nTODO(波 3)\n"
+        out = references.gen_rad_ai_map(stub({"docs/process/P-E1-boundary.md": f"---\nrad_ai: [E1]\nrad_ai_map:\n{pmap}---\n{body}"}))
+        self.assertIn("| E1 | — | — | [P-E1-boundary.md](../process/P-E1-boundary.md) | 2/5 | — |", out)
 
     def test_roster_ten_and_compute_has_three_new_keys(self):
         self.assertEqual(len(references.GENERATED_FILES), 10)
@@ -377,10 +395,12 @@ class TestGeneratedIndexes(unittest.TestCase):
             self.assertIn(rel, references.GENERATED_FILES)
 ```
 
-- [ ] **Step 2: 跑測試確認失敗** → `python3 -m unittest docsync.tests.test_references -v`（自 `tools/` 目錄）：AttributeError／AssertionError
+- [ ] **Step 1b: GT-10 第八腿失敗測試**（test_book_form；仿既有 `run()`）：process 檔 `rad_ai_map` 含值「甲」而正文無 `### 甲` → 有 ERROR 含「無對應 ### 標題」；補上 `### 甲`＋類比張力行 → 零 ERROR；兩鍵同值只需一個標題
+- [ ] **Step 2: 跑測試確認失敗** → `python3 -m unittest docsync.tests.test_references docsync.tests.test_book_form -v`（自 `tools/` 目錄）：AttributeError／AssertionError
 - [ ] **Step 3: 實作三生成器**（各 ≤40 邏輯行）：`gen_lessons_index` 掃 tracked＋工作樹 `LESSONS/` 檔名（沿 `book._family_state` 同口徑）、讀 frontmatter 與正文首行；`gen_architecture_index` 掃 `docs/arc42/` 之 `^\d{2}-.*\.md$`、H1 剝 `§N `、process join；`gen_rad_ai_map` 依 §1.4 規則；三者皆以 `GENERATED_HEADER` 起、`\n` 結尾、內容只依賴 tracked 檔（冪等）
+- [ ] **Step 3b: 實作 GT-10 第八腿**（≤8 行；docstring GATE 區塊 drift 欄加「map 值↔標題」）
 - [ ] **Step 4: 名冊 10 件＋compute_generated 三鍵** → 測試綠；`python3 tools/docsync test` 全綠
-- [ ] **Step 5: 立 ADR-00005**（accepted；frontmatter 同 ADR-00004 形；body 六節：背景（§3.1 例外註冊、§3.6 派生物、GT-05 讀檔頭 next 的互撞）／決策驅動因子／考慮過的替代案（Q1 之 B、C）／決定（三件入名冊、next＝max＋1、單調靠 GT-05 既有腿、RAD-AI-MAP 落點與六欄、索引列為表格形防雙計數）／後果／翻案觸發器（LL 檔出現刪除需求＝重評 append-only 假設））
+- [ ] **Step 5: 立 ADR-00005**（accepted；frontmatter 同 ADR-00004 形；body 六節：背景（§3.1 例外註冊、§3.6 派生物、GT-05 讀檔頭 next 的互撞）／決策驅動因子／考慮過的替代案（Q1 之 B、C）／決定（三件入名冊、next＝max＋1、單調靠 GT-05 既有腿、RAD-AI-MAP 落點與六欄含兩層填實計數、索引列為表格形防雙計數、GT-10 值↔標題腿）／後果／翻案觸發器（LL 檔出現刪除需求＝重評 append-only 假設））
 - [ ] **Step 6: 解除 Day-1 兩筆**（`GT-05.ledgers-absent`、`GT-06.book-absent`）＋CLAUDE.md／README 兩處指針 → `python3 tools/docsync generate`（首生三檔：LESSONS.md 零列、ARCHITECTURE.md 零列、RAD-AI-MAP.md 十二列全「—」）→ verify: `python3 tools/docsync check && python3 tools/docsync lint` rc 0；GATES.md Day-1 表 3 筆；`git status` 見三個新生成檔
 - [ ] **Step 7: Commit**
 
@@ -389,7 +409,7 @@ class TestGeneratedIndexes(unittest.TestCase):
 **Files:** Create `docs/process/P-E1-boundary.md`、`P-E2-agent-registry.md`、`P-E3-doc-pipeline.md`、`P-E4-responsible-agent.md`、`P-E6-quality-scenarios.md`、`P-E7-agent-debt.md`、`P-E8-operations.md`、`P-C4-E3-materials-boundary.md`（八檔；E5 無流程層檔、見 §0.2-7）。
 
 - [ ] **Step 1: 逐檔寫骨架**（§1.3(b) 範本；引言一句寫實：各檔對應的系統層檔與 §3.2 樹的一句定位，例 P-E2「AGT- 名冊：角色×模型×effort×最近換模日×產物進哪道閘；真源＝`tools/orchestration/` OPTS 常數」）；每個 `###`＝§1.2 中文子節名、首句 `類比張力：TODO(波 3)`
-- [ ] **Step 2: 自證**：`python3 tools/docsync lint` 零 ERROR（GT-10 類比張力腿、鍵集腿皆過）；`grep -c '類比張力：TODO(波 3)' docs/process/*.md` 合計＝5＋4＋6＋7＋8＋10＋5＋6＝51
+- [ ] **Step 2: 自證**：`python3 tools/docsync lint` 零 ERROR（GT-10 類比張力腿、鍵集腿、值↔標題腿皆過）；RAD-AI-MAP 流程層子節欄八列皆 `0/N`；`grep -c '類比張力：TODO(波 3)' docs/process/*.md` 合計＝5＋4＋6＋7＋8＋10＋5＋6＝51
 - [ ] **Step 3: generate**（RAD-AI-MAP 流程層欄與子項欄填入）→ check 綠 → Commit
 
 ### Task 4: C4 五檔（L1／L2 首版＋E1～E3 骨架）
@@ -416,13 +436,13 @@ class TestGeneratedIndexes(unittest.TestCase):
 **Files:** Create §2.2 十三檔；Modify `tools/docsync/gates.py`（刪 `GT-10.doc-skeleton-absent`）。
 
 - [ ] **Step 1: 逐檔寫**（§1.3(a) 範本、§2.2 子節；09 §9.1 表＝§2.4；12 兩表骨架各一列 `TODO(波 3)`；連結只指已存在檔：`../c4/C4-L1-…`、`../c4/C4-L2-…`、`../process/P-Ek-…`、`decisions/`、`../generated/DECISIONS-INDEX.md`、`../generated/reference/ports.md`、`../ops/BACKLOG.md`、`../ops/LESSONS.md`、`../ops/RULES.md`）
-- [ ] **Step 2: 解除 Day-1 第四筆** → generate（ARCHITECTURE.md 13 列；RAD-AI-MAP 系統層欄全「目前無」）
+- [ ] **Step 2: 解除 Day-1 第四筆**＋README 活書行去「波 2 骨架」字樣 → generate（ARCHITECTURE.md 13 列；RAD-AI-MAP 系統層子節欄全「目前無」）
 - [ ] **Step 3: 自證**：`python3 tools/docsync check && python3 tools/docsync lint` rc 0；GATES.md Day-1 表恰 2 筆（GT-03.no-close-events、GT-08.lessons-absent）；`grep -rc 'TODO(波 3)' docs/arc42 docs/c4 docs/compliance docs/process` 逐檔數字入 commit 訊息
 - [ ] **Step 4: Commit**
 
 ### Task 7: 波 2 出口驗收＋收單
 
-- [ ] **Step 1: 全量自證**：`python3 tools/docsync test`（79＋新增 4 全綠）；`bash tools/bootstrap.sh` rc 0（僅 remote ⚠）；`python3 tools/docsync lint` 0 ERROR 0 WARN；`python3 tools/docsync errata 'LESSONS append'`／`errata '波 2 建空檔'` 零殘留
+- [ ] **Step 1: 全量自證**：`python3 tools/docsync test`（79＋新增 6 全綠）；`bash tools/bootstrap.sh` rc 0（僅 remote ⚠）；`python3 tools/docsync lint` 0 ERROR 0 WARN；`python3 tools/docsync errata 'LESSONS append'`／`errata '波 2 建空檔'` 零殘留
 - [ ] **Step 2: final holistic review**（不落報告；處置逐項列入收單 commit 訊息）
 - [ ] **Step 3: 波標記 bump**：`docs/ops/NOTES.md` 首行 `<!-- wave: 3 -->`、現況改「波 2 出口已過、波 3 起手」、下一步＝波 3 列（§0.3 剩餘欄）→ lint 綠（`TODO(波 3)` 於 N=3 仍合法）→ 一顆 commit
 - [ ] **Step 4: 停——merge 需 user 同意**：`git merge --no-ff -F <暫存檔> 000-w2-book-skeleton` 回 `rev6-admin-root` → verify `git rev-parse HEAD` 變、`git log -1 --merges`
@@ -435,5 +455,5 @@ class TestGeneratedIndexes(unittest.TestCase):
 
 1. **Spec coverage**：§3.2 樹的 docs/ 每一項→T1（ops 三檔）、T2（三生成物＋ADR）、T3（process 八檔）、T4（c4 五檔）、T5（compliance 兩檔）、T6（arc42 十三檔）；§4.6 Day-1 四筆→T1／T2／T6；§5 波 2 出口→T7；`reference-src/` 隨 001 型刀（不在本波、啟動書 §3.7）。
 2. **Placeholder scan**：本檔的 `TODO(波 3)` 全部是產物內容的規格、非計畫佔位；無 TBD／待決。
-3. **Type consistency**：`gen_lessons_index`／`gen_architecture_index`／`gen_rad_ai_map` 名稱與 T2 測試一致；frontmatter 鍵五個（§1.1）在 §1.3、§2.3、T3～T6 同名；`rad_ai_stage` 值域 `1／2／3／compliance` 與 RAD-AI-MAP 欄一致。
-4. **閘對賬**：GT-10 七腿逐腿有對應形制（§1.3、§0.2-9、§2.3）；GT-06 連結目標全在建檔序之後（T3 process → T4 c4 → T5 compliance → T6 arc42）；GT-12 RUNBOOK 字面在 T1；GT-01 名冊 10 件在 T2。
+3. **Type consistency**：`gen_lessons_index`／`gen_architecture_index`／`gen_rad_ai_map` 名稱與 T2 測試一致；frontmatter 鍵五個（§1.1）在 §1.3、§2.3、T3～T6 同名；`rad_ai_stage` 值域 `1／2／3／compliance` 與 RAD-AI-MAP 欄一致；RAD-AI-MAP 六欄名在 §1.4、T2 測試、T3／T6 自證同字。
+4. **閘對賬**：GT-10 八腿逐腿有對應形制（§1.3、§0.2-9、§2.3；第八腿＝T2）；GT-06 連結目標全在建檔序之後（T3 process → T4 c4 → T5 compliance → T6 arc42）；GT-12 RUNBOOK 字面在 T1；GT-01 名冊 10 件在 T2。
