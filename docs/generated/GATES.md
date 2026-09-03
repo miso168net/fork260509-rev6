@@ -1,13 +1,13 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
 # GATES — 閘名冊（§4.1）
 
-閘數 12／上限 12（一進一出）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。Day-1 豁免 2 筆（§4.6；到期即紅）。
+閘數 12／上限 12（一進一出）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。Day-1 豁免 1 筆（§4.6；到期即紅）。
 
 | 閘 | 守哪條 RULES／ADR | 監測哪一面的漂移 | 真源 | 掃描面 | 觸發時機 | 紅時 rc | Day-1 豁免狀態 | 拿掉會壞什麼 |
 |---|---|---|---|---|---|---|---|---|
 | GT-01 | RL-0049 | generated↔真源 | rev5:ADR 0052 | GENERATED_FILES（docs/generated/**＋tools/orchestration/_sk_rules.js） | pre-commit | 1 | — | 鏡像可手改、生成檔與真源靜默分叉 |
 | GT-02 | RL-0055 | 事件帳形制、SHA 實證、pin↔worktree | rev5:ADR 0012 | docs/ops/events.jsonl；外層 index gitlink；兩 worktree HEAD | pre-commit | 1 | — | 事件帳可寫入任意形、假 SHA 入帳不察、pin 漂移靜默 |
-| GT-03 | RL-0053 | 收刀與 review 事件完整性 | rev5:ADR 0075 | docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews | pre-commit | 1 | 未解除：GT-03.no-close-events | 收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈 |
+| GT-03 | RL-0053 | 收刀與 review 事件完整性 | rev5:ADR 0075 | docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews | pre-commit | 1 | — | 收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈 |
 | GT-04 | RL-0047 | ADR 不可變與 supersede 對稱 | rev5:ADR 0012 | docs/arc42/decisions/*.md | pre-commit | 1 | — | 拍板全文可被改寫、翻案可單向 |
 | GT-05 | RL-0050 | 配號唯一單調、跨代裸編號 | rev5:ADR 0012 | docs/ops 三帳＋現在式面＋兩子庫 pin 樹 | pre-commit | 1 | — | 號碼可回收、rev5 編號走私入 rev6 現在式文件 |
 | GT-06 | RL-0048 | 引用斷鏈、時態混入 | rev5:ADR 0012 | tracked *.md；活書家族 | pre-commit | 1 | — | 死連結與未來式靜默入書 |
@@ -22,5 +22,4 @@
 
 | 鍵 | 理由 | 解除謂詞 | 登記日 |
 |---|---|---|---|
-| GT-03.no-close-events | 波 1 尚無 feature_close／review 事件 | 檔／事件存在（見 gates.py） | 2026-09-03 |
 | GT-08.lessons-absent | 首條 LL 教訓尚未落地 | 檔／事件存在（見 gates.py） | 2026-09-03 |

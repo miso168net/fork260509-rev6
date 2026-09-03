@@ -308,7 +308,7 @@ def gt_03(ctx):
     evs, _ = parse_events(ctx.text(EVENTS))
     closes = [e for e in evs if e["type"] in ("feature_close", "review")]
     if not closes:
-        return [finding(SKIP, "GT-03", EVENTS, "GT-03.no-close-events：零 feature_close／review 事件（Day-1；首刀收刀即解除）")]
+        return [finding(ERROR, "GT-03", EVENTS, "掃描面空集合：零 feature_close／review 事件——文件創世驗收 review 事件必須存在")]
     for e in closes:
         if e["type"] == "feature_close":
             where = f"{EVENTS}｜{e['feature']}"

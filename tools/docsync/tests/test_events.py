@@ -166,10 +166,10 @@ class TestGt03(unittest.TestCase):
         base.update(over)
         return json.dumps(base)
 
-    def test_skip_named_when_no_close_events(self):
+    def test_error_when_no_close_events(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
         fs = events.gt_03(common.Ctx(self.root))
-        self.assertTrue(any(f[0] == "SKIP" and "GT-03.no-close-events" in f[3] for f in fs))
+        self.assertTrue(any(f[0] == "ERROR" and "掃描面空集合" in f[3] for f in fs))
 
     def test_close_completeness(self):
         write(self.root, "docs/ops/events.jsonl", self._fc() + "\n")

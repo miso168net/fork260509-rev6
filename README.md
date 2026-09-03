@@ -22,6 +22,7 @@ fork260509-rev6/
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
 ├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents}
 ├── docs/brainstorms/                史料面：啟動書 000-doc-architecture、波 1 計畫 000-w1-governance-tooling、各刀階段 0 產出
+├── docs/reviews/                    史料面：不定期獨立 review 報告 YYYYMMDD-<scope>.md（review 事件 report 欄指向此；首份＝文件創世驗收）
 ├── specs/<NNN>-<feature-name>/      spec-kit per-feature 文件（首刀時出現、收刀即凍結）
 ├── tools/                           repo 治理面工具鏈（pre-commit／bootstrap 掛勾；管「版控品質」）
 │   ├── bootstrap.sh                 新機重建／體檢：源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數
