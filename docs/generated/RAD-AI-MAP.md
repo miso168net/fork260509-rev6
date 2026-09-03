@@ -16,4 +16,4 @@
 | C4-E1 | [C4-E1-ai-component-stereotypes.md](../c4/C4-E1-ai-component-stereotypes.md) | 目前無 | — | — | 1 |
 | C4-E2 | [C4-E2-data-lineage-overlay.md](../c4/C4-E2-data-lineage-overlay.md) | 目前無 | — | — | 3 |
 | C4-E3 | [C4-E3-non-determinism-boundary.md](../c4/C4-E3-non-determinism-boundary.md) | 目前無 | [P-C4-E3-materials-boundary.md](../process/P-C4-E3-materials-boundary.md) | 0/6 | 2 |
-| ANNEX-IV | — | — | — | — | — |
+| ANNEX-IV | [annex-iv-checklist.md](../compliance/annex-iv-checklist.md)、[annex-iv-mapping.md](../compliance/annex-iv-mapping.md) | 目前無 | — | — | compliance、compliance |
