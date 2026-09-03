@@ -5,15 +5,15 @@
 
 | RAD-AI 項目 | 系統層檔 | 系統層子節 | 流程層檔 | 流程層子節 | 採用階段 |
 |---|---|---|---|---|---|
-| E1 | — | — | — | — | — |
-| E2 | — | — | — | — | — |
-| E3 | — | — | — | — | — |
-| E4 | — | — | — | — | — |
+| E1 | — | — | [P-E1-boundary.md](../process/P-E1-boundary.md) | 0/5 | — |
+| E2 | — | — | [P-E2-agent-registry.md](../process/P-E2-agent-registry.md) | 0/4 | — |
+| E3 | — | — | [P-E3-doc-pipeline.md](../process/P-E3-doc-pipeline.md) | 0/6 | — |
+| E4 | — | — | [P-E4-responsible-agent.md](../process/P-E4-responsible-agent.md) | 0/7 | — |
 | E5 | — | — | — | — | — |
-| E6 | — | — | — | — | — |
-| E7 | — | — | — | — | — |
-| E8 | — | — | — | — | — |
+| E6 | — | — | [P-E6-quality-scenarios.md](../process/P-E6-quality-scenarios.md) | 0/8 | — |
+| E7 | — | — | [P-E7-agent-debt.md](../process/P-E7-agent-debt.md) | 0/10 | — |
+| E8 | — | — | [P-E8-operations.md](../process/P-E8-operations.md) | 0/5 | — |
 | C4-E1 | — | — | — | — | — |
 | C4-E2 | — | — | — | — | — |
-| C4-E3 | — | — | — | — | — |
+| C4-E3 | — | — | [P-C4-E3-materials-boundary.md](../process/P-C4-E3-materials-boundary.md) | 0/6 | — |
 | ANNEX-IV | — | — | — | — | — |
