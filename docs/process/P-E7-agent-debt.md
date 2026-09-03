@@ -73,7 +73,7 @@ rad_ai_map:
 |---|---|---|---|---|---|---|---|---|
 | 保險絲手挑 | 保險絲值小於結構最壞值 | rev5:L-068 | Workflow | 寫 script 時 | 由同檔常數推導並自我斷言 | RL-0062 | 已守 | 首個編排刀收刀 |
 | OPTS 散落 | 五檔各持一組 `*_OPTS`、模型／effort 無單一家 | rev6 現況 | 換模 | 換模時 | 收斂為單一常數家 | 名冊可見（`docs/generated/reference/agents.md`） | 未守 | 首個編排刀開分支（BL-00001） |
-| 版本字面耦合 | 規則列一改、EXAMPLE 的 RULES-VERSION 字面過期 | rev6 現況 | 發射 | 改規則列時 | 同批重烤（RL-0038） | PreToolUse hook 擋發射 | 已守（偵測） | 改規則列時 |
+| 版本字面耦合 | 規則列一改、組裝成品 script 的 RULES-VERSION 字面過期 | rev6 現況 | 發射 | 改規則列時 | 同批重烤（RL-0038） | PreToolUse hook 擋發射 | 已守（偵測） | 改規則列時 |
 
 ### 模型陳舊
 

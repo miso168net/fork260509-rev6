@@ -79,7 +79,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/docsync test` | 治理工具自測（語料面 tests/） | 否 |
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
-| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs>`／`harness-test-quality-only.mjs <script.mjs>` | 編排骨架 harness 自測（十案） | 否 |
+| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | 編排骨架 harness 自測（十案、逐項斷言、rc 1 即紅） | 否 |
 | `node tools/orchestration/cdp.mjs` | CDP 對照走查工具（127.0.0.1:9229；CLAUDE.md §7） | 是（host 瀏覽器） |
 | `python3 deploy/generate-secrets.py [--force\|--compose-only]` | 十三機密缺則補／全重生／只重組 composite | 否（需 docker） |
 | `python3 deploy/preflight-secrets.py` | 上機前把關 | 否 |

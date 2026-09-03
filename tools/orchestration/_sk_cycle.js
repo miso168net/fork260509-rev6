@@ -1,4 +1,7 @@
-// ★本段引用模板變數 `UNIT`（＝執行單元標籤，如 U2）與 `FEATURE`（＝該刀 feature 分支長名）——組裝時由 `_vars` 段定義，缺之即 ReferenceError。
+// ★本段引用模板常數：UNIT（執行單元標籤，如 U2）、FEATURE（該刀 feature 分支長名）、CONTEXT、ALLOWED_BLOCK（_context／_allowed 段）、
+//   FIX_SELFCHECK（fix 修完必跑的自驗命令一句；_prompts 段）——組裝時定義，缺之即 ReferenceError；
+//   RULES_REVIEW／RULES_FIX 由 _sk_rules.js（generate 產物）供：review prompt 一律烤 RULES_REVIEW、fix prompt 一律烤 RULES_FIX（R1-080）；
+//   DEEP_THINK 由 _sk_head.js 供、烤在 review／fix prompt 首行（user 拍板 2026-09-04）。
 function rejectedBlock(rejected) {
   if (!rejected.length) return ''
   const lines = [
@@ -19,6 +22,7 @@ function fixPrompt(blockers, roundNo) {
     return '' + (i + 1) + '. 檔案：' + b.file + '\n   缺陷：' + b.summary + '\n   證據與建議：' + b.detail
   })
   return [
+    DEEP_THINK,
     '你是 ' + FEATURE + ' 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
     '',
     CONTEXT,
@@ -27,13 +31,13 @@ function fixPrompt(blockers, roundNo) {
     items.join('\n'),
     '',
     '=== 處置紀律 ===',
-    '· 逐條判斷 finding 是否**真的成立**——審查員也會出錯（★事實接地 F／G 所列的刻意不一致是最常見的誤報源）。成立就修；**不成立就據實駁回**，放進 `rejectedFindings`（附 `file`／`summary`〔逐字沿用上面那句摘要〕／`why`）。',
+    '· 逐條判斷 finding 是否**真的成立**——審查員也會出錯（★審查 prompt 末段「勿誤報」所列項是最常見的誤報源）。成立就修；**不成立就據實駁回**，放進 `rejectedFindings`（附 `file`／`summary`〔逐字沿用上面那句摘要〕／`why`）。',
     '· ★不要為了讓審查通過而做「表面修改」——那會讓下一輪重報同一問題、觸發不收斂判定。',
     '· ★**補守門一律做變異測試**：把被指的那行改壞→跑測確認會紅→還原。不做這步，補的就是另一個裝飾性守門。',
     '· 修改一律限在允許清單內。清單外需要動＝**絕不擅改**，依 status 分值升級。',
-    '· 修完 MUST 重跑自驗（容器內 `cargo fmt --all`＋全量 serial `cargo test`＋`python3 tools/docsync lint`），實際輸出摘要寫進 report。',
+    '· 修完 MUST 重跑自驗（' + FIX_SELFCHECK + '），實際輸出摘要寫進 report。',
     '',
-    RULES,
+    RULES_FIX,
     '',
     ALLOWED_BLOCK,
     '',
@@ -54,7 +58,7 @@ async function cycle(phaseName, reviewPrompt, tag) {
       ? '★本輪＝**確認輪**（第 ' + (r + 1) + ' 輪、fix 迴圈已跑滿上限）：只審不修，若無 blocker 即判收斂。'
       : '★本輪＝第 ' + (r + 1) + ' 輪審查。'
     const rv = await spawn(
-      [head, '', reviewPrompt, rejectedBlock(rejected)].join('\n'),
+      [DEEP_THINK, head, '', reviewPrompt, '', RULES_REVIEW, rejectedBlock(rejected)].join('\n'),
       Object.assign({ label: tag + ':review-' + (r + 1), phase: phaseName, schema: REVIEW_SCHEMA }, REVIEW_OPTS)
     )
     if (!rv) return { converged: false, reason: 'review agent 回傳 null（終止型故障）', blockers: lastBlockers, rejected }
@@ -97,4 +101,3 @@ async function cycle(phaseName, reviewPrompt, tag) {
   }
   return { converged: false, reason: '迴圈異常結束（不應到達）', blockers: lastBlockers, rejected }
 }
-

@@ -5,18 +5,6 @@
 
 | script | 常數 | model | effort |
 |---|---|---|---|
-| EXAMPLE-dual-implementer.mjs | IMPL_OPTS | fable[1m] | xhigh |
-| EXAMPLE-dual-implementer.mjs | REVIEW_OPTS | opus[1m] | xhigh |
-| EXAMPLE-dual-implementer.mjs | FIX_OPTS | opus[1m] | xhigh |
-| EXAMPLE-single-implementer.mjs | IMPL_OPTS | fable[1m] | xhigh |
-| EXAMPLE-single-implementer.mjs | REVIEW_OPTS | opus[1m] | xhigh |
-| EXAMPLE-single-implementer.mjs | FIX_OPTS | opus[1m] | xhigh |
 | _sk_head.js | IMPL_OPTS | fable[1m] | xhigh |
 | _sk_head.js | REVIEW_OPTS | opus[1m] | xhigh |
 | _sk_head.js | FIX_OPTS | opus[1m] | xhigh |
-| _sk_head1.js | IMPL_OPTS | fable[1m] | xhigh |
-| _sk_head1.js | REVIEW_OPTS | opus[1m] | xhigh |
-| _sk_head1.js | FIX_OPTS | opus[1m] | xhigh |
-| _sk_head3.js | IMPL_OPTS | fable[1m] | xhigh |
-| _sk_head3.js | REVIEW_OPTS | opus[1m] | xhigh |
-| _sk_head3.js | FIX_OPTS | opus[1m] | xhigh |

@@ -24,12 +24,15 @@
 
 **Purpose**: 首個 Workflow 派發前的治理前置與環境就緒
 
-- [ ] T001 **Task 0＝BL-00001**：收斂 `tools/orchestration/_sk_head.js`／`_sk_head1.js`／`_sk_head3.js` 三變體之 `IMPL_OPTS`／`REVIEW_OPTS`／`FIX_OPTS`
+- [x] T001 **Task 0＝BL-00001**：收斂 `tools/orchestration/_sk_head.js`／`_sk_head1.js`／`_sk_head3.js` 三變體之 `IMPL_OPTS`／`REVIEW_OPTS`／`FIX_OPTS`
       為單一常數家（單一骨架、`_sk_main*.js` 對應收斂），併入 000-r1 findings（`docs/reviews/20260904-doc-governance.md`：R1-080 review prompt 烤入
       `RULES_REVIEW`／RL-0070、R1-082 `harness-test.mjs` 斷言退出碼、R1-059／060／062／087／088 `EXAMPLE-single-implementer.mjs`／`EXAMPLE-dual-implementer.mjs` 重組）；
       `node tools/orchestration/harness-test.mjs` 十案綠；`docs/generated/reference/agents.md` 由 generate 重算；`docs/ops/BACKLOG.md` BL-00001 於收刀事件帶 backlog_done
-- [ ] T002 前置體檢：`bash tools/bootstrap.sh` 綠（掃描防線＋rev5 凍結 SHA 斷言）；dev stack 機密解密（RUNBOOK §15、`deploy/`）；
+      ✔ 已落（Task 0 commit）：單一 `_sk_head.js`／`_sk_main.js`（`IMPLEMENTERS` 移 `_vars`、`IMPL_STAGES` 泛化 1～N 支）、review 烤 `RULES_REVIEW`／fix 烤 `RULES_FIX`、harness 帶斷言退出碼（spec｜quality 二模式）、七支舊檔刪除；
+      ★回填義務：`EXAMPLE-<unit>.mjs` 由 U1 收尾以其真 script 落（tools/orchestration/README.md「組裝成品範例」句同步改現在式）
+- [x] T002 前置體檢：`bash tools/bootstrap.sh` 綠（掃描防線＋rev5 凍結 SHA 斷言）；dev stack 機密解密（RUNBOOK §15、`deploy/`）；
       `docker compose -f docker-compose.yml -f docker-compose.dev.yml build migrate` 產 `rev6-admin-rust-api:dev`；容器內 `cargo --version`＝1.96.1
+      ✔ 已落：bootstrap 綠（首跑 docsync 自測 6 案 drvfs 瞬時 getcwd ENOENT、重跑全綠 rc 0）；機密 13 檔在位；`rev6-admin-rust-api:dev` build rc 0；容器內 cargo 1.96.1／rustc 1.96.1／rustfmt 1.9.0-stable
 
 ---
 

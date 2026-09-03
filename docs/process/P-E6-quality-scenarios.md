@@ -56,4 +56,4 @@ rad_ai_map:
 
 ### 跨元件情境
 
-類比張力：對得上——串聯漂移的流程層版本：RULES 改一列→RULES-VERSION 變→`_sk_rules.js` 重算（generate）→EXAMPLE 與真刀 script 的版本字面過期→hook 擋發射；解法＝改規則列時同批重烤（RL-0038）。
+類比張力：對得上——串聯漂移的流程層版本：RULES 改一列→RULES-VERSION 變→`_sk_rules.js` 重算（generate）→組裝成品與真刀 script 的版本字面過期→hook 擋發射；解法＝改規則列時同批重烤（RL-0038）。

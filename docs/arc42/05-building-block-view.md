@@ -15,7 +15,7 @@ rev5_blueprint:
 | `base-web/` | soybean-admin fork 全樹（upstream 原樣分層、程式碼 fork-delta 零；fork patch set 只有檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`） | 外層 gitlink pin；容器 `base-web`（Vite dev）由 front-nginx 反代 |
 | `rust-api/` | 源倉 Initial commit 起（LICENSE、.gitignore、分支來源紀錄檔 `x_fork.branch-origin.md`）；workspace members 隨 rust-api 骨架刀進場 | 外層 gitlink pin；容器 `rust-api` 由 front-nginx 反代、依賴 postgres／redis／migrate |
 | `deploy/` | compose 三檔的設定檔（nginx、prometheus、grafana、loki、alloy、trust-model）與 sops 密文 | 容器 bind mount；機密解密＝age 私鑰（RUNBOOK §15） |
-| `tools/` | `docsync`（十二閘＋生成器）、`orchestration/`（`_sk_*.js` 骨架、EXAMPLE 成品、harness-test、cdp.mjs）、`wf-watchdog.py`、`bootstrap.sh` | pre-commit／PreToolUse hook；Workflow 工具 |
+| `tools/` | `docsync`（十二閘＋生成器）、`orchestration/`（`_sk_*.js` 單一骨架、harness-test、cdp.mjs）、`wf-watchdog.py`、`bootstrap.sh` | pre-commit／PreToolUse hook；Workflow 工具 |
 | `docs/` | 活書家族（arc42／c4／compliance／process）、ops 帳本與事件源、generated、史料面（brainstorms／reviews） | generate 名冊（GENERATED_FILES）；GT-01 零漂移 |
 
 容器拓樸與 service 清單見 [C4-L2 容器視圖](../c4/C4-L2-container.md)（數量以該表為準）。
