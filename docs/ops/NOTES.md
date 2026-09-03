@@ -3,7 +3,7 @@
 
 ## 現況（波 2 出口已過、波 3 起手）
 
-波 2 活書骨架落地於分支 `000-w2-book-skeleton`（計畫 `docs/brainstorms/000-w2-book-skeleton.md`）：arc42 十三節檔＋索引 `docs/arc42/ARCHITECTURE.md`、C4 五檔、compliance 兩檔（23 鍵不適用）、process 八檔（51 子節）、ops 帳本（BACKLOG 兩卷、RUNBOOK、LESSONS 索引生成）、生成器三支（ADR-00005）、GT-10 第八腿。
+波 2 活書骨架已 merge 回 `rev6-admin-root`（misc 收單事件帶 merge SHA；分支 `000-w2-book-skeleton` 保留供 audit；計畫 `docs/brainstorms/000-w2-book-skeleton.md`）：arc42 十三節檔＋索引 `docs/arc42/ARCHITECTURE.md`、C4 五檔、compliance 兩檔（23 鍵不適用）、process 八檔（51 子節）、ops 帳本（BACKLOG 兩卷、RUNBOOK、LESSONS 索引生成）、生成器三支（ADR-00005）、GT-10 第八腿。
 Day-1 豁免餘兩筆（GT-03.no-close-events、GT-08.lessons-absent），首刀收刀與首條 LL 時解除。`TODO(波 3)` 殘留 95 處（arc42 28／c4 16／process 51）＝波 3 出口歸零；進度面＝`docs/generated/RAD-AI-MAP.md`。
 
 ## 下一步
