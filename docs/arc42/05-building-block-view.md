@@ -4,7 +4,7 @@ summary: 建構區塊三層白盒；E2 模型登錄視圖的系統層落點
 rad_ai: [E2]
 rad_ai_stage: 1
 rev5_blueprint:
-  §5 Building blocks: 隨刀：rust-api 骨架刀（workspace members 與管線形；rust-api 現為源倉 Initial commit）；本波只寫傘狀層白盒
+  §5 Building blocks: 隨刀：rust-api 骨架刀（workspace members 與管線形；rust-api 現為源倉 Initial commit＋分支來源紀錄檔）；本波只寫傘狀層白盒
 ---
 # §5 建構區塊視圖
 
@@ -12,8 +12,8 @@ rev5_blueprint:
 
 | 區塊 | 內含 | 介面 |
 |---|---|---|
-| `base-web/` | soybean-admin fork 全樹（upstream 原樣分層、fork-delta 零） | 外層 gitlink pin；容器 `base-web`（Vite dev）由 front-nginx 反代 |
-| `rust-api/` | 源倉 Initial commit（僅 LICENSE）；workspace members 隨 rust-api 骨架刀進場 | 外層 gitlink pin；容器 `rust-api` 由 front-nginx 反代、依賴 postgres／redis／migrate |
+| `base-web/` | soybean-admin fork 全樹（upstream 原樣分層、程式碼 fork-delta 零；fork patch set 只有檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`） | 外層 gitlink pin；容器 `base-web`（Vite dev）由 front-nginx 反代 |
+| `rust-api/` | 源倉 Initial commit 起（LICENSE、.gitignore、分支來源紀錄檔 `x_fork.branch-origin.md`）；workspace members 隨 rust-api 骨架刀進場 | 外層 gitlink pin；容器 `rust-api` 由 front-nginx 反代、依賴 postgres／redis／migrate |
 | `deploy/` | compose 三檔的設定檔（nginx、prometheus、grafana、alloy、trust-model）與 sops 密文 | 容器 bind mount；機密解密＝age 私鑰（RUNBOOK §15） |
 | `tools/` | `docsync`（十二閘＋生成器）、`orchestration/`（`_sk_*.js` 骨架、EXAMPLE 成品、harness-test、cdp.mjs）、`wf-watchdog.py`、`bootstrap.sh` | pre-commit／PreToolUse hook；Workflow 工具 |
 | `docs/` | 活書家族（arc42／c4／compliance／process）、ops 帳本與事件源、generated | generate 名冊（GENERATED_FILES）；GT-01 零漂移 |
@@ -22,7 +22,7 @@ rev5_blueprint:
 
 ## 5.2 第二層
 
-- **base-web**：upstream `example` 分支原樣分層——`src/views`（頁）、`router`（路由；auth route mode＝dynamic、憲法 §II #2）、`store`、`service`／`service-alova`（API 客戶端）、`typings`（wire 契約裁判、憲法 §I.3）、`layouts`／`components`／`hooks`／`locales`／`theme`／`plugins`／`utils`／`constants`／`enum`／`styles`／`assets`；fork-delta 目前為零，改動一律走憲法 §III 軌道並帶 `rev6-inline` 標記。
+- **base-web**：upstream `example` 分支原樣分層——`src/views`（頁）、`router`（路由；auth route mode＝dynamic、憲法 §II #2）、`store`、`service`／`service-alova`（API 客戶端）、`typings`（wire 契約裁判、憲法 §I.3）、`layouts`／`components`／`hooks`／`locales`／`theme`／`plugins`／`utils`／`constants`／`enum`／`styles`／`assets`；程式碼 fork-delta 目前為零（fork patch set 只有分支來源紀錄檔 `x_fork.branch-origin.md`），改動一律走憲法 §III 軌道並帶 `rev6-inline` 標記。
 - **rust-api**：目前零碼；workspace members（migration／entity／adapter／server 的分法）與 server 管線形隨 rust-api 骨架刀進場、以 rev5 活書 §5 為藍本重新打字（憲法 §I.5）。
 
 ## 5.3 第三層

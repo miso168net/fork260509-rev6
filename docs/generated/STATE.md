@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root
-- pins：base-web=8be6f9b｜rust-api=32c5254
+- pins：base-web=8fea31e｜rust-api=512024e
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）

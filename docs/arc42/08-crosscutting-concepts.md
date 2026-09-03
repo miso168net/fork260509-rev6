@@ -26,7 +26,7 @@ rev5_blueprint:
 
 ## 8.4 fork-delta 軌道
 
-紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守 fork-delta-lint（檔頭判準、生成檔紀律）隨子庫刀進場。fork-delta 目前為零。
+紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守 fork-delta-lint（檔頭判準、生成檔紀律）隨子庫刀進場。程式碼 fork-delta 目前為零；fork patch set 只有檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。
 
 ## 8.5 E4 負責任 AI 概念
 
