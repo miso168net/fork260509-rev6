@@ -18,7 +18,7 @@
 | `rust-api/migration/src/m002_baseline_seeds.rs` | `m0002_baseline_seeds.rs` | 同上 | 註解引 seed-decision.json 者改指 `rev5:` 史料與 fixtures/seed.sql |
 | `rust-api/entity/src/lib.rs` | 同 | 自寫 | 15 `pub mod` 同 |
 | `rust-api/entity/src/*.rs`（15 檔） | 同 | **§I.5 例外②**：照抄、註解語意重寫 | 六檔各一處前代引用帶前綴；`sys_user_role` 兩條真 FK Relation（`rev5:002` FR-022）保留 |
-| `rust-api/sea-orm-adapter/**`（Cargo.toml＋src 5 檔＋examples） | 同 | **§I.5 例外①**整檔拷貝 | 註解四型失效引用 rev6 化；測試碼假 DSN＝`.gitleaks.toml` 預告條目②（拷入時 allowlist＋雙向實證） |
+| `rust-api/sea-orm-adapter/**`（Cargo.toml＋src 5 檔＋examples） | 同 | **§I.5 例外①**整檔拷貝 | 註解四型失效引用 rev6 化；測試碼假 DSN 字面改執行期串接（RL-0054、analyze C1 2026-09-04；零 allowlist、與 rev5 差一行） |
 | `tools/schema-gate.py`（2,522 行） | 同 | **隨遷工具**（RULES 名詞段） | 去 `SEED_DECISION`／`RENAME_MAP`／rev4 血緣殘留、座標同名、容器名前綴、註解 rev6 化（R6） |
 | `tools/entity-drift-gate.py`（780 行） | 同 | 隨遷工具 | 座標同；`rev4:B-110`／`rev4:ADR 0015`／`rev4:ADR 0021` 帶前綴 |
 | `tools/docs-sync.py` 之 `psql_fetch`／`cmd_refresh`／`build_*_snapshot`／`SQL_*`／`gen_reference_schema`／`gen_reference_accounts` | `tools/docsync/snapshot.py`（新）＋`references.py`（掛生成器） | **重打字**（一般碼、非例外；§I.5 先讀後寫） | package 形、`Ctx` 注入、GENERATED_FILES 12→14（R8） |

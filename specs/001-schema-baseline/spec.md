@@ -110,7 +110,7 @@ fail-loud、登記一筆假 delta 後合成期望值案必紅——不需任何�
 
 **Why this priority**: 防線與 entity 是後續 server 刀的直接輸入；價值真實但依賴 US1 的 schema 與 US5 的快照。
 
-**Independent Test**: 對應層在場＋快照一致→綠；刻意改一欄型別→紅；觸發面內 entity 目錄缺席→commit 被擋。
+**Independent Test**: 快照就位後（US5 照相首跑）：對應層在場＋快照一致→綠；刻意改一欄型別→紅；觸發面內 entity 目錄缺席→commit 被擋。
 
 **Acceptance Scenarios**:
 
@@ -136,7 +136,7 @@ fail-loud、登記一筆假 delta 後合成期望值案必紅——不需任何�
 1. **Given** 基線實庫就位（dev stack 只起資料庫服務），**When** 照相首跑＋真表重算，**Then** 兩快照與兩張真表
    就位、內容與定稿一致、生成物名冊 12→14 且 GT-01 零漂移。
 2. **Given** archetype 歸屬登記初版（15 表 × 憲法 §I.6 四變體、人寫轉錄），**When** audit 閘逐表驗，**Then** 15/15 綠。
-3. **Given** RUNBOOK 常設程序節與工具速查兩列、README 樹兩支工具行已補，**When** GT-09 對賬，**Then** 綠。
+3. **Given** RUNBOOK 常設程序節與工具速查三列（兩支工具＋refresh）、README 樹兩支工具行已補，**When** GT-09 對賬，**Then** 綠。
 
 ---
 
@@ -172,8 +172,8 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - **entity 終態版之後刀差異**：唯一差異為 `sys_user_role` 真 DB FK 關聯宣告；屬形狀派生、保留；若審查再發現
   形狀外行為（rev6 已推翻者）→ 去除並記錄，不得靜默帶回。
 - **前代裸編號走私**：拷入註解重寫漏改 → GT-05 紅；先掃後 commit。
-- **機密掃描命中**：`.gitleaks.toml` 預告的兩條皆落本刀（adapter 測試碼假 DSN、收刀事件 40-hex SHA）；
-  逐條 allowlist＋雙向實證；seed PHC 常數在 rev5 零 allowlist 即通過、預期不命中。
+- **機密掃描命中**：adapter 測試碼假 DSN 依 RL-0054 於拷入時改執行期串接、零 allowlist（analyze C1、2026-09-04）；收刀事件 40-hex SHA 撞
+  generic-api-key 屬誤報、逐條 allowlist＋雙向實證；seed PHC 常數在 rev5 零 allowlist 即通過、預期不命中。
 - **演進登記檔破損**：缺欄、格式錯、來源刀編號不合規 → 閘啟動斷言 fail-loud。
 - **entity 對應層半缺**：目錄缺席或表數不足 → 於觸發面內一律擋 commit；不得降級為警告。
 - **server 缺席**：本刀 dev stack 的 rust-api 服務起不來屬預期；一切驗證只起資料庫服務、不等待全體健康。
@@ -232,7 +232,7 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - **FR-013**: DoD 鏈 MUST 依序完成：照相首跑（dev stack 只起資料庫服務）→ 兩快照就位 → generate → 兩張參考真表
   （生成物名冊 12→14）→ pre-commit 全綠（entity-drift 由跳過轉實跑）→ 三閘綠 → GT-01 零漂移、GT-09 對賬綠、
   GT-12 預算內。
-- **FR-014**: archetype 歸屬登記初版 MUST 就位：15 表 × 憲法 §I.6 四變體、人寫轉錄自 data-model；真表由 generate 產。
+- **FR-014**: archetype 歸屬登記初版 MUST 就位：15 表 × 憲法 §I.6 四變體、承 rev5 同名檔改座標並與 data-model §1 逐筆對賬；真表由 generate 產。
 - **FR-015**: data-model 與 contracts 三檔 MUST 以 `rev5:001` 同名檔為底整檔承襲改座標（文件非碼、§I.5 不及；
   帶 `rev5:` 前綴）、與 fixtures 對賬；閘工具解析之表體形制 MUST 保持不變。
 
@@ -284,8 +284,8 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - 憲法 Amendment 版級＝MINOR 1.1.0（user 拍板 2026-09-04）；「首刀」釋義＝首個觸及該面的刀，本刀零 base-web inline、
   零狀態機，不開 ★ 軌道、不入行為島（plan §IV 第 7／9 題答「否」）。
 - rust-fmt-gate 隨 002 server 刀進場（本刀 rust 碼全為逐位元拷自 rev5 已格式化存量）；fork-delta-lint 隨首個 base-web 刀。
-- 依賴版本以 rev5 lockfile 現值為首源（sea-orm 1.1.20、tokio 1.53.1、async-trait 0.1.89、casbin 2.20.0、rust 1.96.1），
-  次源官方最新穩定版；異值於 research 提問。
+- 依賴版本三源核對已拍板（research R1、user 2026-09-04）：sea-orm／sea-orm-migration 1.1.20（2.0.2 破逐位元承襲、否決）、tokio 1.53.1、
+  async-trait 0.1.92（最新 patch）、casbin 2.20.0、rust 1.96.1（與 `deploy/Dockerfile.rust-api` 同值）。
 - 本刀非一次性遷移（pristine 建庫、無既有資料搬移），Risk／Guard／Rollback 三欄表免附。
 - 兩支閘工具與其解析之 data-model 表體形制承 rev5 不變；閘語意「全等、非容差」不允許翻案（改容差須 ADR）。
 - 註解重寫採語意判準（clarify 2026-09-04）；「去註解後 diff 全等」仍為程式面唯一判準、兩者成對。

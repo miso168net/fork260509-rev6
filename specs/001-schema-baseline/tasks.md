@@ -47,14 +47,15 @@
 - [ ] T005 [P] `rust-api/migration/Cargo.toml`（sea-orm-adapter path＋sea-orm-migration features sqlx-postgres／runtime-tokio-rustls／cli＋tokio rt-multi-thread／net／time）
       ＋`rust-api/entity/Cargo.toml`（sea-orm features macros／with-chrono／with-json／with-ipnetwork）——承 `rev5:` 形自寫
 - [ ] T006 [P] `rust-api/sea-orm-adapter/`（§I.5 例外①整檔拷貝自 `../fork260509-rev5/rust-api/sea-orm-adapter/`：Cargo.toml＋`src/{action,adapter,entity,lib,migration}.rs`＋
-      `examples/*`）：註解與字串之四型失效引用 rev6 化（前代編號帶前綴、章節號改指 rev6 去處）；`src/adapter.rs` 測試碼假 DSN 命中 → `.gitleaks.toml`
-      逐條 allowlist（paths×regexes、condition AND）＋雙向突變實證記 commit 訊息
+      `examples/*`）：註解與字串之四型失效引用 rev6 化（前代編號帶前綴、章節號改指 rev6 去處）；`src/adapter.rs` 測試模組之假 DSN 字面改為執行期串接（RL-0054：憑證樣式不落完整字面；
+      如 `format!("mysql://{}:{}@localhost:3306/casbin", "root", "123456")`）、零 allowlist；`betterleaks` 掃描零命中與「與 rev5 差一行」記 commit 訊息
 - [ ] T007 `rust-api/migration/src/lib.rs`（`mod m0001_baseline_schema; mod m0002_baseline_seeds;`＋`Migrator`，doc 註解 rev6）＋`rust-api/migration/src/main.rs`
       （`APP_DATABASE_URL_FILE`／`APP_DATABASE_URL` 解析、CHANGE-ME 拒啟、`run_cli`；檔頭契約註解 rev6、承 `rev5:main.rs` 形重打字）
 - [ ] T008 `rust-api/entity/src/lib.rs`（15 支 `pub mod`、自寫）
 - [ ] T009 [P] `rust-api/entity/src/{casbin_rule,session_event,sys_access_log,sys_casbin_policy_archive,sys_ip_rule,sys_login_attempt,sys_menu,sys_operation_log,sys_pwd_custody,sys_role,sys_token,sys_user,sys_user_email_verify,sys_user_role,system_settings}.rs`
       （§I.5 例外②：自 rev5 `92919b9` 照抄、程式零改；註解語意重寫——六檔各一處前代引用帶前綴；`sys_user_role.rs` 兩條真 FK Relation 保留）
-- [ ] T010 容器內 `cargo build --workspace`（serial；`docker compose … run --rm --entrypoint cargo migrate build --workspace`、形依 docker-compose.dev.yml migrate 覆寫）綠；
+- [ ] T010 容器內 `cargo build --workspace`（serial；`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm --entrypoint cargo migrate build --workspace`——
+      dev override 之 migrate entrypoint 已核可整段覆寫）綠；
       `rust-api/Cargo.lock` 入版控（async-trait 0.1.92 一處與 rev5 異、其餘同）
 - [ ] T011 `tools/schema-gate.py` 隨遷（自 `../fork260509-rev5/tools/schema-gate.py`；research R6）：座標常數同名核對；**去除** `SEED_DECISION` 與其讀取（sequence 名冊改自
       `fixtures/seed.sql` 之 `setval` 行解析）、`RENAME_MAP` 與 rev4 血緣對賬碼／測試、rev4 世代座標清償測試改 rev6 斷言；**保留** `RUNTIME_APPEND_TABLES`／`--container`／
@@ -173,9 +174,9 @@
 - [ ] T034 [US5] `tools/docsync/references.py`：`GENERATED_FILES` 加 `docs/generated/reference/schema.md`／`accounts.md`（12→14）、`compute_generated` 掛兩鍵（讀
       reference-src 三檔、缺檔 fail-loud 指引 refresh）；`tools/docsync/__main__.py` 加 `refresh` 子命令；`python3 tools/docsync test` 全綠
 - [ ] T035 [US5] DoD 鏈：`python3 tools/docsync refresh`（dev stack）→ `docs/ops/reference-src/{schema,accounts}-snapshot.json` → `generate` → `docs/generated/reference/{schema,accounts}.md`
-      → `check` 零漂移 → `lint` 0 錯（GT-01／GT-09／GT-12 閘數 12）——與 T033／T034 同一 commit 落地（無 stub）
+      → `check` 零漂移 → `lint` 0 錯（GT-01／GT-09／GT-12 閘數 12）；`accounts.md` 列 Super／Admin／User 三帳與角色綁定同 rev5（FR-002 斷言）——與 T033／T034 同一 commit 落地（無 stub）
 - [ ] T036 [US5] 文件：`docs/ops/RUNBOOK.md` §10 實文（三步常設程序、rev6 命令形）、§12 表加 `schema-gate.py check｜test｜doccheck`／`entity-drift-gate.py check｜test`／
-      `docsync refresh` 三列（需 stack 欄）、§9 補 psql 直連一句；`docs/arc42/05-building-block-view.md` §5.1 樹列 rust-api 三 member、§5.2 rust-api 句改現在式、
+      `docsync refresh` 三列（需 stack 欄）、§9 補 psql 直連一句、§14 帳號節核對（dev 三帳承 rev5、指向 accounts.md）；`docs/arc42/05-building-block-view.md` §5.1 樹列 rust-api 三 member、§5.2 rust-api 句改現在式、
       frontmatter `rev5_blueprint` §5 列「隨刀」→「承襲」；`docs/arc42/08-crosscutting-concepts.md` §8.1 指針句核對（真表已生成）
 - [ ] T037 [US5] pre-commit 全鏈實測（含 entity-drift 實跑、工具自測條件觸發）≤45s → `docs/ops/events.jsonl` append perf 事件（隨該單元 commit）
 
@@ -201,7 +202,8 @@
 ## Phase 9: Polish & Cross-Cutting
 
 - [ ] T040 勘誤掃描：`python3 tools/docsync errata m001`／`m002`／`docs-sync.py`／`seed-decision`（本刀改變的字面）逐處處置、含兩子庫 pin 樹
-- [ ] T041 quickstart A～G 全場景復跑＋tasks 全勾對賬 spec SC-001～SC-007（final holistic review 輸入；不落報告、處置列於收單 commit 訊息）
+- [ ] T041 quickstart A～G 全場景復跑（含三閘 `check` 復跑＝FR-013 順序面）＋`cat tools/docsync/*.py | wc -l` 記 docsync 行數落點（SC-007、入收刀事件 notes）
+      ＋tasks 全勾對賬 spec SC-001～SC-007（final holistic review 輸入；不落報告、處置列於收單 commit 訊息）
 
 ---
 
