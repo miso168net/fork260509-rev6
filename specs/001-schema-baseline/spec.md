@@ -12,6 +12,14 @@
 > 承襲走憲法 §I.5 例外 Amendment（ADR-00009、MINOR 1.1.0）四條件紀律。同刀就位 rust-api workspace 骨架、
 > 受管演進帳三閘＋entity 漂移閘、照相與兩張參考真表、Day-1 常設程序；schema 基線與閘契約立 ADR-00010。
 
+## Clarifications
+
+### Session 2026-09-04
+
+- Q: rev5 註解「一律重寫」的驗收判準——機器判準（逐行零同文）還是語意判準（只重寫含前代語境者）？ → A: **B 語意判準**：四型失效引用（無前綴前代編號、rev5 語境事實、章節號指到 rev6 不存在的節、repo 外權威）必改，通用註解可與 rev5 同文；判定＝review 逐檔清單＋GT-05 機器兜底（＝RULES 名詞段「隨遷工具」判準延伸至資料形狀三件；釋義記 ADR-00009）。
+- Q: rev6 dev 三帳（Super／Admin／User）的帳號、角色綁定與密碼是否完全沿用 rev5 seed（含同一 PHC 常數）？ → A: **A 是，全數沿用**：三帳帳號、角色綁定、PHC 常數（同一組 dev 密碼）照 rev5 seed；RUNBOOK 帳號節承 rev5；UI 對照（CDP 對 rev5／rev6 stack）用同一組憑證。
+- Q: seed 各列 `created_at` 定稿時戳是否照 rev5 字面不改？ → A: **A 照舊**：時戳為定稿字面、非語意資料；照 rev5 原值，比對器零豁免欄，SC-001／SC-002 維持。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 基線結構與 seed 逐位元承襲落地 (Priority: P1)
@@ -57,10 +65,10 @@ seed 固定值紀律）約束整個承襲過程，使本刀是「依規則的例
 
 **Acceptance Scenarios**:
 
-1. **Given** feature 分支已開、specify 之 auto-commit 已落，**When** 落第一顆手動 commit，**Then** 該 commit＝
+1. **Given** feature 分支已開、specify 與 clarify 之 auto-commit 已落，**When** 落第一顆手動 commit，**Then** 該 commit＝
    ADR-00009 accepted＋憲法 §I.5 例外句＋版本 1.1.0＋§V.3 MINOR 句補「§I 例外清單擴展」＋生成物重算；
    早於 `/speckit-plan`。
-2. **Given** 17 檔已拷入並註解重寫，**When** 跑 lint（GT-05 掃 tools/ 與子庫 pin 樹），**Then** 零裸前代編號
+2. **Given** 17 檔已拷入並依語意判準重寫註解（四型失效引用必改、通用註解可同文），**When** 跑 lint（GT-05 掃 tools/ 與子庫 pin 樹），**Then** 零裸前代編號
    （rev5 原 m001 之兩處裸 `rev4:m009`／`rev4` 引用、entity 六檔各一處前代引用皆已帶前綴或改寫）。
 3. **Given** entity 15 檔為 rev5 終態版，**When** 逐檔防回歸審查，**Then** 後刀差異清單在案（唯一差異＝
    `sys_user_role` 兩條真 DB FK 關聯宣告、形狀派生、保留）、零 rev6 已推翻行為帶回；紀錄入 ADR-00010 證據段。
@@ -157,6 +165,8 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
   禁止單源逕行定稿（US1 場景 3）。
 - **「去註解後 diff 全等」的判準**：註解＝行註解與文件註解（`//`／`///`／`//!`）；屬性巨集與字串字面屬程式
   內容、不得改動；空白與行尾規則以 rev5 已 `cargo fmt` 之存量為準。
+- **註解重寫判準＝語意**：四型失效引用必改、通用註解可同文；不採「逐行零同文」機器判準（clarify 2026-09-04）；
+  review 逐檔列改寫清單、GT-05 兜底裸前代編號。
 - **遷移改名的副作用**：改四碼後遷移登記表記錄的名稱與 rev5 不同——該表 COPY 段本就依承襲契約自 seed
   fixtures 剝除，不影響全等；ADR-00008 翻案觸發器（改名破雙源互證）實證不成立。
 - **entity 終態版之後刀差異**：唯一差異為 `sys_user_role` 真 DB FK 關聯宣告；屬形狀派生、保留；若審查再發現
@@ -178,10 +188,11 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - **FR-001**: rev6 資料庫基線 MUST 為 rev5 終態 15 表：結構基線遷移＋seed 基線遷移兩支，程式內容（去註解後）
   與 `rev5:m001`／`rev5:m002` 逐位元全等；檔名 MUST 依 ADR-00008 為四碼（`m0001_baseline_schema`／
   `m0002_baseline_seeds`）；rev6 第一支 delta 自 `m0003` 起編。
-- **FR-002**: seed 基線 MUST 完全決定性：三帳共用 PHC 常數與 `created_at` 定稿時戳字面照 rev5 原值（改值即破全等）；
+- **FR-002**: seed 基線 MUST 完全決定性：三帳共用 PHC 常數與 `created_at` 定稿時戳字面照 rev5 原值（改值即破全等；clarify 2026-09-04 確認）；
+  dev 三帳（Super／Admin／User）之帳號、角色綁定與密碼 MUST 全數沿用 rev5 seed（clarify 2026-09-04）；
   重放結果 MUST 與凍結 fixtures 逐列全等、比對器 MUST NOT 為任何欄開豁免洞（承 `rev5:FR-016`）。
-- **FR-003**: 凍結 fixtures（columns／constraints／indexes／seed＋provenance）MUST 自 rev6 自己的 pristine 重放萃取、
-  與 rev5 同名 fixtures 逐位元比對全等＝雙源互證；`seaql_migrations` COPY 段與隨機 token 行依承襲契約剝除；
+- **FR-003**: 凍結 fixtures MUST 自 rev6 自己的 pristine 重放萃取：columns／constraints／indexes／seed 四份資料檔與 rev5
+  同名檔逐位元比對全等＝雙源互證（provenance 為 rev6 自寫之產製紀錄、不入比對）；`seaql_migrations` COPY 段與隨機 token 行依承襲契約剝除；
   不全等 MUST 停手升級 user。
 - **FR-004**: rust-api workspace 骨架 MUST 就位：三 member（migration／entity／adapter）、toolchain 版本＝dev 映像同值、
   格式設定三值承 rev5、lockfile 入版控；依賴首刀子集首源＝rev5 lockfile、次源＝官方最新穩定版，同值採、異值問 user；
@@ -191,9 +202,9 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 
 - **FR-005**: 任何拷貝碼落地之前 MUST 先完成憲法 Amendment：ADR-00009 accepted＋§I.5 例外清單加「資料形狀契約三件」
   句＋版本 1.0.0→1.1.0（MINOR、依據＝類比 §V.3「軌道授權邊界擴展」、同批補 §V.3 MINOR 句「§I 例外清單擴展」）；
-  時點＝specify auto-commit 之後、clarify 之前的第一顆手動 commit。
+  時點＝clarify 之後、`/speckit-plan` 之前的第一顆手動 commit（早於 §IV 第 5 題）。
 - **FR-006**: 承襲 MUST 滿足四條件：①逐位元自證（去註解後 diff 全等、命令與結果入 ADR 證據段與 commit 訊息）
-  ②註解一律重寫為 rev6 語境、前代出處帶 `rev5:`／`rev4:` 前綴（GT-05 掃 tools/ 與子庫 pin 樹綠）③防回歸審查逐檔
+  ②註解依語意判準重寫：四型失效引用（無前綴前代編號、rev5 語境事實、章節號指到 rev6 不存在的節、repo 外權威）必改——帶 `rev5:`／`rev4:` 前綴或改指 rev6 去處；通用註解可與 rev5 同文；判定＝review 逐檔清單（記 ADR-00009 證據段）＋GT-05 機器兜底（掃 tools/ 與子庫 pin 樹綠）③防回歸審查逐檔
   列後刀差異、屬形狀外者去除並記錄 ④seed 固定值＝定稿字面非機密（承 `rev5:ADR 0003`）、掃描命中才 allowlist
   且雙向實證、絕不 `--no-verify`。
 - **FR-007**: 例外射程 MUST 限 17 檔（兩支基線遷移＋entity 15 檔）、鎖 rev5 rust-api 凍結 SHA `92919b9`；
@@ -232,7 +243,8 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - **FR-017**: BACKLOG 時點 MUST 兌現：BL-00001 於開分支後首個 Workflow 前消化（Task 0）；BL-00005 於收刀前處置
   （拍板級、user 親決）；BL-00002 本刀不觸發（兩 ADR 非 AI-ADR）；收刀 append 一條「STATE 預算表納 docsync 行數對賬」。
 - **FR-018**: 活書 MUST 同刀更新：建構視圖 rust-api 句與樹列、資料慣例節指針句（schema 真表家）、rev5 藍本圖 05 列
-  「隨刀」→「承襲」；README 樹加兩支工具行；C4-L2 拓樸不變零改；首條 LESSONS 落地即解除 GT-08 Day-1 豁免。
+  「隨刀」→「承襲」；README 樹加兩支工具行；RUNBOOK 帳號節之 dev 三帳承 rev5；C4-L2 拓樸不變零改；首條 LESSONS
+  落地即解除 GT-08 Day-1 豁免。
 
 ### Key Entities
 
@@ -267,8 +279,8 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - rev5 為本機可達之唯讀參考庫（工作區同層 `../fork260509-rev5/`、凍結 SHA 外層 `7eab28a`／rust-api `92919b9`，
   由 bootstrap 斷言）；一切讀取不寫入。
 - 容器化資料庫可起一次性 pristine 實例（獨立網路、零 host 埠、用畢即拆）；rust 建置／測試一律容器內、全程 serial。
-- dev 帳號 Super／Admin／User 與 seed 內容同 rev5；資料庫名 `soybean_admin_rust` 已是兩代 compose 事實（不問）；
-  定稿時戳字面照舊——前兩項待 clarify 確認、預期皆「是」。
+- dev 帳號 Super／Admin／User 之帳號、角色綁定、密碼與 seed 內容同 rev5（clarify 2026-09-04 確認）；資料庫名
+  `soybean_admin_rust` 已是兩代 compose 事實；定稿時戳字面照舊（clarify 2026-09-04 確認）。
 - 憲法 Amendment 版級＝MINOR 1.1.0（user 拍板 2026-09-04）；「首刀」釋義＝首個觸及該面的刀，本刀零 base-web inline、
   零狀態機，不開 ★ 軌道、不入行為島（plan §IV 第 7／9 題答「否」）。
 - rust-fmt-gate 隨 002 server 刀進場（本刀 rust 碼全為逐位元拷自 rev5 已格式化存量）；fork-delta-lint 隨首個 base-web 刀。
@@ -276,6 +288,7 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
   次源官方最新穩定版；異值於 research 提問。
 - 本刀非一次性遷移（pristine 建庫、無既有資料搬移），Risk／Guard／Rollback 三欄表免附。
 - 兩支閘工具與其解析之 data-model 表體形制承 rev5 不變；閘語意「全等、非容差」不允許翻案（改容差須 ADR）。
+- 註解重寫採語意判準（clarify 2026-09-04）；「去註解後 diff 全等」仍為程式面唯一判準、兩者成對。
 
 ### Out of Scope
 
