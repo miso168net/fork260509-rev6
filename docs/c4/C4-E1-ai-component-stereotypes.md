@@ -9,7 +9,7 @@ rad_ai_map:
 ---
 # C4-E1 AI 元件刻板型
 
-AI 元件刻板型（<<ML Model>>、<<Data Pipeline>>、<<Feature Store>>、<<Monitor>>、<<Human-in-the-Loop>> 五類、中文改寫）的標註規則與標註表；標註直接畫在 `C4-L1-system-context.md`／`C4-L2-container.md` 上、不畫第二張圖。目前無 AI 元件（截至 2026-09-03）、標註對象零；流程層對應＝agent 角色在 `docs/process/P-E2-agent-registry.md` 表以刻板型欄標註。
+AI 元件刻板型五類（ML 模型／資料管線／特徵庫／監測／人在迴圈；中文改寫、簡寫見刻板型定義表）的標註規則與標註表；標註直接畫在 `C4-L1-system-context.md`／`C4-L2-container.md` 上、不畫第二張圖。目前無 AI 元件（截至 2026-09-03）、標註對象零；流程層對應＝agent 角色在 `docs/process/P-E2-agent-registry.md` 表以刻板型欄標註。
 
 ### 刻板型定義
 
@@ -31,7 +31,7 @@ AI 元件刻板型（<<ML Model>>、<<Data Pipeline>>、<<Feature Store>>、<<Mo
 
 1. 何時標：容器或元件含 AI 推論、資料管線、特徵庫、漂移監測、人工審核任一者。
 2. 標在哪：容器級標在 C4-L2；L1 只標確定性區域與非確定性區域的邊界（規則＝`C4-E3-non-determinism-boundary.md`）。
-3. 標什麼：刻板型欄＝簡寫＋模型 id（可追溯到 arc42 §5.4 E2 名冊）＋一個關鍵指標；ML 模型另標模型間依賴；人在迴圈另標觸發條件與回應 SLA。
+3. 標什麼：刻板型欄＝簡寫＋模型 id（可追溯到 arc42 §5.4 E2 名冊）＋一個關鍵指標；ML 模型另標模型間依賴；人在迴圈另標觸發條件與回應 SLA；各型必填性質＝刻板型定義表「必填性質」欄（五型齊）。
 4. 顏色：五類各一色（`classDef` 內定義）、全 repo 一致。
 5. 零實例時：本規則存檔、圖上零標註；首個 AI 功能刀進場時同批啟用（表加欄、圖加 `:::`）。
 
