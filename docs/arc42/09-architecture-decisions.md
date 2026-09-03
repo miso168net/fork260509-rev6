@@ -3,6 +3,8 @@ section: 9
 summary: 決策外置 decisions/ 與索引；E5 AI-ADR 形制與對映表
 rad_ai: [E5]
 rad_ai_stage: 2
+rev5_blueprint:
+  §9 架構決策: 承襲（decisions/ 一決策一檔＋DECISIONS-INDEX 指針；波 2 落地）
 ---
 # §9 架構決策
 

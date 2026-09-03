@@ -15,15 +15,15 @@
 | 會話狀態機（sys_token） | ### §6 | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 隨刀：憲法 §I.7 島 A～D 進場刀（auth 會話） |
 | 登入失敗節流三區（帳號維＋來源維） | ### §6 | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 隨刀：憲法 §I.7 島 E 進場刀（帳號維）；來源維隨島 F |
 | 使用者域斷權與密碼三入口（007 落地） | ### §6 | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 隨刀：憲法 §I.7 島 I 進場刀（使用者域） |
-| §7 部署 | ## | 缺 | 缺 |
+| §7 部署 | ## | [07-deployment-view.md](../../arc42/07-deployment-view.md) | 不承襲：rev5 空節；rev6 §7 自 C4-L2 與 reference/ports 起手 |
 | §8 橫切概念 | ## | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（四子節形制） |
 | fork-delta 接線現況（base-web） | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（指針形：規則面承 rev5 FORK-DELTA-WIRING、接線 as-built 隨 base-web 各刀重生） |
 | 資料慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 隨刀：schema 基線刀（archetype 四變體與成對條款已入憲法 §I.6、本波留指針） |
 | API 慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 隨刀：wire 地基刀（信封、碼表、i64 守衛已入憲法 §I.3；部分更新三態承 rev5:ADR 0023 隨刀重審） |
 | 授權慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 隨刀：授權治理刀（憲法 §I.7 島 G／I；判定單點與 DB-fresh 已入憲法 §I.2、本波留指針） |
-| §9 架構決策 | ## | 缺 | 缺 |
-| §10 品質要求 | ## | 缺 | 缺 |
-| §11 風險與技術債 | ## | 缺 | 缺 |
-| §12 名詞表 | ## | 缺 | 缺 |
+| §9 架構決策 | ## | [09-architecture-decisions.md](../../arc42/09-architecture-decisions.md) | 承襲（decisions/ 一決策一檔＋DECISIONS-INDEX 指針；波 2 落地） |
+| §10 品質要求 | ## | [10-quality-requirements.md](../../arc42/10-quality-requirements.md) | 不承襲：rev5 空節；rev6 §10 自 §1.2 品質目標展開、情境隨島進場 |
+| §11 風險與技術債 | ## | [11-risks-and-technical-debt.md](../../arc42/11-risks-and-technical-debt.md) | 承襲（BACKLOG／LESSONS 指針；rev6 加 ※11.1 風險） |
+| §12 名詞表 | ## | [12-glossary.md](../../arc42/12-glossary.md) | 承襲（治理詞入 §12 系統術語；域詞四組隨島 A～I 進場刀） |
 
-缺：5｜重複：0｜未知鍵：0｜形制：0
+缺：0｜重複：0｜未知鍵：0｜形制：0

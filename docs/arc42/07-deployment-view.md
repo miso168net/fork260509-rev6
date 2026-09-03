@@ -1,6 +1,8 @@
 ---
 section: 7
 summary: 基礎設施兩層；容器拓樸＝C4-L2、埠＝reference/ports
+rev5_blueprint:
+  §7 部署: 不承襲：rev5 空節；rev6 §7 自 C4-L2 與 reference/ports 起手
 ---
 # §7 部署視圖
 
