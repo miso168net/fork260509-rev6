@@ -6,7 +6,7 @@
 - pins：base-web=8be6f9b｜rust-api=32c5254
 
 ## 現在波
-- 波：5（docs/ops/NOTES.md 首行標記）
+- 波：6（docs/ops/NOTES.md 首行標記）
 
 ## constitution
 - 版本：1.0.0
