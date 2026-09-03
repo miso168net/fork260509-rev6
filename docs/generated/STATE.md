@@ -16,7 +16,7 @@
 - RULES：73 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 41/52、人 9/12）
 - BACKLOG 開放：2｜滯後：0
 - LESSONS：0 筆（未建）
-- events：10 筆（misc 5、perf 4、review 1）
+- events：11 筆（misc 6、perf 4、review 1）
 - CLAUDE.md 行數：156（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -39,6 +39,6 @@
 | BACKLOG 開放 | 2 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-03｜misc｜governance｜rev6 波 5 文件創世驗收收單：DoD A 六條全勾（報告 docs/reviews/20260903-doc-genesis.md＋首筆 review 事
 - 2026-09-03｜review｜doc-genesis｜
 - 2026-09-03｜perf｜—｜
-- 2026-09-03｜misc｜governance｜rev6 波 4 RAD-AI 取捨 ADR 收單：ADR-00007 accepted（附錄 A 19 列涵蓋 F01～F24；射程＝系統層形制、流程層以類比
