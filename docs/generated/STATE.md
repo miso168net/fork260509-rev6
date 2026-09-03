@@ -16,7 +16,7 @@
 - RULES：73 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 41/52、人 9/12）
 - BACKLOG 開放：1｜滯後：0
 - LESSONS：0 筆（未建）
-- events：6 筆（misc 4、perf 2）
+- events：7 筆（misc 4、perf 3）
 - CLAUDE.md 行數：156（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -39,6 +39,6 @@
 | BACKLOG 開放 | 1 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-03｜perf｜—｜
 - 2026-09-03｜misc｜governance｜rev6 波 3 活書填實收單：arc42 官方子節 28 處自 rev5 藍本消化、C4-E 三檔 16 處、流程層 51 子節類比張力真句（P-E7 九欄登
 - 2026-09-03｜perf｜—｜
-- 2026-09-03｜misc｜governance｜rev6 波 2 活書骨架收單：arc42 十三檔＋ARCHITECTURE 索引、C4 五檔、compliance 23 鍵不適用、process 八檔 51
