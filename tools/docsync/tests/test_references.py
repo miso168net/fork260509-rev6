@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-from docsync import references, common, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR
+from docsync import references, common, book, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR, LESSONS_DIR
 from docsync.tests.test_book_ids import stub, RULES_TEXT
 
 
@@ -77,3 +77,50 @@ class TestGenerateIdempotent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGeneratedIndexes(unittest.TestCase):
+    """三個例外註冊／對照生成物（ADR-00005）：LESSONS 索引 next＝max＋1、ARCHITECTURE 索引、RAD-AI-MAP 兩層填實計數。"""
+    LL1 = '---\nid: "LL-00001"\nrule_id: RL-0001\npromotion_surface: rules\n---\nLL-00001｜坑一\n'
+    LL3 = '---\nid: "LL-00003"\nrule_id: none：理由\npromotion_surface: none\n---\nLL-00003｜坑三\n'
+
+    def test_lessons_index_next_is_max_plus_one_and_rows_are_table(self):
+        out = references.gen_lessons_index(stub({f"{LESSONS_DIR}/LL-00001-a.md": self.LL1, f"{LESSONS_DIR}/LL-00003-c.md": self.LL3}))
+        self.assertTrue(out.startswith(common.GENERATED_HEADER))
+        self.assertIn("<!-- next: LL-00004 -->", out)
+        self.assertIn("| LL-00001 | 坑一 | RL-0001 | rules | [LL-00001-a.md](LESSONS/LL-00001-a.md) |", out)
+        self.assertIn("| LL-00003 | 坑三 | none：理由 | none | [LL-00003-c.md](LESSONS/LL-00003-c.md) |", out)
+        self.assertEqual(book.RE_ENTRY["LL"].findall(out), [])          # 零雙計數：索引列不合 RE_ENTRY
+        self.assertIn("<!-- next: LL-00001 -->", references.gen_lessons_index(stub({})))
+
+    def test_architecture_index_sorted_title_and_process_join(self):
+        files = {"docs/arc42/03-context-and-scope.md": "---\nsection: 3\nsummary: 脈絡\nrad_ai: [E1]\n---\n# §3 脈絡與範圍\n",
+                 "docs/arc42/01-introduction-and-goals.md": "---\nsection: 1\nsummary: 目標\n---\n# §1 簡介與目標\n",
+                 "docs/arc42/decisions/ADR-00001-x.md": "---\nid: \"ADR-00001\"\n---\n# 不入索引\n",
+                 "docs/process/P-E1-boundary.md": "---\nrad_ai: [E1]\n---\n# P-E1\n"}
+        out = references.gen_architecture_index(stub(files))
+        rows = [l for l in out.split("\n") if l.startswith("| §")]
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(rows[0].startswith("| §1 | [簡介與目標](01-introduction-and-goals.md) | 目標 | — | — |"), rows[0])
+        self.assertIn("| §3 | [脈絡與範圍](03-context-and-scope.md) | 脈絡 | E1 | [P-E1-boundary.md](../process/P-E1-boundary.md) |", out)
+
+    def test_rad_ai_map_status_and_two_layer_columns(self):
+        pmap = "".join(f"  {k}: 中文{i}\n" for i, k in enumerate(book.E_SUBSECTIONS["E1"]))
+        files = {"docs/arc42/03-context-and-scope.md": "---\nsection: 3\nrad_ai: [E1]\nrad_ai_stage: 1\n---\n# §3\n\n目前無 AI 元件（截至 2026-09-03）。\n",
+                 "docs/process/P-E1-boundary.md": f"---\nrad_ai: [E1]\nrad_ai_map:\n{pmap}---\n# P-E1\n"}
+        out = references.gen_rad_ai_map(stub(files))
+        self.assertIn("| E1 | [03-context-and-scope.md](../arc42/03-context-and-scope.md) | 目前無 | [P-E1-boundary.md](../process/P-E1-boundary.md) | 0/5 | 1 |", out)
+        self.assertIn("| E2 | — | — | — | — | — |", out)
+        self.assertIn("| ANNEX-IV | — | — | — | — | — |", out)
+
+    def test_rad_ai_map_counts_filled_subsections_only(self):
+        keys = book.E_SUBSECTIONS["E1"]
+        pmap = "".join(f"  {k}: 中文{i}\n" for i, k in enumerate(keys))
+        body = "# P-E1\n\n### 中文0\n\n類比張力：真句。\n\n### 中文1\n\n類比張力：TODO(波 3)\n\n### 中文2\n\n類比張力：真句。\n\n## 其他\n\nTODO(波 3)\n"
+        out = references.gen_rad_ai_map(stub({"docs/process/P-E1-boundary.md": f"---\nrad_ai: [E1]\nrad_ai_map:\n{pmap}---\n{body}"}))
+        self.assertIn("| E1 | — | — | [P-E1-boundary.md](../process/P-E1-boundary.md) | 2/5 | — |", out)
+
+    def test_roster_ten_and_compute_has_three_new_keys(self):
+        self.assertEqual(len(references.GENERATED_FILES), 10)
+        for rel in ("docs/ops/LESSONS.md", "docs/arc42/ARCHITECTURE.md", "docs/generated/RAD-AI-MAP.md"):
+            self.assertIn(rel, references.GENERATED_FILES)

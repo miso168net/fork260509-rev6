@@ -1,6 +1,7 @@
 """守 RL-0049／RL-0052：generated 只由真源重算、零漂移（GT-01 本體）；數量預算對賬入 STATE。
 
 references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_reference_perf、gen_milestones、gen_state（git／波／憲法／帳面／三指標／預算／尾 3 事件）、
+gen_lessons_index（例外註冊；next＝檔集最大號＋1、ADR-00005）、gen_architecture_index（例外註冊；arc42 節檔 frontmatter）、gen_rad_ai_map（兩層填實計數）、
 compute_generated（名冊→內容）、check_generated（缺／漂移／名冊外）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
 """
 import os
@@ -16,8 +17,13 @@ from . import book as book_mod
 
 GENERATED_FILES = (
     "docs/generated/STATE.md", "docs/generated/MILESTONES.md", "docs/generated/DECISIONS-INDEX.md", "docs/generated/GATES.md",
-    "docs/generated/reference/ports.md", "docs/generated/reference/perf.md", "tools/orchestration/_sk_rules.js",
+    "docs/generated/RAD-AI-MAP.md", "docs/generated/reference/ports.md", "docs/generated/reference/perf.md", "tools/orchestration/_sk_rules.js",
+    "docs/arc42/ARCHITECTURE.md", "docs/ops/LESSONS.md",  # 例外註冊兩件（啟動書 §3.1；ADR-00005）
 )
+RE_CHAPTER = re.compile(r"^docs/arc42/(\d{2})-[a-z0-9-]+\.md$")
+RE_H1 = re.compile(r"^#\s+(?:§\s*\d+\s+)?(.+?)\s*$", re.M)
+RE_ANY_HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*$")
+RAD_AI_ITEMS = tuple(f"E{i}" for i in range(1, 9)) + ("C4-E1", "C4-E2", "C4-E3", "ANNEX-IV")
 RE_PORT = re.compile(r'^\s+-\s+"?(?:(\d{1,3}(?:\.\d{1,3}){3}):)?(\d+):(\d+)(?:/(?:tcp|udp))?"?\s*$')
 RE_VERSION = re.compile(r"\*\*Version\*\*:\s*([0-9.]+)")
 PORT_GENERATION_PREFIX = "3"
@@ -105,13 +111,128 @@ def _pin(ctx, sub):
         return "未掛"
 
 
+def _lesson_files(ctx):
+    """LESSONS/ 檔名集＝tracked ∪ 工作樹（與 book._family_state 同口徑）；只取合 RE_LL_FILE 者、依名排序。"""
+    names = {os.path.basename(p) for p in ctx.tracked if p.startswith(LESSONS_DIR + "/")}
+    d = os.path.join(ctx.root, LESSONS_DIR)
+    if os.path.isdir(d):
+        names |= set(os.listdir(d))
+    return sorted(n for n in names if book_mod.RE_LL_FILE.match(n))
+
+
 def _lessons(ctx):
-    names = sorted(n for n in set(os.path.basename(p) for p in ctx.tracked if p.startswith(LESSONS_DIR + "/")) if book_mod.RE_LL_FILE.match(n))
+    return [parse_front_matter(ctx.text(f"{LESSONS_DIR}/{n}") or "")[0] for n in _lesson_files(ctx)]
+
+
+def gen_lessons_index(ctx):
+    """例外註冊：索引全生成、檔頭 next＝檔集最大號＋1（永不回收靠 GT-05 單調腿）；列為表格形、不合 RE_ENTRY（零雙計數）。"""
+    rows, top = [], 0
+    for n in _lesson_files(ctx):
+        id_ = book_mod.RE_LL_FILE.match(n).group(1)
+        top = max(top, int(id_.rsplit("-", 1)[1]))
+        meta, body = parse_front_matter(ctx.text(f"{LESSONS_DIR}/{n}") or "")
+        first = next((l for l in body.split("\n") if l.strip()), "")
+        title = first.split("｜", 1)[1].strip() if "｜" in first else "（正文首行缺「LL-NNNNN｜坑名」）"
+        rows.append(f"| {id_} | {title} | {meta.get('rule_id', '—')} | {meta.get('promotion_surface', '—')} | [{n}](LESSONS/{n}) |")
+    lines = [GENERATED_HEADER, f"<!-- next: LL-{top + 1:05d} -->",
+             "# LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）", "",
+             "配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。"
+             "條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；"
+             "正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。", "",
+             "| LL | 坑名 | rule_id | promotion_surface | 檔 |", "|---|---|---|---|---|"] + rows
+    return "\n".join(lines) + "\n"
+
+
+def _book_meta(ctx, prefix):
     out = []
-    for n in names:
-        meta, _ = parse_front_matter(ctx.text(f"{LESSONS_DIR}/{n}") or "")
-        out.append(meta)
+    for rel in sorted(set(ctx.tracked)):
+        if rel.startswith(prefix) and rel.endswith(".md"):
+            text = ctx.text(rel)
+            if text is not None:
+                meta, body = parse_front_matter(text)
+                out.append((rel, meta, body))
     return out
+
+
+def _rad_list(meta):
+    v = meta.get("rad_ai")
+    return list(v) if isinstance(v, list) else ([v] if isinstance(v, str) and v else [])
+
+
+def _link(rel, base):
+    """自 base 目錄指向 rel 的相對 Markdown 連結（檔名為文字）。"""
+    return f"[{os.path.basename(rel)}]({os.path.relpath(rel, base)})"
+
+
+def gen_architecture_index(ctx):
+    """例外註冊：arc42 節檔（NN-*.md）索引——節號＝section、標題＝H1（剝 §N）、摘要＝summary、掛載 E＝rad_ai、流程層檔＝process 中 rad_ai 同值者。"""
+    procs = [(rel, _rad_list(meta)) for rel, meta, _ in _book_meta(ctx, "docs/process/")]
+    rows = []
+    for rel, meta, body in _book_meta(ctx, "docs/arc42/"):
+        m = RE_CHAPTER.match(rel)
+        if not m:
+            continue
+        sec = str(meta.get("section") or int(m.group(1)))
+        h1 = RE_H1.search(body)
+        es = _rad_list(meta)
+        joined = "、".join(_link(p, "docs/arc42") for p, pe in procs if set(pe) & set(es)) or "—"
+        rows.append((int(sec), f"| §{sec} | [{h1.group(1) if h1 else '（無 H1）'}]({os.path.basename(rel)}) | {meta.get('summary') or '—'} | {'、'.join(es) or '—'} | {joined} |"))
+    lines = [GENERATED_HEADER, "# ARCHITECTURE — 活書索引（機器生成、例外註冊）", "",
+             "節檔＝`NN-<arc42 英文節名>.md`；標題取各檔 H1、摘要取 frontmatter `summary`、掛載 E 取 `rad_ai`、流程層檔＝`docs/process/` 中 `rad_ai` 同值之檔。"
+             "決策住 `decisions/`（索引＝`docs/generated/DECISIONS-INDEX.md`）。", "",
+             "| 節 | 檔 | 摘要 | 掛載 E | 流程層檔 |", "|---|---|---|---|---|"] + [r for _, r in sorted(rows)]
+    return "\n".join(lines) + "\n"
+
+
+def _filled(meta, body, item):
+    """已填實/N（Q3）：### 標題 ∈ map 值、且子節正文（到下一任意標題前）零 TODO(波 k)；兩鍵同值＝同一標題、逐鍵計。"""
+    total = len(book_mod.E_SUBSECTIONS.get(item, ()))
+    if not total:
+        return "—"
+    amap = meta.get("rad_ai_map")
+    if not isinstance(amap, dict):
+        return f"0/{total}"
+    values, done, cur, buf = set(amap.values()), set(), None, []
+
+    def close():
+        if cur is not None and not any(book_mod.RE_TODO_WAVE.search(l) for l in buf):
+            done.add(cur)
+    for line in book_mod.strip_code(body).split("\n"):
+        hm = RE_ANY_HEADING.match(line)
+        if hm:
+            close()
+            cur = hm.group(1) if line.startswith("### ") and hm.group(1) in values else None
+            buf = []
+        else:
+            buf.append(line)
+    close()
+    return f"{sum(1 for v in amap.values() if v in done)}/{total}"
+
+
+def gen_rad_ai_map(ctx):
+    """RAD-AI 項目對照總表（啟動書 §3.3 機器版）：系統層檔／流程層檔各自的填實計數；系統層含「目前無 AI 元件」句→「目前無」。"""
+    sysf, procf = {}, {}
+    for rel, meta, body in _book_meta(ctx, "docs/"):
+        if not book_mod.is_book(rel):
+            continue
+        for item in _rad_list(meta):
+            (procf if rel.startswith("docs/process/") else sysf).setdefault(item, []).append((rel, meta, body))
+    lines = [GENERATED_HEADER, "# RAD-AI-MAP — RAD-AI 項目對照總表（啟動書 §3.3 的機器版；DoD A1 驗收面）", "",
+             "列＝RAD-AI 項目；系統層檔＝arc42／c4／compliance 中 frontmatter `rad_ai` 含該項目者、流程層檔＝`docs/process/` 同；"
+             "子節欄＝`已填實/N`（`###` 標題 ∈ `rad_ai_map` 值且正文零 `TODO(波 k)`；N＝reference 子節數）、系統層含「目前無 AI 元件」句即顯示「目前無」；採用階段取系統層檔 `rad_ai_stage`。", "",
+             "| RAD-AI 項目 | 系統層檔 | 系統層子節 | 流程層檔 | 流程層子節 | 採用階段 |", "|---|---|---|---|---|---|"]
+    for item in RAD_AI_ITEMS:
+        s, p = sysf.get(item, []), procf.get(item, [])
+        if not s:
+            sys_sub = "—"
+        elif any(book_mod.NO_AI_SENTENCE in b for _, _, b in s):
+            sys_sub = "目前無"
+        else:
+            sys_sub = "、".join(_filled(m, b, item) for _, m, b in s)
+        stage = "、".join(str(m["rad_ai_stage"]) for _, m, _ in s if m.get("rad_ai_stage")) or "—"
+        lines.append(f"| {item} | {'、'.join(_link(r, GENERATED_DIR) for r, _, _ in s) or '—'} | {sys_sub} | "
+                     f"{'、'.join(_link(r, GENERATED_DIR) for r, _, _ in p) or '—'} | {'、'.join(_filled(m, b, item) for _, m, b in p) or '—'} | {stage} |")
+    return "\n".join(lines) + "\n"
 
 
 def _budget_rows(ctx, counts, caps, backlog_open):
@@ -182,6 +303,9 @@ def compute_generated(ctx):
         "docs/generated/reference/ports.md": gen_reference_ports(ctx),
         "docs/generated/reference/perf.md": gen_reference_perf(events),
         "tools/orchestration/_sk_rules.js": rules_mod.emit_js(ctx.text(RULES) or ""),
+        "docs/generated/RAD-AI-MAP.md": gen_rad_ai_map(ctx),
+        "docs/arc42/ARCHITECTURE.md": gen_architecture_index(ctx),
+        "docs/ops/LESSONS.md": gen_lessons_index(ctx),
     }
     try:
         from . import gates
