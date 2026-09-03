@@ -92,7 +92,6 @@ DAY1_EXEMPTIONS = {
     "GT-06.book-absent": Day1Exemption("GT-06.book-absent", "活書家族波 2 骨架才落地", lambda ctx: any(book_mod.is_book(r) for r in ctx.tracked), "2026-09-03"),
     "GT-08.lessons-absent": Day1Exemption("GT-08.lessons-absent", "首條 LL 教訓尚未落地", lambda ctx: ctx.exists(LESSONS_DIR), "2026-09-03"),
     "GT-10.doc-skeleton-absent": Day1Exemption("GT-10.doc-skeleton-absent", "活書骨架波 2 才落地", lambda ctx: ctx.exists(book_mod.SKELETON_ANCHOR), "2026-09-03"),
-    "GT-12.runbook-absent": Day1Exemption("GT-12.runbook-absent", "RUNBOOK 波 2 才建", lambda ctx: ctx.exists(RUNBOOK), "2026-09-03"),
 }
 
 

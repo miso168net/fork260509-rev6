@@ -1,0 +1,119 @@
+# RUNBOOK — dev stack 操作手冊
+
+本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
+本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
+創世期章節現況：§1／§7 抬頭／§12／§14 為最小必備章、§15 為指針章；其餘各章隨對應刀補實文，章內不放未經實跑的命令。
+
+## 1. 快速啟動（新機五步）
+
+1. `bash tools/bootstrap.sh` —— 源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數＋secrets 體檢（幂等、可重跑；remote 未設只 ⚠）
+2. `python3 deploy/generate-secrets.py` —— 十三機密缺則補（`alert_webhook_url` 為佔位值、見 §4）
+3. `python3 deploy/preflight-secrets.py` —— up 前預檢（缺檔／CR·LF／composite drift 一律非零退出）
+4. `bash deploy/generate-dev-cert.sh` —— dev TLS 憑證（front-nginx 恆 bind-mount 兩支 pem，缺檔＝Docker 代建空目錄佔位→nginx 起不來）
+5. `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait` —— 起預設業務件（migrate 是啟動閘：migration 失敗→rust-api 不啟）
+
+已有 age 私鑰的新機：步驟 2 前先 `python3 deploy/decrypt-secrets.py`（自密文還原十支；passphrase 只輸入一次）。
+
+## 2. 日常起停
+
+`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait`／`stop`／`ps`；host 埠世代 3xxxx（ADR-00001；真表＝`docs/generated/reference/ports.md`）。rev5 對照 stack 常駐 2xxxx、兩 stack 併行是預期形（CLAUDE.md §7）。其餘隨對應刀補實文。
+
+## 3. 觀測層 profiles（obs／metrics／jobs）
+
+compose profile 三組：`obs`（loki、alloy、socket-proxy、grafana）、`metrics`（prometheus、postgres_exporter、redis_exporter、pushgateway、grafana）、`jobs`（reaper）；起法 `--profile <名>` 追加於 §2 命令。隨觀測刀補實文。
+
+## 4. ★人工必填清單（腳本不代辦）
+
+- `alert_webhook_url`：腳本只寫佔位 URL（`.invalid` 保留域）；真值由 user 直接編輯落點檔、填完依 §15.4 回寫密文（無任何閘攔佔位值、唯一徵狀＝告警投遞靜默失敗）。
+- `smtp_password`：dev 走 mailpit 免認證、亂數即可；prod 真值另填。
+
+## 5. named volume（卷名帶 project 前綴 `rev6-admin_`）
+
+隨對應刀補實文。
+
+## 6. 備份與還原
+
+`python3 deploy/backup-db.py`（承 rev5:RUNBOOK §6 dump／restore／drill 三形；落點 `$HOME` 防跨代撞名）。隨對應刀補實文。
+
+## 7. 機密輪替表（生成明細→`deploy/secrets/README.md`；密文面連帶＝§15）
+
+抬頭＝落點取值片段（**刻意不設回退**：只嚴格讀 `.env` 一行、取不到即印 FAIL；與 `tools/bootstrap.sh` 同口徑）：
+
+```bash
+SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env 無 SECRETS_DIR= 行"; exit 1; }; echo "$SD"
+```
+
+十三機密對照表、dual-write 不變式、輪替連帶皆住 `deploy/secrets/README.md`；本章隨首個機密事件補實。
+
+## 8. reaper 操作
+
+`python3 deploy/setup-reaper-role.py`（reaper role 設密、走 `docker compose exec psql`）。隨 jobs 軌刀補實文。
+
+## 9. 維運端點與 DB 直連
+
+隨對應刀補實文（埠＝`docs/generated/reference/ports.md`；rev6 的 psql 絕不指向 rev5 庫）。
+
+## 9c. CDP 真登入走查的環境還原契約
+
+隨首個需走查的刀遷入（工具承 rev5 `tools/walkthrough-baseline.py`；契約住本節、CLAUDE.md §7 以節名引）。
+
+## 10. migration 操作
+
+隨首個 schema 刀補實文。
+
+## 11. 觀測層維運
+
+隨觀測刀補實文。
+
+## 12. 工具鏈速查（python 工具一律 `python3` 前綴直跑）
+
+rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測試跑）而非受測物真失敗——雙證＝rc＋輸出行為。
+
+| 命令 | 作用 | 需運行中 stack |
+|---|---|---|
+| `python3 tools/docsync generate` | 由真源重算全部生成物（GENERATED_FILES 名冊；跑完必 `git add`） | 否 |
+| `python3 tools/docsync check` | GT-01 零漂移比對（pre-commit 第一道） | 否 |
+| `python3 tools/docsync lint` | 其餘閘 GT-02～GT-12（pre-commit 第二道；Day-1 豁免逐筆具名 SKIP） | 否 |
+| `python3 tools/docsync rules emit --scope <implementer\|review\|fix\|主線\|人> [--format js]` | 規則塊＋`RULES-VERSION`（Workflow script 必帶、PreToolUse hook 對賬） | 否 |
+| `python3 tools/docsync errata <詞>` | 全 repo（含兩子庫 pin 樹）同語意枚舉 | 否 |
+| `python3 tools/docsync test` | 治理工具自測（語料面 tests/） | 否 |
+| `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對） | 否 |
+| `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
+| `node tools/orchestration/harness-test.mjs`／`harness-test-quality-only.mjs` | 編排骨架 harness 自測（十案） | 否 |
+| `node tools/orchestration/cdp.mjs` | CDP 對照走查工具（127.0.0.1:9229；CLAUDE.md §7） | 是（host 瀏覽器） |
+| `python3 deploy/generate-secrets.py [--force\|--compose-only]` | 十三機密缺則補／全重生／只重組 composite | 否（需 docker） |
+| `python3 deploy/preflight-secrets.py` | 上機前把關 | 否 |
+| `python3 deploy/decrypt-secrets.py` | 密文→落點明文（`RV6_DECRYPT_MANUAL=1`＝逐次手打退路） | 否（需 docker＋tty） |
+| `python3 deploy/setup-reaper-role.py` | reaper role 設密（§8） | 是 |
+| `python3 deploy/backup-db.py` | DB 備份／還原（§6） | 是 |
+| `./deploy/sops.sh <sops 參數>` | sops 官方容器 wrapper（digest 釘版；鑰選取＝`RV6_AGE_KEY_FILE` 優先、否則命名紀律預設檔） | 否（需 docker） |
+| `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
+| `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
+
+碼面閘（schema-gate、entity-drift-gate、wire-schema、fork-delta-lint、route-artifact-gate、view-render-guard、seed-view-gate、rust-fmt-gate）隨子庫刀進場、進場時入本表。
+
+## 13. 故障排除速查
+
+索引→`docs/ops/LESSONS.md`、全文→`docs/ops/LESSONS/`；本表只指路。前代候選＝rev5 `docs/ops/LESSONS.md`（唯讀、引用帶 `rev5:`）。
+
+## 14. 埠與帳號
+
+- 真相源：埠全表→`docs/generated/reference/ports.md`（機器生成；配號紀律＝ADR-00001、世代 3xxxx）；帳號／角色→`docs/generated/reference/accounts.md`（隨首個 schema 刀產出；dev 帳號 Super／Admin／User 承 rev5 對照基準）。
+- 本檔命令帶字面埠純為可複製執行；動埠的刀照勘誤紀律（`python3 tools/docsync errata <埠>`）機器枚舉全 repo 同步、含本檔。
+
+## 15. SOPS 機密營運（密文入版控 × age 私鑰）
+
+資產：密文 `deploy/secrets.dev.enc.yaml`（tracked；十支＝九 leaf＋`alert_webhook_url`）；recipient 兩把（`.sops.yaml`）＝開發鑰 `keys-fork260509-rev6.txt`（住 `~/.config/sops/age/`、世代錯開、不沿用 rev5 鑰）與離線復原鑰（只存離線、承 rev5:B-041 義務）；wrapper `deploy/sops.sh`（鑰選取＝`RV6_AGE_KEY_FILE` 優先、否則命名紀律預設檔）；`RV6_DECRYPT_MANUAL=1`＝逐次手打退路。passphrase 只存持鑰者腦中與離線紙本、絕不進 chat／命令／檔案。
+程序見 `deploy/secrets/README.md`（解密／重組／預檢三條路徑、亂數生成、特例與不變式）；加人、撤銷、值變更回寫、災難復原四情境、輪替表、手動 wrapper 三步——細節承 rev5:RUNBOOK §15 同節，隨首個機密事件補實。
+
+### 15.2 加人四步（新成員／新機器）
+
+承 rev5:RUNBOOK §15.2（產鑰→交公鑰入 `.sops.yaml`→`updatekeys`→新機 decrypt）；隨首個加人事件補實。
+
+### 15.4 值變更後回寫加密檔
+
+承 rev5:RUNBOOK §15.4（路徑 (a) 全套重建；不需 passphrase）；隨首個值變更事件（`alert_webhook_url` 真值）補實。
+
+## 16. 部署 checklist
+
+prod 不入 roadmap（承 rev5:ADR 0014）；信任錨與 IP 存取閘設定＝`deploy/trust-model.dev.toml`。隨對應刀補實文。

@@ -89,3 +89,4 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 - **波**＝啟動書 §5 的階段；**現在波**＝`docs/ops/NOTES.md` 首行 `<!-- wave: N -->`。
 - **活書家族**＝docs/arc42（不含 decisions/）、docs/c4、docs/compliance、docs/process；**現在式面**＝活書家族＋docs/ops、docs/generated、README.md、CLAUDE.md、constitution、tools/、deploy/、.githooks/、.claude/hooks 與 settings.json；**史料面**＝docs/brainstorms、specs、docs/reviews；**第三方面**＝.claude/skills、.specify（constitution 除外）；**語料面**＝tools/docsync/tests。後三面不受裸編號、時態、形制掃描。
 - **提及**＝反引號或「」內的引用、不算使用（裸編號閘不判）；**人審**＝merge 回 default 前 user 的當次明確同意＋拍板級親決（憲法 §I.8）。
+- **系統層**＝arc42 E 子節、docs/c4、docs/compliance 所述之 rev6 系統本體；**流程層**＝docs/process 所述之開發流程 AI 代理（啟動書 D16）；**例外註冊**＝住 docs/generated/ 之外但入 GENERATED_FILES 名冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`）。
