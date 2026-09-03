@@ -2,6 +2,7 @@
 
 references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_reference_perf、gen_milestones、gen_state（git／波／憲法／帳面／三指標／預算／尾 3 事件）、
 gen_lessons_index（例外註冊；next＝檔集最大號＋1、ADR-00005）、gen_architecture_index（例外註冊；arc42 節檔 frontmatter）、gen_rad_ai_map（兩層填實計數）、
+gen_rev5_blueprint_map（rev5 藍本對照表；frontmatter rev5_blueprint 對 20 列名冊、缺列可見不斷言、ADR-00006）、gen_reference_agents（編排 script 的 *_OPTS 名冊）、
 compute_generated（名冊→內容）、check_generated（缺／漂移／名冊外）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
 """
 import os
@@ -19,6 +20,7 @@ GENERATED_FILES = (
     "docs/generated/STATE.md", "docs/generated/MILESTONES.md", "docs/generated/DECISIONS-INDEX.md", "docs/generated/GATES.md",
     "docs/generated/RAD-AI-MAP.md", "docs/generated/reference/ports.md", "docs/generated/reference/perf.md", "tools/orchestration/_sk_rules.js",
     "docs/arc42/ARCHITECTURE.md", "docs/ops/LESSONS.md",  # 例外註冊兩件（啟動書 §3.1；ADR-00005）
+    "docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md",  # 波 3（ADR-00006；啟動書 §3.2 P-E2）
 )
 RE_CHAPTER = re.compile(r"^docs/arc42/(\d{2})-[a-z0-9-]+\.md$")
 RE_H1 = re.compile(r"^#\s+(?:§\s*\d+\s+)?(.+?)\s*$", re.M)
@@ -27,6 +29,18 @@ RAD_AI_ITEMS = tuple(f"E{i}" for i in range(1, 9)) + ("C4-E1", "C4-E2", "C4-E3",
 RE_PORT = re.compile(r'^\s+-\s+"?(?:(\d{1,3}(?:\.\d{1,3}){3}):)?(\d+):(\d+)(?:/(?:tcp|udp))?"?\s*$')
 RE_VERSION = re.compile(r"\*\*Version\*\*:\s*([0-9.]+)")
 PORT_GENERATION_PREFIX = "3"
+REV5_BLUEPRINT = (  # rev5 活書標題名冊（凍結 SHA 7eab28a；欄＝字面｜層｜所屬 §N）；字面對 rev5 檔的一次性核對見 ADR-00006 證據段
+    ("§1 簡介與目標", "##", 1), ("§2 約束", "##", 2), ("§3 系統脈絡", "##", 3), ("§4 解法策略", "##", 4),
+    ("§5 Building blocks", "##", 5), ("§6 Runtime", "##", 6),
+    ("信任錨與 IP 存取閘", "###", 6), ("會話狀態機（sys_token）", "###", 6),
+    ("登入失敗節流三區（帳號維＋來源維）", "###", 6), ("使用者域斷權與密碼三入口（007 落地）", "###", 6),
+    ("§7 部署", "##", 7), ("§8 橫切概念", "##", 8),
+    ("fork-delta 接線現況（base-web）", "###", 8), ("資料慣例", "###", 8), ("API 慣例", "###", 8), ("授權慣例", "###", 8),
+    ("§9 架構決策", "##", 9), ("§10 品質要求", "##", 10), ("§11 風險與技術債", "##", 11), ("§12 名詞表", "##", 12),
+)
+BLUEPRINT_DISPOSITIONS = ("承襲", "隨刀：", "不承襲：")
+BLUEPRINT_DIR = "docs/generated/reference"
+RE_OPTS = re.compile(r"^const ([A-Z][A-Z0-9_]*_OPTS)\s*=\s*\{\s*model:\s*'([^']*)'\s*,\s*effort:\s*'([^']*)'\s*\}", re.M)
 BUDGET_GATES, BUDGET_BACKLOG_OPEN = 12, 25
 
 
@@ -235,6 +249,56 @@ def gen_rad_ai_map(ctx):
     return "\n".join(lines) + "\n"
 
 
+def gen_rev5_blueprint_map(ctx):
+    """rev5 藍本對照表（ADR-00006）：frontmatter rev5_blueprint 對 REV5_BLUEPRINT 名冊；缺／重複／未知鍵／形制只排列、永不拋錯（R2-F19 非常駐閘）。"""
+    decl = {}
+    for rel, meta, _ in _book_meta(ctx, "docs/arc42/"):
+        bp = meta.get("rev5_blueprint") if RE_CHAPTER.match(rel) else None
+        if isinstance(bp, dict):
+            for k, v in bp.items():
+                decl.setdefault(k, []).append((rel, str(v)))
+    n = {"缺": 0, "重複": 0, "未知鍵": 0, "形制": 0}
+    rows = []
+    for h, lvl, sec in REV5_BLUEPRINT:
+        layer = "##" if lvl == "##" else f"### §{sec}"
+        ds = decl.get(h, [])
+        if not ds:
+            n["缺"] += 1
+            rows.append(f"| {h} | {layer} | 缺 | 缺 |")
+            continue
+        if len(ds) > 1:
+            n["重複"] += 1
+        for rel, v in ds:
+            bad = not v.startswith(BLUEPRINT_DISPOSITIONS)
+            n["形制"] += bad
+            tag = "重複：" if len(ds) > 1 else ("形制：" if bad else "")
+            rows.append(f"| {h} | {layer} | {_link(rel, BLUEPRINT_DIR)} | {tag}{v} |")
+    for h in sorted(set(decl) - {h for h, _, _ in REV5_BLUEPRINT}):
+        n["未知鍵"] += 1
+        rows.append(f"| {h} | 未知鍵 | {'、'.join(_link(r, BLUEPRINT_DIR) for r, _ in decl[h])} | 未知鍵 |")
+    lines = [GENERATED_HEADER, "# reference/rev5-blueprint-map — rev5 活書藍本對照表（一次性 migrate-audit 面；ADR-00006）", "",
+             "名冊＝rev5 活書 `../fork260509-rev5/docs/arc42/ARCHITECTURE.md`（凍結 SHA 7eab28a）的 12 個 `##`＋8 個 `###`（`references.REV5_BLUEPRINT`）；"
+             "去處＝`docs/arc42/NN-*.md` frontmatter `rev5_blueprint`（鍵＝rev5 標題字面、值＝承襲（…）／隨刀：…／不承襲：…）。"
+             "未宣告列「缺」、多檔宣告標「重複」、鍵不在名冊列「未知鍵」、值不以三詞起頭標「形制」；四項皆零＝藍本對照表零缺（波 3 出口判準、非常駐閘）。", "",
+             "| rev5 標題 | 層 | rev6 去處 | 處置 |", "|---|---|---|---|"] + rows + \
+            ["", f"缺：{n['缺']}｜重複：{n['重複']}｜未知鍵：{n['未知鍵']}｜形制：{n['形制']}"]
+    return "\n".join(lines) + "\n"
+
+
+def gen_reference_agents(ctx):
+    """編排 script 的模型與 effort 名冊（啟動書 §3.2 P-E2）：tracked tools/orchestration/*.js|*.mjs 的 `const X_OPTS = { model, effort }` 字面；名冊內生成物不入掃描面。"""
+    rows = []
+    for rel in sorted(set(ctx.tracked)):
+        if rel.startswith("tools/orchestration/") and rel.endswith((".js", ".mjs")) and rel not in GENERATED_FILES:
+            for m in RE_OPTS.finditer(ctx.text(rel) or ""):
+                rows.append(f"| {os.path.basename(rel)} | {m.group(1)} | {m.group(2)} | {m.group(3)} |")
+    lines = [GENERATED_HEADER, "# reference/agents — 編排 script 的模型與 effort 名冊", "",
+             "來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面（generate 重算）；"
+             "角色×刻板型×產物進哪道閘＝`docs/process/P-E2-agent-registry.md`（人寫）；換模史＝git。", "",
+             "| script | 常數 | model | effort |", "|---|---|---|---|"] + (rows or ["| — | — | — | — |"])
+    return "\n".join(lines) + "\n"
+
+
 def _budget_rows(ctx, counts, caps, backlog_open):
     rows = []
     try:
@@ -306,6 +370,8 @@ def compute_generated(ctx):
         "docs/generated/RAD-AI-MAP.md": gen_rad_ai_map(ctx),
         "docs/arc42/ARCHITECTURE.md": gen_architecture_index(ctx),
         "docs/ops/LESSONS.md": gen_lessons_index(ctx),
+        "docs/generated/reference/rev5-blueprint-map.md": gen_rev5_blueprint_map(ctx),
+        "docs/generated/reference/agents.md": gen_reference_agents(ctx),
     }
     try:
         from . import gates
