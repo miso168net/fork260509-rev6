@@ -50,8 +50,21 @@ class TestProcessAndSubsections(unittest.TestCase):
         f = "docs/arc42/13-operational-ai-view.md"
         fs = errs(run({f: fm + "# 13\n\n## 監測\n"}))
         self.assertTrue(any("Incident Response" in x[3] for x in fs))
-        self.assertEqual(errs(run({f: fm.replace("---\n# ", "") .replace("  Rollback Policy: 回滾政策\n", "  Rollback Policy: 回滾政策\n  Incident Response: 事故應變\n") + "# 13\n"})), [])
-        self.assertEqual(errs(run({f: fm + "# 13\n\n目前無 AI 元件（截至 2026-09-03）；本層隨 AI 功能刀填入。\n"})), [])
+        full = fm.replace("  Rollback Policy: 回滾政策\n", "  Rollback Policy: 回滾政策\n  Incident Response: 事故應變\n")
+        h3 = "# 13\n\n### 監測\n\n### 再訓練政策\n\n### 部署策略\n\n### 回滾政策\n\n### 事故應變\n"
+        self.assertEqual(errs(run({f: full + h3})), [])
+        no_map = "---\nsection: 13\nrad_ai: [E8]\n---\n"
+        self.assertEqual(errs(run({f: no_map + "# 13\n\n目前無 AI 元件（截至 2026-09-03）；本層隨 AI 功能刀填入。\n"})), [])
+
+    def test_rad_ai_map_values_must_be_h3_headings(self):
+        """第八腿（波 2 grill Q4）：有 map 的檔，每個 map 值必為同檔某 ### 標題字面；兩鍵同值只需一個標題；反向不要求。"""
+        p = "docs/process/P-E1-boundary.md"
+        fm = "---\nrad_ai: [E1]\nrad_ai_map:\n  AI Components Inventory: 甲\n  System Boundary Diagram: 乙\n  Four-Part Boundary Contract: 乙\n  Failure Modes: 丙\n  External AI Dependencies: 丁\n---\n"
+        body = "# P\n\n### 甲\n\n類比張力：x\n\n### 乙\n\n類比張力：x\n\n### 丙\n\n類比張力：x\n\n### 戊\n\n類比張力：額外標題可有。\n"
+        fs = errs(run({p: fm + body}))
+        self.assertTrue(any("無對應 ### 標題" in x[3] and "丁" in x[3] for x in fs), fs)
+        self.assertFalse(any("乙" in x[3] or "戊" in x[3] for x in fs), fs)
+        self.assertEqual(errs(run({p: fm + body + "\n### 丁\n\n類比張力：x\n"})), [])
 
 
 class TestChecklist(unittest.TestCase):

@@ -414,7 +414,7 @@ def gt_10(ctx):
       id=GT-10
       rule=RL-0035
       source=ADR-00004
-      drift=佔位與樣板文、子項名冊、圖表對賬
+      drift=佔位與樣板文、子項名冊（鍵集＋值↔標題）、圖表對賬
       face=BOOK_FACE（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process）
       trigger=pre-commit
       rc=1
@@ -455,6 +455,12 @@ def gt_10(ctx):
                 missing = sorted(need - keys)
                 if missing:
                     out.append(finding(ERROR, "GT-10", rel, f"{e} 子項名冊缺：{'、'.join(missing)}（frontmatter rad_ai_map 鍵集須 ⊇ reference 子節）"))
+        amap = meta.get("rad_ai_map")
+        if isinstance(amap, dict):  # 第八腿（波 2 grill Q4）：map 值＝同檔 ### 標題字面；反向不要求、多鍵同值合法
+            h3 = {RE_H3.sub("", l).strip() for l in stripped.split("\n") if RE_H3.match(l)}
+            for k, v in amap.items():
+                if v not in h3:
+                    out.append(finding(ERROR, "GT-10", rel, f"map 值「{v}」無對應 ### 標題（鍵 {k}；rad_ai_map 值＝同檔 ### 標題字面）"))
         nodes = _mermaid_nodes(text)
         if nodes:
             cells = _table_first_cells(text)

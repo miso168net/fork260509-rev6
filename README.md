@@ -15,10 +15,12 @@ fork260509-rev6/
 ├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00004；名詞段住此
 ├── docs/ops/NOTES.md                當前意圖；首行 <!-- wave: N --> 為「現在波」唯一真源
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES 與 reference/perf
-├── docs/ops/BACKLOG.md、LESSONS/    待辦 BL-NNNNN 與教訓 LL-NNNNN（波 2 建空檔；完成即刪、git 即史）
+├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   待辦兩卷 BL-NNNNN（開放／滯後；配號只在主檔；完成即刪、git 即史）
+├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN
+├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；創世期最小章 §1／§7 抬頭／§12／§14、§15 為指針、其餘隨刀補實
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
-├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（波 2 骨架、永遠現在式）
-├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／reference/{ports,perf}
+├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
+├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf}
 ├── docs/brainstorms/                史料面：啟動書 000-doc-architecture、波 1 計畫 000-w1-governance-tooling、各刀階段 0 產出
 ├── specs/<NNN>-<feature-name>/      spec-kit per-feature 文件（首刀時出現、收刀即凍結）
 ├── tools/                           repo 治理面工具鏈（pre-commit／bootstrap 掛勾；管「版控品質」）
@@ -88,6 +90,9 @@ fork260509-rev6/
 | 為什麼這樣做 | `docs/arc42/decisions/`（索引＝`docs/generated/DECISIONS-INDEX.md`） |
 | 現在到哪、下一步 | `docs/generated/STATE.md`、`docs/ops/NOTES.md` |
 | 哪些規則、誰守 | `docs/ops/RULES.md`、`docs/generated/GATES.md` |
+| 怎麼操作（起停、機密、工具） | `docs/ops/RUNBOOK.md` |
+| 系統長怎樣（活書索引） | `docs/arc42/ARCHITECTURE.md`（機器生成；節檔住 `docs/arc42/`） |
+| RAD-AI 導入到哪、填實幾成 | `docs/generated/RAD-AI-MAP.md` |
 | 埠、效能資料點 | `docs/generated/reference/ports.md`、`docs/generated/reference/perf.md` |
 | 收刀／review 史 | `docs/generated/MILESTONES.md`（真源＝`docs/ops/events.jsonl`） |
 | rev5 藍本 | `../fork260509-rev5/`（唯讀；憲法 §I.5、CLAUDE.md §7） |

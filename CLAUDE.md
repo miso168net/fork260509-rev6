@@ -61,7 +61,7 @@
 主線例行只在單元邊界醒（看門狗告警除外）。★單元收尾**六步序、次序不可反**（RL-0006／RL-0011／RL-0022／RL-0072）：
 　①復核 agent 回報（逐項自 grep 驗證、不採信；凡本單元改變的字面→`python3 tools/docsync errata <詞>` 跨檔假述枚舉、改完復掃）
 　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事）
-　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS append、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
+　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
 　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated`
 　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」，rev5:L-022、RL-0008）。
 　★③必須早於⑤：STATE.md 帳面統計與 pins 由 generate 現讀，反序即產出舊值且無 diff 可察（rev5:L-018）。
@@ -71,7 +71,7 @@
   ```
 
   ★wf-watchdog 的 runaway 判準＝數**不重複 agent key**（非 journal 行數）——勿以行數直覺判保險絲。
-- **隨做隨記**：新拍板→ADR draft→accepted；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS append；衍生工作→BACKLOG append；per-unit pin 即時 bump。
+- **隨做隨記**：新拍板→ADR draft→accepted；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）；衍生工作→BACKLOG append；per-unit pin 即時 bump。
   一次性遷移（改名／搬移／基線前進／拓樸調整）之 brainstorm 或 spec 附 Risk／Guard／Rollback 三欄表。
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
   程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。
@@ -103,7 +103,7 @@
 
 細則全在 `docs/ops/RULES.md`（RL-0047～RL-0055）；本節只列指針：
 
-- **三材質**：人寫／事件源（`docs/ops/events.jsonl`）／機器生成（`docs/generated/**`＋`tools/orchestration/_sk_rules.js`、名冊＝GENERATED_FILES、嚴禁手改）。
+- **三材質**：人寫／事件源（`docs/ops/events.jsonl`）／機器生成（`docs/generated/**`＋`tools/orchestration/_sk_rules.js`＋例外註冊 `docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`；名冊＝GENERATED_FILES、嚴禁手改）。
   每個事實只有一個人寫的家；鏡像不是機器生成、就是不存在（RL-0049；GT-01 零漂移）。
 - **權威鏈**：constitution ＞ ADR accepted ＞ RULES ＞ 活書家族 ＞ generated（RL-0047）。
 - **時態分離**：活書家族永遠現在式；未來式住 ops/；過去式住 git＋events（RL-0048；GT-06）。完成即刪、git 即史；刪列前先掃現在式引用（RL-0050）。

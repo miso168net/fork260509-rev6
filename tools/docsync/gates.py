@@ -88,11 +88,7 @@ def _has_close_events(ctx):
 
 DAY1_EXEMPTIONS = {
     "GT-03.no-close-events": Day1Exemption("GT-03.no-close-events", "波 1 尚無 feature_close／review 事件", _has_close_events, "2026-09-03"),
-    "GT-05.ledgers-absent": Day1Exemption("GT-05.ledgers-absent", "BACKLOG／LESSONS 帳本波 2 才建空檔", lambda ctx: ctx.exists(BACKLOG) and ctx.exists(LESSONS_INDEX), "2026-09-03"),
-    "GT-06.book-absent": Day1Exemption("GT-06.book-absent", "活書家族波 2 骨架才落地", lambda ctx: any(book_mod.is_book(r) for r in ctx.tracked), "2026-09-03"),
     "GT-08.lessons-absent": Day1Exemption("GT-08.lessons-absent", "首條 LL 教訓尚未落地", lambda ctx: ctx.exists(LESSONS_DIR), "2026-09-03"),
-    "GT-10.doc-skeleton-absent": Day1Exemption("GT-10.doc-skeleton-absent", "活書骨架波 2 才落地", lambda ctx: ctx.exists(book_mod.SKELETON_ANCHOR), "2026-09-03"),
-    "GT-12.runbook-absent": Day1Exemption("GT-12.runbook-absent", "RUNBOOK 波 2 才建", lambda ctx: ctx.exists(RUNBOOK), "2026-09-03"),
 }
 
 
