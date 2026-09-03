@@ -2,7 +2,7 @@
 # STATE — 現況機器帳
 
 ## git
-- default branch：rev6-admin-root
+- default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
 - pins：base-web=8fea31e｜rust-api=512024e
 
 ## 現在波
@@ -39,6 +39,6 @@
 | BACKLOG 開放 | 7 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
-- 2026-09-03｜perf｜—｜
+- 2026-09-03｜perf｜close_bookkeeping｜close_bookkeeping 8.5 秒 rc=0
 - 2026-09-03｜misc｜governance｜rev6 波 5 文件創世驗收收單：DoD A 六條全勾（報告 docs/reviews/20260903-doc-genesis.md＋首筆 review 事
-- 2026-09-03｜review｜doc-genesis｜
+- 2026-09-03｜review｜doc-genesis｜findings 0（修 0／BL 0／ADR 0）

@@ -168,6 +168,16 @@ class TestRunLint(unittest.TestCase):
         self.assertRegex(summary, r"^lint：\d+ 錯誤／\d+ 警告／\d+ 閘跳過$")
         self.assertEqual(errs(fs), [])
 
+    def test_gates_md_prints_predicate_text_per_exemption(self):
+        key = "GT-99.fake"
+        gates.DAY1_EXEMPTIONS[key] = common.Day1Exemption(key, "樁", lambda ctx: False, "2026-09-03", "樁謂詞字面")
+        try:
+            out = gates.gen_gates_md(common.Ctx(ROOT))
+            self.assertIn("| GT-99.fake | 樁 | 樁謂詞字面 | 2026-09-03 |", out)
+            self.assertNotIn("檔／事件存在（見 gates.py）", out)
+        finally:
+            del gates.DAY1_EXEMPTIONS[key]
+
     def test_gates_md_has_roster_and_header(self):
         out = gates.gen_gates_md(common.Ctx(ROOT))
         self.assertTrue(out.startswith(common.GENERATED_HEADER))

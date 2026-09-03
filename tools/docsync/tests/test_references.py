@@ -46,6 +46,30 @@ class TestStateAndCheck(unittest.TestCase):
         self.assertEqual(references.check_generated(stub({"docs/generated/STATE.md": "S\n"}), computed), [])
 
 
+class TestMilestonesAndStateRendering(unittest.TestCase):
+    def test_same_day_events_render_newest_first_and_review_summary_is_zh(self):
+        ev = [{"type": "misc", "date": "2026-09-03", "summary": "第一筆", "category": "governance", "backlog_add": []},
+              {"type": "misc", "date": "2026-09-03", "summary": "第二筆", "category": "governance", "backlog_add": []},
+              {"type": "review", "date": "2026-09-03", "scope": "s", "report": "docs/reviews/x.md",
+               "findings": {"total": 3, "fixed": 1, "to_backlog": ["BL-00009"], "wontfix_adr": ["ADR-00009"]}}]
+        out = references.gen_milestones(ev)
+        rows = [ln for ln in out.split("\n") if ln.startswith("| 2026")]
+        self.assertIn("review", rows[0]); self.assertIn("第二筆", rows[1]); self.assertIn("第一筆", rows[2])   # 同日：後 append 者在前
+        self.assertIn("findings 3（修 1／BL 1／ADR 1）；BL-00009、ADR-00009", rows[0])
+        self.assertNotIn("{'total'", out)
+
+    def test_state_recent_events_render_perf_and_review(self):
+        misc = json.dumps({"type": "misc", "date": "2026-09-03", "summary": "s", "category": "governance", "backlog_add": []})
+        perf = json.dumps({"type": "perf", "date": "2026-09-03", "kind": "close_bookkeeping", "wall_s": 6.5, "rc": 0, "notes": "n"})
+        rev = json.dumps({"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/x.md",
+                          "findings": {"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}})
+        files = {RULES: RULES_TEXT, EVENTS: misc + "\n" + rev + "\n" + perf + "\n", NOTES: "<!-- wave: 1 -->\n", CONSTITUTION: "**Version**: 1.0.0 |\n", "CLAUDE.md": "a\n"}
+        out = references.gen_state(stub(files))
+        self.assertIn("｜perf｜close_bookkeeping｜close_bookkeeping 6.5 秒 rc=0", out)
+        self.assertIn("｜review｜sc｜findings 0（修 0／BL 0／ADR 0）", out)
+        self.assertIn("| 閘數 | ", out); self.assertIn("| BACKLOG 開放 | ", out)
+
+
 class TestGenerateIdempotent(unittest.TestCase):
     def test_generate_twice_same_bytes_and_check_green(self):
         root = tempfile.mkdtemp()

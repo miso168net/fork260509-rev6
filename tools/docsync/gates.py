@@ -82,7 +82,7 @@ def gate_id(fn):
 # Day-1 具名豁免（§4.6 四欄：鍵→理由、解除謂詞、到期即紅、登記日）
 # ---------------------------------------------------------------------------
 DAY1_EXEMPTIONS = {
-    "GT-08.lessons-absent": Day1Exemption("GT-08.lessons-absent", "首條 LL 教訓尚未落地", lambda ctx: ctx.exists(LESSONS_DIR), "2026-09-03"),
+    "GT-08.lessons-absent": Day1Exemption("GT-08.lessons-absent", "首條 LL 教訓尚未落地", lambda ctx: ctx.exists(LESSONS_DIR), "2026-09-03", "docs/ops/LESSONS/ 目錄存在（首條 LL 落地）"),
 }
 
 
@@ -95,7 +95,7 @@ def gt_01(ctx):
       rule=RL-0049
       source=rev5:ADR 0052
       drift=generated↔真源
-      face=GENERATED_FILES（docs/generated/**＋tools/orchestration/_sk_rules.js）
+      face=GENERATED_FILES（docs/generated/**＋tools/orchestration/_sk_rules.js＋例外註冊 docs/arc42/ARCHITECTURE.md、docs/ops/LESSONS.md）
       trigger=pre-commit
       rc=1
       breaks-if-removed=鏡像可手改、生成檔與真源靜默分叉
@@ -404,5 +404,5 @@ def gen_gates_md(ctx):
         lines.append(f"| {gid} | {b.get('rule', '')} | {b.get('drift', '')} | {b.get('source', '')} | {b.get('face', '')} | {b.get('trigger', '')} | {b.get('rc', '')} | {status} | {b.get('breaks-if-removed', '')} |")
     lines += ["", "## Day-1 豁免登記（鍵｜理由｜解除謂詞｜登記日）", "", "| 鍵 | 理由 | 解除謂詞 | 登記日 |", "|---|---|---|---|"]
     for k, ex in DAY1_EXEMPTIONS.items():
-        lines.append(f"| {k} | {ex.reason} | 檔／事件存在（見 gates.py） | {ex.registered} |")
+        lines.append(f"| {k} | {ex.reason} | {ex.predicate_text or '（見 gates.py）'} | {ex.registered} |")
     return "\n".join(lines) + "\n"

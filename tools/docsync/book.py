@@ -26,7 +26,7 @@ RE_KNIFE = re.compile(r"^\d{3}-")
 SUB_SCAN = r"(^|[^A-Za-z0-9:_-])(B-[0-9]{3}|L-[0-9]{3})([^0-9]|$)"
 
 PRESENT_TENSE_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/", "docs/ops/", "docs/generated/",
-                      "README.md", "CLAUDE.md", CONSTITUTION, "tools/", "deploy/", ".githooks/", ".claude/hooks/", ".claude/settings.json")
+                      "README.md", "CLAUDE.md", CONSTITUTION, "tools/", "deploy/", ".githooks/", ".githooks-submodule/", ".claude/hooks/", ".claude/settings.json")
 HISTORY_FACE = ("docs/brainstorms/", "specs/", "docs/reviews/")
 THIRD_PARTY_FACE = (".claude/skills/", ".specify/")
 FIXTURE_FACE = ("tools/docsync/tests/",)
@@ -320,7 +320,7 @@ def errata_scan(ctx, keyword):
 
 
 # ---------------------------------------------------------------------------
-# （三）GT-10 文件形制閘（§3.4；Day-1 豁免 GT-10.doc-skeleton-absent）
+# （三）GT-10 文件形制閘（§3.4；Day-1 豁免 GT-10.doc-skeleton-absent 已於波 2 解除——活書家族全缺時的 SKIP 為 fail-closed 分支、由 run_lint 以「未登記 SKIP 鍵」告警）
 # ---------------------------------------------------------------------------
 FORM_FACE = BOOK_FACE
 AIV_KEYS = tuple(f"AIV-1{c}" for c in "abcdefgh") + tuple(f"AIV-2{c}" for c in "abcdefgh") + tuple(f"AIV-{n}" for n in range(3, 10))

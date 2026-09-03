@@ -92,7 +92,7 @@ def gt_08(ctx):
       face=docs/ops/RULES.md；docs/ops/LESSONS/*.md
       trigger=pre-commit
       rc=1
-      breaks-if-removed=規則層可無來源、可超上限、教訓可不指向規則
+      breaks-if-removed=規則層可無來源、教訓可不指向規則
     """
     out = []
     text = ctx.text(RULES)
