@@ -229,7 +229,7 @@ def gen_rad_ai_map(ctx):
             sys_sub = "目前無"
         else:
             sys_sub = "、".join(_filled(m, b, item) for _, m, b in s)
-        stage = "、".join(str(m["rad_ai_stage"]) for _, m, _ in s if m.get("rad_ai_stage")) or "—"
+        stage = "、".join(dict.fromkeys(str(m["rad_ai_stage"]) for _, m, _ in s if m.get("rad_ai_stage"))) or "—"  # 去重、保序
         lines.append(f"| {item} | {'、'.join(_link(r, GENERATED_DIR) for r, _, _ in s) or '—'} | {sys_sub} | "
                      f"{'、'.join(_link(r, GENERATED_DIR) for r, _, _ in p) or '—'} | {'、'.join(_filled(m, b, item) for _, m, b in p) or '—'} | {stage} |")
     return "\n".join(lines) + "\n"

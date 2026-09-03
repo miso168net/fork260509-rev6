@@ -19,7 +19,7 @@ fork260509-rev6/
 ├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN
 ├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；創世期最小章 §1／§7 抬頭／§12／§14、§15 為指針、其餘隨刀補實
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
-├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（波 2 骨架、永遠現在式）
+├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
 ├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf}
 ├── docs/brainstorms/                史料面：啟動書 000-doc-architecture、波 1 計畫 000-w1-governance-tooling、各刀階段 0 產出
 ├── specs/<NNN>-<feature-name>/      spec-kit per-feature 文件（首刀時出現、收刀即凍結）
