@@ -3,7 +3,7 @@
 
 腿①（承 rev4:L-113、rev5 防呆①②）：sub-agent 不繼承主線 CLAUDE.md／session 語言紀律，未明令即預設英文
 寫 report/blocker/程式碼註解——強制令必須逐字烤進 script 本體，本 hook 為機器兜底。
-腿②（rev6 §3.6、R2-F21；user 拍板：所有 Workflow script 一律必帶）：規則塊由 `python3 tools/docsync rules emit`
+腿②（啟動書 docs/brainstorms/000-doc-architecture.md §3.6（R2-F21）；user 拍板：所有 Workflow script 一律必帶）：規則塊由 `python3 tools/docsync rules emit`
 產出、末行 `RULES-VERSION: <sha256 前 12>`；本 hook 自 script 抽該串並與 docs/ops/RULES.md 現算值比對——
 純字面斷言只證明有人打了那串字，對賬才證明規則塊是現行版。不符＝規則層已更新而骨架仍舊 → 擋。
 以 {name:...} 呼叫之預存 workflow 無 script 可驗→放行；輸入異常不擋（fail-open：本閘是兜底、非唯一防線）。
@@ -49,7 +49,7 @@ def main() -> int:
     found = set(RE_VERSION.findall(content))
     if not found:
         sys.stderr.write(
-            "[pre-workflow-gate] Workflow script 缺 RULES-VERSION（RL-0058／§3.6）：規則塊須由 "
+            "[pre-workflow-gate] Workflow script 缺 RULES-VERSION（RL-0058；規則本體＝docs/ops/RULES.md）：規則塊須由 "
             "`python3 tools/docsync rules emit --scope implementer` 產出並整塊烤進 script（末行 RULES-VERSION: <12hex>）；"
             "編排骨架用 `python3 tools/docsync generate` 重算 tools/orchestration/_sk_rules.js 後重組。所有 Workflow script 一律必帶。"
         )

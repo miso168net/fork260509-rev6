@@ -1,3 +1,6 @@
+// 本檔＝rev5:008-audit-settings-pages U4 組裝成品原樣：內含 rev5／rev4 座標與事實
+// （憲法版號 1.10.0、島 J3、rev5:008-audit-settings-pages 的 specs/ 路徑、tools/docs-sync.py 等工具名、../fork260509-rev4/ 樹、
+// 行號形引用）；非 rev6 現況、勿照抄執行；rev6 首個含 Workflow 的刀重組時替換（BL-00001）。
 export const meta = {
   name: 'u4-purge-endpoint-008',
   description: '008 U4（T014~T017）：purge 端點——守門固定序＋詞彙第九值＋msg 三語＋router 65→66＋purge definition 裁判',
@@ -199,7 +202,7 @@ RULES-VERSION: c7a137209e0e
 
 const CONTEXT = [
   '=== 專案與本單元定位 ===',
-  '工作區＝rev6-admin 傘狀 workspace（`/mnt/d/AnewSpaces/x_Project/fork260509-rev6`），操作手冊＝根目錄 `CLAUDE.md`（★先完整讀，尤其 §6 硬禁令）。後端＝`rust-api/`、前端＝`base-web/`（皆 git worktree 子庫）。',
+  '工作區＝rev6-admin 傘狀 workspace（`<repo 根>`），操作手冊＝根目錄 `CLAUDE.md`（★先完整讀，尤其 §6 硬禁令）。後端＝`rust-api/`、前端＝`base-web/`（皆 git worktree 子庫）。',
   '本刀＝`008-audit-settings-pages`。本執行單元＝**U4**，涵蓋 tasks.md 的 **T014～T017**＝audit 第五支端點（purge，破壞性寫端）全鏈。',
   '★**已完成的前置**：U0 修憲（憲法 1.10.0、島 J 入憲、**rev5:ADR 0079 已 accepted**＝T014 的開工前提）／U1 契約錨（`Api.Audit` 十一支型、快照 101 definitions，purge 三支已在內）／U2 讀面全鏈（ROUTES 65）／U3 讀面兩層裁判（全量 1080）。',
   '',

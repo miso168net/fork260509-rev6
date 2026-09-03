@@ -23,7 +23,7 @@ BASELINE_BRANCH="example";  BASEWEB_BASE_SHA="8be6f9ba"   # D14
 RUSTAPI_BASE_BRANCH="main"; RUSTAPI_BASE_SHA="32c5254"    # D17
 BASEWEB_BR="rev6-admin-base-web"; RUSTAPI_BR="rev6-admin-rust-api"
 REV5_ROOT="${RV6_REV5_ROOT:-$ROOT/../fork260509-rev5}"
-# rev5 凍結 SHA（README-rev6-handoff／啟動書 D17；改值＝先立 ADR）
+# rev5 凍結 SHA（啟動書 docs/brainstorms/000-doc-architecture.md D17／ADR-00002；改值＝先立 ADR）
 REV5_FROZEN=".:7eab28a base-web:9833308 rust-api:92919b9"
 WARNS=0
 
@@ -38,7 +38,7 @@ is_ancestor_or_same() { # $1=repo $2=short-sha 期望 $3=HEAD；期望 SHA 必�
 # ── 0. 外層 repo 身分斷言 ─────────────────────────────────────────────
 git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "$ROOT 不是 git repo"
 git -C "$ROOT" show-ref --verify -q "refs/heads/$DEFAULT_BRANCH" \
-  || die "外層無 $DEFAULT_BRANCH 分支——請在 rev6 傘狀 repo 根下跑（README-rev6-handoff 波 1 第 1 點）"
+  || die "外層無 $DEFAULT_BRANCH 分支——請在 rev6 傘狀 repo 根下跑（啟動書 §5 波 1）"
 origin_url="$(git -C "$ROOT" remote get-url origin 2>/dev/null || echo '')"
 case "$origin_url" in
   "") warn "外層 origin 未設（rev6 remote 待定、啟動書附錄 D）——身分以 $DEFAULT_BRANCH 分支存在為準" ;;
@@ -153,7 +153,7 @@ if [ -d "$REV5_ROOT/.git" ]; then
     [ -e "$dir/.git" ] || die "rev5 對照樹缺 ${sub}（${dir}）——凍結面不完整；rev5 為唯讀對照基準（D17）"
     head="$(git -C "$dir" rev-parse HEAD)"
     [ "${head:0:7}" = "$sha" ] \
-      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 ${sha}——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書／README-rev6-handoff 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
+      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 ${sha}——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書 D17／ADR-00002 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
   done
   ok "rev5 凍結 SHA 斷言過（外層 7eab28a／base-web 9833308／rust-api 92919b9）"
   dirty="$(git -C "$REV5_ROOT" status --porcelain --untracked-files=no 2>/dev/null || true)"

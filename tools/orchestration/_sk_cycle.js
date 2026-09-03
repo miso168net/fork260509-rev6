@@ -1,3 +1,4 @@
+// ★本段引用模板變數 `UNIT`（＝執行單元標籤，如 U2）與 `FEATURE`（＝該刀 feature 分支長名）——組裝時由 `_vars` 段定義，缺之即 ReferenceError。
 function rejectedBlock(rejected) {
   if (!rejected.length) return ''
   const lines = [
@@ -18,7 +19,7 @@ function fixPrompt(blockers, roundNo) {
     return '' + (i + 1) + '. 檔案：' + b.file + '\n   缺陷：' + b.summary + '\n   證據與建議：' + b.detail
   })
   return [
-    '你是 rev5:008-audit-settings-pages 之 **U2 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
+    '你是 ' + FEATURE + ' 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
     '',
     CONTEXT,
     '',
@@ -30,7 +31,7 @@ function fixPrompt(blockers, roundNo) {
     '· ★不要為了讓審查通過而做「表面修改」——那會讓下一輪重報同一問題、觸發不收斂判定。',
     '· ★**補守門一律做變異測試**：把被指的那行改壞→跑測確認會紅→還原。不做這步，補的就是另一個裝飾性守門。',
     '· 修改一律限在允許清單內。清單外需要動＝**絕不擅改**，依 status 分值升級。',
-    '· 修完 MUST 重跑自驗（容器內 `cargo fmt --all`＋全量 serial `cargo test`＋`docs-sync.py lint`），實際輸出摘要寫進 report。',
+    '· 修完 MUST 重跑自驗（容器內 `cargo fmt --all`＋全量 serial `cargo test`＋`python3 tools/docsync lint`），實際輸出摘要寫進 report。',
     '',
     RULES,
     '',
