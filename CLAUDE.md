@@ -2,7 +2,7 @@
 
 本檔＝程序與指針；**規則本體住 `docs/ops/RULES.md`**（RL-NNNN、名詞段）、凍結權威住 `.specify/memory/constitution.md`、
 設計依據住啟動書 `docs/brainstorms/000-doc-architecture.md`（史料面）。行數只由 STATE.md 報表、不擋。
-引 rev5 帳本一律 `rev5:` 前綴；rev5 四本帳不遷入、唯讀引用（RL-0046／0065）。
+引 rev5 帳本一律 `rev5:` 前綴；rev5 四本帳不遷入、唯讀引用（RL-0046 前綴；RL-0064 唯讀不寫入）。
 
 ## 1. workspace 用途與 repo 拓樸
 
@@ -27,8 +27,11 @@
   期間拍板→ADR draft。rev5 承襲候選——啟動書 §5 波次表、憲法 §I.7／§III.2 承襲指針、BACKLOG 帶 `rev5:` 標註項——是 brainstorm 的直接輸入：
   沿用項照已驗證結論施工、翻案項用新設計。★系統重寫刀序由首刀 brainstorm 決定（D13）。
 - **SDD 5 步**：`/speckit-specify`（input＝brainstorm 檔）→ `/speckit-clarify` → `/speckit-plan`（對照憲法 §IV 九題）→ `/speckit-tasks` → `/speckit-analyze`；
-  每步後 commit（spec-kit git extension auto-commit、ADR-00003）。plan 之 research 必列「rev5 對應碼清單＋rev6 拍板差異點」（承 rev5:ADR 0019）。
-  棄案論證寫完 MUST 回頭對所選方案跑同一反例（RL-0013）。specify 必**手動**起手、不排進 brainstorm 流程內自動觸發——否則 feature-branch pre-hook 不會跑、spec 會落在 default branch 上。
+  每步後 commit（spec-kit git extension auto-commit、ADR-00003；其 `[Spec Kit]` 英文固定訊息＝RL-0042 zh-TW 之具名例外）。plan 之 research 必列「rev5 對應碼清單＋rev6 拍板差異點」（承 rev5:ADR 0019）。
+  棄案論證寫完 MUST 回頭對所選方案跑同一反例（RL-0013）。specify 必以 `/speckit-specify` 顯式起手（其 Pre-Execution Checks 才會跑 before_specify hook 建分支）、不排進 brainstorm 流程內自動觸發。
+  ★分支名≠feature 身分真源：分支由 hook 之 speckit.git.feature 建（序號＝既有 `NNN-` 分支與 `specs/` 目錄最大號＋1；設定住 `.specify/extensions/git/git-config.yml`、`.specify/init-options.json`）、
+  `specs/<NNN>-<slug>/` 由 specify 自建並寫入 gitignored 的 `.specify/feature.json`（per-checkout；換機／切回舊分支先 `export SPECIFY_FEATURE_DIRECTORY=specs/<本刀目錄>`）——
+  specify 收工後主線必核 `git branch --show-current` 與 feature.json 的目錄名相等、不等即當場擇一改名對齊（否則 §2 範本「<NNN>-<feature-name> 即分支名」與 events `feature` 欄同時失準）。
 - **TDD 實作**：以 superpowers:executing-plans 讀 tasks 起手、批判審查分執行單元；**從不使用 spec-kit 的 implement 指令**。編排驅動提示詞範本：
 
   ```text
@@ -53,7 +56,7 @@
 　⑥空間邊界：fix agent prompt 烤進允許檔案清單（＝該單元 tasks 涉檔＋review findings 指涉檔的聯集、寫死 script 常數）；清單外檔案需要動→絕不擅改、依④分值升級；
 　　次輪清單只縮不擴；清單另納連動釘值測所在檔、答「碰得到什麼」而非 task 寫了什麼（RL-0014／RL-0022）。
 ★主線看門狗（非終止型故障不會有完成通知；RL-0016／RL-0017／RL-0061／RL-0062）：★Workflow launch 與 Monitor 看門狗
-　**同一回合原子成對**發射、兩 call 間零其他動作。Monitor command＝`python3 tools/wf-watchdog.py <冒煙token> [wf目錄|runId]`
+　**同一回合原子成對**發射、兩 call 間零其他動作。Monitor command＝`python3 tools/wf-watchdog.py <冒煙token> [wf目錄|runId]`（★冒煙 token 不可取字面 `test`＝會被當自測子命令）
 　（缺目標＝自動發現最新 wf 目錄；帶目標＝輪詢待其出現後鎖定、resume 沿用原 runId、launch 被擋重發＝TaskStop 舊 Monitor 改帶新 runId 重掛；rev5:L-049）；
 　完成通知一到→TaskStop 該 Monitor（防誤觸 stall；rev5:L-051）。判死迴圈／卡死→TaskStop→修 script→以 resumeFromRunId 續跑。
 　★resume 只用於故障續跑、不是讓某支 agent 重跑的手段（rev5:L-027、RL-0010）；續跑冒煙改看最新 agent 檔（RL-0009）。
@@ -71,7 +74,7 @@
   ```
 
   ★wf-watchdog 的 runaway 判準＝數**不重複 agent key**（非 journal 行數）——勿以行數直覺判保險絲。
-- **隨做隨記**：新拍板→ADR draft→accepted；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）；衍生工作→BACKLOG append；per-unit pin 即時 bump。
+- **隨做隨記**：新拍板→ADR draft→accepted；階段 0 定稿與 SDD 步進→NOTES「下一步」同批更新（當前意圖真源）；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）；衍生工作→BACKLOG append；per-unit pin 即時 bump。
   一次性遷移（改名／搬移／基線前進／拓樸調整）之 brainstorm 或 spec 附 Risk／Guard／Rollback 三欄表。
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
   程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。
@@ -112,7 +115,7 @@
 - **ID 配號**：BL／LL／RL 取檔頭 `<!-- next: -->` 後 bump、永不回收；ADR 編號＝檔名、永不重用（GT-05）。ops 帳本寫「本刀 U2」形、不寫裸刀號（RL-0020）。
 - **前代編號**：一律 `rev5:`／`rev4:` 前綴；提及形（反引號或「」內）不算使用（RL-0046；GT-05）。
 - **勘誤**：`python3 tools/docsync errata <詞>` 機器枚舉全 repo（含兩子庫 pin 樹）逐處處置後才 commit（RL-0001）。
-- **lint 運作模式**：pre-commit 一次跑完、秒級（雙錨 45／90 秒）；被擋的是 Claude、同回合修復（錯誤訊息附去處）；user 僅介入 lint 抓到真決策或調規拍板。
+- **lint 運作模式**：pre-commit 一次跑完、秒級（雙錨門檻＝`.githooks/pre-commit` 檔頭常數）；被擋的是 Claude、同回合修復（錯誤訊息附去處）；user 僅介入 lint 抓到真決策或調規拍板。
   閘名冊＝`docs/generated/GATES.md`；Day-1 豁免逐筆具名、帶解除謂詞、到期即紅（RL-0051／RL-0052）。
 - **波標記**：`docs/ops/NOTES.md` 首行 `<!-- wave: N -->`＝現在波唯一真源；bump＝波次出口動作（GT-10／GT-12 判準）。
 - **constitution**：`.specify/memory/constitution.md` 唯一權威、不設鏡像；amendment＝ADR＋版本 bump（§V.2）。
@@ -134,7 +137,7 @@
 - 絕不寫入 `../fork260509-rev5/`（含其子庫與兩份源倉）——唯讀對照基準（凍結 SHA：外層 `7eab28a`／base-web `9833308`／rust-api `92919b9`，由 bootstrap 斷言、ADR-00002）；
   亦絕不對 rev5 stack（埠 2xxxx）做 schema／seed／設定變更或 `down -v`；rev6 stack 走 3xxxx（ADR-00001）。
 - 絕不逐字複製 RAD-AI 文字（D15）：子節名、欄位、檢核表列文字全部中文改寫；只在 README 一句參考來源；不設 NOTICE、不逐檔聲明。
-- 絕不手改 `docs/generated/**` 與 `tools/orchestration/_sk_rules.js`；絕不用 spec-kit implement 指令；specify 不進 brainstorm 自動流程。
+- 絕不手改 `docs/generated/**` 與 `tools/orchestration/_sk_rules.js`；spec-kit 技能只用 §2 列名五支（specify／clarify／plan／tasks／analyze）＋其 before_*／after_* 自動 hook，其餘（implement、converge、checklist、taskstoissues、constitution、git-initialize）一律不主動叫用——taskstoissues 對共享 remote 建 issue（同 push 級、需 user 當次同意）、implement 改寫根 .gitignore／.dockerignore、constitution 依模板重寫凍結權威（憲法只走 §V.2 Amendment）；specify 不進 brainstorm 自動流程。
 - 絕不 `--no-verify`（事件型檢查＝機密真進 git 歷史、不可逆；誤報→修 `.gitleaks.toml` allowlist 並雙向實證）。
 - 合成機密樣本一律執行期串接、絕不落完整字面於任何 tracked 檔（含史料面與 tests；RL-0054）。
 - rust build/test 一律容器內跑且全程 serial（host 無 toolchain；平行 cargo 互撞 target）。

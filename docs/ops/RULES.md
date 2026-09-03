@@ -1,4 +1,4 @@
-<!-- next: RL-0074 -->
+<!-- next: RL-0075 -->
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
@@ -53,7 +53,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0043 | review agent 只讀不寫 repo 檔；findings 只放回傳訊息。 | review | prompt | ADR-00003 |
 | RL-0044 | push／merge 回 default branch 需 user 當次明確同意；絕不在 finishing 之前 push／merge；tasks 清單不得排入 push／merge。 | 主線,人 | prompt | ADR-00003 |
 | RL-0045 | rust build／test 一律容器內、全程 serial（`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T rust-api cargo test --workspace -- --test-threads=1`）；rust 碼完工前容器內 `cargo fmt --all`。 | implementer,fix | prompt | rev5:ADR 0057 |
-| RL-0046 | 引前代編號一律帶 `rev5:`／`rev4:` 前綴（ADR、L、B、Lint、刀名皆同）；rev6 新形原生（BL／LL／ADR 五碼、RL 四碼、GT 二碼）；裸刀號禁、`000-` 創世家族除外。 | implementer,review,主線 | lint | rev5:ADR 0012 |
+| RL-0046 | 引前代編號一律帶 `rev5:`／`rev4:` 前綴（ADR、L、B、Lint、刀名皆同）；rev6 新形原生（BL／LL／ADR 五碼、RL 四碼、GT 二碼、migration 短號 `m` 四碼＝ADR-00008）；裸刀號禁、`000-` 創世家族除外。 | implementer,review,主線 | lint | rev5:ADR 0012 |
 | RL-0047 | 文件權威鏈 constitution ＞ ADR accepted ＞ RULES ＞ 活書家族 ＞ generated；RULES 與 accepted ADR 衝突＝RULES 有誤、就地改 RULES（輕量軌）。 | 人,主線 | checklist | ADR-00003 |
 | RL-0048 | 時態分離：活書家族永遠現在式、未來式住 ops、過去式住 git＋events；完成即刪、git 即史；跨檔引用不用行號、不 deep-link 帳本內部錨、不引 per-machine 路徑。 | implementer,review | lint | ADR-00004 |
 | RL-0049 | 人寫／事件源／機器生成三材質各有唯一的家；鏡像不是機器生成就是不存在；`docs/generated/**` 與 GENERATED_FILES 名冊檔禁手改、只由 generate 重算。 | implementer,主線 | lint | ADR-00004 |
@@ -81,12 +81,15 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0071 | fix 後次輪 review prompt 必附前輪已駁回 findings 清單（file×summary＋駁回理由）、明令勿沿用被駁論據重報；同一 finding 再報須附新證據，否則計入收斂判定。 | 主線,review | prompt | ADR-00004 |
 | RL-0072 | rust 單元收尾除容器內 rc 綠外另跑 `python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事（碼面閘只看靜態形）。 | 主線 | checklist | rev5:L-064 |
 | RL-0073 | review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處二分：不定期獨立輪落 `docs/reviews/` 報告＋review 事件，feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。 | 主線,review | checklist | rev5:ADR 0075 |
+| RL-0074 | ADR 一決策一檔 `docs/arc42/decisions/ADR-NNNNN-<slug>.md`；accepted 後 body 不可變、翻案＝新檔帶 `supersedes: [舊號]`、`superseded_by` 由 generate 回填；ADR 檔永不刪除、編號永不重用；won't-fix／by-design 亦立 ADR。 | 主線,人 | lint | ADR-00003 |
 
 ## 名詞
 
 - **刀**＝spec-kit feature（`NNN-<name>` 分支、走 SDD 五步）；**單元**＝一支 Workflow 執行單元；**收刀**＝`merge --no-ff` 回 default 後的簿記。
 - **輕量軌**＝不開 SDD 的維護批（單點缺陷、文件與設定調整、既有機制小幅完備化；不動 schema、不新增能力面）；**拍板級**＝schema／scope／破紀律／user 可見行為，拿不準即開 SDD。
 - **波**＝啟動書 §5 的階段；**現在波**＝`docs/ops/NOTES.md` 首行 `<!-- wave: N -->`。
-- **活書家族**＝docs/arc42（不含 decisions/）、docs/c4、docs/compliance、docs/process；**現在式面**＝活書家族＋docs/ops、docs/generated、README.md、CLAUDE.md、constitution、tools/、deploy/、.githooks/、.claude/hooks 與 settings.json；**史料面**＝docs/brainstorms、specs、docs/reviews；**第三方面**＝.claude/skills、.specify（constitution 除外）；**語料面**＝tools/docsync/tests。後三面不受裸編號、時態、形制掃描。
+- **活書家族**＝docs/arc42（不含 decisions/）、docs/c4、docs/compliance、docs/process；**現在式面**＝活書家族＋docs/arc42/decisions/（ADR 面：受裸編號與連結掃描、不受活書時態與形制腿）、docs/ops、docs/generated、README.md、CLAUDE.md、constitution、tools/、deploy/、.githooks/ 與 .githooks-submodule/、.claude/hooks 與 settings.json；**其他面**＝repo 根設定檔（compose 三檔、.gitmodules、.gitignore、.gitattributes、.gitleaks.toml、.sops.yaml、.env.example、.dockerignore）與兩 gitlink，不入現在式面、只受 GT-07 機密掃描（bash 面另受 GT-11）；**史料面**＝docs/brainstorms、specs、docs/reviews；**第三方面**＝.claude/skills、.specify（constitution 除外）；**語料面**＝tools/docsync/tests。後三面不受裸編號、時態、形制掃描。
 - **提及**＝反引號或「」內的引用、不算使用（裸編號閘不判）；**人審**＝merge 回 default 前 user 的當次明確同意＋拍板級親決（憲法 §I.8）。
 - **系統層**＝arc42 E 子節、docs/c4、docs/compliance 所述之 rev6 系統本體；**流程層**＝docs/process 所述之開發流程 AI 代理（啟動書 D16）；**例外註冊**＝住 docs/generated/ 之外但入 GENERATED_FILES 名冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`）。
+- **獨立輪**＝RL-0073 的不定期 review 輪（非刀、非波）；分支與 misc 事件 workflow 欄用 `000-rN-<scope>`（N＝輪序號、`000-` 家族免裸刀名閘）、報告住 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件。
+- **隨遷工具**＝啟動書 D10／§4.5 授權自 rev5 整檔搬運的 tools/、deploy/、.githooks／.githooks-submodule、.claude/hooks 與編排骨架：逐字承襲允許、憲法 §I.5 的重打字紀律不及於此；但其註解與字串字面的四型失效引用（章節號指到 rev6 不存在的節、無前綴前代編號、rev5 語境事實、repo 外權威）須 rev6 化（加 `rev5:`／`rev4:` 前綴、或改指 rev6 去處）。

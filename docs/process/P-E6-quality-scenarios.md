@@ -21,7 +21,7 @@ rad_ai_map:
 | 屬性 | 定義 | 量測 | 現況 |
 |---|---|---|---|
 | review 精準度 | findings 中被主線復核判「真」的比例 | 每輪三分流的「修」占比；駁回後再報須附新證據（RL-0071） | 零輪（rev6 尚未跑 Workflow） |
-| 閘可見性 | 閘失效時看不看得見（恆綠風險） | 每閘一正一反自證、掃描面空集合即紅（RL-0051）；Day-1 豁免具名、到期即紅 | 十二閘全數自證；豁免一筆 |
+| 閘可見性 | 閘失效時看不看得見（恆綠風險） | 每閘一正一反自證、掃描面空集合即紅（RL-0051）；Day-1 豁免具名、到期即紅 | 十二閘全數自證；Day-1 豁免筆數見 `docs/generated/GATES.md` |
 | stall 恢復 | 從卡死到主線接手的時間 | 看門狗 stall 閾值＝agent 邊界間隔上限（RL-0017） | 零實跑 |
 | 規則烤入一致性 | prompt 內規則塊與 RULES 現算版本相符 | PreToolUse hook 對賬 RULES-VERSION、不符即擋（現行版本＝`python3 tools/docsync rules emit` 末行） | 全數 script 帶版本字面 |
 

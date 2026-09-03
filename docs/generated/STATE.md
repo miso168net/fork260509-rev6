@@ -12,12 +12,12 @@
 - 版本：1.0.0
 
 ## 帳面統計
-- ADR：7（proposed 0、accepted 7、superseded 0）
-- RULES：73 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 41/52、人 9/12）
-- BACKLOG 開放：2｜滯後：0
+- ADR：8（proposed 0、accepted 8、superseded 0）
+- RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
+- BACKLOG 開放：7｜滯後：0
 - LESSONS：0 筆（未建）
 - events：12 筆（misc 6、perf 5、review 1）
-- CLAUDE.md 行數：156（只報表、不擋）
+- CLAUDE.md 行數：159（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
 | 指標 | 值 | 目標 |
@@ -30,13 +30,13 @@
 | 項目 | 現值 | 上限 | 狀態 |
 |---|---|---|---|
 | 閘數 | 12 | 12 | 內 |
-| RULES 總 | 73 | 92 | 內 |
+| RULES 總 | 74 | 92 | 內 |
 | RULES implementer | 38 | 48 | 內 |
 | RULES review | 14 | 18 | 內 |
 | RULES fix | 15 | 19 | 內 |
-| RULES 主線 | 41 | 52 | 內 |
-| RULES 人 | 9 | 12 | 內 |
-| BACKLOG 開放 | 2 | 25 | 內 |
+| RULES 主線 | 42 | 52 | 內 |
+| RULES 人 | 10 | 12 | 內 |
+| BACKLOG 開放 | 7 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-09-03｜perf｜—｜
