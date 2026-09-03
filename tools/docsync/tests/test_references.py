@@ -120,7 +120,45 @@ class TestGeneratedIndexes(unittest.TestCase):
         out = references.gen_rad_ai_map(stub({"docs/process/P-E1-boundary.md": f"---\nrad_ai: [E1]\nrad_ai_map:\n{pmap}---\n{body}"}))
         self.assertIn("| E1 | — | — | [P-E1-boundary.md](../process/P-E1-boundary.md) | 2/5 | — |", out)
 
-    def test_roster_ten_and_compute_has_three_new_keys(self):
-        self.assertEqual(len(references.GENERATED_FILES), 10)
+    def test_compute_has_generated_index_keys(self):
         for rel in ("docs/ops/LESSONS.md", "docs/arc42/ARCHITECTURE.md", "docs/generated/RAD-AI-MAP.md"):
             self.assertIn(rel, references.GENERATED_FILES)
+
+
+class TestBlueprintMap(unittest.TestCase):
+    """rev5 藍本對照表（ADR-00006）：frontmatter rev5_blueprint → 表；缺／重複／未知鍵／形制只排列、不拋錯；名冊 12。"""
+
+    def test_map_lists_defects_and_never_raises(self):
+        files = {"docs/arc42/01-introduction-and-goals.md": "---\nsection: 1\nrev5_blueprint:\n  §1 簡介與目標: 承襲（一句）\n---\n# §1\n",
+                 "docs/arc42/06-runtime-view.md": "---\nsection: 6\nrev5_blueprint:\n  信任錨與 IP 存取閘: 隨刀：憲法 §I.7 島 F 進場刀\n  資料慣例: 亂寫\n  不存在的標題: 承襲（x）\n---\n# §6\n",
+                 "docs/arc42/08-crosscutting-concepts.md": "---\nsection: 8\nrev5_blueprint:\n  §1 簡介與目標: 承襲（重複宣告）\n---\n# §8\n"}
+        out = references.gen_rev5_blueprint_map(stub(files))
+        l01 = references._link("docs/arc42/01-introduction-and-goals.md", references.BLUEPRINT_DIR)
+        l06 = references._link("docs/arc42/06-runtime-view.md", references.BLUEPRINT_DIR)
+        self.assertTrue(out.startswith(common.GENERATED_HEADER))
+        self.assertIn("| §2 約束 | ## | 缺 | 缺 |", out)
+        self.assertIn(f"| 信任錨與 IP 存取閘 | ### §6 | {l06} | 隨刀：憲法 §I.7 島 F 進場刀 |", out)
+        self.assertIn(f"| 資料慣例 | ### §8 | {l06} | 形制：亂寫 |", out)
+        self.assertIn(f"| §1 簡介與目標 | ## | {l01} | 重複：承襲（一句） |", out)
+        self.assertIn(f"| 不存在的標題 | 未知鍵 | {l06} | 未知鍵 |", out)
+        self.assertTrue(out.rstrip().endswith("缺：17｜重複：1｜未知鍵：1｜形制：1"), out[-120:])
+        self.assertTrue(references.gen_rev5_blueprint_map(stub({})).rstrip().endswith("缺：20｜重複：0｜未知鍵：0｜形制：0"))
+
+    def test_roster_twelve(self):
+        self.assertEqual(len(references.GENERATED_FILES), 12)
+        for rel in ("docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md"):
+            self.assertIn(rel, references.GENERATED_FILES)
+
+
+class TestAgentsTable(unittest.TestCase):
+    """reference/agents：tracked 編排 script 的 *_OPTS 字面→表；名冊內生成物 _sk_rules.js 不入掃描面；零命中＝一列「—」。"""
+
+    def test_agents_rows_from_opts_and_skip_generated(self):
+        files = {"tools/orchestration/EXAMPLE-x.mjs": "const IMPL_OPTS = { model: 'fable[1m]', effort: 'xhigh' }\nconst REVIEW_OPTS = { model: 'opus[1m]', effort: 'high' }\n",
+                 "tools/orchestration/_sk_rules.js": "const FAKE_OPTS = { model: 'x', effort: 'y' }\n"}
+        out = references.gen_reference_agents(stub(files))
+        self.assertTrue(out.startswith(common.GENERATED_HEADER))
+        self.assertIn("| EXAMPLE-x.mjs | IMPL_OPTS | fable[1m] | xhigh |", out)
+        self.assertIn("| EXAMPLE-x.mjs | REVIEW_OPTS | opus[1m] | high |", out)
+        self.assertNotIn("FAKE_OPTS", out)
+        self.assertIn("| — | — | — | — |", references.gen_reference_agents(stub({})))
