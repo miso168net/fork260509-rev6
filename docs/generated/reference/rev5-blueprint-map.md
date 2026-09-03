@@ -5,10 +5,10 @@
 
 | rev5 標題 | 層 | rev6 去處 | 處置 |
 |---|---|---|---|
-| §1 簡介與目標 | ## | 缺 | 缺 |
-| §2 約束 | ## | 缺 | 缺 |
-| §3 系統脈絡 | ## | 缺 | 缺 |
-| §4 解法策略 | ## | 缺 | 缺 |
+| §1 簡介與目標 | ## | [01-introduction-and-goals.md](../../arc42/01-introduction-and-goals.md) | 承襲（能力級／明確不做／建置狀態改寫為 rev6 現況） |
+| §2 約束 | ## | [02-architecture-constraints.md](../../arc42/02-architecture-constraints.md) | 承襲（技術棧／拓樸／環境／上游關係四條＋rev6 新約束） |
+| §3 系統脈絡 | ## | [03-context-and-scope.md](../../arc42/03-context-and-scope.md) | 不承襲：rev5 空節（該節自述尚無內容）；rev6 §3 自 C4-L1 起手 |
+| §4 解法策略 | ## | [04-solution-strategy.md](../../arc42/04-solution-strategy.md) | 承襲（五條策略對 rev6 仍真、上位＝憲法 §I.1～I.5） |
 | §5 Building blocks | ## | 缺 | 缺 |
 | §6 Runtime | ## | 缺 | 缺 |
 | 信任錨與 IP 存取閘 | ### §6 | 缺 | 缺 |
@@ -26,4 +26,4 @@
 | §11 風險與技術債 | ## | 缺 | 缺 |
 | §12 名詞表 | ## | 缺 | 缺 |
 
-缺：20｜重複：0｜未知鍵：0｜形制：0
+缺：16｜重複：0｜未知鍵：0｜形制：0
