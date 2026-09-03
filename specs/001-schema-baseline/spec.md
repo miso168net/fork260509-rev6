@@ -39,7 +39,7 @@ rev6 第一支 delta 自 `m0003` 起編。
 **Acceptance Scenarios**:
 
 1. **Given** rev5 rust-api 凍結版（SHA `92919b9`）之 `rev5:m001`／`rev5:m002` 與 rev6 之 `m0001_`／`m0002_`
-   兩支，**When** 兩邊去註解後逐檔 diff，**Then** 零差異（機器自證、命令與結果記入 ADR-00009 證據段與 commit 訊息）。
+   兩支，**When** 兩邊去註解後逐檔 diff，**Then** 零差異（機器自證；命令形＝ADR-00009 決定節、結果記 commit 訊息與收刀事件）。
 2. **Given** 一次性 pristine 資料庫，**When** 容器內重放 rev6 兩支基線遷移，**Then** 實庫 15 表結構
    （169 欄、索引 38、約束 101）與 seed（266 列＋9 空表、明示 id＋sequence 落值）成形；`seaql_migrations`
    記錄的遷移名為四碼新名。
@@ -203,7 +203,7 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 - **FR-005**: 任何拷貝碼落地之前 MUST 先完成憲法 Amendment：ADR-00009 accepted＋§I.5 例外清單加「資料形狀契約三件」
   句＋版本 1.0.0→1.1.0（MINOR、依據＝類比 §V.3「軌道授權邊界擴展」、同批補 §V.3 MINOR 句「§I 例外清單擴展」）；
   時點＝clarify 之後、`/speckit-plan` 之前的第一顆手動 commit（早於 §IV 第 5 題）。
-- **FR-006**: 承襲 MUST 滿足四條件：①逐位元自證（去註解後 diff 全等、命令與結果入 ADR 證據段與 commit 訊息）
+- **FR-006**: 承襲 MUST 滿足四條件：①逐位元自證（去註解後 diff 全等；命令形住 ADR-00009 決定節、實跑結果住 commit 訊息與收刀 `feature_close` 事件——ADR accepted 後不可變）
   ②註解依語意判準重寫：四型失效引用（無前綴前代編號、rev5 語境事實、章節號指到 rev6 不存在的節、repo 外權威）必改——帶 `rev5:`／`rev4:` 前綴或改指 rev6 去處；通用註解可與 rev5 同文；判定＝review 逐檔清單（記 ADR-00009 證據段）＋GT-05 機器兜底（掃 tools/ 與子庫 pin 樹綠）③防回歸審查逐檔
   列後刀差異、屬形狀外者去除並記錄 ④seed 固定值＝定稿字面非機密（承 `rev5:ADR 0003`）、掃描命中才 allowlist
   且雙向實證、絕不 `--no-verify`。
@@ -262,7 +262,7 @@ BL-00001 於開分支後首個 Workflow 前消化（編排骨架三變體收斂�
 
 ### Measurable Outcomes
 
-- **SC-001**: 17 檔去註解後 diff 逐檔零差異；自證命令與結果在 ADR-00009 證據段與對應 commit 訊息中可查。
+- **SC-001**: 17 檔去註解後 diff 逐檔零差異；命令形在 ADR-00009 決定節、實跑結果在對應 commit 訊息與收刀事件中可查。
 - **SC-002**: rev6 pristine 萃取之四份 fixtures 與 rev5 同名 fixtures 逐位元零差異（含 id 欄與 sequence 落值、
   PHC 常數與定稿時戳）。
 - **SC-003**: 比對器自證通過：假漂移（結構、欄序、seed 值、sequence 落值、假 delta 登記）各至少一例全數必紅、零漏報。
