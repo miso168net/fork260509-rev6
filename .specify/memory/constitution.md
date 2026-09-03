@@ -65,7 +65,7 @@
 - **註解一律重寫**：不拷前代註解；rev6 語境重寫（引 rev6 契約／ADR）、前代出處帶 `rev5:` 前綴（rev4 溯源帶 `rev4:`）
 - **防回歸條款**：參照前代 code 時，凡 rev6 拍板已推翻的行為**不得帶回**
 
-**例外**：`sea-orm-adapter`／`xdb` 工具性 crate 整檔拷貝（承 rev5、已驗證、工具性質）。
+**例外**：①`sea-orm-adapter`／`xdb` 工具性 crate 整檔拷貝（承 rev5、已驗證、工具性質）；②資料形狀契約三件整檔拷貝——基線結構 migration（`m0001_baseline_schema.rs`、承 `rev5:m001`）、基線 seed migration（`m0002_baseline_seeds.rs`、承 `rev5:m002`）、基線 entity 15 檔——射程鎖 rev5 rust-api 凍結 SHA `92919b9` 之版本；程式內容逐位元承襲（去註解後 diff 全等自證）、檔名依 ADR-00008 四碼；註解依語意判準重寫（四型失效引用必改、前代出處帶 `rev5:`；通用註解可同文）；防回歸條款照常；`m0003` 起 delta migration 與一切業務碼不在此例外（ADR-00009）。
 
 ### I.6 業務表審計欄標準（SCHEMA-AUDIT-COLUMNS）
 
@@ -218,12 +218,13 @@
 ### V.3 Version 規則
 
 - **MAJOR**（2.0.0）：鐵紀律（§I 原則、含 §I.8 方向性反轉）改變、§I.7 方向性不變式反轉、§II 拍板撤回、★ 軌道授權撤銷
-- **MINOR**（1.1.0）：新拍板固化（§II 加項）、軌道授權邊界擴展（新用途／新範圍）、新增 ★ 軌道、**行為島隨刀進場（§I.7 填充）**、已入憲 invariant 細項調整
+- **MINOR**（1.1.0）：新拍板固化（§II 加項）、軌道授權邊界擴展（新用途／新範圍）、新增 ★ 軌道、**行為島隨刀進場（§I.7 填充）**、已入憲 invariant 細項調整、§I 例外清單擴展（規則方向不變、只擴例外）
 - **PATCH**（1.0.1）：文字校正、釐清、reference 更新、Compliance Check 增補
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-03
+**Version**: 1.1.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-04
 
 **Amendment log**:
 - 1.0.0（2026-09-03）：創世初版——自 rev5 constitution v1.10.0（凍結 SHA `7eab28a`）依啟動書 §3.8 逐條表搬入：§I.1～§I.3、§I.6 承襲改字（分支名、基線 SHA、fork 標記 token、前代 ADR 引用一律 `rev5:` 前綴）；§I.4 收為方向性四句、程序細節移 RULES.md；§I.5 世代 bump（前代＝rev5、rev4 溯源、源倉 main `32c5254` 起全新寫）；§I.7 僅搬進場規則、十座行為島以承襲指針表列（rev5 入憲載體逐島註明）、島體隨刀重新進場；§I.8 新增（AI 代理產物必經人審與機器閘、review 只讀、push／merge 需 user 明確同意）；§II 三筆承襲（逐筆核 rev5 ADR 摘要無翻案）；§III fork-delta 紀律與 §III.1 三軌道承襲（token `rev6-inline`、wrapper 前綴 `rev6-`）、§III.2 僅機制骨架＋補完判準＋表外三項宣告＋空表頭、rev5 五條 ★ 軌道十七用途以承襲指針列名；§IV 九題承襲（第 2 題 token、第 5 題前代改引）；§V.1 權威鏈納 RULES.md、§V.2 第 4 步改 `python3 tools/docsync generate`、§V.3 MAJOR 款納 §I.8。user 親審 diff＋grill 三題親決（§I.4 錨定「刀」＝spec-kit feature、§I.8 人審＝merge 同意＋拍板親決、§III.2 宣告 2 改原則句）後定版（創世拍板）。ADR-00003 同 commit 轉 accepted。
+- 1.1.0（2026-09-04）：§I.5 例外清單加②資料形狀契約三件整檔拷貝（基線結構 migration＋基線 seed migration＋基線 entity 15 檔；射程鎖 rev5 rust-api `92919b9`；程式逐位元自證、檔名四碼＝ADR-00008、註解語意判準、防回歸照常、`m0003` 起不適用）；§V.3 MINOR 款補「§I 例外清單擴展」釋義。ADR-00009 同 commit accepted（user 拍板：例外射程 2026-09-03、版級 MINOR 與註解語意判準 2026-09-04、Amendment 全文核准 2026-09-04）。

@@ -11,3 +11,4 @@
 | ADR-00006 | accepted | 2026-09-03 | rev5 藍本對照表——去處住 arc42 節檔 frontmatter `rev5_blueprint`、生成器只排缺列不斷言（一次性 migrate-audit、非常駐閘）、`##` 一併入表、rev5 ADR 不入 | 輕量軌 | — | — |
 | ADR-00007 | accepted | 2026-09-03 | RAD-AI 23 筆內部不一致的 rev6 取捨與量表第四值「不適用」——reference 為預設仲裁者、逐筆例外採模板或 adoption-guide；射程＝系統層形制、流程層偏離以「類比張力：」宣告 | 輕量軌 | — | — |
 | ADR-00008 | accepted | 2026-09-04 | migration 短號形制＝`m0001` 四碼（承啟動書 D4；rev6 現在式面唯一家；承襲 rev5 migration 時改名） | 輕量軌 | — | — |
+| ADR-00009 | accepted | 2026-09-04 | 憲法 §I.5 例外清單擴展——資料形狀契約三件整檔拷貝（基線結構 migration＋基線 seed migration＋基線 entity 15 檔；射程鎖 rev5 rust-api `92919b9`；MINOR 1.1.0） | 輕量軌 | — | — |
