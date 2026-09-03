@@ -70,7 +70,7 @@ python3 deploy/generate-secrets.py --force  # 亂數生成的十二支全重生�
 | `captcha_secret.txt` | leaf（base64 48） | ✓ | rust-api | `APP_CAPTCHA_SECRET_FILE`（rev4:007 captcha challenge HS256 密鑰） |
 | `reaper_password.txt` | leaf（hex 24） | ✓ | 設密部署腳本（rev4:016；**不進 compose**） | psql `ALTER ROLE reaper LOGIN PASSWORD ...`（stdin heredoc、密碼絕不進 migration） |
 | `grafana_admin_password.txt` | leaf（base64 24） | ✓ | grafana（rev4:016、profiles:obs/metrics） | `GF_SECURITY_ADMIN_PASSWORD: $__file{/run/secrets/grafana_admin_password}`（grafana file provider） |
-| `smtp_password.txt` | leaf（base64 24） | ✓ | rust-api | `APP_SMTP_PASSWORD_FILE`（rev4:020 SMTP 寄信；dev 亂數不消費——dev 走 mailpit 無認證；prod 真值＝Gmail app password、填法依 RUNBOOK Gmail 節） |
+| `smtp_password.txt` | leaf（base64 24） | ✓ | rust-api | `APP_SMTP_PASSWORD_FILE`（rev4:020 SMTP 寄信；dev 亂數不消費——dev 走 mailpit 無認證；prod 真值＝Gmail app password、填法依 rev5:RUNBOOK §15.4 Gmail app password 段（rev6 §15.4＝值變更回寫程序）） |
 | `email_verify_secret.txt` | leaf（base64 48） | ✓ | rust-api | `APP_EMAIL_VERIFY_SECRET_FILE`（rev4:020 信箱驗證憑據 HS256 密鑰——與 jwt／refresh／captcha 隔離的第四把） |
 | `database_url.txt` | composite | — | rust-api、migrate | `APP_DATABASE_URL_FILE`（migrate 真連庫；server 驗在場＋非空＋非佔位） |
 | `redis_url.txt` | composite | — | rust-api | `APP_REDIS_URL_FILE` |
@@ -113,7 +113,8 @@ python3 deploy/generate-secrets.py --force  # 亂數生成的十二支全重生�
   各有一道護欄，任一命中即非零退出並指名檔案。
 - **版控**：實值 `.txt` 不入版控（`.gitignore` 擋回退落點、遷出後更在 repo 之外）；
   `.txt.example`（內容 `CHANGE-ME-placeholder`）tracked；密文 `deploy/secrets.dev.enc.yaml` tracked。
-- **佔位值黑名單**：`CHANGE-ME` 開頭值被 server config 拒收（boot panic 指名該機密）——
+- **佔位值黑名單**：（rev5 as-built 投影：rust-api／migration／reaper 的守衛與消費關係在 rev6
+  隨刀進場、進場前為預告）`CHANGE-ME` 開頭值被 server config 拒收（boot panic 指名該機密）——
   誤把 `.example` 內容當真值用會在啟動時立即被抓出。★**射程＝經 rust-api／migration／reaper
   讀取的 6 支**（`jwt_secret`／`refresh_token_secret`／`captcha_secret`／`database_url`／
   `redis_url`／`reaper_database_url`）：守衛是那三支程式自己的 `starts_with("CHANGE-ME")`，

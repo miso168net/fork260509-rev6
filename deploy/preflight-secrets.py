@@ -289,7 +289,8 @@ def cmd_check(root=None, env=None):
         print("WARN：下列 secret 檔仍為生成腳本的佔位字面（照設計可 up；留佔位的唯一徵狀"
               "＝該功能")
         print("      靜默失效，如告警投遞不出）：" + " ".join(ph))
-        print("→ 填真值走 RUNBOOK §7 對應列（alert_webhook_url＝直接編輯檔＋restart grafana）；")
+        print("→ 填真值走 deploy/secrets/README.md 對照表該列（rev6 RUNBOOK §7 為指針；"
+              "alert_webhook_url＝直接編輯落點檔＋restart grafana）；")
         print("  填完必接 §15.4 re-encrypt 回寫加密檔，否則下次 decrypt 判 DIFF 另存 .new。")
 
     print(f"OK：{len(REQUIRED)} 個必須 secret 檔齊備且健康（{secrets_dir}；權限 700/644、"
@@ -371,7 +372,7 @@ class TestRosterPinned(unittest.TestCase):
         self.assertEqual(os.path.basename(HERE), "deploy")
         with open(os.path.abspath(__file__), encoding="utf-8") as fh:
             src = fh.read()
-        # ★樣本執行期串接構造：字面寫死會讓本斷言自己命中自己（同 secret-value-guard 慣例）
+        # ★樣本執行期串接構造：字面寫死會讓本斷言自己命中自己（同 rev5:secret-value-guard 慣例）
         self.assertNotIn("get" + "cwd", src, msg="落點錨定改吃 CWD＝自子目錄執行時的假綠")
 
 
@@ -549,7 +550,7 @@ class TestCheckPipeline(unittest.TestCase):
             if not _sandbox_holds_modes(d):
                 self.skipTest(_DRVFS_SKIP)
             sd = os.path.join(d, "secrets")
-            # 合成 DSN 執行期串接構造（防本檔自命中機密樣式掃描；同 secret-value-guard 慣例）
+            # 合成 DSN 執行期串接構造（防本檔自命中機密樣式掃描；同 rev5:secret-value-guard 慣例）
             _fixture(sd, {"database_url": b"postgres" + b"://soybean:" +
                                           b"STALE@postgres:5432/soybean_admin_rust"})
             rc, out, _ = self._run(sd)

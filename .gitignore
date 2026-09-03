@@ -35,7 +35,7 @@ fork260509-rev2-anew-rust-api/
 # base-web/  是 fork260509-soybean-admin-base  的 rev6-admin-base-web 分支 worktree
 # rust-api/  是 fork260509-rev2-anew-rust-api  的 rev6-admin-rust-api 分支 worktree
 # 外層 git 把它們當 submodule（gitlink + .gitmodules），追蹤當前使用的 fork SHA。
-# **故意不在這裡擋** — 擋了 git 就 add 不進來。操作手冊承 rev5:CLAUDE.md §3（rev6 正式版待補）
+# **故意不在這裡擋** — 擋了 git 就 add 不進來。操作手冊見 CLAUDE.md §3
 # ============================================================
 
 # ============================================================

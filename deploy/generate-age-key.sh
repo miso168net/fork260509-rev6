@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 # deploy/generate-age-key.sh — 產 age 金鑰（B′＝passphrase 加殼 identity）
 #
-# ＝RUNBOOK §15.2 步驟 1 的**機器化版本**：守衛與自檢內建，消除「手冊裡的可執行片段與實作
+# ＝rev5:RUNBOOK §15.2 步驟 1 的**機器化版本**：守衛與自檢內建，消除「手冊裡的可執行片段與實作
 #   各寫一份而漂移」那類失效（rev4:L-199）。手冊仍保留同口徑的 inline 形作為本腳本不可用時的退路。
 #
 # 用法（不強制 CWD——Dockerfile 以本腳本所在目錄定位）：
 #   bash deploy/generate-age-key.sh                            # 第一把：產到預設 ~/.config/sops/age/keys.txt
 #   bash deploy/generate-age-key.sh keys-fork260509-rev6.txt   # 同機第二把：同目錄**非預設**長檔名
-#     （★跨代並存機的正解——該機已有前代 identity 時走這條，見 §15.2 步驟 1 註記）
+#     （★跨代並存機的正解——該機已有前代 identity 時走這條，見 rev5:RUNBOOK §15.2 步驟 1 註記）
 #
-# 何時用：①新機／新成員加入（§15.2 步驟 1）②換機重建 ③撤銷演練需第二把（§15.3 準則 5）
-#   ④金鑰或 passphrase 遺失後重新加入（§15.5）。
+# 何時用：①新機／新成員加入（rev5:RUNBOOK §15.2 步驟 1）②換機重建 ③撤銷演練需第二把（rev5:RUNBOOK §15.3 準則 5）
+#   ④金鑰或 passphrase 遺失後重新加入（rev5:RUNBOOK §15.5）。
 #
 # ★passphrase 只在你腦中：本腳本**不接受、不記錄、不回顯**——由 age 自己向容器 tty 索取。
-#   遺失＝該 identity 永久失效、其加密的密文不可解（離線備份義務**含 passphrase 本身**、§15.5）。
+#   遺失＝該 identity 永久失效、其加密的密文不可解（離線備份義務**含 passphrase 本身**、rev5:RUNBOOK §15.5）。
 # ★需真終端（`age -p` 要 tty）；非互動情境**吵鬧失敗且零副作用**。
 # ★同機第二把務必用非預設檔名：金鑰一律落 ~/.config/sops/age。取 keys-fork260509-rev6.txt
 #   這個名時 wrapper 會**自動選它**（單檔掛到容器內預設尋鑰路徑、容器內恰一把 identity），
-#   解密毋須帶任何環境變數；用其他檔名（如 §15.3 撤銷演練鑰）則以 RV6_AGE_KEY_FILE 給
-#   **host 端絕對路徑**覆寫（§15.2 步驟 1 註記）。
+#   解密毋須帶任何環境變數；用其他檔名（如 rev5:RUNBOOK §15.3 撤銷演練鑰）則以 RV6_AGE_KEY_FILE 給
+#   **host 端絕對路徑**覆寫（rev5:RUNBOOK §15.2 步驟 1 註記）。
 # ★檔名取 **repo 目錄名**（`keys-fork260509-rev6.txt`）而非短代號：跨代並存的機器上短代號家族
 #   必撞名——此即 rev4:0084 付過代價換來的命名紀律（同源＝SECRETS_DIR 亦以 repo 目錄名為根）。
 # ★age 走容器（deploy/Dockerfile.age）＝rev5:ADR 0011 ③ 類一次性輔助工具：沿 latest、版本不落字面，
@@ -62,7 +62,7 @@ if ! docker build --pull --no-cache -t "$AGE_IMAGE" - < "$SCRIPT_DIR/Dockerfile.
   fi
 fi
 
-# ---- 覆蓋前最後一道閘（★RUNBOOK §15.2：覆蓋＝永久銷毀既有私鑰、其密文即刻不可解）----
+# ---- 覆蓋前最後一道閘（★rev5:RUNBOOK §15.2：覆蓋＝永久銷毀既有私鑰、其密文即刻不可解）----
 mkdir -p "$KEYDIR"
 chmod 700 "$KEYDIR"
 if [ -e "$KEYS" ]; then
@@ -71,7 +71,7 @@ if [ -e "$KEYS" ]; then
   echo "        bash deploy/generate-age-key.sh keys-fork260509-rev6.txt" >&2
   echo "      該檔名會被 wrapper 自動選用（單檔掛載），之後解密照常跑、毋須帶環境變數：" >&2
   echo "        python3 deploy/decrypt-secrets.py" >&2
-  echo "      全文＝RUNBOOK §15.2 步驟 1 註記。" >&2
+  echo "      全文＝rev5:RUNBOOK §15.2 步驟 1 註記。" >&2
   exit 1
 fi
 
@@ -137,7 +137,7 @@ echo "===== 完成。下面這一行是你的**公鑰**（非機密、可貼訊�
 echo "Public key: $PUBKEY"
 echo "======================================================================"
 echo
-echo "接著（§15.2 步驟 3~4）：管理者把該公鑰加進 .sops.yaml 的 age: 清單 →"
+echo "接著（rev5:RUNBOOK §15.2 步驟 3~4）：管理者把該公鑰加進 .sops.yaml 的 age: 清單 →"
 echo "  ./deploy/sops.sh updatekeys -y deploy/secrets.dev.enc.yaml → commit 密文 →"
 echo "  你 git pull → bash tools/bootstrap.sh → python3 deploy/decrypt-secrets.py"
-echo "★少了步驟 3，你的私鑰不在 recipient 清單裡＝拉到的密文一律解不開（§15.2 末條）。"
+echo "★少了步驟 3，你的私鑰不在 recipient 清單裡＝拉到的密文一律解不開（rev5:RUNBOOK §15.2 末條）。"

@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """deploy/secrets_common.py — 機密落點解析共用庫（rev5:ADR 0010 轉換批①、rev5:B-035）。
 
-實作自 tools/secret-value-guard.py 既有已測版本原樣提出，判定邏輯零變更：移植品的
+實作自 rev5:tools/secret-value-guard.py 既有已測版本原樣提出，判定邏輯零變更：移植品的
 「怪寫法」（寬進窄出、空字串吵鬧失敗）是前代刻意防禦，動它之前先查由來（rev5:L-004）。
 
 ★消費者限五支（rev5:ADR 0010；批③ rev5:B-037 增 generate-secrets 與 setup-reaper-role）：
-deploy/generate-secrets、deploy/setup-reaper-role、
-deploy/preflight-secrets、deploy/decrypt-secrets、
-tools/secret-value-guard。tools/bootstrap.sh 的落點解析刻意窄（只讀 .env）——驗證器
-不與被驗證者共用底座，**永不併庫**（rev5:ADR 0010 後果欄）。
+deploy/generate-secrets.py、deploy/setup-reaper-role.py、
+deploy/preflight-secrets.py、deploy/decrypt-secrets.py、
+tools/docsync/gates.py（GT-07；動態載入本模組）。tools/bootstrap.sh 的落點解析刻意窄
+（只讀 .env）——驗證器不與被驗證者共用底座，**永不併庫**（rev5:ADR 0010 後果欄）。
 
 本模組零第三方 import（rev5:ADR 0010 硬約束一）、不配 CLI、不配 test 子命令；
-既有測試留在 tools/secret-value-guard.py 的 test 子命令內（經 import 測本實作）。
+rev6 尚無專屬測試檔（rev5 的 test 子命令未隨遷）——覆蓋面暫由 GT-07 的動態載入承擔。
 """
 import os
 import re

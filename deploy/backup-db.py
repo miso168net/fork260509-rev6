@@ -13,7 +13,7 @@ rev5:B-023 第一段 dump／restore＋第二段還原演練自動化 drill）
   restore <dump 檔> --container 名
                           把 dump 檔經 psql（ON_ERROR_STOP=1）灌進指定容器的目標庫。
                           ★--container 必填、無預設——絕不默灌 dev stack 既有庫；對既有
-                          實例的「原地還原」＝破壞性操作，命令形與警語見 RUNBOOK §6。
+                          實例的「原地還原」＝破壞性操作，命令形與警語見 rev5:RUNBOOK §6（rev6 §6 隨刀補實）。
   drill <dump 檔> [--image 映像] [--keep]
                           還原演練（★非破壞）：起全新 scratch 容器＋卷（名稱恆為
                           rev6-admin-drill-pg／rev6-admin-drill-pg-data；已存在＝FAIL、不覆用
@@ -34,7 +34,7 @@ drill 名資產已存在／pg_isready 逾時／演練比對不等／名稱守衛
 落點紀律（rev4:0084 同款命名、與 SECRETS_DIR 同源）：$HOME 下以 repo 目錄名為根
 （`backups-<repo 目錄名>`、跨代並存機不撞名）。★零機密處理：本工具不碰 age 私鑰、不碰
 $SECRETS_DIR 明文、dump 內容只含 DB 資料——機密檔與資料卷**不入本工具備份**（明文只是密文
-的投影、age 私鑰走人工離線義務、redis 不持久化、obs 卷 opt-in；理由與去處＝RUNBOOK §6）；
+的投影、age 私鑰走人工離線義務、redis 不持久化、obs 卷 opt-in；理由與去處＝rev5:RUNBOOK §6（rev6 §6 隨刀補實））；
 備份排程化＝rev5:B-023 餘下半件、本工具不含任何刪舊／排程能力（見 docs/ops/BACKLOG.md）。
 """
 import argparse
@@ -63,7 +63,7 @@ COMPOSE_ARGV = ("docker", "compose", "-f", "docker-compose.yml", "-f", "docker-c
 # plain pg_dump 產物首段固定標頭：dump 產出與 restore 輸入的雙向防呆錨（灌錯檔／截斷早炸）。
 DUMP_MARKER = b"-- PostgreSQL database dump"
 
-# drill scratch 資產（名稱恆定、與 RUNBOOK §6.2 同字面）：既是起動名、也是唯一可刪名——
+# drill scratch 資產（名稱恆定、與 rev5:RUNBOOK §6.2 同字面）：既是起動名、也是唯一可刪名——
 # 名稱守衛 is_drill_asset 只認這兩個字面，dev stack（rev6-admin-*）與 rev5／rev4 對照 stack 永不在射程。
 DRILL_CONTAINER = "rev6-admin-drill-pg"
 DRILL_VOLUME = "rev6-admin-drill-pg-data"
@@ -76,8 +76,8 @@ SELF_CLEAN_HINT = f"docker rm -f {DRILL_CONTAINER} && docker volume rm {DRILL_VO
 # docker daemon 對 `docker run --name` 撞名的原話（多年穩定）：
 #   Conflict. The container name "/<名>" is already in use by container "<id>". …
 _RUN_CONFLICT_MARKER = "is already in use by container"
-# normalize 剝除的非決定性 token 行（pg_dump 18 每次隨機；與 RUNBOOK §6.2 舊 grep 形、
-# tools/schema-gate.py normalize 同則）：只認「行首 token＋空白」形。
+# normalize 剝除的非決定性 token 行（pg_dump 18 每次隨機；與 rev5:RUNBOOK §6.2 舊 grep 形、
+# rev5:tools/schema-gate.py normalize 同則）：只認「行首 token＋空白」形。
 _RESTRICT_PREFIXES = (b"\\restrict ", b"\\unrestrict ")
 
 
@@ -194,7 +194,7 @@ def cmd_restore(dump_path, container, root=None, run=None):
 
 
 # ---------------------------------------------------------------------------
-# drill：還原演練自動化（rev5:B-023 第二段；RUNBOOK §6.2 四段手打命令的機器化、同判準）
+# drill：還原演練自動化（rev5:B-023 第二段；rev5:RUNBOOK §6.2 四段手打命令的機器化、同判準）
 # ---------------------------------------------------------------------------
 
 def normalize_dump(text):
@@ -243,7 +243,7 @@ def docker_volumes_argv():
 
 
 def drill_run_argv(image):
-    """scratch 起動 argv（逐字＝RUNBOOK §6.2 舊手打形；卷掛 /var/lib/postgresql＝pg18 映像 VOLUME）。"""
+    """scratch 起動 argv（逐字＝rev5:RUNBOOK §6.2 舊手打形；卷掛 /var/lib/postgresql＝pg18 映像 VOLUME）。"""
     return ["docker", "run", "-d", "--name", DRILL_CONTAINER,
             "-v", f"{DRILL_VOLUME}:/var/lib/postgresql",
             "-e", f"POSTGRES_USER={DB_USER}", "-e", f"POSTGRES_PASSWORD={DRILL_PASSWORD}",
@@ -393,7 +393,7 @@ def cmd_drill(dump_path, image=None, keep=False, root=None, run=None,
     if src_norm != re_norm:
         print(f"FAIL：normalize 後不等——首個差異在第 {first_diff_line(src_norm, re_norm)} 行"
               f"（原 dump sha256 {src_sha}／re-dump sha256 {re_sha}；--keep 可保留 scratch 檢視）——"
-              f"首查原 dump 標頭「Dumped by pg_dump version」與 --image 是否同版（不同版＝必然逐位元不等、非備份損壞）；判準與命令形＝RUNBOOK §6.2",
+              f"首查原 dump 標頭「Dumped by pg_dump version」與 --image 是否同版（不同版＝必然逐位元不等、非備份損壞）；判準與命令形＝rev5:RUNBOOK §6.2",
               file=sys.stderr)
         return _finish(1)
     print(f"PASS：normalize 後逐位元相等（sha256 {src_sha}；"
@@ -711,8 +711,8 @@ _RESTRICT_DUMP = (b"-- PostgreSQL database dump\n"
 
 
 class TestNormalizeDump(unittest.TestCase):
-    """normalize 純函式：只剝 `\\restrict `／`\\unrestrict ` 起首行（與 RUNBOOK §6.2 舊 grep 形、
-    schema-gate normalize 同則）；其餘位元組原樣。"""
+    """normalize 純函式：只剝 `\\restrict `／`\\unrestrict ` 起首行（與 rev5:RUNBOOK §6.2 舊 grep 形、
+    rev5:schema-gate normalize 同則）；其餘位元組原樣。"""
 
     def test_strips_restrict_lines_in_middle(self):
         self.assertEqual(normalize_dump(_RESTRICT_DUMP), _GOOD_DUMP)

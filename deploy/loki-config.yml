@@ -1,5 +1,5 @@
 # rev4:016-observability rev4:T003：loki 3.7.3 single-binary（TSDB schema v13、72h retention；rev3:018 U1 照搬）。
-# data-model §7；log 72h 保留、過期 compactor 刪。
+# rev4:016-observability data-model §7；log 72h 保留、過期 compactor 刪。
 auth_enabled: false
 
 server:
