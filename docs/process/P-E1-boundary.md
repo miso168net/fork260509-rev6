@@ -44,7 +44,7 @@ flowchart LR
 | 節點 | 類型 | 說明 |
 |---|---|---|
 | user | 人 | 拍板級親決、merge／push 當次同意 |
-| pre-commit | 機器閘 | betterleaks→docsync check（GT-01）＋lint（GT-02～GT-12）→staged 工具自測 |
+| pre-commit | 機器閘 | betterleaks→docsync check（GT-01）＋lint（GT-01～GT-12）→staged 工具自測 |
 | default branch | 確定性區域 | `rev6-admin-root`；只收經兩道閘的產物 |
 
 ### 四段邊界契約

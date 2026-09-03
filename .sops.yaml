@@ -5,10 +5,8 @@
 # rev4:P2.5 連帶紀律：加密檔 key 名禁 _unencrypted 後綴（該後綴無法藉「不設定」規避）
 # recipient＝age 公鑰清單（YAML 清單形；公鑰非機密）。
 # ★rev6 世代錯開（D17；承 rev5 紀律「不沿用前代 recipient——沿用＝前代私鑰能解本代密文」）：
-#   rev5 三把 recipient 一律不帶入、rev5 的 deploy/secrets.dev.enc.yaml 不搬。rev6 首把由
-#   `bash deploy/generate-age-key.sh keys-fork260509-rev6.txt` 產出後填入下列 age 清單，
-#   再依 deploy/secrets/README.md 生成並加密 rev6 自己的密文。清單為空時 sops 立即報錯
-#   （fail-loud）、不會靜默用錯鑰。
+#   rev6 兩把 recipient＝開發鑰 keys-fork260509-rev6.txt＋離線復原鑰（世代錯開已落實、
+#   rev5 三把不帶入、rev5 的 deploy/secrets.dev.enc.yaml 不搬）；加人／換鑰＝RUNBOOK §15.2。
 creation_rules:
   - path_regex: ^deploy/secrets\.dev\.enc\.yaml$
     age:

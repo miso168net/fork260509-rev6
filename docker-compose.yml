@@ -249,7 +249,7 @@ services:
       - grafana_admin_password
       # rev4:016-observability rev4:T012：alerting contact point webhook URL（provisioning yaml 內
       # $__file{/run/secrets/alert_webhook_url} 讀取；URL 不以完整字面進版本庫——★dev 佔位現值
-      # 仍可由 deploy/dev-webhook-sink.sh 之 NAME 推導＝dev-only 已接受殘餘、rev4:L-190）
+      # 現值＝不可達佔位（.invalid 保留域）；真值收件端待 NOTES 未決拍板、換值走 RUNBOOK §15.4）
       - alert_webhook_url
     volumes:
       - grafana_data:/var/lib/grafana

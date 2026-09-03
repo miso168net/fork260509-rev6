@@ -41,7 +41,6 @@ REV5_BLUEPRINT = (  # rev5 活書標題名冊（凍結 SHA 7eab28a；欄＝字�
 BLUEPRINT_DISPOSITIONS = ("承襲", "隨刀：", "不承襲：")
 BLUEPRINT_DIR = "docs/generated/reference"
 RE_OPTS = re.compile(r"^const ([A-Z][A-Z0-9_]*_OPTS)\s*=\s*\{\s*model:\s*'([^']*)'\s*,\s*effort:\s*'([^']*)'\s*\}", re.M)
-BUDGET_GATES, BUDGET_BACKLOG_OPEN = 12, 25
 
 
 def parse_ports(ctx):
@@ -102,15 +101,28 @@ def gen_reference_perf(events):
 
 
 def _target(e):
-    return e.get("feature") or e.get("scope") or e.get("category") or (f"行 {e['target_line']}" if e.get("type") == "erratum" else "—")
+    return e.get("feature") or e.get("scope") or e.get("category") or e.get("kind") or (f"行 {e['target_line']}" if e.get("type") == "erratum" else "—")
+
+
+def _event_summary(e):
+    """人讀摘要：summary／reason 直出；review 型渲染 findings 三分流 zh-TW 摘要（不印 dict 字面）；perf 型渲染 kind／wall_s／rc。"""
+    if e.get("summary") or e.get("reason"):
+        return e.get("summary") or e.get("reason")
+    if e.get("type") == "review" and isinstance(e.get("findings"), dict):
+        fd = e["findings"]; bl = fd.get("to_backlog") or []; adr = fd.get("wontfix_adr") or []
+        s = f"findings {fd.get('total', 0)}（修 {fd.get('fixed', 0)}／BL {len(bl)}／ADR {len(adr)}）"
+        return s + (f"；{'、'.join(bl + adr)}" if bl or adr else "")
+    if e.get("type") == "perf":
+        return f"{e.get('kind', '')} {e.get('wall_s', '')} 秒 rc={e.get('rc', '—')}"
+    return ""
 
 
 def gen_milestones(events):
     lines = [GENERATED_HEADER, "# MILESTONES — 事件表（新在前）——perf 型另居 reference/perf.md", "",
              "| date | type | 標的 | summary | merge | adrs | arch |", "|---|---|---|---|---|---|---|"]
     rows = [e for e in events if e.get("type") != "perf"]
-    for e in sorted(rows, key=lambda e: e["date"], reverse=True):
-        summary = e.get("summary") or e.get("reason") or (str(e.get("findings")) if e.get("type") == "review" else "")
+    for _, e in sorted(enumerate(rows), key=lambda t: (t[1]["date"], t[0]), reverse=True):   # 同日依檔內序、新（後 append）在前
+        summary = _event_summary(e)
         merge = str(e.get("merge") or e.get("corrected") or "")[:7] or "—"
         lines.append(f"| {e['date']} | {e['type']} | {_target(e)} | {summary} | {merge} | {'、'.join(e.get('adrs', []) or []) or '—'} | "
                      f"{'、'.join(e['arch_impact']) if isinstance(e.get('arch_impact'), list) else e.get('arch_impact', '—')} |")
@@ -303,14 +315,14 @@ def _budget_rows(ctx, counts, caps, backlog_open):
     rows = []
     try:
         from . import gates
-        n_gates = len(gates.ROSTER)
+        n_gates, cap_gates, cap_backlog = len(gates.ROSTER), gates.BUDGET_GATES, gates.BUDGET_BACKLOG_OPEN   # 上限單一家＝gates.py（GT-12 執行用同一常數）
     except Exception:
-        n_gates = "n/a"
-    rows.append(("閘數", n_gates, BUDGET_GATES))
+        n_gates = cap_gates = cap_backlog = "n/a"
+    rows.append(("閘數", n_gates, cap_gates))
     for k in ("總",) + rules_mod.SCOPES:
         if k in counts:
             rows.append((f"RULES {k}", counts[k], caps.get(k, "—")))
-    rows.append(("BACKLOG 開放", backlog_open, BUDGET_BACKLOG_OPEN))
+    rows.append(("BACKLOG 開放", backlog_open, cap_backlog))
     lines = ["| 項目 | 現值 | 上限 | 狀態 |", "|---|---|---|---|"]
     for name, val, cap in rows:
         status = "—" if not isinstance(val, int) or not isinstance(cap, int) else ("內" if val <= cap else "超")
@@ -337,7 +349,7 @@ def gen_state(ctx):
     m = ev_mod.metrics(events, lessons)
     claude = ctx.text("CLAUDE.md")
     lines = [GENERATED_HEADER, "# STATE — 現況機器帳", "", "## git",
-             f"- default branch：{DEFAULT_BRANCH}",
+             f"- default branch：{DEFAULT_BRANCH}（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）",
              "- pins：" + "｜".join(f"{sub}={_pin(ctx, sub)}" for sub in SUBMODULES), "",
              "## 現在波", f"- 波：{wave if wave is not None else '未標記'}（docs/ops/NOTES.md 首行標記）", "",
              "## constitution", f"- 版本：{ver.group(1) if ver else '未定版'}", "",
@@ -353,7 +365,7 @@ def gen_state(ctx):
              f"| BACKLOG 淨流量（rolling 3 刀） | {m['backlog_net']} | ≤0 |", "",
              "## 數量預算對賬（D8；級別由 GT-12 定）"] + _budget_rows(ctx, counts, caps, backlog_open) + ["", "## 最近事件（尾 3 筆、新在前）"]
     for e in list(reversed(events))[:3]:
-        lines.append(f"- {e['date']}｜{e['type']}｜{_target(e)}｜{(e.get('summary') or e.get('reason') or '')[:80]}")
+        lines.append(f"- {e['date']}｜{e['type']}｜{_target(e)}｜{_event_summary(e)[:80]}")
     return "\n".join(lines) + "\n"
 
 

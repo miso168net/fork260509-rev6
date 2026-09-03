@@ -7,7 +7,7 @@ rc 逐分支與 stdout／stderr 分工皆逐位元組對應；唯一實作收斂
 deploy/secrets_common.py（同 preflight／decrypt／generate 先例，落點解析兩型失敗的訊息字面
 隨之收斂到共用庫版本，rc 與串流不變）。
 
-分工（data-model §5、rev4:research R5、rev4:ADR 0072）：
+分工（rev4:016-observability data-model §5、rev4:research R5、rev4:ADR 0072）：
   rev4:m012 migration＝CREATE ROLE reaper NOLOGIN＋GRANT（零密碼）；本腳本＝ALTER ROLE reaper
   LOGIN PASSWORD（密碼讀自 $SECRETS_DIR/reaper_password.txt；★rev4:019 rev4:US3 起落點由 repo
   根 .env 的 SECRETS_DIR 決定、未設才回退 repo 內 deploy/secrets——解析口徑見共用庫）。
@@ -69,7 +69,7 @@ PW_NAME = "reaper_password.txt"
 # compose 前綴（逐字沿舊檔 `COMPOSE=(docker compose -f … -f …)`）：兩發共用同一序列。
 COMPOSE_ARGV = ("docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml")
 
-# 第一發：設密（psql 沿 tools/schema-gate.py 的 `exec -T` 慣例）。★旗標次序即 argv 序列，
+# 第一發：設密（psql 沿 rev5:tools/schema-gate.py 的 `exec -T` 慣例（隨刀進場））。★旗標次序即 argv 序列，
 # 等價矩陣以假 docker 樁逐位元組比對新舊——重排「看起來比較整齊」＝矩陣當場紅。
 PSQL_ARGV_TAIL = ("exec", "-T", "postgres", "psql", "-v", "ON_ERROR_STOP=1",
                   "-U", "soybean", "-d", "soybean_admin_rust",
@@ -272,7 +272,7 @@ DOCKER_STUB = (
     "sys.exit(0)\n")
 
 # fixture 密碼字面一律**執行期串接**（同 deploy/generate-secrets.py 慣例）：源碼裡不留成形的
-# 密碼字面，憑證掃描面（.githooks pre-commit gitleaks／tools/secret-value-guard.py）零誤報。
+# 密碼字面，憑證掃描面（.githooks/pre-commit 的 betterleaks 樣式層＋tools/docsync GT-07）零誤報。
 _PW_PLAIN = "fixture" + "-" + "reaper" + "-pw"
 # 特殊字元組（quoting 等價的關鍵情境）：單引號／反斜線／空白／錢字號／反引號／雙引號全上。
 _PW_TRICKY = "a" + "'" + "b" + "\\" + "c d" + "$" + "e" + "`" + 'f"g'

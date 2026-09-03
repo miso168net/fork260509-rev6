@@ -9,14 +9,14 @@ admin 後台系統第六代重跑版：前端 fork 自 soybean-admin（Vue3＋na
 
 ```text
 fork260509-rev6/
-├── README.md                        本檔：人類入口導覽；下列樹之 tools/、deploy/、.githooks/、.claude/ 與實檔集由 GT-09 雙向對賬
+├── README.md                        本檔：人類入口導覽；下列樹之 tools/、deploy/、.githooks/、.claude/ 與實檔集由 GT-09 雙向對賬；docs/ 列項為地圖、出現時機標於括號
 ├── CLAUDE.md                        操作規則書：拓樸／工作流／git 手冊／文件規則／決策紀律／硬禁令／rev5 對照
 ├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment（1.0.0＝ADR-00003）
 ├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00004；名詞段住此
 ├── docs/ops/NOTES.md                當前意圖；首行 <!-- wave: N --> 為「現在波」唯一真源
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES 與 reference/perf
 ├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   待辦兩卷 BL-NNNNN（開放／滯後；配號只在主檔；完成即刪、git 即史）
-├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN
+├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN（`LESSONS/` 首條 LL 落地時出現）
 ├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；創世期最小章 §1／§7 抬頭／§12／§14、§15 為指針、其餘隨刀補實
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
@@ -45,7 +45,7 @@ fork260509-rev6/
 │   ├── secrets/                     明文落點說明（README＋.example；實值住 SECRETS_DIR、gitignored）
 │   ├── alloy/、grafana-provisioning/、nginx/、prometheus/   compose 掛載的服務／觀測層設定（動它＝動 runtime）
 │   └── dev-certs/                   dev TLS 憑證落點（gitignored、.gitkeep）
-├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測；雙錨 45／90 秒）、pre-push（範圍掃描）
+├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）
 │   ├── pre-commit、pre-push
 │   └── lib/                         scan-range.sh：pre-push 範圍推導（三 repo 共用）
 ├── .githooks-submodule/             兩 worktree 專用 hooks（pre-commit／pre-push；bootstrap 以絕對路徑設 hooksPath）
@@ -63,10 +63,10 @@ fork260509-rev6/
 
 ## 這裡的文件系統怎麼運作（30 秒版）
 
-- **三種材質**：人寫（規則與敘事、user 拍板審 diff）／事件源（`docs/ops/events.jsonl` 半自動 append）／機器生成（`docs/generated/` 與 `tools/orchestration/_sk_rules.js`，嚴禁手改、任何檔可刪除重算）。每個事實只有一個人寫的家；鏡像不是機器生成、就是不存在。
+- **三種材質**：人寫（規則與敘事、user 拍板審 diff）／事件源（`docs/ops/events.jsonl` 半自動 append）／機器生成（名冊＝`GENERATED_FILES`：`docs/generated/**`＋`tools/orchestration/_sk_rules.js`＋例外註冊 `docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`；嚴禁手改、任何檔可刪除重算）。每個事實只有一個人寫的家；鏡像不是機器生成、就是不存在。
 - **權威鏈**：constitution ＞ ADR accepted ＞ RULES.md ＞ 活書家族（arc42／c4／compliance／process）＞ generated。RULES 與 accepted ADR 衝突＝RULES 有誤、就地改 RULES。
 - **時態**：活書家族永遠現在式；未來式住 ops/；過去式住 git＋events。完成即刪、git 即史。
-- **守門**：pre-commit 一次跑完（秒級）——betterleaks 樣式層 → `docsync check`（GT-01 零漂移）＋`docsync lint`（GT-02～GT-12）→ staged 工具自測。閘名冊＝`docs/generated/GATES.md`（九欄；Day-1 豁免逐筆帶解除謂詞、到期即紅）。
+- **守門**：pre-commit 一次跑完（秒級）——betterleaks 樣式層 → `docsync check`（GT-01 零漂移）＋`docsync lint`（GT-01～GT-12；GT-01 與 check 同源）→ staged 工具自測。閘名冊＝`docs/generated/GATES.md`（九欄；Day-1 豁免逐筆帶解除謂詞、到期即紅）。
 - **規則進 prompt**：`python3 tools/docsync rules emit --scope <implementer|review|fix|主線|人>` 產出規則塊＋`RULES-VERSION`；Workflow script 一律必帶、PreToolUse hook 對賬。
 
 ## 第一次來，照這個順序讀
@@ -90,7 +90,10 @@ fork260509-rev6/
 |---|---|
 | 為什麼這樣做 | `docs/arc42/decisions/`（索引＝`docs/generated/DECISIONS-INDEX.md`） |
 | 現在到哪、下一步 | `docs/generated/STATE.md`、`docs/ops/NOTES.md` |
+| 我要開新刀（從哪起手） | `docs/ops/NOTES.md` 下一步 → `CLAUDE.md` §2 階段 0 → `docs/brainstorms/<NNN>-<feature-name>.md` |
+| feature 分支與 specs 目錄怎麼來 | `CLAUDE.md` §2 SDD 段（分支＝before_specify hook 建、目錄＝`/speckit-specify` 自建並寫 `.specify/feature.json`；序號設定＝`.specify/extensions/git/git-config.yml`、`.specify/init-options.json`） |
 | 哪些規則、誰守 | `docs/ops/RULES.md`、`docs/generated/GATES.md` |
+| git／submodule 怎麼操作（兩段式 commit、pin 判方向） | `CLAUDE.md` §3 |
 | 怎麼操作（起停、機密、工具） | `docs/ops/RUNBOOK.md` |
 | 系統長怎樣（活書索引） | `docs/arc42/ARCHITECTURE.md`（機器生成；節檔住 `docs/arc42/`） |
 | RAD-AI 導入到哪、填實幾成 | `docs/generated/RAD-AI-MAP.md` |

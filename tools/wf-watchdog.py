@@ -48,16 +48,16 @@ from glob import glob
 STALL = 780      # 秒；>最長合法 cargo（sub-agent Bash 單命令 600s 上限＋margin）
 RUNAWAY_FLOOR = 25   # 不重複 agent key 數保底（rev5:B-069：原 RUNAWAY 字面值、行為不退步）
 FUSE_MULTIPLIER = 2  # 有效上限＝max(RUNAWAY_FLOOR, FUSE_MULTIPLIER × script 宣告之 AGENT_FUSE)
-#   ★上限自「被監看 script 的 launch 快照」推導、絕不由呼叫端傳入（rev5:B-069；CLAUDE.md §9
-#   安全邊界不得與呼叫端同源——--fuse／--fanout 兩案依此否決）。取不到快照／無宣告＝
-#   顯式退 RUNAWAY_FLOOR，絕不寫成「取不到就不檢查」（＝卸除 backstop）。
+#   ★上限自「被監看 script 的 launch 快照」推導、絕不由呼叫端傳入（rev5:B-069；RL-0060：一切
+#   邊界寫死 script 常數不取自 args——安全邊界不得與呼叫端同源，--fuse／--fanout 兩案依此
+#   否決）。取不到快照／無宣告＝顯式退 RUNAWAY_FLOOR，絕不寫成「取不到就不檢查」（＝卸除 backstop）。
 #   ★射程限縮（2026-08-11 實測）：持久 json 於 run **結束後**才落地 ⇒ 進行中的 run 恆用
 #   floor；推導升級真正生效的形有二：「鎖到已完成的 run」（rev5:B-069 原始誤報現場即此形）與
 #   「armed-live：run 結束後 json 落地、越界在落地後才被觀測到」——後者＝懶讀重試腿的
 #   存在理由。★resume 形不在本 backstop 覆蓋內（fix 第 3 輪誠實限縮）：resume 沿用原
 #   runId，讀到的持久 json 直到 resumed run 結束前都是**前一輪**的 script 快照——resume
 #   前若動過 AGENT_FUSE（§2「修 script→resume」即典型動機），推得上限即為舊值：調高＝
-#   偏窄假警報（噪音、非終止）、調低＝偏寬＝backstop 靜默放寬（CLAUDE.md §9 cap 失格形）。
+#   偏窄假警報（噪音、非終止）、調低＝偏寬＝backstop 靜默放寬（RL-0062 保險絲自我斷言所防之失格形）。
 #   行為面無便宜修法：以「json mtime ≥ watch 啟動時刻」區辨新舊快照，會把「鎖到已完成
 #   run」形一併打回 floor＝rev5:B-069 原始誤報復活；真修需框架端提供 run 級 script 識別
 #   （提案射程外、循 BACKLOG 另立）。ARMED 行印的是當下實際生效值。
@@ -292,7 +292,8 @@ def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_u
     rounds = 0
     ceiling = None        # None＝上限尚未定案 → 每輪懶讀（持久 json 於 run 結束後才落地）
     # ★runaway_said＝一個 watch 生命週期只叫一次（否則每 60s 洗版一則）、且上限升級後
-    # 亦不重新武裝——刻意取捨（提案 §5 只釘「只叫一次」；重新武裝＝規格外行為變更）。
+    # 亦不重新武裝——刻意取捨（本檔契約：一個 watch 生命週期只告警一次；
+    # 承 rev5:B-005 提案 §5。重新武裝＝規格外行為變更）。
     # 代價（明認）：floor 告警後 ceiling 升級且 nkeys 破新上限（更強的失效訊號）不再出
     # 聲，唯一一則印的是首次越界當下的 nkeys。可接受之因：升級時點必在 run 結束後，其
     # 後 key 續增僅發生於 resume，而 resume＝新 launch 必原子成對掛新 Monitor
@@ -700,7 +701,7 @@ class TestRunawayCeilingDerivation(unittest.TestCase):
         fuse=12/13）：fuse=12（2×12=24＜floor）＝(25, True) 保底不收窄、fuse=13
         （2×13=26）＝(26, True) 升推導——判別值離界（舊臂 fuse=8）時「max(floor,X)
         改分段常數」類變異兩側皆綠＝交界逃逸；貼線後誤刪 max() 或界線挪動即紅
-        （提案 §5「＝現行值、行為不退步」）。絕非「取不到就不檢查」（＝卸除 backstop）。"""
+        （保底值＝現行值、行為不退步；承 rev5:B-005 提案 §5）。絕非「取不到就不檢查」（＝卸除 backstop）。"""
         with tempfile.TemporaryDirectory() as sess:
             wf = self._mk_wf(sess)                                # 無持久 json
             self.assertEqual(derive_runaway_ceiling(wf), (RUNAWAY_FLOOR, False))
@@ -728,7 +729,7 @@ class TestRunawayCeilingDerivation(unittest.TestCase):
         ①註解先行——「前一輪 AGENT_FUSE = 20」在真宣告 80 之前，裸 pattern search()
         取最先出現的 20＝上限被竄窄（真實快照已近失手一次）；②前綴變體——
         MAX_AGENT_FUSE = 999 無真宣告，裸 pattern 取 999＝上限 1998＝backstop 靜默
-        卸除（CLAUDE.md §9「a cap … silently stops being a cap」）。錨定式：①取真
+        卸除（RL-0060「上限對著壞輸入比較即靜默失效」）。錨定式：①取真
         宣告 80→(160, True)；②取不到→顯式退 floor。③④＝錨定擋不住的兩形（被註解
         掉的真宣告／模板字串內字面、皆帶 const 關鍵字）——由 findall 取 min 擋
         （確認輪實暴：search 取首個使③推得 1998＝cap 放寬 50 倍）。"""

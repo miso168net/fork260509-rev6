@@ -250,7 +250,7 @@ groups:
       # ★14 label 全覆蓋：帳號維七源（redis_lock/redis_captcha/db_count/db_write/redis_unlock_marker/
       #   settings_default/redis_lock_set）＋IP 維五源（redis_lock_ip/redis_unlock_marker_ip/db_count_ip/
       #   redis_lock_set_ip/settings_default_ip）＋rev4:020 信箱驗證二源（emailverify_redis/emailverify_smtp
-      #   ——後者含 user 可觸發之不可投遞位址、判讀口徑見 RUNBOOK Gmail 節）——obs.rs
+      #   ——後者含 user 可觸發之不可投遞位址、判讀口徑見 rev5:RUNBOOK §15.4 Gmail 段）——obs.rs
       #   pre_register_metrics 全數 pre-register 0、本 rule 不設 source selector＝任何值（含未來新增）
       #   增長皆命中；sum by (source) 保留降級源維度。
       - uid: obs016-throttle-degraded
@@ -591,7 +591,7 @@ groups:
       # ══ ⑤b reaper-mode-misconfig：dry-run 序列存在且 execute 序列缺席即紅（token-reap 組）══
       # 堵「常駐空轉假健康」（spec rev4:US1-AC4 誤配案）：`unless ignoring(mode)`——dry-run 心跳在而
       #   execute 心跳不在→回傳 dry-run 序列（timestamp 恆 > 0）→轉紅；execute 在（正常）或
-      #   兩者皆無（未部署）→空向量→noDataState=OK＝綠。mode 字面錨＝contracts/reaper-cli.md
+      #   兩者皆無（未部署）→空向量→noDataState=OK＝綠。mode 字面錨＝rev4:contracts/reaper-cli.md
       #   （mode=dry-run／mode=execute）。正向與誤配全驗歸 rev4:US3/rev4:T026。
       # ★rev4:017 rev4:T010 射程收斂：expr 兩側補 reaper_job="token-reap"——`ignoring(mode)` 對 reaper_job
       #   參與匹配＝per-job 配對、與⑥b 射程互斥。

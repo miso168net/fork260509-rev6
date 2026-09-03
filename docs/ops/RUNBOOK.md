@@ -33,7 +33,7 @@ compose profile 三組：`obs`（loki、alloy、socket-proxy、grafana）、`met
 
 ## 6. 備份與還原
 
-`python3 deploy/backup-db.py`（承 rev5:RUNBOOK §6 dump／restore／drill 三形；落點 `$HOME` 防跨代撞名）。隨對應刀補實文。
+`python3 deploy/backup-db.py`（承 rev5:RUNBOOK §6 dump／restore／drill 三形；落點 `$HOME` 防跨代撞名；子節細目同承 rev5:RUNBOOK §6.1～§6.5）。隨對應刀補實文。
 
 ## 7. 機密輪替表（生成明細→`deploy/secrets/README.md`；密文面連帶＝§15）
 
@@ -59,7 +59,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 ## 10. migration 操作
 
-隨首個 schema 刀補實文。
+migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 `rev5:m001`→`m0001` 改名）。其餘隨首個 schema 刀補實文。
 
 ## 11. 觀測層維運
 
@@ -73,13 +73,13 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 |---|---|---|
 | `python3 tools/docsync generate` | 由真源重算全部生成物（GENERATED_FILES 名冊；跑完必 `git add`） | 否 |
 | `python3 tools/docsync check` | GT-01 零漂移比對（pre-commit 第一道） | 否 |
-| `python3 tools/docsync lint` | 其餘閘 GT-02～GT-12（pre-commit 第二道；Day-1 豁免逐筆具名 SKIP） | 否 |
+| `python3 tools/docsync lint` | GT-01～GT-12 全數（GT-01 與 check 同源；pre-commit 第二道；Day-1 豁免逐筆具名 SKIP） | 否 |
 | `python3 tools/docsync rules emit --scope <implementer\|review\|fix\|主線\|人> [--format js]` | 規則塊＋`RULES-VERSION`（Workflow script 必帶、PreToolUse hook 對賬） | 否 |
 | `python3 tools/docsync errata <詞>` | 全 repo（含兩子庫 pin 樹）同語意枚舉 | 否 |
 | `python3 tools/docsync test` | 治理工具自測（語料面 tests/） | 否 |
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
-| `node tools/orchestration/harness-test.mjs`／`harness-test-quality-only.mjs` | 編排骨架 harness 自測（十案） | 否 |
+| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs>`／`harness-test-quality-only.mjs <script.mjs>` | 編排骨架 harness 自測（十案） | 否 |
 | `node tools/orchestration/cdp.mjs` | CDP 對照走查工具（127.0.0.1:9229；CLAUDE.md §7） | 是（host 瀏覽器） |
 | `python3 deploy/generate-secrets.py [--force\|--compose-only]` | 十三機密缺則補／全重生／只重組 composite | 否（需 docker） |
 | `python3 deploy/preflight-secrets.py` | 上機前把關 | 否 |
@@ -90,7 +90,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
-碼面閘（schema-gate、entity-drift-gate、wire-schema、fork-delta-lint、route-artifact-gate、view-render-guard、seed-view-gate、rust-fmt-gate）隨子庫刀進場、進場時入本表。
+碼面閘（schema-gate、entity-drift-gate、wire-schema、fork-delta-lint、route-artifact-gate、view-render-guard、seed-view-gate、rust-fmt-gate）隨子庫刀進場、進場時入本表；碼面閘屬系統面、不計入 GT-12 的 ≤12 治理閘預算（啟動書 §4.2 拍板）。
 
 ## 13. 故障排除速查
 
@@ -103,7 +103,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 
 ## 15. SOPS 機密營運（密文入版控 × age 私鑰）
 
-資產：密文 `deploy/secrets.dev.enc.yaml`（tracked；十支＝九 leaf＋`alert_webhook_url`）；recipient 兩把（`.sops.yaml`）＝開發鑰 `keys-fork260509-rev6.txt`（住 `~/.config/sops/age/`、世代錯開、不沿用 rev5 鑰）與離線復原鑰（只存離線、承 rev5:B-041 義務）；wrapper `deploy/sops.sh`（鑰選取＝`RV6_AGE_KEY_FILE` 優先、否則命名紀律預設檔）；`RV6_DECRYPT_MANUAL=1`＝逐次手打退路。passphrase 只存持鑰者腦中與離線紙本、絕不進 chat／命令／檔案。
+資產：密文 `deploy/secrets.dev.enc.yaml`（tracked；十支＝九 leaf＋`alert_webhook_url`）；recipient 兩把（`.sops.yaml`）＝開發鑰 `keys-fork260509-rev6.txt`（住 `~/.config/sops/age/`、世代錯開、不沿用 rev5 鑰）與離線復原鑰（只存離線、承 rev5:ADR 0015 子題三之義務；施工紀錄＝rev5:B-041）；wrapper `deploy/sops.sh`（鑰選取＝`RV6_AGE_KEY_FILE` 優先、否則命名紀律預設檔）；`RV6_DECRYPT_MANUAL=1`＝逐次手打退路。passphrase 只存持鑰者腦中與離線紙本、絕不進 chat／命令／檔案。
 程序見 `deploy/secrets/README.md`（解密／重組／預檢三條路徑、亂數生成、特例與不變式）；加人、撤銷、值變更回寫、災難復原四情境、輪替表、手動 wrapper 三步——細節承 rev5:RUNBOOK §15 同節，隨首個機密事件補實。
 
 ### 15.2 加人四步（新成員／新機器）
@@ -116,4 +116,4 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 
 ## 16. 部署 checklist
 
-prod 不入 roadmap（承 rev5:ADR 0014）；信任錨與 IP 存取閘設定＝`deploy/trust-model.dev.toml`。隨對應刀補實文。
+prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設；若要做 prod 先立 ADR）；信任錨與 IP 存取閘設定＝`deploy/trust-model.dev.toml`。隨對應刀補實文。

@@ -9,8 +9,8 @@
 FROM rust:1.96.1-slim AS dev
 RUN cargo install watchexec-cli --version 2.5.1 --locked
 # rustfmt component（rev5:B-112／rev5:ADR 0057）：rust:1.96.1-slim 只帶 minimal profile、不含 rustfmt，
-# 而 host 無 rust toolchain ⇒ `cargo fmt` 只跑得動在容器內（pre-commit 的 rust 格式守門
-# ＝tools/rust-fmt-gate.py 即呼叫本容器）。
+# 而 host 無 rust toolchain ⇒ `cargo fmt` 只跑得動在容器內（rev6 的 cargo fmt 守門隨子庫刀
+# 進場，承 rev5:tools/rust-fmt-gate.py 形制；進場前靠實作單元自驗）。
 # ★版本隨 toolchain 附帶（rust-api/rust-toolchain.toml channel 1.96.1 ⇒ rustfmt 1.9.0-stable）、
 #   **無獨立釘版面**——rustfmt 與 rustc 同版發行，釘 channel 即釘住 rustfmt。
 # ★刻意置於 watchexec 安裝行**之後**：該行是最重的一層，放其後既有 docker layer cache 不失效。

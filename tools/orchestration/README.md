@@ -1,4 +1,4 @@
-# rev6 編排骨架（`tools/orchestration/`；承 rev5 008 刀骨架、D10 入 repo）
+# rev6 編排骨架（`tools/orchestration/`；承 rev5:008-audit-settings-pages 刀骨架、D10 入 repo）
 
 ## 檔
 
@@ -6,17 +6,21 @@
 |---|---|
 | `_sk_head.js` | 防呆①args 斷言／②guard／③保險絲推導＋自我斷言／④兩套 schema（WORK＝status，REVIEW＝agentStatus）；`IMPLEMENTERS = 2` |
 | `_sk_head1.js` | 同上、`IMPLEMENTERS = 1` |
+| `_sk_head3.js` | 同上、`IMPLEMENTERS = 3` |
 | `_sk_rules.js` | **機器生成**（`python3 tools/docsync generate`＝`rules emit --format js`）：`RULES`（implementer 塊）／`RULES_REVIEW`／`RULES_FIX` 三個樣板字串常數，各以 `RULES-VERSION: <12hex>` 收尾；規則本體住 docs/ops/RULES.md、**不再手維護陣列**；PreToolUse hook 對賬版本串、不符即擋 |
-| `_sk_cycle.js` | `rejectedBlock`＋`fixPrompt`＋`cycle`（含確認輪、⑤收斂偵測、**rev5:L-078 的 done_with_escalation 分支**）。★內含 `UNIT` 變數引用，組裝時 fixPrompt 那句要參數化 |
+| `_sk_cycle.js` | `rejectedBlock`＋`fixPrompt`＋`cycle`（含確認輪、⑤收斂偵測、**rev5:L-078 的 done_with_escalation 分支**）。★內含 `UNIT` 與 `FEATURE` 模板變數、組裝時由 `_vars` 段提供 |
 | `_sk_main.js` | 雙 implementer 主流程（已參數化 `UNIT`／`PH1`／`PH2`／`LBL1`／`LBL2`／`START_LOG`） |
 | `_sk_main1.js` | 單 implementer 主流程（同參數化；★它引用 `IMPL_PROMPT`，若變動段命名為 `IMPL1_PROMPT` 要於組裝時替換） |
+| `_sk_main3.js` | 三 implementer 主流程（同參數化） |
 | `harness-test.mjs` | **控制流十案**；`node harness-test.mjs <script.mjs>`，秒級 |
+| `harness-test-quality-only.mjs` | 同上十案之 quality-only 變體：樁的標籤前綴由 `spec:` 改 `quality:`，供**只掛碼品質審查一段**的 script |
 | `EXAMPLE-dual-implementer.mjs` | 完整組裝成品（＝U4）：雙 implementer serial、impl-1 的 report 烤進 impl-2 的 prompt |
 | `EXAMPLE-single-implementer.mjs` | 完整組裝成品（＝U4b）：單 implementer |
+| `cdp.mjs` | CDP 對照工具：接 host 瀏覽器除錯埠、開分頁對照 rev5／rev6 UI（CLAUDE.md §7） |
 
 ## 組裝法
 
-每支單元只寫四段變動：`_vars`（meta＋UNIT/PH/LBL/START_LOG）／`_allowed`（ALLOWED_BLOCK）／
+每支單元只寫四段變動：`_vars`（meta＋UNIT/FEATURE/PH/LBL/START_LOG）／`_allowed`（ALLOWED_BLOCK）／
 `_context`（CONTEXT）／`_prompts`（IMPL_PROMPT〔＋impl2Prompt〕＋兩段 review），再以 python 拼接：
 
 ```

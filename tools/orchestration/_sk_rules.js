@@ -23,7 +23,7 @@ RL-0039｜記錄跨元件相依與連鎖漂移路徑；不孤立描述單一元�
 RL-0041｜活書 frontmatter 帶 \`rad_ai_map\` 對照鍵；正文子節名一律中文改寫、RAD-AI 文字不逐字複製（只在 README 一句參考來源）；對照總表由 generate 產、不手維護。
 RL-0042｜一切書面產物（report／blocker／程式碼註解／文件／commit 訊息）一律 zh-TW；識別字、程式碼、路徑保留原形；每支 agent prompt 必含「zh-TW」字面。
 RL-0045｜rust build／test 一律容器內、全程 serial（\`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T rust-api cargo test --workspace -- --test-threads=1\`）；rust 碼完工前容器內 \`cargo fmt --all\`。
-RL-0046｜引前代編號一律帶 \`rev5:\`／\`rev4:\` 前綴（ADR、L、B、Lint、刀名皆同）；rev6 新形原生（BL／LL／ADR 五碼、RL 四碼、GT 二碼）；裸刀號禁、\`000-\` 創世家族除外。
+RL-0046｜引前代編號一律帶 \`rev5:\`／\`rev4:\` 前綴（ADR、L、B、Lint、刀名皆同）；rev6 新形原生（BL／LL／ADR 五碼、RL 四碼、GT 二碼、migration 短號 \`m\` 四碼＝ADR-00008）；裸刀號禁、\`000-\` 創世家族除外。
 RL-0048｜時態分離：活書家族永遠現在式、未來式住 ops、過去式住 git＋events；完成即刪、git 即史；跨檔引用不用行號、不 deep-link 帳本內部錨、不引 per-machine 路徑。
 RL-0049｜人寫／事件源／機器生成三材質各有唯一的家；鏡像不是機器生成就是不存在；\`docs/generated/**\` 與 GENERATED_FILES 名冊檔禁手改、只由 generate 重算。
 RL-0050｜BL／LL／RL 配號取檔頭 \`<!-- next: -->\` 後 bump、單調遞增、號碼永不回收；刪條目前先掃現在式引用。
@@ -38,7 +38,7 @@ RL-0066｜TDD 先紅後綠：每個可測面先寫會紅的測、跑到真的紅
 RL-0067｜變異自證前提＝被守面已有實例；零實例＝測空集合、紅證結構性 vacuous——延後到實例出現後補做並在 tasks 記回填條。
 RL-0068｜對破壞性守門做變異測試先掛快照還原式守衛（arm 拍快照、drop 還原）；刪除式清理守衛救不了 seed 列。
 RL-0069｜「應該被拒」的負向樣本業務鍵也帶清理鍵前綴（帶前綴但仍違規的構造），否則守門被改壞那一發的殘列圈不到。
-RULES-VERSION: c7a137209e0e
+RULES-VERSION: 064380371fc0
 `;
 const RULES_REVIEW = `=== RULES scope=review（14 條）===
 RL-0011｜凡改變某數字／集合／方向／名稱／單一權威＝\`grep -rn\` 枚舉全 repo 同語意命中逐處回報；允許清單內自改、清單外依 status 分值升級；史述保留、現在式改對。
@@ -48,14 +48,14 @@ RL-0033｜走查回報「無可觀察實例」或「契約豁免」須附機器�
 RL-0035｜模板是起手結構不是表單：每節依實況寫，無實體即一句「目前無」附理由；不填樣板文、不留佔位符。
 RL-0042｜一切書面產物（report／blocker／程式碼註解／文件／commit 訊息）一律 zh-TW；識別字、程式碼、路徑保留原形；每支 agent prompt 必含「zh-TW」字面。
 RL-0043｜review agent 只讀不寫 repo 檔；findings 只放回傳訊息。
-RL-0046｜引前代編號一律帶 \`rev5:\`／\`rev4:\` 前綴（ADR、L、B、Lint、刀名皆同）；rev6 新形原生（BL／LL／ADR 五碼、RL 四碼、GT 二碼）；裸刀號禁、\`000-\` 創世家族除外。
+RL-0046｜引前代編號一律帶 \`rev5:\`／\`rev4:\` 前綴（ADR、L、B、Lint、刀名皆同）；rev6 新形原生（BL／LL／ADR 五碼、RL 四碼、GT 二碼、migration 短號 \`m\` 四碼＝ADR-00008）；裸刀號禁、\`000-\` 創世家族除外。
 RL-0048｜時態分離：活書家族永遠現在式、未來式住 ops、過去式住 git＋events；完成即刪、git 即史；跨檔引用不用行號、不 deep-link 帳本內部錨、不引 per-machine 路徑。
 RL-0051｜每條閘一正一反自證、掃描面空集合即紅、變異要打在判準上；Day-1 豁免逐筆具名帶解除謂詞、到期即紅。
 RL-0063｜agent 絕不 push／merge／git commit／git checkout；只改工作樹，git 操作由主線負責。
 RL-0070｜可見性放寬（私有→pub）前先 grep 函式體內有無被 token 掃描閘守著的呼叫；有則以 finding 要求同批補消費者名冊閘、由 fix 輪落地。
 RL-0071｜fix 後次輪 review prompt 必附前輪已駁回 findings 清單（file×summary＋駁回理由）、明令勿沿用被駁論據重報；同一 finding 再報須附新證據，否則計入收斂判定。
 RL-0073｜review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處二分：不定期獨立輪落 \`docs/reviews/\` 報告＋review 事件，feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。
-RULES-VERSION: c7a137209e0e
+RULES-VERSION: 064380371fc0
 `;
 const RULES_FIX = `=== RULES scope=fix（15 條）===
 RL-0005｜子庫 git 操作一律 \`git -C <子庫>\` 形、不 cd 進子庫；破壞性驗證每項還原後立即 \`git -C <子庫> status --porcelain\` 確認回基準態、單獨跑不疊加。
@@ -73,5 +73,5 @@ RL-0063｜agent 絕不 push／merge／git commit／git checkout；只改工作�
 RL-0064｜絕不寫入 \`../fork260509-rev5/\`（含子庫與源倉；凍結 SHA 由 bootstrap 斷言）；讀取允許且必要；rev5 stack（埠 2xxxx）不做 schema／seed／設定變更或 \`down -v\`，rev6 走 3xxxx。
 RL-0066｜TDD 先紅後綠：每個可測面先寫會紅的測、跑到真的紅、再寫實作到綠；分階段推進，每階段容器內 serial 跑一次測試確認綠再進下一階段。
 RL-0070｜可見性放寬（私有→pub）前先 grep 函式體內有無被 token 掃描閘守著的呼叫；有則以 finding 要求同批補消費者名冊閘、由 fix 輪落地。
-RULES-VERSION: c7a137209e0e
+RULES-VERSION: 064380371fc0
 `;

@@ -502,7 +502,7 @@ class TestRosterPinned(unittest.TestCase):
 
     def test_placeholder_literal_is_pinned(self):
         """逐字紀律二（rev5:ADR 0003 三處同字面記帳之一）：改佔位值必同刀改 preflight 的
-        PLACEHOLDER_LITERALS 與 secret-value-guard 的 PLACEHOLDER_VALUES 白名單。
+        PLACEHOLDER_LITERALS 與 tools/docsync/gates.py GT-07 的 PLACEHOLDER_LITERALS 白名單（承 rev5:tools/secret-value-guard.py 的 PLACEHOLDER_VALUES）。
 
         ★期望值執行期串接構造：完整字面在本檔已出現於生產常數一次（本檔＝唯一佔位源頭），
         測試再抄一次會讓「值比對層掃描」與「勘誤枚舉」多一個必須同步的點。

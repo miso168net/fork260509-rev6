@@ -605,7 +605,7 @@ def _announce(count, manual):
                   "（可能不只一次）。")
         print("★提示可能不顯示於畫面——**每一次**都要輸入後按 Enter；"
               "★任一次空答即以 passphrase can't be empty 整體失敗"
-              "（判讀＝RUNBOOK §15.2 失敗訊息判讀）。", flush=True)
+              "（判讀＝rev5:RUNBOOK §15.2 失敗訊息判讀；rev6 §15.2 為指針節）。", flush=True)
         return
     if count >= 1:
         print("即將解密：**只需輸入一次**——腳本會對每個 recipient 提示代餵"
@@ -755,8 +755,8 @@ def _decrypt_into(root, secrets_dir, tmp_dir, manual):
     if new_saved:
         print("WARN：下列機密現值與加密檔不一致、已另存 .txt.new（原檔未覆寫）："
               f"{' '.join(new_saved)}", file=sys.stderr)
-        print("      人工比對後：採加密檔值＝mv .new 蓋回；保留現值＝刪 .new 並依 RUNBOOK "
-              "輪替程序回寫加密檔。", file=sys.stderr)
+        print("      人工比對後：採加密檔值＝mv .new 蓋回；保留現值＝刪 .new 並依 rev5:RUNBOOK §15 "
+              "輪替程序（rev6 §15 為指針）回寫加密檔。", file=sys.stderr)
     print(f"完成：{secrets_dir} 之 {len(EXPECTED_KEYS)} 支 key 檔已就緒"
           "（composite 另跑 python3 deploy/generate-secrets.py --compose-only 重組）。")
     return 0
@@ -766,7 +766,7 @@ def _decrypt_into(root, secrets_dir, tmp_dir, manual):
 # 自測（test 子命令）：離線、stdlib-only、不需 docker，一律隔離暫存目錄
 # ---------------------------------------------------------------------------
 
-# ★合成 JSON 樣本一律執行期串接構造（防本檔自命中機密樣式掃描；同 tools/secret-value-guard.py
+# ★合成 JSON 樣本一律執行期串接構造（防本檔自命中機密樣式掃描；同 rev5:tools/secret-value-guard.py
 #   與 deploy/preflight-secrets.py 慣例——U2 已實證字面寫死會被 pre-commit 硬擋）。
 def _payload_json(values, indent="\t", eol="\n"):
     body = ("," + eol + indent).join(
@@ -1410,7 +1410,7 @@ class TestGuards(unittest.TestCase):
 
     def test_resolve_secrets_dir_error_maps_to_rc1(self):
         """落點解析錯誤 → rc 1、走 stderr、stdout 全空（共用庫的各分支判定另有 preflight／
-        secret-value-guard 的案；此處驗的是**映射**：解析一錯就零寫入退出，不靜默回退）。"""
+        rev5:secret-value-guard 的案；此處驗的是**映射**：解析一錯就零寫入退出，不靜默回退）。"""
         d = self._fake_repo()
         rc, out, err = self._run(root=d, env={"SECRETS_DIR": ""}, cwd=d)
         self.assertEqual(rc, 1)

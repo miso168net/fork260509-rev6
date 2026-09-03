@@ -4,7 +4,7 @@ rad_ai_stage: compliance
 ---
 # Annex IV 十類映射（RAD-AI 十類 ↔ 真實點號 ↔ rev6 節）
 
-RAD-AI 的 EU AI Act 指南以自訂十類對照 Annex IV，其標的節號多處錯位（交接包 `tmp/rev5-handoff/annex-iv-2e-check.md` 三源逐字核對）；本表以真實點號為準、逐類記判定與 rev6 落點。每鍵細目住 `annex-iv-checklist.md`（23 鍵、Evidence 欄）。系統目前無 AI 元件（截至 2026-09-03），rev6 節欄＝該類有 AI 元件時的系統層落點。
+RAD-AI 的 EU AI Act 指南以自訂十類對照 Annex IV，其標的節號多處錯位（三源逐字核對結論＝啟動書 §1.2 D9 與附錄 G 23 鍵表；核對原件為 rev5 交接包、唯讀）；本表以真實點號為準、逐類記判定與 rev6 落點。每鍵細目住 `annex-iv-checklist.md`（23 鍵、Evidence 欄）。系統目前無 AI 元件（截至 2026-09-03），rev6 節欄＝該類有 AI 元件時的系統層落點。
 
 | RAD-AI 十類 | RAD-AI 指南自稱的 Annex IV 節 | 真實點號 | 判定 | rev6 節 |
 |---|---|---|---|---|

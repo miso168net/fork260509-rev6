@@ -120,7 +120,7 @@ GENERATED_HEADER = "<!-- 機器生成：python3 tools/docsync generate——嚴�
 
 
 class Day1Exemption:
-    """Day-1 named exemption：key（"GT-NN.slug"）、reason、released(ctx)->bool 解除謂詞、registered 登記日。"""
+    """Day-1 named exemption：key（"GT-NN.slug"）、reason、released(ctx)->bool 解除謂詞、registered 登記日、predicate_text 謂詞的人可讀字面（GATES.md 逐筆印）。"""
 
-    def __init__(self, key, reason, released, registered):
-        self.key, self.reason, self.released, self.registered = key, reason, released, registered
+    def __init__(self, key, reason, released, registered, predicate_text=""):
+        self.key, self.reason, self.released, self.registered, self.predicate_text = key, reason, released, registered, predicate_text

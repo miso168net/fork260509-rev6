@@ -71,7 +71,7 @@ def load_adrs(ctx, head=False):
 def gt_04(ctx):
     """GATE:
       id=GT-04
-      rule=RL-0047
+      rule=RL-0074
       source=rev5:ADR 0012
       drift=ADR 不可變與 supersede 對稱
       face=docs/arc42/decisions/*.md

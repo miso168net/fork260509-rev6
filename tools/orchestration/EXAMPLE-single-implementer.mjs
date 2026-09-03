@@ -1,3 +1,6 @@
+// 本檔＝rev5:008-audit-settings-pages U4b 組裝成品原樣：內含 rev5／rev4 座標與事實
+// （憲法版號 1.10.0、島 J3、rev5:008-audit-settings-pages 的 specs/ 路徑、tools/docs-sync.py 等工具名、../fork260509-rev4/ 樹、
+// 行號形引用）；非 rev6 現況、勿照抄執行；rev6 首個含 Workflow 的刀重組時替換（BL-00001）。
 export const meta = {
   name: 'u4b-purge-sink-to-facade-008',
   description: '008 U4b（user 親決取 (a)）：purge 水平線 DELETE 自 handler raw SQL 下沉至四源 facade 之 purge_before；facade 檔頭 delete 禁令據憲法島 J3 改述',
@@ -183,7 +186,7 @@ RULES-VERSION: c7a137209e0e
 
 const CONTEXT = [
   '=== 專案與本單元定位 ===',
-  '工作區＝rev6-admin 傘狀 workspace（`/mnt/d/AnewSpaces/x_Project/fork260509-rev6`），操作手冊＝根目錄 `CLAUDE.md`（★先讀 §6 硬禁令）。後端＝`rust-api/`（git worktree 子庫）。',
+  '工作區＝rev6-admin 傘狀 workspace（`<repo 根>`），操作手冊＝根目錄 `CLAUDE.md`（★先讀 §6 硬禁令）。後端＝`rust-api/`（git worktree 子庫）。',
   '本刀＝`008-audit-settings-pages`。本執行單元＝**U4b**＝U4 碼品質審查抓出的**分層破例修正**，經 user 親決取「下沉 facade」形（2026-09-01）。',
   '',
   '=== 為什麼有這一支（背景，逐條有出處）===',

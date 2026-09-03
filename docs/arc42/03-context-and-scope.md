@@ -10,7 +10,7 @@ rev5_blueprint:
 
 ## 3.1 業務脈絡
 
-管理員經瀏覽器操作後台（能力級見 §1.1）；系統對外只有一種外部依賴——SMTP 寄信（dev＝mailpit 收信匣）。無對外開放 API、無第三方登入、無行動端。
+管理員經瀏覽器操作後台（能力級見 §1.1）；系統本體對外只有一種業務外部依賴——SMTP 寄信（dev＝mailpit 收信匣）；obs profile 另掛 host Docker Engine（socket-proxy 唯讀 `/var/run/docker.sock`），屬觀測層基礎設施、不入本節外部系統表。無對外開放 API、無第三方登入、無行動端。
 
 | 對象 | 互動 |
 |---|---|
