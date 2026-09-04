@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-04 | feature_close｜horizontal | 001-schema-baseline | 001 schema 基線刀收單：rust-api workspace 三 crate＋m0001／m0002＋entity 15 檔逐位元承襲（憲法 §I.5 例外②）、sea-orm-adapter 例外①；schema 三閘＋entity 漂移閘隨遷並自證；凍結 fixtures 四件雙源互證；docsync refresh 照相＋兩張正典真表；pre-commit entity-drift 條件實跑段。 | d04a41c | ADR-00009、ADR-00010 | §5、§8、§11 |
 | 2026-09-04 | misc | governance｜000-r1-doc-governance | rev6 獨立 review 輪 000-r1 文件治理架構體檢收單：四支唯讀 Workflow（探索 14／驗證 41／補漏 12）＋修單 run 8 支；confirmed 86＝修 75／BL 4 條／ADR-00008／none 2；報告 docs/reviews/20260904-doc-governance.md＋review 事件（total 80）；RULES 74（名詞段獨立輪／隨遷工具／其他面、RL-0074）、RULES-VERSION 064380371fc0；BACKLOG 開放 7；merge --no-ff 回 rev6-admin-root | 5459c9d | — | — |
 | 2026-09-04 | review | doc-governance | findings 80（修 75／BL 4／ADR 1）；BL-00001、BL-00003、BL-00004、BL-00005、ADR-00008 | — | — | — |
 | 2026-09-03 | misc | governance | rev6 波 5 文件創世驗收收單：DoD A 六條全勾（報告 docs/reviews/20260903-doc-genesis.md＋首筆 review 事件、§7 自評十三列：系統層全不適用、流程層 2×7／1×4）；GT-03 Day-1 豁免解除（gates.py 移鍵、零 close 事件改 ERROR、Day-1 餘 GT-08 一筆）；tmp 交接包與憲法 diff 已清；外層 origin 已設；波標記 6＝文件創世收官、波 6 起為刀；merge --no-ff 回 rev6-admin-root | 5bae24c | — | — |
@@ -14,6 +15,15 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-04｜feature_close｜horizontal｜001-schema-baseline
+
+逐位元自證（ADR-00009 決定 2①／SC-001；實跑結果不回灌 ADR、住此與各單元 commit 訊息）：17 檔（m0001_baseline_schema.rs／m0002_baseline_seeds.rs＋entity 15 表檔）對 rev5 rust-api @ 92919b9 去註解後 diff 17/17 零差異、rc 0；收刀前由 final holistic review 四支 lens 之二獨立復現同結果。
+SC-007 行數落點：docsync package 2,603 行（`cat tools/docsync/*.py | wc -l`；spec 載基線 2,345、啟動書目標 ≤4,000）；pre-commit 全鏈 16.91 秒（perf 事件 precommit_chain、雙錨警戒 45 秒內）。
+出口驗收：docsync test 123 綠、schema-gate test 103、entity-drift test 45；check 零漂移、lint 0 錯／0 警／0 閘跳過；閘數 12／12、GENERATED_FILES 14、ADR 10 全 accepted、RULES 74／92（RULES-VERSION 全刀未動）、LESSONS 2、bootstrap rc 0 警告 0。
+單元對映：Task 0（BL-00001 骨架收斂）07c0407／U1（rust-api 骨架＋17 檔＋adapter＋dev stack 重放）add52e5＋子庫 c6c7d42／U2（兩閘工具隨遷＋fixtures 凍結＋ADR-00010 accepted）a8f5595／U3（snapshot.py＋兩快照＋兩真表＋entity-drift 段）9b8f02c／U4（RUNBOOK 與活書實文＋errata＋quickstart A～G）e47ccef＋子庫 d443278／U5（BL-00005 四欄渲染）429bf24／收單（final review 28 findings 三分流）be69543。
+SC 對賬：SC-001 17 檔零差異；SC-002 fixtures 四檔對 rev5 逐位元＋sha256 合 provenance §4；SC-003 negative 五類；SC-004 演進帳往返 1→0→2→0；SC-005 DoD 鏈全綠＋entity 目錄缺席演練被 rc 2 擋；SC-006 憲法 1.1.0＋兩 ADR accepted；SC-007 見上。
+教訓：LL-00001 零種子 Cargo.lock resolve；LL-00002 fix 升級後續跑（骨架 IMPLEMENTERS=0 續跑形＋主線先自掃同語意列舉）。
 
 ### 2026-09-04｜misc｜governance｜000-r1-doc-governance
 

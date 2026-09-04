@@ -7,9 +7,10 @@
 # ★allowlist 紀律：逐條 condition = "AND"＋paths×regexes 並用＋顯式 regexTarget；嚴禁整檔放行——condition
 #   預設 OR、漏寫即退化為過寬放行且不報錯（本 schema 最大靜默失效點）。
 # ★每條 allowlist 收錄前必雙向突變實證（加豁免→rc 0、拔豁免→回到命中）並記入 commit 訊息。
-# rev6 誤報基線（2026-09-03 全史預設規則掃描零命中）：首版**零 allowlist**。已知會在日後出現的兩條
-#   （承 rev5 基線、屆時實證後才收）：①docs/ops/events.jsonl 之 merge／pins 40-hex SHA 撞 generic-api-key
-#   （首刀 feature_close 時）②（已撤：vendored sea-orm-adapter 測試碼假 DSN 依 RL-0054 改執行期串接、零 allowlist；001 analyze 2026-09-04）。
+# rev6 誤報基線（2026-09-03 全史預設規則掃描零命中）：首版零 allowlist；現行 allowlist 恰一條（見檔尾①）。
+#   ①已於 2026-09-04 兌現並收錄：001 刀收刀簿記 append 首筆 feature_close 時，events.jsonl 的 pins.api（40 位
+#   小寫 hex git SHA）撞預設 generic-api-key；雙向突變與越界對照實證記於該顆簿記 commit 訊息。
+#   ②（已撤：vendored sea-orm-adapter 測試碼假 DSN 依 RL-0054 改執行期串接、零 allowlist；001 analyze 2026-09-04）。
 
 [extend]
 useDefault = true
@@ -22,3 +23,15 @@ id = "rev6-dsn-credential-url"
 description = "DSN 帳密 URL（postgres(ql)/redis/mysql 的 user:password@ 形連線字串）"
 regex = '''(?i)\b(?:postgres(?:ql)?|redis|mysql)://[^:@/\s'"]*:[^$<{@\s'"][^@\s'"]*@'''
 keywords = ["postgres://", "postgresql://", "redis://", "mysql://"]
+
+# ── allowlist ①：events.jsonl 的 pins.api＝40-hex git SHA、撞預設 generic-api-key（2026-09-04 兌現）──
+# 射程＝condition AND（paths × regexes）＋顯式 regexTarget＝match：只放行「events.jsonl 內、api 欄、值恰
+# 40 位小寫 hex」之命中。實證（001 刀收刀簿記顆）：加豁免→0 命中；拔豁免→3 命中（含本形）；同形字串放
+# 進他檔 docs/ops/other.jsonl→仍紅；events.jsonl 內 api 值改非 hex→仍紅。故非整檔放行、不掩蓋真機密。
+[[allowlists]]
+description = "docs/ops/events.jsonl 的 pins.api（40 位小寫 hex git SHA）撞 generic-api-key"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)docs/ops/events\.jsonl$''']
+regexTarget = "match"
+regexes = ['''^api"\s*:\s*"[0-9a-f]{40}"$''']
