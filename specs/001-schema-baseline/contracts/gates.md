@@ -80,7 +80,7 @@
     status；sys_pwd_custody＝複合 PK (user_id, created_by) 極簡三欄；
     sys_user_email_verify＝user_id PK 衛星五欄。
   - 變體 D：治理欄在場（casbin_rule：protected NN def false＋created_at NN＋created_by
-    可空；archive：archived_at NN def now＋archive_reason NN）。
+    可空；archive：archived_at NN def now＋archived_by 可空＋archive_reason NN）。
   - `created_by` 可空性顯式驗（不靜默）：期望值＝data-model「`*_by` 欄性質判準」逐表
     釋義——NN 恰四表（sys_access_log／sys_token／sys_pwd_custody／sys_user_email_verify）、
     其餘一律可空。
@@ -89,10 +89,15 @@
 
 ## 4. negative test 義務（SC-003；比對器先自證）
 
-實作 MUST 附注入式負向測試，五類假漂移各至少 1 例、全數必紅：
-①結構（加欄／改型別）②欄序（同表兩欄互換）③seed 值（改一格）④sequence 落值
+實作 MUST 附注入式負向測試，六類各至少 1 例、全數必紅：
+①結構（加欄／改型別；★indexes／constraints 兩節與 columns 節同義務——缺一支、定義異、未登記多一支各 1 例）
+②欄序（同表兩欄互換）③seed 值（改一格）④sequence 落值
 （setval±1）⑤演進帳合成（登記一筆假 add_column 後合成期望值必與注入後實庫全等、未登記則紅——rev5 終態登記零筆、
-合成邏輯首次實證；spec FR-009）。連同 self-test 進 `test` 子命令；pre-commit 於工具本體 staged 時自動跑。
+合成邏輯首次實證；spec FR-009）⑥**audit 變體驗則面**（右源＝真凍結 fixtures ⊕ 真 archetype-map，離線注入：
+型別／可空性／default／欄缺席四腿、A 活性唯一索引的缺席與 `WHERE deleted_at IS NULL` 兩腿、C 子型複合 PK、
+D 治理欄、`created_by` 顯式驗——各至少 1 例。★與①～⑤不同：①～⑤注入的是「實庫漂移」、⑥注入的是「驗則會不會抓」，
+判準面任一腿被拿掉即須有案轉紅）。連同 self-test 進 `test` 子命令；pre-commit 於工具本體 staged 時自動跑，
+凍結面（`fixtures/`、`data-model.md`）staged 時亦條件觸發。
 
 ## 5. Day-1 營運紀律（隨刀常設）
 

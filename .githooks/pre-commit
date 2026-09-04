@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑）。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑）→ schema-frozen（凍結 fixtures／data-model staged 時條件實跑）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -76,6 +76,14 @@ if echo "$staged" | grep -qxF -e 'rust-api' -e 'docs/ops/reference-src/schema-sn
   else
     echo "[pre-commit] ⤳ entity-drift 跳過：schema 快照缺席（就位後自動實跑）"
   fi
+fi
+# 凍結面守門（碼面閘、不入 GATES 名冊；本刀 review I-3）：`specs/001-schema-baseline/fixtures/` 或
+# `data-model.md` staged 時跑 schema-gate 自帶測試（含真 repo doccheck 綠案＝凍結 fixtures × data-model
+# 五元組機器對賬、fixtures 形斷言、假 delta 合成）——零 docker、實測 0.36 秒。
+# ★理由：contracts/fixtures.md §4 定凍結面位元變更為「違憲級」，但生成器與 GT-01～GT-12 皆不掃它；
+#   原「不設閘」取捨的成本前提（離線閘昂貴）經量測不成立（doccheck 0.17 秒），故補此條件觸發。
+if echo "$staged" | grep -qE '^specs/001-schema-baseline/(fixtures/|data-model\.md$)'; then
+  pc_run "schema-frozen" python3 "$HOOK_DIR/../tools/schema-gate.py" test
 fi
 pc_join || exit 1
 # ── 全鏈耗時評估（僅在全部閘通過後執行）──────────────────────────────────────

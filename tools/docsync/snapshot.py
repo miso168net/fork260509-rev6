@@ -137,7 +137,11 @@ def psql_fetch(sql, root, run=subprocess.run):
 
 
 def cmd_refresh(root=ROOT, fetch=psql_fetch):
-    """refresh：六撈依序全數成功→組兩快照→才原子落兩檔（任一撈或組裝失敗即 raise、目錄零寫入）；回 [(rel, 行數)]。"""
+    """refresh：六撈依序全數成功→組兩快照→才逐檔原子落地（任一撈或組裝失敗即 raise、目錄零寫入）；回 [(rel, 行數)]。
+
+    ★「零寫入」保證的射程＝撈取與組裝階段；兩檔各自 `_atomic_write`（同目錄 mkstemp→os.replace），
+    非跨檔單一交易——前檔落地後後檔寫失敗（磁碟／權限）會留下前進一半的 reference-src，下一次 refresh 修正。
+    """
     schema_text = snapshot_dumps(build_schema_snapshot(fetch(SQL_COLUMNS, root), fetch(SQL_INDEXES, root), fetch(SQL_CONSTRAINTS, root)))
     accounts_text = snapshot_dumps(build_accounts_snapshot(fetch(SQL_USERS, root), fetch(SQL_ROLES, root), fetch(SQL_BINDINGS, root)))
     written = []

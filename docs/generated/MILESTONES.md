@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-04 | review | 001-schema-baseline | findings 8（修 6／BL 2／ADR 0）；BL-00020、BL-00021 | — | — | — |
 | 2026-09-04 | misc | governance | 數量預算改為只警告不擋（ADR-00011 supersede ADR-00004）：BACKLOG 開放取消上限、改觀測值只報表；閘數 12 與 RULES 總／per-scope 上限保留數值但超限一律 WARN、不進 lint 退出碼、不擋 commit；pre-commit 硬擋機制不動。 | 1e0d89b | — | — |
 | 2026-09-04 | feature_close｜horizontal | 001-schema-baseline | 001 schema 基線刀收單：rust-api workspace 三 crate＋m0001／m0002＋entity 15 檔逐位元承襲（憲法 §I.5 例外②）、sea-orm-adapter 例外①；schema 三閘＋entity 漂移閘隨遷並自證；凍結 fixtures 四件雙源互證；docsync refresh 照相＋兩張正典真表；pre-commit entity-drift 條件實跑段。 | d04a41c | ADR-00009、ADR-00010 | §5、§8、§11 |
 | 2026-09-04 | misc | governance｜000-r1-doc-governance | rev6 獨立 review 輪 000-r1 文件治理架構體檢收單：四支唯讀 Workflow（探索 14／驗證 41／補漏 12）＋修單 run 8 支；confirmed 86＝修 75／BL 4 條／ADR-00008／none 2；報告 docs/reviews/20260904-doc-governance.md＋review 事件（total 80）；RULES 74（名詞段獨立輪／隨遷工具／其他面、RL-0074）、RULES-VERSION 064380371fc0；BACKLOG 開放 7；merge --no-ff 回 rev6-admin-root | 5459c9d | — | — |
@@ -16,6 +17,13 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-04｜review｜001-schema-baseline
+
+user 於 001 收刀後臨時發起的規格對照輪（superpowers:requesting-code-review 形）：一支唯讀審查 agent、對象 16358f1..432e47b、烤入 RULES scope=review 全塊（RULES-VERSION e41e0f177ef3）。零 Critical。
+審查員 41 發變異探針、13 發空轉，全數集中在 schema-gate 的 audit 變體引擎（9）、gate1 索引·約束節（3）、seed_add 欄集（1）——主線依 CLAUDE.md §5 抽三發獨立復現屬實。本輪修單把 103 案補到 118 案，十發驗紅逐一打在對應判準腿上。
+同批修正契約側缺口：`contracts/gates.md` §4 negative 義務由五類擴為六類（①註明 indexes／constraints 與 columns 同義務、新增⑥ audit 變體驗則面），因 I-1／I-2 同時是 spec 自身未列義務、實作照 spec 做。另補 §3 之 `archived_by`。
+衍生條目 BL-00022（specs/001 目錄定位、觸發 002 開分支前）非 findings 三分流所出、係審查建議 1。
 
 ### 2026-09-04｜misc｜governance
 

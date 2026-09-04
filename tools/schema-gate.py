@@ -1208,6 +1208,7 @@ def audit_archetype(map_rows, actual_cols, actual_idxs, actual_cons):
                 _check_col(fnd, t, tc, "created_by", "bigint")
             elif t == "sys_casbin_policy_archive":
                 _check_col(fnd, t, tc, "archived_at", TS_TZ, nn=True, default="now()")
+                _check_col(fnd, t, tc, "archived_by", "bigint", nn=False)
                 _check_col(fnd, t, tc, "archive_reason", nn=True)
                 _check_col(fnd, t, tc, "created_at", TS_TZ, nn=False)
                 _check_col(fnd, t, tc, "created_by", "bigint", nn=False)
@@ -1627,6 +1628,28 @@ class TestNegativeInjection(unittest.TestCase):
         f = compare_structure(synth_expected(self.fix, []), mutated)
         self.assertTrue(any("columns/t_ok/id" in x for x in f))
 
+    def test_1c_structure_index_missing_red(self):
+        """gate1 indexes 節：期望有、實庫無（本刀 review I-2）。"""
+        drifted = json.loads(json.dumps(self.healthy))
+        drifted["indexes"] = []
+        f = compare_structure(synth_expected(self.fix, []), drifted)
+        self.assertTrue(any("indexes/t_ok/t_ok_pkey" in x for x in f), f)
+
+    def test_1d_structure_constraint_def_change_red(self):
+        """gate1 constraints 節：定義字串異（本刀 review I-2）。"""
+        drifted = json.loads(json.dumps(self.healthy))
+        drifted["constraints"][0]["definition"] = "PRIMARY KEY (name)"
+        f = compare_structure(synth_expected(self.fix, []), drifted)
+        self.assertTrue(any("constraints/t_ok/t_ok_pkey" in x for x in f), f)
+
+    def test_1e_structure_index_unregistered_red(self):
+        """gate1 indexes 節：實庫有、期望無（本刀 review I-2）。"""
+        drifted = json.loads(json.dumps(self.healthy))
+        drifted["indexes"].append({"table": "t_ok", "name": "t_ok_ghost_idx",
+                                   "definition": "CREATE INDEX t_ok_ghost_idx ON public.t_ok USING btree (name)"})
+        f = compare_structure(synth_expected(self.fix, []), drifted)
+        self.assertTrue(any("indexes/t_ok/t_ok_ghost_idx" in x for x in f), f)
+
     def test_2_column_order_swap_red(self):
         swapped = json.loads(json.dumps(self.healthy["columns"]))
         for c in swapped:
@@ -1813,6 +1836,12 @@ class TestDetailBadForms(unittest.TestCase):
 
     def setUp(self):
         self.norm = normalize_seed_dump(_ST_DUMP)
+
+    def test_bad1b_seed_add_values_col_set_mismatch(self):
+        """壞形①姊妹案：seed_add 的 values 欄集 ≠ COPY 欄集（前世 d["values"][c] 拋 KeyError；本刀 review M-3）。"""
+        e = _entry(kind="seed_add", table="t_ok", detail={"pk": ["id"], "values": {"id": 9}})
+        with self.assertRaisesRegex(GateError, "values 欄集"):
+            apply_seed_entries(self.norm, [e])
 
     def test_bad1_pk_col_not_in_copy_set(self):
         """壞形①：pk 欄名 ∉ COPY 欄集（前世 cols.index 拋 ValueError）。"""
@@ -2353,6 +2382,92 @@ class TestMapAssertions(unittest.TestCase):
         self.assertEqual(sorted(r["table"] for r in rows if r["label"] == LABELS[0]),
                          ["sys_ip_rule", "sys_menu", "sys_role", "sys_user",
                           "system_settings"])
+
+
+class TestAuditArchetypeNegative(unittest.TestCase):
+    """audit 變體判準的負向覆蓋（RL-0051「變異要打在判準上」；contracts/gates.md §4 negative 第六類）。
+    右源＝真凍結 fixtures ⊕ 真 archetype-map，離線注入假漂移逐條必紅：判準面任一腿被拿掉即有案轉紅。
+    ★不同於本檔其餘 negative 組：那些注入的是「實庫漂移」、本組注入的是「變體驗則會不會抓」。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.fix = load_fixtures(REPO_ROOT)
+        cls.map_rows = load_archetype_map(REPO_ROOT)
+
+    def _run(self, mutate=None):
+        cols = json.loads(json.dumps(self.fix["columns"]))
+        idxs = json.loads(json.dumps(self.fix["indexes"]))
+        cons = json.loads(json.dumps(self.fix["constraints"]))
+        if mutate:
+            mutate(cols, idxs, cons)
+        return audit_archetype(self.map_rows, cols, idxs, cons)
+
+    @staticmethod
+    def _col(cols, table, name):
+        for c in cols:
+            if c["table"] == table and c["column"] == name:
+                return c
+        raise AssertionError(f"{table}.{name} 不在凍結 fixtures（測試前提壞了）")
+
+    def _red(self, mutate, *needles):
+        f = self._run(mutate)
+        self.assertTrue(any(all(n in x for n in needles) for x in f),
+                        f"期望命中 {needles}、實得 {f}")
+
+    def test_0_real_fixtures_green(self):
+        self.assertEqual(self._run(), [])
+
+    def test_a_type_leg(self):
+        self._red(lambda c, i, n: self._col(c, "sys_user", "deleted_at").update(type="text"),
+                  "sys_user.deleted_at", "型別")
+
+    def test_a_nullable_leg(self):
+        self._red(lambda c, i, n: self._col(c, "sys_user", "created_at").update(nullable=True),
+                  "sys_user.created_at", "可空性")
+
+    def test_a_default_leg(self):
+        self._red(lambda c, i, n: self._col(c, "sys_user", "created_at").update(default="nope()"),
+                  "sys_user.created_at", "default")
+
+    def test_a_column_absent_leg(self):
+        def mut(c, i, n):
+            c[:] = [x for x in c if not (x["table"] == "sys_user" and x["column"] == "updated_by")]
+        self._red(mut, "sys_user", "欄 updated_by 缺席")
+
+    def test_a_active_unique_absent_leg(self):
+        def mut(c, i, n):
+            i[:] = [x for x in i if x["name"] != "sys_user_user_name_active_uniq"]
+        self._red(mut, "sys_user", "活性唯一索引", "不在實庫")
+
+    def test_a_active_unique_where_leg(self):
+        def mut(c, i, n):
+            for x in i:
+                if x["name"] == "sys_user_user_name_active_uniq":
+                    x["definition"] = x["definition"].split(" WHERE ")[0]
+        self._red(mut, "sys_user", "定義缺 WHERE")
+
+    def test_c_subtype_composite_pk_leg(self):
+        def mut(c, i, n):
+            for x in n:
+                if x["table"] == "sys_pwd_custody" and x["definition"].startswith("PRIMARY KEY"):
+                    x["definition"] = "PRIMARY KEY (user_id)"
+        self._red(mut, "sys_pwd_custody", "複合 PK 期望")
+
+    def test_d_casbin_protected_leg(self):
+        self._red(lambda c, i, n: self._col(c, "casbin_rule", "protected").update(default="true"),
+                  "casbin_rule.protected", "default")
+
+    def test_d_archive_archived_by_leg(self):
+        """憲法 §I.6 變體 D 明列 archive 表帶 archived_by——本刀 review M-1 補入驗則。"""
+        self._red(lambda c, i, n: self._col(c, "sys_casbin_policy_archive", "archived_by").update(type="text"),
+                  "sys_casbin_policy_archive.archived_by", "型別")
+
+    def test_created_by_explicit_nullability_leg(self):
+        def mut(c, i, n):
+            for x in c:
+                if x["column"] == "created_by":
+                    x["nullable"] = not x["nullable"]
+        self._red(mut, "created_by", "可空性顯式驗不符")
 
 
 class TestDocCheck(unittest.TestCase):
