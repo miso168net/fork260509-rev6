@@ -17,7 +17,7 @@
 | `rust-api/migration/src/m001_baseline_schema.rs` | `m0001_baseline_schema.rs` | **§I.5 例外②**：程式逐位元照抄、改名、註解語意重寫 | 兩處裸 `rev4:m009`／`rev4` 引用帶前綴；`seaql_migrations` 記錄名隨檔名 |
 | `rust-api/migration/src/m002_baseline_seeds.rs` | `m0002_baseline_seeds.rs` | 同上 | 註解引 seed-decision.json 者改指 `rev5:` 史料與 fixtures/seed.sql |
 | `rust-api/entity/src/lib.rs` | 同 | 自寫 | 15 `pub mod` 同 |
-| `rust-api/entity/src/*.rs`（15 檔） | 同 | **§I.5 例外②**：照抄、註解語意重寫 | 六檔各一處前代引用帶前綴；`sys_user_role` 兩條真 FK Relation（`rev5:002` FR-022）保留 |
+| `rust-api/entity/src/*.rs`（15 檔） | 同 | **§I.5 例外②**：照抄、註解語意重寫 | 前代引用帶前綴（★實查＝9 檔需改註解、6 檔通用同文零改，見 tasks ✔ U1）；`sys_user_role` 兩條真 FK Relation（`rev5:002` FR-022）保留 |
 | `rust-api/sea-orm-adapter/**`（Cargo.toml＋src 5 檔＋examples） | 同 | **§I.5 例外①**整檔拷貝 | 註解四型失效引用 rev6 化；測試碼假 DSN 字面改執行期串接（RL-0054、analyze C1 2026-09-04；零 allowlist、與 rev5 差一行） |
 | `tools/schema-gate.py`（2,522 行） | 同 | **隨遷工具**（RULES 名詞段） | 去 `SEED_DECISION`／`RENAME_MAP`／rev4 血緣殘留、座標同名、容器名前綴、註解 rev6 化（R6） |
 | `tools/entity-drift-gate.py`（780 行） | 同 | 隨遷工具 | 座標同；`rev4:B-110`／`rev4:ADR 0015`／`rev4:ADR 0021` 帶前綴 |

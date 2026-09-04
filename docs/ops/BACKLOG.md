@@ -1,4 +1,4 @@
-<!-- next: BL-00014 -->
+<!-- next: BL-00020 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -12,8 +12,14 @@
 - BL-00006｜governance｜review 骨架入庫：000-r1 三支 script（探索／驗證／補漏）與組裝器住 tmp、報告 §0 記 sha256；可重用骨架（lens／兩鏡三態／grader／critic）入 `tools/orchestration/`、agents.md 自動入冊；單元 script 組裝器（`001-schema-baseline` 之 session 工作檔 `tmp/001-assemble.py`：八段拼接＋三道自檢）同批入庫｜觸發：第二次獨立 review 輪開分支時
 - BL-00007｜governance｜檢索性第四指標候選：冷啟動探針（命中率／平均 hops／≤3 跳比例）與否定對照題（答錯數）入 STATE 需新 generated 欄＋資料源（ADR）｜觸發：第二次獨立 review 輪
 - BL-00008｜product｜`ActiveModelBehavior` 恆空（ORM 行為層不承載六審計欄自動化、審計欄由 facade 顯式成對寫）之機器錨：承 `rev5:server/tests/entity_behavior_lint.rs` 形隨 server crate 建立——`rust-api/entity/src/sys_user_role.rs` 註解揭露現無此錨（本刀 U1 碼品質審查留帳）｜觸發：002 刀（server crate）開分支時
-- BL-00009｜governance｜GT-09 加腿：README `docs/generated/` 樹行的成員窮舉以 `GENERATED_FILES` 之 `docs/generated/` 前綴 basename 集合機器對賬（現掃描面 ROSTER_PREFIXES 不含 docs/，名冊 12→14 時該行、查詢表列、守門鏈列舉皆靠人工同刀改齊——本刀 U3 連兩支審查 run 被此類漏改打回、LL-00002）｜下一次 `GENERATED_FILES` 名冊變動的刀（其首個 Workflow 派發前）或下一維護批，先到者
-- BL-00010｜governance｜pre-commit entity-drift 段「快照缺席＝具名跳過」於快照成 tracked 檔後恆為死支且 fail-open（快照被誤刪／checkout 掉＝靜默跳過、非 rc 2）：改為缺席即紅（本刀 FR-012 之 Day-1 跳過語意已兌現、改行為需 spec 面拍板）｜002 刀 brainstorm（首個 schema delta 刀、hook 段必再碰）
-- BL-00011｜governance｜碼面閘名冊在現在式面無單一權威：GATES.md 依 ADR-00010 刻意不收碼面閘、RUNBOOK §12 以散文列名（引啟動書 §3.2 樹）、啟動書 §4.2 類比多一項（`rev5:Lint24` msg key 契約、現在式面零命中）；GT-12 對 RUNBOOK 只對賬 GT-NN 集合、此面零機器對賬——決定承載處與 `rev5:Lint24` 去處（納入 §12 定形／另立名冊／won't-fix ADR 三擇一）｜下一支碼面閘（wire-schema）進場的刀 brainstorm
-- BL-00012｜governance｜STATE 數量預算對賬表納入 docsync 邏輯行數（現 2,5xx 行、啟動書 §4.3／spec SC-007 目標 ≤4,000；現只有 CLAUDE.md 行數列報表、docsync 行數無家，只能人工 wc）：加一列「docsync 行數｜現值｜4,000｜狀態」、由 generate 現算｜下一維護批（本刀 T039 登記）
-- BL-00013｜governance｜非 perf 型 notes 全文入 MILESTONES 附錄後流進 GT-06 掃描面（連結存在性／行號形引用／帳本 deep-link／per-machine 路徑四腿；face＝全部 tracked md、含 GENERATED_FILES）：未來 notes 含此類樣式＝禁手改的生成檔轉紅、事件源 append-only 無乾淨補救——擇一：events append 前置檢查 notes 危險樣式、或 GT-06 四腿略過 GENERATED_FILES（本刀 U5 碼品質審查留帳）｜下一次動 events.py 或 gates.py 的維護批
+- BL-00009｜governance｜GT-09 加腿：README `docs/generated/` 樹行的成員窮舉以 `GENERATED_FILES` 之 `docs/generated/` 前綴 basename 集合機器對賬（現掃描面 ROSTER_PREFIXES 不含 docs/，名冊 12→14 時該行、查詢表列、守門鏈列舉皆靠人工同刀改齊——本刀 U3 連兩支審查 run 被此類漏改打回、LL-00002）｜觸發：下一次 `GENERATED_FILES` 名冊變動的刀（其首個 Workflow 派發前）或下一維護批，先到者
+- BL-00010｜governance｜pre-commit entity-drift 段「快照缺席＝具名跳過」於快照成 tracked 檔後恆為死支且 fail-open（快照被誤刪／checkout 掉＝靜默跳過、非 rc 2）：改為缺席即紅（本刀 FR-012 之 Day-1 跳過語意已兌現、改行為需 spec 面拍板）｜觸發：002 刀 brainstorm（首個 schema delta 刀、hook 段必再碰）
+- BL-00011｜governance｜碼面閘名冊在現在式面無單一權威：GATES.md 依 ADR-00010 刻意不收碼面閘、RUNBOOK §12 以散文列名（引啟動書 §3.2 樹）、啟動書 §4.2 類比多一項（`rev5:Lint24` msg key 契約、現在式面零命中）；GT-12 對 RUNBOOK 只對賬 GT-NN 集合、此面零機器對賬——決定承載處與 `rev5:Lint24` 去處（納入 §12 定形／另立名冊／won't-fix ADR 三擇一）｜觸發：下一支碼面閘（wire-schema）進場的刀 brainstorm
+- BL-00012｜governance｜STATE 數量預算對賬表納入 docsync 邏輯行數（現 2,603 行、啟動書 §4.3／spec SC-007 目標 ≤4,000；現只有 CLAUDE.md 行數列報表、docsync 行數無家，只能人工 wc）：加一列「docsync 行數｜現值｜4,000｜狀態」、由 generate 現算｜觸發：下一維護批（001 刀 T039 登記）
+- BL-00013｜governance｜非 perf 型 notes 全文入 MILESTONES 附錄後流進 GT-06 掃描面（連結存在性／行號形引用／帳本 deep-link／per-machine 路徑四腿；face＝全部 tracked md、含 GENERATED_FILES）：未來 notes 含此類樣式＝禁手改的生成檔轉紅、事件源 append-only 無乾淨補救——擇一：events append 前置檢查 notes 危險樣式、或 GT-06 四腿略過 GENERATED_FILES（本刀 U5 碼品質審查留帳）｜觸發：下一次動 events.py 或 gates.py 的維護批
+- BL-00014｜governance｜`close_bookkeeping` perf 事件的量法在 rev6 現在式面無可執行的家：RL-0053 與 CLAUDE.md §2 皆寫「簿記落地後量牆鐘」，但牆鐘無法回溯量測（實作形＝以 `date +%s.%N` 包住 commit 命令、六筆既有事件的 notes 才有記載），RUNBOOK 零命中、唯一指路是生成檔 perf.md 檔頭指向 rev5 文件（repo 外權威）——RUNBOOK 補一節寫死 rev6 量法命令形、RL-0053 措辭改為「以 date 包住簿記 commit 量牆鐘」｜觸發：下一維護批（動 RULES 需同批 bump RULES-VERSION、勿與收刀簿記混批）
+- BL-00015｜governance｜RL-0020 的「本刀 U2」形寫進跨刀存活的 BACKLOG 條目後失指涉（BL-00008／00009／00012／00013 皆以「本刀」自指，而其觸發時點落在 002 刀之後，屆時讀者的「本刀」已翻轉）：為跨刀存活的帳本條目訂例外（引用已收刀的刀寫全名或帶 window 序號），或於收刀簿記時就地把「本刀」改為刀名｜觸發：下一次動 RULES 名詞段的維護批
+- BL-00016｜governance｜`docs/c4/C4-E2-data-lineage-overlay.md` 隱私流段手抄稽核表名與欄名四族（現值經快照逐項核對為真），但 schema-gate 左源＝fixtures／演進帳、entity-drift 左源＝entity/src，兩閘皆不掃 docs/ 散文，GT-10 只對賬 rad_ai_map 鍵集——m0003 起的 delta 改欄名時本節恆假綠：加一腿（欄名集 ⊆ 快照欄名）或改為純指針形（四族語意留下、欄名指向 reference/schema.md）｜觸發：002 刀（首個 schema delta）收刀前
+- BL-00017｜governance｜GT-05 子庫 pin 樹腿（`tools/docsync/book.py` 之 `SUB_SCAN`）只覆蓋 `B-NNN`／`L-NNN` 兩形，外層現在式面（`BARE_REV5`）覆蓋五形（另含 `ADR 0NNN`／`Lint NN`／裸刀名）：ADR-00009 條件②與 spec FR-006② 以「GT-05 掃子庫 pin 樹綠」作 17 檔註解重寫的機器兜底，而被拷貝的 17 檔全住子庫、rev5 註解最常見者恰為 `ADR 00NN` 與裸刀名兩形（現況實查零殘留＝潛在缺口非現存漏網）——`SUB_SCAN` 對齊五形、配一正一反自證｜觸發：002 刀（首個再拷子庫碼的刀）開分支後首個 Workflow 前
+- BL-00018｜governance｜`tools/schema-gate.py` 之 `compare_seed` 判準「normalize 後未排序逐列 diff、★禁全檔排序」零測試載體：把兩側改為 `sorted(...)` 甚至 `sorted(set(...))` 後自帶 103 案仍全綠（隨遷自 rev5、rev5 亦缺）——補一案：取 `_ST_DUMP` 之 normalize 結果把某表整列搬到另一表 COPY 段（多重集不變、逐列序改變），斷言 `compare_seed` 非空｜觸發：下一次動 schema-gate 的刀或維護批
+- BL-00019｜governance｜ADR-00009 後果段宣告「RULES 名詞段『隨遷工具』的語意判準自此同時涵蓋資料形狀三件」，但 RULES 名詞段射程字面仍只列 tools/／deploy/／hooks 與編排骨架、零指針，單看 RULES 讀不出 17 檔適用同一四型失效引用判準：RULES 該行補一句射程指針（動 RULES 會 bump RULES-VERSION、須同批重組未發射 script）｜觸發：下一維護批

@@ -144,7 +144,7 @@
 
 **Checkpoint**: 閘可獨立往返驗證；ADR-00010 accepted（此後 body 不可變）
 
-✔ U2 已落（T011～T013、T018～T020、T023、T025～T029）：兩支閘工具隨遷（schema-gate 2,522→2,639 行、`test` 103 案；entity-drift 45 案）＋接線三處；pristine 重放（`rev6-u2-fixpg`）→ `check --container` 四行綠 → 四檔 `cmp` vs rev5 fixtures 逐位元零差異（sha256 載 provenance §4）→ 凍結五件＋拆除零殘留；archetype-map（tables 15 筆位元不動）／schema-evolution 初版；T023 後刀差異 5 檔清單（m001 fmt 中性自證）；dev stack `check` rc 0（1.27 秒）；往返四步 rc 1→0→2→0 還原；ADR-00010 證據四項補齊→accepted；contracts §4「四類／SC-002」與 fixtures §1§4／research R5「Owner 自始正規化」措辭漂移於本收尾更正（產製形恰四項、③④屬比對期）。
+✔ U2 已落（T011～T013、T018～T020、T023、T025～T029）：兩支閘工具隨遷（schema-gate 2,522→2,731 行（U3 註解現在式化後 2,729）、`test` 103 案；entity-drift 45 案）＋接線三處；pristine 重放（`rev6-u2-fixpg`）→ `check --container` 四行綠 → 四檔 `cmp` vs rev5 fixtures 逐位元零差異（sha256 載 provenance §4）→ 凍結五件＋拆除零殘留；archetype-map（tables 15 筆位元不動）／schema-evolution 初版；T023 後刀差異 5 檔清單（m001 fmt 中性自證）；dev stack `check` rc 0（1.27 秒）；往返四步 rc 1→0→2→0 還原；ADR-00010 證據四項補齊→accepted；contracts §4「四類／SC-002」與 fixtures §1§4／research R5「Owner 自始正規化」措辭漂移於本收尾更正（產製形恰四項、③④屬比對期）。
 
 ---
 

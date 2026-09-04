@@ -108,7 +108,7 @@ def _type_cell(e):
 
 
 def _target(e):
-    """標的欄：feature／scope／category／kind／erratum 行號；misc 帶 workflow 者附「｜<workflow>」（本刀 U5、BL-00005）。"""
+    """標的欄：feature／scope／category／kind／erratum 行號；misc 帶 workflow 者附「｜<workflow>」（BL-00005）。"""
     if e.get("type") == "misc" and e.get("category") and e.get("workflow"):
         return f"{e['category']}｜{e['workflow']}"
     return e.get("feature") or e.get("scope") or e.get("category") or e.get("kind") or (f"行 {e['target_line']}" if e.get("type") == "erratum" else "—")

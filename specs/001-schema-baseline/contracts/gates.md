@@ -10,7 +10,7 @@
 - **self-test 無條件合成**（沿 tools/entity-drift-gate.py 模式）：check 入口先以合成
   fixtures×合成庫照相跑「健康對必綠＋注入假漂移必紅」；self-test 敗＝rc 2 指名比對邏輯壞、
   **不讀任何真檔**（防恆綠假閘）。
-- **零容差語意**：一切比對＝全等；「容差」只有一種合法形＝演進帳登記（§2）。
+- **零容差語意**：一切比對＝全等；「容差」恰兩種合法形＝①演進帳登記（§2）②seed 面之 runtime-append 表級收窄（射程與其補償斷言＝`tools/schema-gate.py` 之 `RUNTIME_APPEND_TABLES` 常數與檔頭 docstring；收窄表的 seed 側必空為硬斷言、配紅綠自證，故非容差洞）。
 - 實庫照相＝與 `python3 tools/docsync refresh`（`tools/docsync/snapshot.py`）同構之三查詢（columns／indexes／constraints、
   排除 seaql_migrations、確定性排序）。
 - python 標準庫單檔、秒級、自帶 `test` 子命令（pre-commit 條件觸發自測既有接線）；
