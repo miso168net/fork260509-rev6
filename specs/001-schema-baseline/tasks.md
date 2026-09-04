@@ -156,12 +156,14 @@
 
 ### Implementation for User Story 4
 
-- [ ] T030 [US4] `.githooks/pre-commit` 加 entity-drift 段：staged 含 `rust-api` gitlink 或 `docs/ops/reference-src/schema-snapshot.json` 時——快照在場→
+- [x] T030 [US4] `.githooks/pre-commit` 加 entity-drift 段：staged 含 `rust-api` gitlink 或 `docs/ops/reference-src/schema-snapshot.json` 時——快照在場→
       `pc_run "entity-drift" python3 tools/entity-drift-gate.py check`、缺席→一行「⤳ entity-drift 跳過：schema 快照缺席（就位後自動實跑）」；雙錨 45／90 不動
-- [ ] T031 [US4] 演練：快照就位後 `python3 tools/entity-drift-gate.py check` rc 0；暫移 `rust-api/entity/src` → 對 rust-api pin bump 之 commit 被 rc 2 擋下 → 還原後綠；
+- [x] T031 [US4] 演練：快照就位後 `python3 tools/entity-drift-gate.py check` rc 0；暫移 `rust-api/entity/src` → 對 rust-api pin bump 之 commit 被 rc 2 擋下 → 還原後綠；
       結果記 commit 訊息
 
 **Checkpoint**: 帳面與程式側漂移在 commit 時被攔
+
+✔ U3 已落（T030～T035）：`tools/docsync/snapshot.py`（六撈／refresh／兩生成器、208 行）＋`tests/test_snapshot.py`（先紅 ImportError→綠；docsync test 91→117）＋接線（GENERATED_FILES 12→14、`refresh` 子命令）＋兩快照（columns 169／indexes 38／constraints 101、users 3／roles 3／bindings 3；與 U2 fixtures 三 json 逐列相等、與 rev5 快照位元相同、二次 refresh 位元冪等）＋兩真表（表體與 rev5 逐位元相同、FR-002 三帳成立）＋pre-commit entity-drift 段（閘級演練 rc 0→2→0／0→1→0 零殘改；hook 面演練於 U3 外層 commit 親做、結果記該 commit 訊息）。編排＝三 run：主 run 兩支 implementer 後於規格審查段走 rev5:L-078 升級（README 樹行已兌現預告）→ 主線落地並加骨架 IMPLEMENTERS=0 續跑形 → 續跑 run 1 再升級（README `docs/generated/` 成員列舉未隨名冊補）→ 主線全掃同語意四處落地 → 續跑 run 2 收斂（規格 1 輪＋品質 1 輪零 blocker）；碼品質 notes 三分流見 U3 commit 訊息；BL-00009／BL-00010、LL-00002 隨 U3 落。
 
 ---
 
@@ -173,22 +175,23 @@
 
 ### Tests for User Story 5（先紅）
 
-- [ ] T032 [P] [US5] `tools/docsync/tests/test_snapshot.py`：合成六撈→兩快照→`gen_reference_schema`／`gen_reference_accounts` 內容斷言（表×變體、零密碼欄）；
+- [x] T032 [P] [US5] `tools/docsync/tests/test_snapshot.py`：合成六撈→兩快照→`gen_reference_schema`／`gen_reference_accounts` 內容斷言（表×變體、零密碼欄）；
       ★回填條（U2 收尾登記）：三 SQL 常數同構對賬——`rev5:TestSnapshotIsomorphism` 已自 `tools/schema-gate.py` 移除，本檔須讀 `tools/schema-gate.py` 文本（importlib 依路徑載入）比對 `SQL_COLUMNS`／`SQL_INDEXES`／`SQL_CONSTRAINTS` 三常數與 `snapshot` 模組逐一相等；
       反向：快照缺檔／壞 JSON／綁定指向不存在 role／map 缺表歸屬＝fail-loud；refresh 任一撈失敗＝不寫部分結果
 
 ### Implementation for User Story 5
 
-- [ ] T033 [US5] `tools/docsync/snapshot.py`：`SQL_COLUMNS`／`SQL_INDEXES`／`SQL_CONSTRAINTS`／`SQL_USERS`／`SQL_ROLES`／`SQL_BINDINGS`（json_agg 形、排除 seaql_migrations）、
+- [x] T033 [US5] `tools/docsync/snapshot.py`：`SQL_COLUMNS`／`SQL_INDEXES`／`SQL_CONSTRAINTS`／`SQL_USERS`／`SQL_ROLES`／`SQL_BINDINGS`（json_agg 形、排除 seaql_migrations）、
       `psql_fetch`（`docker compose … exec -T postgres psql -U soybean -d soybean_admin_rust -qAt`、stack 缺席 fail-loud＋啟動提示）、`build_schema_snapshot`／`build_accounts_snapshot`
       （確定性排序）、`cmd_refresh`（六撈全成功才原子落檔）、兩生成器——承 `rev5:docs-sync.py` 先讀後寫、重打字、`Ctx` 注入
-- [ ] T034 [US5] `tools/docsync/references.py`：`GENERATED_FILES` 加 `docs/generated/reference/schema.md`／`accounts.md`（12→14）、`compute_generated` 掛兩鍵（讀
+- [x] T034 [US5] `tools/docsync/references.py`：`GENERATED_FILES` 加 `docs/generated/reference/schema.md`／`accounts.md`（12→14）、`compute_generated` 掛兩鍵（讀
       reference-src 三檔、缺檔 fail-loud 指引 refresh）；`tools/docsync/__main__.py` 加 `refresh` 子命令；`python3 tools/docsync test` 全綠
-- [ ] T035 [US5] DoD 鏈：`python3 tools/docsync refresh`（dev stack）→ `docs/ops/reference-src/{schema,accounts}-snapshot.json` → `generate` → `docs/generated/reference/{schema,accounts}.md`
+- [x] T035 [US5] DoD 鏈：`python3 tools/docsync refresh`（dev stack）→ `docs/ops/reference-src/{schema,accounts}-snapshot.json` → `generate` → `docs/generated/reference/{schema,accounts}.md`
       → `check` 零漂移 → `lint` 0 錯（GT-01／GT-09／GT-12 閘數 12）；`accounts.md` 列 Super／Admin／User 三帳與角色綁定同 rev5（FR-002 斷言）——與 T033／T034 同一 commit 落地（無 stub）
 - [ ] T036 [US5] 文件：`docs/ops/RUNBOOK.md` §10 實文（三步常設程序、rev6 命令形）、§12 表加 `schema-gate.py check｜test｜doccheck`／`entity-drift-gate.py check｜test`／
       `docsync refresh` 三列（需 stack 欄）、§9 補 psql 直連一句、§14 帳號節核對（dev 三帳承 rev5、指向 accounts.md）；`docs/arc42/05-building-block-view.md` §5.1 樹列 rust-api 三 member、§5.2 rust-api 句改現在式、
-      frontmatter `rev5_blueprint` §5 列「隨刀」→「承襲」；`docs/arc42/08-crosscutting-concepts.md` §8.1 指針句核對（真表已生成）
+      frontmatter `rev5_blueprint` §5 列「隨刀」→「承襲」；`docs/arc42/08-crosscutting-concepts.md` §8.1 指針句核對（真表已生成）；
+      ★U3 收尾補列（U4 定義已涵蓋、本行原缺）：`docs/c4/C4-E2-data-lineage-overlay.md` 提及「隨 schema 基線刀」三句、`docs/process/P-E3-doc-pipeline.md` 「隨 schema 基線刀進場」一句改現在式
 - [ ] T037 [US5] pre-commit 全鏈實測（含 entity-drift 實跑、工具自測條件觸發）≤45s → `docs/ops/events.jsonl` append perf 事件（隨該單元 commit）
 
 **Checkpoint**: 查現況正典入口就位、全鏈綠

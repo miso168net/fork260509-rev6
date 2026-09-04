@@ -1,4 +1,4 @@
-"""守 RL-0049／RL-0053：generate／check／lint／rules／errata／test 六子命令單一入口。
+"""守 RL-0049／RL-0053：generate／check／lint／refresh／rules／errata／test 七子命令單一入口。
 
 用法：python3 tools/docsync <子命令> …（以目錄執行；sys.path 先補 tools/ 使 `docsync` 可 import）。
 """
@@ -24,6 +24,18 @@ def _cmd_generate(_args):
     for rel in written:
         print(f"寫入 {rel}")
     print(f"generate：{len(written)} 檔更新（其餘與真源重算相等）")
+    return 0
+
+
+def _cmd_refresh(_args):
+    from docsync import snapshot
+    try:
+        written = snapshot.cmd_refresh(ROOT)
+    except snapshot.SnapshotError as ex:
+        print(f"refresh：{ex}", file=sys.stderr)
+        return 1
+    for rel, n in written:
+        print(f"refresh：寫 {rel}（{n} 行）")
     return 0
 
 
@@ -95,6 +107,7 @@ def build_parser():
     sub.add_parser("generate", help="由真源重算 docs/generated/").set_defaults(fn=_cmd_generate)
     sub.add_parser("check", help="generated 零漂移比對（GT-01）").set_defaults(fn=_cmd_check)
     sub.add_parser("lint", help="跑 GT-01～GT-12").set_defaults(fn=_cmd_lint)
+    sub.add_parser("refresh", help="自 dev stack postgres 照相、寫 docs/ops/reference-src/ 兩快照（唯一需 docker 的子命令）").set_defaults(fn=_cmd_refresh)
     rules = sub.add_parser("rules", help="RULES.md 工具")
     rsub = rules.add_subparsers(dest="rules_cmd", required=True)
     emit = rsub.add_parser("emit", help="依 scope 輸出規則塊＋RULES-VERSION")

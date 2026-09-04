@@ -1,7 +1,7 @@
 // 編排骨架 harness（控制流十案；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置）。
 // 用法：node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec|quality]
 //   spec（預設）＝樁把 blocker 打在規格對照段；quality＝打在碼品質段（原 quality-only 變體併入、以第二參數切換）。
-// 期望值自 script 的 `const IMPLEMENTERS = <n>` 行推導（樁對每支 implementer 回同一形）；任一斷言不符→逐項列出、exit 1；用法錯 exit 2。
+// 期望值自 script 的 `const IMPLEMENTERS = <n>` 行推導（樁對每支 implementer 回同一形；n=0＝續跑形、案7 改驗零 implementer 直入審查）；任一斷言不符→逐項列出、exit 1；用法錯 exit 2。
 // 樁走真 spawn／guard（prompt 長度、zh-TW、冒煙 token 皆在此被驗），只有 agent() 被替換。
 import fs from 'fs'
 const SCRIPT = process.argv[2]
@@ -104,11 +104,19 @@ await run('案6 implementer done_with_escalation → 照常跑完審查（rev5:L
   expect(Array.isArray(o.r.escalations) && o.r.escalations.length === N, 'escalations 逐支帶回', JSON.stringify(o.r.escalations))
 })
 
-// 案7：implementer blocked → 立即 return、零審查
-await run('案7 implementer blocked → 立即 return、零審查', (label) => {
-  if (label.includes('implementer')) return { status: 'blocked', report: '做不下去', filesChanged: [], escalations: ['x'] }
-  return CLEAN
-}, (o) => { noThrow(o); status(o, 'blocked'); count(o, 1); expect(!o.calls.some((l) => l.includes('review')), '零審查', o.calls.join(',')) })
+// 案7：implementer blocked → 立即 return、零審查（★N=0 續跑形無 implementer 段：改驗零 implementer、直入審查、兩支即收斂）
+if (N === 0) {
+  await run('案7 續跑形（IMPLEMENTERS=0）→ 零 implementer、直入審查（RL-0010）', () => CLEAN, (o) => {
+    noThrow(o); status(o, 'ok'); count(o, 2)
+    expect(!o.calls.some((l) => l.includes('implementer')), '零 implementer', o.calls.join(','))
+    expect(Array.isArray(o.r.implStatuses) && o.r.implStatuses.length === 0, 'implStatuses 空', JSON.stringify(o.r.implStatuses))
+  })
+} else {
+  await run('案7 implementer blocked → 立即 return、零審查', (label) => {
+    if (label.includes('implementer')) return { status: 'blocked', report: '做不下去', filesChanged: [], escalations: ['x'] }
+    return CLEAN
+  }, (o) => { noThrow(o); status(o, 'blocked'); count(o, 1); expect(!o.calls.some((l) => l.includes('review')), '零審查', o.calls.join(',')) })
+}
 
 // 案8：fix agent blocked → 立即 return
 let n8 = 0

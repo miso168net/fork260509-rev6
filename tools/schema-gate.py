@@ -153,12 +153,10 @@ RUNTIME_APPEND_TABLES = {
 }
 
 # ── 照相三查詢（與 python3 tools/docsync refresh 同構 SQL；SELECT only）───
-#    ★預告（RL-0015；本行為預告、非現況陳述）：此「同構」尚無機器載體——rev5 側以
-#    TestSnapshotIsomorphism（importlib 實載 refresh 側模組、逐一比對三常數值）承載，該類
-#    隨 rev5 舊工具一併不承襲（research R6）。回填去處＝本刀（001-schema-baseline）U3 之
-#    tools/docsync/tests/test_snapshot.py（讀本檔文本比對三常數）；tasks 回填條由主線登記。
-#    在該測落地前：改動本三常數任一支 MUST 手動同步 refresh 側，否則單邊漂移零徵狀
-#    （gate1 照相 SQL 與快照 SQL 悄悄分家、無任何測試會紅）。
+#    同構的機器載體＝tools/docsync/tests/test_snapshot.py 之同構案（importlib 依路徑載入本檔、
+#    對 SQL_COLUMNS／SQL_INDEXES／SQL_CONSTRAINTS 與 tools/docsync/snapshot.py 同名常數逐一比對）；
+#    改動本三常數任一支 MUST 同步 snapshot.py 側，否則該案即紅（gate1 照相 SQL 與快照 SQL 不得分家）。
+#    rev5 側由 schema-gate 自帶的 TestSnapshotIsomorphism 承載、隨舊工具不承襲（research R6）。
 _JSON_WRAP = "SELECT COALESCE(json_agg(t), '[]'::json) FROM ({}) t"
 SQL_COLUMNS = _JSON_WRAP.format(
     'SELECT c.table_name AS "table", c.column_name AS "column",'

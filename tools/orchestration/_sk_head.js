@@ -1,11 +1,11 @@
 // 骨架首段（單一骨架、BL-00001 收斂）：防呆①args 斷言／②guard／③保險絲推導＋自我斷言／④兩套 schema（WORK＝status，REVIEW＝agentStatus）。
-// ★引用 _vars 段的模板常數：IMPLEMENTERS（本單元 serial implementer 支數、與 _prompts 段 IMPL_STAGES 支數由 _sk_main.js 自我斷言）、
+// ★引用 _vars 段的模板常數：IMPLEMENTERS（本單元 serial implementer 支數、與 _prompts 段 IMPL_STAGES 支數由 _sk_main.js 自我斷言；0＝續跑形＝只跑審查段、RL-0010）、
 //   SMOKE（冒煙 token；RL-0018 置於各 prompt 共用段、RL-0059 派發前斷言；★不可取字面 test＝wf-watchdog 會當自測子命令）。
 if (typeof args !== 'undefined' && args !== null) {
   throw new Error('防呆①：本 script 不接受 args——一切邊界寫死於 script 常數')
 }
-if (typeof IMPLEMENTERS !== 'number' || !Number.isInteger(IMPLEMENTERS) || IMPLEMENTERS < 1) {
-  throw new Error('防呆③：IMPLEMENTERS 須為 ≥1 的整數、由 _vars 段定義（現值 ' + String(IMPLEMENTERS) + '）')
+if (typeof IMPLEMENTERS !== 'number' || !Number.isInteger(IMPLEMENTERS) || IMPLEMENTERS < 0) {
+  throw new Error('防呆③：IMPLEMENTERS 須為 ≥0 的整數（0＝續跑形、只跑審查段）、由 _vars 段定義（現值 ' + String(IMPLEMENTERS) + '）')
 }
 if (typeof SMOKE !== 'string' || SMOKE.length < 6 || SMOKE === 'test') {
   throw new Error('防呆②：SMOKE 冒煙 token 須為 ≥6 字元字串且不可取字面 test、由 _vars 段定義（現值 ' + String(SMOKE) + '）')

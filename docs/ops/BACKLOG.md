@@ -1,4 +1,4 @@
-<!-- next: BL-00009 -->
+<!-- next: BL-00011 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -12,3 +12,5 @@
 - BL-00006｜governance｜review 骨架入庫：000-r1 三支 script（探索／驗證／補漏）與組裝器住 tmp、報告 §0 記 sha256；可重用骨架（lens／兩鏡三態／grader／critic）入 `tools/orchestration/`、agents.md 自動入冊；單元 script 組裝器（`001-schema-baseline` 之 session 工作檔 `tmp/001-assemble.py`：八段拼接＋三道自檢）同批入庫｜觸發：第二次獨立 review 輪開分支時
 - BL-00007｜governance｜檢索性第四指標候選：冷啟動探針（命中率／平均 hops／≤3 跳比例）與否定對照題（答錯數）入 STATE 需新 generated 欄＋資料源（ADR）｜觸發：第二次獨立 review 輪
 - BL-00008｜product｜`ActiveModelBehavior` 恆空（ORM 行為層不承載六審計欄自動化、審計欄由 facade 顯式成對寫）之機器錨：承 `rev5:server/tests/entity_behavior_lint.rs` 形隨 server crate 建立——`rust-api/entity/src/sys_user_role.rs` 註解揭露現無此錨（本刀 U1 碼品質審查留帳）｜觸發：002 刀（server crate）開分支時
+- BL-00009｜governance｜GT-09 加腿：README `docs/generated/` 樹行的成員窮舉以 `GENERATED_FILES` 之 `docs/generated/` 前綴 basename 集合機器對賬（現掃描面 ROSTER_PREFIXES 不含 docs/，名冊 12→14 時該行、查詢表列、守門鏈列舉皆靠人工同刀改齊——本刀 U3 連兩支審查 run 被此類漏改打回、LL-00002）｜下一次 `GENERATED_FILES` 名冊變動的刀（其首個 Workflow 派發前）或下一維護批，先到者
+- BL-00010｜governance｜pre-commit entity-drift 段「快照缺席＝具名跳過」於快照成 tracked 檔後恆為死支且 fail-open（快照被誤刪／checkout 掉＝靜默跳過、非 rc 2）：改為缺席即紅（本刀 FR-012 之 Day-1 跳過語意已兌現、改行為需 spec 面拍板）｜002 刀 brainstorm（首個 schema delta 刀、hook 段必再碰）

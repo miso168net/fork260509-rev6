@@ -7,6 +7,7 @@ import unittest
 
 from docsync import references, common, book, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR, LESSONS_DIR
 from docsync.tests.test_book_ids import stub, RULES_TEXT
+from docsync.tests import test_snapshot
 
 
 class TestPorts(unittest.TestCase):
@@ -86,6 +87,8 @@ class TestGenerateIdempotent(unittest.TestCase):
         w("docker-compose.yml", 'services:\n  web:\n    ports:\n      - "127.0.0.1:32080:80"\n')
         w(f"{ADR_DIR}/ADR-00001-a.md", '---\nid: "ADR-00001"\ntitle: t\ndate: 2026-09-03\nstatus: superseded\nsupersedes: []\nsuperseded_by: []\n---\nb\n')
         w(f"{ADR_DIR}/ADR-00002-b.md", '---\nid: "ADR-00002"\ntitle: t2\ndate: 2026-09-03\nstatus: accepted\nsupersedes: [ADR-00001]\nsuperseded_by: []\n---\nb\n')
+        for rel, text in test_snapshot.src_files().items():   # reference-src 三檔＝reference/schema.md／accounts.md 的存在前提（缺席 fail-loud、不設 stub）
+            w(rel, text)
         subprocess.run(["git", "-C", root, "add", "-A"], check=True)
         written = references.cmd_generate(common.Ctx(root))
         self.assertIn(f"{ADR_DIR}/ADR-00001-a.md", written)  # 對稱回填
@@ -168,8 +171,8 @@ class TestBlueprintMap(unittest.TestCase):
         self.assertTrue(out.rstrip().endswith("缺：17｜重複：1｜未知鍵：1｜形制：1"), out[-120:])
         self.assertTrue(references.gen_rev5_blueprint_map(stub({})).rstrip().endswith("缺：20｜重複：0｜未知鍵：0｜形制：0"))
 
-    def test_roster_twelve(self):
-        self.assertEqual(len(references.GENERATED_FILES), 12)
+    def test_roster_fourteen(self):
+        self.assertEqual(len(references.GENERATED_FILES), 14)
         for rel in ("docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md"):
             self.assertIn(rel, references.GENERATED_FILES)
 

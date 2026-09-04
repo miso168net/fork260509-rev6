@@ -3,7 +3,7 @@
 references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_reference_perf、gen_milestones、gen_state（git／波／憲法／帳面／三指標／預算／尾 3 事件）、
 gen_lessons_index（例外註冊；next＝檔集最大號＋1、ADR-00005）、gen_architecture_index（例外註冊；arc42 節檔 frontmatter）、gen_rad_ai_map（兩層填實計數）、
 gen_rev5_blueprint_map（rev5 藍本對照表；frontmatter rev5_blueprint 對 20 列名冊、缺列可見不斷言、ADR-00006）、gen_reference_agents（編排 script 的 *_OPTS 名冊）、
-compute_generated（名冊→內容）、check_generated（缺／漂移／名冊外）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
+compute_generated（名冊→內容；reference/schema.md／accounts.md 兩鍵委給 snapshot.gen_reference_*）、check_generated（缺／漂移／名冊外）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
 """
 import os
 import re
@@ -15,12 +15,14 @@ from . import events as ev_mod
 from . import adr as adr_mod
 from . import rules as rules_mod
 from . import book as book_mod
+from . import snapshot as snapshot_mod
 
 GENERATED_FILES = (
     "docs/generated/STATE.md", "docs/generated/MILESTONES.md", "docs/generated/DECISIONS-INDEX.md", "docs/generated/GATES.md",
     "docs/generated/RAD-AI-MAP.md", "docs/generated/reference/ports.md", "docs/generated/reference/perf.md", "tools/orchestration/_sk_rules.js",
     "docs/arc42/ARCHITECTURE.md", "docs/ops/LESSONS.md",  # 例外註冊兩件（啟動書 §3.1；ADR-00005）
     "docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md",  # 波 3（ADR-00006；啟動書 §3.2 P-E2）
+    "docs/generated/reference/schema.md", "docs/generated/reference/accounts.md",  # 001-schema-baseline（ADR-00010；真源＝reference-src 快照＋archetype-map）
 )
 RE_CHAPTER = re.compile(r"^docs/arc42/(\d{2})-[a-z0-9-]+\.md$")
 RE_H1 = re.compile(r"^#\s+(?:§\s*\d+\s+)?(.+?)\s*$", re.M)
@@ -384,6 +386,8 @@ def compute_generated(ctx):
         "docs/ops/LESSONS.md": gen_lessons_index(ctx),
         "docs/generated/reference/rev5-blueprint-map.md": gen_rev5_blueprint_map(ctx),
         "docs/generated/reference/agents.md": gen_reference_agents(ctx),
+        "docs/generated/reference/schema.md": snapshot_mod.gen_reference_schema(ctx),
+        "docs/generated/reference/accounts.md": snapshot_mod.gen_reference_accounts(ctx),
     }
     try:
         from . import gates
