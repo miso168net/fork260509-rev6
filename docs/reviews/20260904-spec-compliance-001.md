@@ -1,4 +1,4 @@
-# 001-schema-baseline 規格對照審查（spec-compliance、2026-09-04）
+# 001-schema-baseline 規格對照審查（spec-compliance-001、2026-09-04）
 
 範圍＝已收刀之 001 schema 基線刀對 `specs/001-schema-baseline/spec.md` 的兌現度（FR-001～FR-018、SC-001～SC-007、六個 User Story 之 Acceptance Scenarios），連同碼品質、架構、測試與 production readiness。對象 git 範圍＝`16358f1..432e47b`（75 檔、+12020／−1172；子庫 rust-api `512024e..d443278`）。★不含其後與本刀無關之治理維護批。
 
