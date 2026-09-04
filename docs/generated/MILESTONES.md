@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-04 | misc | governance | 數量預算改為只警告不擋（ADR-00011 supersede ADR-00004）：BACKLOG 開放取消上限、改觀測值只報表；閘數 12 與 RULES 總／per-scope 上限保留數值但超限一律 WARN、不進 lint 退出碼、不擋 commit；pre-commit 硬擋機制不動。 | 1e0d89b | — | — |
 | 2026-09-04 | feature_close｜horizontal | 001-schema-baseline | 001 schema 基線刀收單：rust-api workspace 三 crate＋m0001／m0002＋entity 15 檔逐位元承襲（憲法 §I.5 例外②）、sea-orm-adapter 例外①；schema 三閘＋entity 漂移閘隨遷並自證；凍結 fixtures 四件雙源互證；docsync refresh 照相＋兩張正典真表；pre-commit entity-drift 條件實跑段。 | d04a41c | ADR-00009、ADR-00010 | §5、§8、§11 |
 | 2026-09-04 | misc | governance｜000-r1-doc-governance | rev6 獨立 review 輪 000-r1 文件治理架構體檢收單：四支唯讀 Workflow（探索 14／驗證 41／補漏 12）＋修單 run 8 支；confirmed 86＝修 75／BL 4 條／ADR-00008／none 2；報告 docs/reviews/20260904-doc-governance.md＋review 事件（total 80）；RULES 74（名詞段獨立輪／隨遷工具／其他面、RL-0074）、RULES-VERSION 064380371fc0；BACKLOG 開放 7；merge --no-ff 回 rev6-admin-root | 5459c9d | — | — |
 | 2026-09-04 | review | doc-governance | findings 80（修 75／BL 4／ADR 1）；BL-00001、BL-00003、BL-00004、BL-00005、ADR-00008 | — | — | — |
@@ -15,6 +16,13 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-04｜misc｜governance
+
+user 拍板 2026-09-04（三題一題一問）：①BACKLOG 上限移除改只報表 ②閘數與 RULES 兩腿改永遠只警告 ③硬擋機制不動。理由＝三個預算腿性質不同：閘數與 RULES 數的是「我們主動加了幾條治理規則」、增長由自己控制；BACKLOG 開放數是「發現多少問題」的觀測值，壓低它只有真做掉或不記兩途，上限恰好在給後者誘因。
+順帶修正 GT-12 兩種語意混用：BUDGET_GATES 原兼作無條件 ERROR 的結構等於斷言（len != BUDGET_GATES），只降級預算腿會讓「閘數只警告」形同虛設；現結構腿只驗 docstring 區塊集合 == ROSTER、數量交預算腿，pre-commit 檔頭範圍字串期望值改自 ROSTER 實算。BUDGET_ERROR_WAVE 更名 KNIFE_START_WAVE。
+ADR-00004 依 GT-04 轉 superseded；其決定 1、3～8 與上限表數值仍為現行依據，rev6 無部分翻案機制、續行射程記於 ADR-00011 決定 5。RULES-VERSION 064380371fc0→e41e0f177ef3。
+出口驗收：docsync test 126 綠（原 test_wave_lag_and_budget_levels 拆四案、先紅三案）、check 零漂移、lint 0／0／0、bootstrap rc 0 警告 0；errata 五詞現在式面零假述。
 
 ### 2026-09-04｜feature_close｜horizontal｜001-schema-baseline
 
