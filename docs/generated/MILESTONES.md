@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-05 | misc | governance | 002 開分支前 BACKLOG 清償：A＋B 十二條一批收掉（BACKLOG 20→8）——RULES 三條、活書一條、docsync 四條、schema-gate 兩條、生成器補全群與 schema 定稿抽出；RULES-VERSION bump、rev6 首筆 erratum、ADR-00012 accepted。 | 2c35da6 | ADR-00012 | — |
 | 2026-09-05 | erratum | 行 19 | 該筆收單漏記 adrs（misc 當時無此欄）——DECISIONS-INDEX 之 feature 欄因而對 ADR-00011 印裸「輕量軌」；BL-00004 補欄後以本筆更正 | ['ADR-0 | — | — |
 | 2026-09-04 | misc | governance | 001 刀規格對照審查（獨立輪 spec-compliance-001）修單收單：schema-gate 自帶測試 103→118 案補回歸保護（audit 變體驗則面、gate1 索引與約束兩節、seed_add 欄集）、D 變體補 archived_by、pre-commit 加 schema-frozen 條件段、contracts/gates.md §4 negative 義務五類擴為六類。 | 39232de | — | — |
 | 2026-09-04 | review | 001-schema-baseline | findings 8（修 6／BL 2／ADR 0）；BL-00020、BL-00021 | — | — | — |
@@ -19,6 +20,15 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-05｜misc｜governance
+
+分類體檢由另一 session 完成（工作檔 tmp/check-backlog.md、gitignored）：開放 20 條分四類，user 拍板 A＋B 合併一批。主線依 CLAUDE.md §5 復核其自陳三件並全部復現屬實。
+BL-00022 採 user 提出的抽取模式而非分類檔建議的搬家：新增 docs/ops/reference-src/schema-definition.md（十節齊、會前進的七節抄實體、已成史的三節留指針），specs/001-schema-baseline/data-model.md 零改動留為凍結史料。抽取相對搬家的關鍵優勢＝m0001 等三處子庫註解所述「定稿憑據＝specs/001 之 data-model」是成品出處的歷史陳述、凍結存證原地保留下仍為真，故本批維持純外層、pin 不動、不觸憲法 §I.5 例外②射程。
+BL-00017 差點做錯：條目只寫「子庫腿對齊五形」，實測粗篩命中六行、全是自家刀名 001-schema-baseline——只對齊正則不共用外層 rev6 刀集豁免會整批誤紅，故改為共用外層精判。
+驗證形制：判準本就正確的條目一寫即綠、不得宣稱先紅後綠，改以變異探針逐條打在對應判準腿上驗紅（_check_col 四腿、活性唯一索引兩腿、C 複合 PK、created_by 顯式驗、gate1 索引與約束節、seed_add 欄集、compare_seed 排序、audit 反向腿）；唯 archived_by 與部分新增檢查為真先紅後綠。
+兩條實查更正（非處置對象）：BL-00006 原述「報告 §0 記 sha256」失準、實記 runId 與 agent 數；BL-00010 補上補償控制實驗——快照缺席時 compute_generated 抛 SnapshotError 且 check 與 lint 均不捕、pre-commit 仍擋得下，曝險面遠小於條目原述，故維持留 002 brainstorm。
+本筆之 adrs 欄為 BL-00004 新增能力的首次實用（misc 收單即立 ADR 的反查左源）。
 
 ### 2026-09-04｜misc｜governance
 
