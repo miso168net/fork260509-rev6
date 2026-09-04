@@ -194,6 +194,8 @@ GATE_COUNT="$(cd "$ROOT/tools" && python3 -c 'from docsync import gates; print(l
 [ "$GATE_COUNT" = "12" ] || die "閘數推導得 ${GATE_COUNT} ≠ 12——掃源錨形與 ROSTER 不同步（GT-12 應已紅；恰 12、一進一出）"
 ok "閘數斷言過（掃源推導 12＝GT-01～GT-12）"
 run_tool_test tools/wf-watchdog.py
+run_tool_test tools/schema-gate.py
+run_tool_test tools/entity-drift-gate.py
 run_tool_test deploy/preflight-secrets.py
 run_tool_test deploy/generate-secrets.py
 run_tool_test deploy/setup-reaper-role.py

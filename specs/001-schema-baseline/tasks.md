@@ -60,12 +60,12 @@
 - [x] T010 容器內 `cargo build --workspace`（serial；`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm --entrypoint cargo migrate build --workspace`——
       dev override 之 migrate entrypoint 已核可整段覆寫）綠；
       `rust-api/Cargo.lock` 入版控（async-trait 0.1.92 一處與 rev5 異、其餘同）
-- [ ] T011 `tools/schema-gate.py` 隨遷（自 `../fork260509-rev5/tools/schema-gate.py`；research R6）：座標常數同名核對；**去除** `SEED_DECISION` 與其讀取（sequence 名冊改自
+- [x] T011 `tools/schema-gate.py` 隨遷（自 `../fork260509-rev5/tools/schema-gate.py`；research R6）：座標常數同名核對；**去除** `SEED_DECISION` 與其讀取（sequence 名冊改自
       `fixtures/seed.sql` 之 `setval` 行解析）、`RENAME_MAP` 與 rev4 血緣對賬碼／測試、rev4 世代座標清償測試改 rev6 斷言；**保留** `RUNTIME_APPEND_TABLES`／`--container`／
       三子命令；`test` 加 negative 第五案（登記假 add_column 後合成期望值）；`doccheck` 加 data-model §9 sequences vs seed.sql setval 對賬面；docstring 與註解四型失效引用 rev6 化
       （`tools/docs-sync.py refresh`→`python3 tools/docsync refresh`、`specs/002` 殘留零容忍）
-- [ ] T012 [P] `tools/entity-drift-gate.py` 隨遷（自 rev5 同名檔）：座標常數同名核對；註解 `rev4:B-110`／`rev4:ADR 0015`／`rev4:ADR 0021` 帶前綴；`test` 逐案綠（離線）
-- [ ] T013 接線對賬（GT-09）：`README.md` 樹 `tools/` 下加 `schema-gate.py`／`entity-drift-gate.py` 兩行；`tools/bootstrap.sh` `run_tool_test` 加兩支；
+- [x] T012 [P] `tools/entity-drift-gate.py` 隨遷（自 rev5 同名檔）：座標常數同名核對；註解 `rev4:B-110`／`rev4:ADR 0015`／`rev4:ADR 0021` 帶前綴；`test` 逐案綠（離線）
+- [x] T013 接線對賬（GT-09）：`README.md` 樹 `tools/` 下加 `schema-gate.py`／`entity-drift-gate.py` 兩行；`tools/bootstrap.sh` `run_tool_test` 加兩支；
       `.githooks/pre-commit` 自測名冊 `for t in …` 加兩支（staged 含工具本體才跑）
 
 **Checkpoint**: workspace 建置綠、兩支工具在場（其 `test` 綠於 U2 commit 時與 fixtures／map 同批成立）
@@ -90,11 +90,11 @@
       與外層 pin bump 訊息
 - [x] T017 [US1] dev stack 重放：`docker compose … up -d --wait postgres` → `run --rm migrate`；驗 `seaql_migrations` 恰兩筆＝`m0001_baseline_schema`／`m0002_baseline_seeds`；
       `SHOW timezone`＝`UTC`
-- [ ] T018 [US1] pristine 一次性重放：`docker network create rev6-u2-fixnet`＋`postgres:18.4-alpine` 容器 `rev6-u2-fixpg`（零 host 埠、拋棄式密碼）→ 以 `rev6-admin-rust-api:dev`
+- [x] T018 [US1] pristine 一次性重放：`docker network create rev6-u2-fixnet`＋`postgres:18.4-alpine` 容器 `rev6-u2-fixpg`（零 host 埠、拋棄式密碼）→ 以 `rev6-admin-rust-api:dev`
       容器內 `cargo run --bin migration up`（`APP_DATABASE_URL` 指向該容器）→ `python3 tools/schema-gate.py check --container rev6-u2-fixpg` gate2 欄序面綠
-- [ ] T019 [US1] 照相與雙源互證：以 schema-gate 三查詢照相 `columns.json`／`indexes.json`／`constraints.json`（確定性排序、indent 2）＋`pg_dump --data-only`（PGTZ=UTC）經
+- [x] T019 [US1] 照相與雙源互證：以 schema-gate 三查詢照相 `columns.json`／`indexes.json`／`constraints.json`（確定性排序、indent 2）＋`pg_dump --data-only`（PGTZ=UTC）經
       `normalize_seed_dump` → 四檔 `cmp` 對 `../fork260509-rev5/specs/001-schema-baseline/fixtures/` 同名檔**零差異**；任一不全等＝停手升級 user（status＝blocked）
-- [ ] T020 [US1] 凍結面落檔 `specs/001-schema-baseline/fixtures/{columns.json,indexes.json,constraints.json,seed.sql,provenance.md}`（provenance 六欄目＝contracts/fixtures.md §3：
+- [x] T020 [US1] 凍結面落檔 `specs/001-schema-baseline/fixtures/{columns.json,indexes.json,constraints.json,seed.sql,provenance.md}`（provenance 六欄目＝contracts/fixtures.md §3：
       日期／映像／rust-api commit SHA／rev5 來源座標＋cmp 紀錄／欄序驗紀錄／命令形）；拆容器、network、匿名 PGDATA volume（`docker volume ls -f dangling=true` 核對）
 
 **Checkpoint**: 基線可獨立驗證交付——重放成形、與 rev5 逐位元同形、凍結面就位
@@ -114,7 +114,7 @@
 - [x] T021 [US2] 憲法 §I.5 例外②＋§V.3 補句＋1.1.0＋ADR-00009 accepted（`.specify/memory/constitution.md`、`docs/arc42/decisions/ADR-00009-data-shape-copy-exception.md`；
       已落 52fb52f、早於 plan）
 - [x] T022 [US2] 註解語意重寫清單：17 檔＋adapter 逐檔列出四型失效引用之改寫項（原文→rev6 文；通用同文者免列），落 rust-api commit 訊息並作 ADR-00010 證據素材
-- [ ] T023 [US2] 防回歸審查：`git -C ../fork260509-rev5/rust-api diff 4bbc989 92919b9 -- entity/src migration/src` 實查後刀差異 → 清單（預期唯一＝`sys_user_role.rs` 真 FK
+- [x] T023 [US2] 防回歸審查：`git -C ../fork260509-rev5/rust-api diff 4bbc989 92919b9 -- entity/src migration/src` 實查後刀差異 → 清單（預期唯一＝`sys_user_role.rs` 真 FK
       Relation、形狀派生保留；`m001` 之 fmt 存量與註解變動屬非語意）→ 記 ADR-00010 證據段
 - [x] T024 [US2] 機器閘證據：`python3 tools/docsync lint` 0 錯（GT-05 掃 tools/ 與子庫 pin 樹）；`betterleaks git --config .gitleaks.toml` 全史掃描結果（零命中、零 allowlist——adapter 假 DSN 依 T006 改執行期串接、analyze C1）記 commit 訊息
 
@@ -132,17 +132,19 @@
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] `docs/ops/reference-src/archetype-map.json`（承 rev5 同名檔改座標：`lineage`／`usage` 字串 rev6 化、15 表條目位元不動、與 data-model §1 逐筆對賬）＋
+- [x] T025 [US3] `docs/ops/reference-src/archetype-map.json`（承 rev5 同名檔改座標：`lineage`／`usage` 字串 rev6 化、15 表條目位元不動、與 data-model §1 逐筆對賬）＋
       `docs/ops/reference-src/schema-evolution.json`＝`{"next_id": 1, "entries": []}`
-- [ ] T026 [US3] `python3 tools/schema-gate.py test` 全綠（真 repo 案：data-model 解析／map Day-1 形／真 repo 基線 rc 0；negative 五類含假 delta 合成）；
+- [x] T026 [US3] `python3 tools/schema-gate.py test` 全綠（真 repo 案：data-model 解析／map Day-1 形／真 repo 基線 rc 0；negative 五類含假 delta 合成）；
       `python3 tools/schema-gate.py doccheck` rc 0（§2 五元組＋§6 索引約束＋§9 sequences vs fixtures）
-- [ ] T027 [US3] `python3 tools/schema-gate.py check`（dev stack）rc 0：gate1／gate2 欄序＋seed／audit archetype 15/15 三閘摘要各一行；記 perf（秒數）
-- [ ] T028 [US3] 演進帳往返驗證（quickstart E）：注入 `ALTER TABLE sys_user ADD COLUMN tmp_x text` → rc 1 指名；登記 `E-001`（knife `001-schema-baseline`）→ rc 0；
+- [x] T027 [US3] `python3 tools/schema-gate.py check`（dev stack）rc 0：gate1／gate2 欄序＋seed／audit archetype 15/15 三閘摘要各一行；記 perf（秒數）
+- [x] T028 [US3] 演進帳往返驗證（quickstart E）：注入 `ALTER TABLE sys_user ADD COLUMN tmp_x text` → rc 1 指名；登記 `E-001`（knife `001-schema-baseline`）→ rc 0；
       刪 `date` 欄 → rc 2；還原（撤登記＋DROP COLUMN）→ rc 0；四步輸出記 commit 訊息
-- [ ] T029 [US3] `docs/arc42/decisions/ADR-00010-schema-baseline-and-gate-contract.md`：證據段補齊（T016 parity、T019 cmp、T023 清單、T027 首跑）→ `status: accepted`；
+- [x] T029 [US3] `docs/arc42/decisions/ADR-00010-schema-baseline-and-gate-contract.md`：證據段補齊（T016 parity、T019 cmp、T023 清單、T027 首跑）→ `status: accepted`；
       `python3 tools/docsync generate`（DECISIONS-INDEX／STATE 重算）
 
 **Checkpoint**: 閘可獨立往返驗證；ADR-00010 accepted（此後 body 不可變）
+
+✔ U2 已落（T011～T013、T018～T020、T023、T025～T029）：兩支閘工具隨遷（schema-gate 2,522→2,639 行、`test` 103 案；entity-drift 45 案）＋接線三處；pristine 重放（`rev6-u2-fixpg`）→ `check --container` 四行綠 → 四檔 `cmp` vs rev5 fixtures 逐位元零差異（sha256 載 provenance §4）→ 凍結五件＋拆除零殘留；archetype-map（tables 15 筆位元不動）／schema-evolution 初版；T023 後刀差異 5 檔清單（m001 fmt 中性自證）；dev stack `check` rc 0（1.27 秒）；往返四步 rc 1→0→2→0 還原；ADR-00010 證據四項補齊→accepted；contracts §4「四類／SC-002」與 fixtures §1§4／research R5「Owner 自始正規化」措辭漂移於本收尾更正（產製形恰四項、③④屬比對期）。
 
 ---
 
@@ -172,6 +174,7 @@
 ### Tests for User Story 5（先紅）
 
 - [ ] T032 [P] [US5] `tools/docsync/tests/test_snapshot.py`：合成六撈→兩快照→`gen_reference_schema`／`gen_reference_accounts` 內容斷言（表×變體、零密碼欄）；
+      ★回填條（U2 收尾登記）：三 SQL 常數同構對賬——`rev5:TestSnapshotIsomorphism` 已自 `tools/schema-gate.py` 移除，本檔須讀 `tools/schema-gate.py` 文本（importlib 依路徑載入）比對 `SQL_COLUMNS`／`SQL_INDEXES`／`SQL_CONSTRAINTS` 三常數與 `snapshot` 模組逐一相等；
       反向：快照缺檔／壞 JSON／綁定指向不存在 role／map 缺表歸屬＝fail-loud；refresh 任一撈失敗＝不寫部分結果
 
 ### Implementation for User Story 5

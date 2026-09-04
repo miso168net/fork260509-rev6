@@ -10,7 +10,7 @@
 | `columns.json` | 實庫欄快照（與 refresh 同構、確定性排序） | 基線實庫照相 |
 | `indexes.json` | 索引快照（同上） | 同上 |
 | `constraints.json` | 約束快照（同上、含 NOT NULL 逐欄形） | 同上 |
-| `seed.sql` | `pg_dump --data-only` normalize 版（normalize 全則＝gates.md §2 seed 面：COPY 段整列排序、setval 保留、pg_dump 噪音四類兩族剝除／正規化） | 基線實庫 dump |
+| `seed.sql` | `pg_dump --data-only` 產製形 normalize 版（恰四項：COPY 段整列排序、setval 原位、剝 `\restrict`／`\unrestrict` token 行、剝 `seaql_migrations` 段；`-- Dumped … version` 兩行與 `Owner:` 值**保留**＝與 rev5 實檔同形、雙源互證所需；gates.md §2 之環境相依族③④由閘兩側於比對期剝除／正規化） | 基線實庫 dump |
 | `provenance.md` | 產製紀錄（見 §3；rev6 自寫、不入雙源互證） | 人寫＋機器值 |
 
 ## 2. 產製程序（實作階段執行一次；U2）
@@ -32,6 +32,6 @@
 - 凍結後任何位元變更＝違憲級（pre-commit 不設專閘、由 review 與 gate1 語意承載：fixtures
   變 → gate1 期望變 → 未登記漂移紅之對偶形現形）。
 - 「重產 fixtures」唯一合法路徑＝基線翻案新刀（新 ADR supersedes＋新 fixtures 目錄）。rev5 曾有一次刀內重產具名例外
-  （`rev5:ADR 0008`、DB 身分回滾連動 Owner 行）——rev6 fixtures 自始以 Owner 值正規化產製、**不承襲該例外**；其後任何重產仍走本條主文。
+  （`rev5:ADR 0008`、DB 身分回滾連動 Owner 行）——rev6 閘於比對期正規化 Owner 值（gates.md §2 ④）、凍結實檔保留 `Owner:` 原值以與 rev5 逐位元全等；DB 身分變更不觸發重產、**不承襲該例外**；其後任何重產仍走本條主文。
 - 快照三 json 與 `docs/ops/reference-src/schema-snapshot.json`（refresh 產、跨刀前進）
   職責不同：fixtures＝凍結史料（不動）、reference-src＝現況帳（隨刀 refresh）。

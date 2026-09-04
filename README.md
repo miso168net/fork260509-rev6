@@ -27,6 +27,8 @@ fork260509-rev6/
 ├── tools/                           repo 治理面工具鏈（pre-commit／bootstrap 掛勾；管「版控品質」）
 │   ├── bootstrap.sh                 新機重建／體檢：源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數
 │   ├── wf-watchdog.py               workflow 編排看門狗（stall／runaway 保險絲、可鎖定目標 run）
+│   ├── schema-gate.py               三閘 schema 驗證閘：check（凍結 fixtures ⊕ 演進帳 vs 實庫）／test／doccheck（隨遷自 rev5、碼面閘不入 GATES 名冊）
+│   ├── entity-drift-gate.py         entity×schema 快照漂移閘：check／test（隨遷自 rev5；自測已入 pre-commit 條件觸發名冊；★預告：pre-commit 常跑段隨 schema 快照就位接線＝本刀 US4 回填）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／rules emit／errata／test；tests/ 為語料面
 │   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架；_sk_rules.js＝generate 產物）、harness-test 十案（斷言＋退出碼）、cdp.mjs、EXAMPLE 組裝成品
 ├── deploy/                          營運面：dev stack 部署資產＋機密管線（管「跑起來的系統」）

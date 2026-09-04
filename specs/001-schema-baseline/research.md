@@ -83,9 +83,9 @@
 
 - **Decision**：`fixtures/` 五件形承 `rev5:R5`：`columns.json`／`indexes.json`／`constraints.json`（三查詢同構、確定性排序、indent 2）＋`seed.sql`
   （`pg_dump --data-only`、PGTZ=UTC，經 schema-gate `normalize_seed_dump`：COPY 段整列排序＋setval 原位＋剝 `\restrict`／`\unrestrict` 行＋剝 `seaql_migrations` COPY 段＋
-  Dumped 版本兩行剝除＋`Owner:` 值正規化）＋`provenance.md`（六欄目）。**先驗後凍**＝①vs data-model §2 欄序全等 ②四份資料檔 vs `rev5:specs/001-schema-baseline/fixtures/` 同名檔
+  ★產製形止於此四項——`-- Dumped … version` 兩行剝除與 `Owner:` 值正規化屬閘兩側比對期處理〔gates.md §2 ③④〕、凍結實檔保留兩者以與 rev5 逐位元全等）＋`provenance.md`（六欄目）。**先驗後凍**＝①vs data-model §2 欄序全等 ②四份資料檔 vs `rev5:specs/001-schema-baseline/fixtures/` 同名檔
   **逐位元全等**（雙源互證；provenance 不比）——兩綠才落檔；任一不全等＝停手升級 user。
-- **Rationale**：rev5 fixtures 已剝 `seaql_migrations` 段（實查零命中），四碼改名不破全等；Owner 正規化使 DB 身分無關。
+- **Rationale**：rev5 fixtures 已剝 `seaql_migrations` 段（實查零命中），四碼改名不破全等；比對期 Owner 正規化使 DB 身分無關（凍結實檔保留原值、同 rev5）。
 - **Alternatives**：直接拷 rev5 fixtures——放棄：凍結面必須是 rev6 自己重放的證據，拷來即無「rev6 基線＝rev5 終態」的實證。
 
 ## R6 兩支閘工具隨遷改座標清單
