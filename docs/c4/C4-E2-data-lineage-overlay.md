@@ -11,7 +11,7 @@ rad_ai_map:
 ---
 # C4-E2 資料血緣 overlay
 
-資料血緣 overlay（疊加於 `C4-L2-container.md`、不另畫）的規則與表；目前無 AI 元件（截至 2026-09-03）；資料源清冊、隱私流（稽核表欄位與保留期，真內容）隨首個 schema 刀填入；流程層對應＝文件血緣鏈（brainstorm→spec→ADR→events→generated）。
+資料血緣 overlay（疊加於 `C4-L2-container.md`、不另畫）的規則與表；目前無 AI 元件（截至 2026-09-03）；資料源清冊＝系統資料源三項（下節）、隱私流之稽核表欄位已填於隱私流節（保留期目前無、理由同節）；流程層對應＝文件血緣鏈（brainstorm→spec→ADR→events→generated）。
 
 ### 資料源清冊
 
@@ -36,7 +36,7 @@ rad_ai_map:
 | 階段 | 擷取／轉換／儲存／服務 |
 | 輸入 | 上游來源（＝清冊列） |
 | 輸出 | 下游消費者 |
-| schema 期望 | 該階段的欄集與型（真源＝`docs/generated/reference/schema.md`、隨 schema 基線刀生成） |
+| schema 期望 | 該階段的欄集與型（真源＝`docs/generated/reference/schema.md`——生成物、`python3 tools/docsync refresh` 照相＋generate 產） |
 | 轉換 | 一句描述＋程式落點 |
 
 ### 新鮮度需求
@@ -45,8 +45,8 @@ rad_ai_map:
 
 ### 隱私流
 
-稽核表欄位（登入嘗試的帳號原文、真實來源 IP 非空）與保留期隨 schema 基線刀進場、與該刀 data-model 同批填入本節（啟動書把本節列為真內容）；目前零欄。
+稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族：①**來源 IP**——四張皆帶（前三張欄名 `real_ip`、`session_event` 欄名 `source_ip`；`real_ip` 全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另各帶 `peer_ip`（傳輸層對端位址）、`x_forwarded_for`（轉發鏈原文）、`region`（GeoIP 填值）③**帳號原文**——`sys_login_attempt.attempted_user_name`（登入嘗試輸入的帳號字面）④**實體快照**——`sys_operation_log.payload_before`／`payload_after`（實體變更前後、內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉；全欄集與欄型正典＝`docs/generated/reference/schema.md`（本節不抄欄型）。保留期：目前無——稽核表 append-only、無 retention 政策與清理排程（承 rev5 終態、rev5 留帳 `rev5:B-016`）；政策與權威釋義隨**稽核域行為島**進場回填（憲法 §I.6 變體 B 句、§I.7 島 J），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）。
 
 ### schema 登錄
 
-真表＝`docs/generated/reference/schema.md`（隨 schema 基線刀生成；版本＝migration 序、受管演進帳隨該刀進場）。
+真表＝`docs/generated/reference/schema.md`（`python3 tools/docsync refresh` 照相、generate 產；版本＝migration 序（`rust-api/migration/src/`；delta 逐筆登記於受管演進帳 `docs/ops/reference-src/schema-evolution.json`））。

@@ -17,7 +17,7 @@ fork260509-rev6/
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES 與 reference/perf
 ├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   待辦兩卷 BL-NNNNN（開放／滯後；配號只在主檔；完成即刪、git 即史）
 ├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN（`LESSONS/` 首條 LL 落地時出現）
-├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；創世期最小章 §1／§7 抬頭／§12／§14、§15 為指針、其餘隨刀補實
+├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；已補實文 §1／§7 抬頭／§10／§12／§14、§15 為指針、§9 部分補實、其餘隨刀補實
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
 ├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents,schema,accounts}
@@ -47,7 +47,7 @@ fork260509-rev6/
 │   ├── secrets/                     明文落點說明（README＋.example；實值住 SECRETS_DIR、gitignored）
 │   ├── alloy/、grafana-provisioning/、nginx/、prometheus/   compose 掛載的服務／觀測層設定（動它＝動 runtime）
 │   └── dev-certs/                   dev TLS 憑證落點（gitignored、.gitkeep）
-├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）
+├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測→entity-drift 條件實跑；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）
 │   ├── pre-commit、pre-push
 │   └── lib/                         scan-range.sh：pre-push 範圍推導（三 repo 共用）
 ├── .githooks-submodule/             兩 worktree 專用 hooks（pre-commit／pre-push；bootstrap 以絕對路徑設 hooksPath）

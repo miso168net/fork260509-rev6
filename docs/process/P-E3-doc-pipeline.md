@@ -54,4 +54,4 @@ flowchart LR
 
 ### 與資料卡的銜接
 
-類比張力：硬套——無資料卡；類比＝`docs/ops/reference-src/` 半自動快照（schema／accounts、隨 schema 基線刀進場）與 `docs/generated/reference/`，記的是系統資料的形、不是訓練資料集。
+類比張力：硬套——無資料卡；類比＝`docs/ops/reference-src/` 半自動快照（schema／accounts，`python3 tools/docsync refresh` 自實庫照相）與 `docs/generated/reference/`，記的是系統資料的形、不是訓練資料集。

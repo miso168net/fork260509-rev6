@@ -188,13 +188,15 @@
       reference-src 三檔、缺檔 fail-loud 指引 refresh）；`tools/docsync/__main__.py` 加 `refresh` 子命令；`python3 tools/docsync test` 全綠
 - [x] T035 [US5] DoD 鏈：`python3 tools/docsync refresh`（dev stack）→ `docs/ops/reference-src/{schema,accounts}-snapshot.json` → `generate` → `docs/generated/reference/{schema,accounts}.md`
       → `check` 零漂移 → `lint` 0 錯（GT-01／GT-09／GT-12 閘數 12）；`accounts.md` 列 Super／Admin／User 三帳與角色綁定同 rev5（FR-002 斷言）——與 T033／T034 同一 commit 落地（無 stub）
-- [ ] T036 [US5] 文件：`docs/ops/RUNBOOK.md` §10 實文（三步常設程序、rev6 命令形）、§12 表加 `schema-gate.py check｜test｜doccheck`／`entity-drift-gate.py check｜test`／
+- [x] T036 [US5] 文件：`docs/ops/RUNBOOK.md` §10 實文（三步常設程序、rev6 命令形）、§12 表加 `schema-gate.py check｜test｜doccheck`／`entity-drift-gate.py check｜test`／
       `docsync refresh` 三列（需 stack 欄）、§9 補 psql 直連一句、§14 帳號節核對（dev 三帳承 rev5、指向 accounts.md）；`docs/arc42/05-building-block-view.md` §5.1 樹列 rust-api 三 member、§5.2 rust-api 句改現在式、
       frontmatter `rev5_blueprint` §5 列「隨刀」→「承襲」；`docs/arc42/08-crosscutting-concepts.md` §8.1 指針句核對（真表已生成）；
       ★U3 收尾補列（U4 定義已涵蓋、本行原缺）：`docs/c4/C4-E2-data-lineage-overlay.md` 提及「隨 schema 基線刀」三句、`docs/process/P-E3-doc-pipeline.md` 「隨 schema 基線刀進場」一句改現在式
-- [ ] T037 [US5] pre-commit 全鏈實測（含 entity-drift 實跑、工具自測條件觸發）≤45s → `docs/ops/events.jsonl` append perf 事件（隨該單元 commit）
+- [x] T037 [US5] pre-commit 全鏈實測（含 entity-drift 實跑、工具自測條件觸發）≤45s → `docs/ops/events.jsonl` append perf 事件（隨該單元 commit）
 
 **Checkpoint**: 查現況正典入口就位、全鏈綠
+
+✔ U4 已落（T036、T037、T040、T041）：RUNBOOK §9 DB 直連句／§10 Day-1 三步實文／§12 三列＋碼面閘尾句／§14 帳號句；arc42 05（frontmatter 承襲、§5.1 三 crate、§5.2 現在式）、08（frontmatter 承襲、§8.1 指針三段）；C4-E2 四句（稽核欄名逐字自 data-model §2、保留期目前無附理由 rev5:B-016）、P-E3 一句；rev5-blueprint-map 兩列承襲、四項零缺。T040 errata 四詞 42／34／27／17 處全為史料或前綴提及形、零假述、零改動。T041 A～G 七場景全綠（C pristine `rev6-u4-fixpg` 照相四檔 cmp 凍結面零差異、拆除零殘留；E 往返 1→0→2→0 於 sys_role、登記檔還原 cmp rev5 全等）；docsync 行數 2,577（SC-007）。T037＝U3 外層 commit 全鏈 16.91 s（perf 事件 precommit_chain、指向 9b8f02c）。編排＝一 run 15 支（結構最壞值：規格 3 輪 fix＋確認輪、品質 3 輪 fix＋確認輪皆新 blocker、非空轉）；fix 升級之限定外項（RUNBOOK 檔頭、README RUNBOOK 樹行、arc42 05 `tools/` 列、`rust-api/x_fork.branch-origin.md`）與品質確認輪建議（pre-commit 鏈列舉另兩處、C4-E2 手抄 migration 名單改指針形、arc42 08 frontmatter 收短＋§8.1 斷段）由主線收尾落地；BL-00011 隨 U4 落。
 
 ---
 
@@ -215,8 +217,8 @@
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] T040 勘誤掃描：`python3 tools/docsync errata m001`／`m002`／`docs-sync.py`／`seed-decision`（本刀改變的字面）逐處處置、含兩子庫 pin 樹
-- [ ] T041 quickstart A～G 全場景復跑（含三閘 `check` 復跑＝FR-013 順序面）＋`cat tools/docsync/*.py | wc -l` 記 docsync 行數落點（SC-007、入收刀事件 notes）
+- [x] T040 勘誤掃描：`python3 tools/docsync errata m001`／`m002`／`docs-sync.py`／`seed-decision`（本刀改變的字面）逐處處置、含兩子庫 pin 樹
+- [x] T041 quickstart A～G 全場景復跑（含三閘 `check` 復跑＝FR-013 順序面）＋`cat tools/docsync/*.py | wc -l` 記 docsync 行數落點（SC-007、入收刀事件 notes）
       ＋tasks 全勾對賬 spec SC-001～SC-007（final holistic review 輸入；不落報告、處置列於收單 commit 訊息）
 
 ---
