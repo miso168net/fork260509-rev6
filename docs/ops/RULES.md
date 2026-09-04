@@ -2,7 +2,7 @@
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
-上限（D8；ADR-00004）：總 92｜implementer 48｜review 18｜fix 19｜主線 52｜人 12。scope 可多值、逗號分隔。
+上限（D8；ADR-00011；數值續自其所翻案之 ADR-00004 表）：總 92｜implementer 48｜review 18｜fix 19｜主線 52｜人 12。scope 可多值、逗號分隔。
 carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --scope <s>` 產出）／lint（GT 閘機器守）／checklist（主線或人的單元邊界檢核）；source ∈ LL-NNNNN／ADR-NNNNN／rev5:L-NNN／rev5:ADR 00NN。
 改動本表走輕量軌（不走 Amendment）；配號取檔頭 next 後 bump、號碼不回收；每列規則句為命令句、不帶刀名。
 
@@ -59,7 +59,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0049 | 人寫／事件源／機器生成三材質各有唯一的家；鏡像不是機器生成就是不存在；`docs/generated/**` 與 GENERATED_FILES 名冊檔禁手改、只由 generate 重算。 | implementer,主線 | lint | ADR-00004 |
 | RL-0050 | BL／LL／RL 配號取檔頭 `<!-- next: -->` 後 bump、單調遞增、號碼永不回收；刪條目前先掃現在式引用。 | implementer,主線 | lint | rev5:ADR 0012 |
 | RL-0051 | 每條閘一正一反自證、掃描面空集合即紅、變異要打在判準上；Day-1 豁免逐筆具名帶解除謂詞、到期即紅。 | implementer,review | lint | rev5:ADR 0024 |
-| RL-0052 | 數量預算（閘 ≤12、RULES 總／per-scope 上限、BACKLOG 開放 ≤25）超限只擋新增、不可調數字；一進一出或走 ADR；波 6 前 WARN、之後 ERROR。 | 主線,人 | lint | ADR-00004 |
+| RL-0052 | 數量預算＝閘 ≤12 與 RULES 總／per-scope 上限；超限一律只警告、不擋 commit、不可調數字，一進一出或走 ADR。BACKLOG 開放為觀測值、不設上限、只報現值。 | 主線,人 | lint | ADR-00011 |
 | RL-0053 | 收刀簿記＝events append（feature_close 或 misc）→NOTES 改下一步→generate，一顆簿記 commit、排在 merge 之後；簿記落地後量該顆牆鐘、append 一筆 close_bookkeeping perf 事件隨下一顆 commit 入帳。 | 主線 | checklist | ADR-00004 |
 | RL-0054 | 機密實值與憑證樣式永不入版控面（含史料面與 tests）；合成樣本執行期串接、不落完整字面；`CHANGE-ME` 起首佔位值不算機密。 | implementer,fix,主線 | lint | rev5:ADR 0003 |
 | RL-0055 | 事件帳一行一 JSON 事件、逐型 schema、SHA 逐列向 git 實證；feature_close 帶序號 window；不記「已 push／未 push」揮發狀態、只記 SHA。 | 主線 | lint | rev5:ADR 0012 |

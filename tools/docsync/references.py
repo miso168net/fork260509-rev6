@@ -339,18 +339,17 @@ def gen_reference_agents(ctx):
     return "\n".join(lines) + "\n"
 
 
-def _budget_rows(ctx, counts, caps, backlog_open):
+def _budget_rows(ctx, counts, caps):
     rows = []
     try:
         from . import gates
-        n_gates, cap_gates, cap_backlog = len(gates.ROSTER), gates.BUDGET_GATES, gates.BUDGET_BACKLOG_OPEN   # 上限單一家＝gates.py（GT-12 執行用同一常數）
+        n_gates, cap_gates = len(gates.ROSTER), gates.BUDGET_GATES   # 上限單一家＝gates.py（GT-12 執行用同一常數）
     except Exception:
-        n_gates = cap_gates = cap_backlog = "n/a"
+        n_gates = cap_gates = "n/a"
     rows.append(("閘數", n_gates, cap_gates))
     for k in ("總",) + rules_mod.SCOPES:
         if k in counts:
             rows.append((f"RULES {k}", counts[k], caps.get(k, "—")))
-    rows.append(("BACKLOG 開放", backlog_open, cap_backlog))
     lines = ["| 項目 | 現值 | 上限 | 狀態 |", "|---|---|---|---|"]
     for name, val, cap in rows:
         status = "—" if not isinstance(val, int) or not isinstance(cap, int) else ("內" if val <= cap else "超")
@@ -391,7 +390,7 @@ def gen_state(ctx):
              "## 三指標（啟動書 §4.3）", "| 指標 | 值 | 目標 |", "|---|---|---|",
              f"| 治理批對 feature 比 | {m['gov_ratio']} | ≤1 |", f"| LESSONS 重複率 | {m['lessons_dup_rate']} | 0 |",
              f"| BACKLOG 淨流量（rolling 3 刀） | {m['backlog_net']} | ≤0 |", "",
-             "## 數量預算對賬（D8；級別由 GT-12 定）"] + _budget_rows(ctx, counts, caps, backlog_open) + ["", "## 最近事件（尾 3 筆、新在前）"]
+             "## 數量預算對賬（D8；ADR-00011：超限只警告、不擋）"] + _budget_rows(ctx, counts, caps) + ["", "## 最近事件（尾 3 筆、新在前）"]
     for e in list(reversed(events))[:3]:
         lines.append(f"- {e['date']}｜{e['type']}｜{_target(e)}｜{_event_summary(e)[:80]}")
     return "\n".join(lines) + "\n"

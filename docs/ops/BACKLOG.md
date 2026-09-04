@@ -2,7 +2,7 @@
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
-滯後項另居 `BACKLOG-DEFERRED.md`（user 拍板暫不排程；配號計入 GT-05 家族、不計入開放上限 25、STATE 分開計數）——查待辦全帳須兩卷併看。開放上限 25（RL-0052）；觸發條件寫「何時該做」、ADR 翻案觸發器寫「決定何時失效」，兩者不混。
+滯後項另居 `BACKLOG-DEFERRED.md`（user 拍板暫不排程；配號計入 GT-05 家族、STATE 分開計數）——查待辦全帳須兩卷併看。開放條數不設上限（觀測值、只報表；RL-0052／ADR-00011）；觸發條件寫「何時該做」、ADR 翻案觸發器寫「決定何時失效」，兩者不混。
 
 - BL-00002｜governance｜GT-10 對 `docs/arc42/09-architecture-decisions.md` 的兩腿在首個 AI-ADR 落地（「目前無」句移除）後互斥：子項名冊腿要 `rad_ai_map` 鍵 ⊇ E5 七欄、第八腿要值＝同檔 `###`，而 E5 子項住 ADR body 的 `####`→ E5 改由 ADR 檔面守或豁免 §9 兩腿（工具改動、一正一反自證）｜觸發：首個 AI-ADR 開寫前
 - BL-00003｜governance｜閘補腿群（000-r1 R1-001／R1-027／R1-C301）：GT-03 補 BL 引用存在性腿（review.to_backlog、feature_close／misc 的 backlog_add／done）、七個自稱 Day-1 的 SKIP 分支登記或改 ERROR、CLAUDE.md／憲法內容型主張零閘（主張×閘矩陣見 `docs/reviews/20260904-doc-governance.md`）→ 逐項一正一反自證；新增閘走 ADR-00004 一進一出｜觸發：下次獨立 review 輪前、或任一 lint 誤綠實例出現時

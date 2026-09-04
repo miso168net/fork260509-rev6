@@ -12,7 +12,7 @@
 - 版本：1.1.0
 
 ## 帳面統計
-- ADR：10（proposed 0、accepted 10、superseded 0）
+- ADR：11（proposed 0、accepted 10、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：17｜滯後：0
 - LESSONS：2 筆
@@ -26,7 +26,7 @@
 | LESSONS 重複率 | 0.0 | 0 |
 | BACKLOG 淨流量（rolling 3 刀） | n/a | ≤0 |
 
-## 數量預算對賬（D8；級別由 GT-12 定）
+## 數量預算對賬（D8；ADR-00011：超限只警告、不擋）
 | 項目 | 現值 | 上限 | 狀態 |
 |---|---|---|---|
 | 閘數 | 12 | 12 | 內 |
@@ -36,7 +36,6 @@
 | RULES fix | 15 | 19 | 內 |
 | RULES 主線 | 42 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| BACKLOG 開放 | 17 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 8.0 秒 rc=0

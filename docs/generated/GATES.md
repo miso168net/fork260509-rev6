@@ -1,7 +1,7 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
 # GATES — 閘名冊（§4.1）
 
-閘數 12／上限 12（一進一出）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。Day-1 豁免 0 筆（§4.6；到期即紅）。
+閘數 12／上限 12（一進一出；超限只警告不擋＝ADR-00011）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。Day-1 豁免 0 筆（§4.6；到期即紅）。
 
 | 閘 | 守哪條 RULES／ADR | 監測哪一面的漂移 | 真源 | 掃描面 | 觸發時機 | 紅時 rc | Day-1 豁免狀態 | 拿掉會壞什麼 |
 |---|---|---|---|---|---|---|---|---|
@@ -16,7 +16,7 @@
 | GT-09 | RL-0057 | 接線與實檔集 | rev5:L-061 | README 樹、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED | pre-commit | 1 | — | hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉 |
 | GT-10 | RL-0035 | 佔位與樣板文、子項名冊（鍵集＋值↔標題）、圖表對賬 | ADR-00004 | BOOK_FACE（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process） | pre-commit | 1 | — | RAD-AI 表可空殼交卷（22/22 假滿分重演） |
 | GT-11 | RL-0056 | bash 黏字與 shebang | rev5:L-001 | 外層 tracked bash 面（*.sh ∪ sh shebang；含 deploy/、.githooks/） | pre-commit | 1 | — | macOS bash 3.2 unbound variable 炸在 preflight |
-| GT-12 | RL-0052 | 名冊同源與數量預算 | rev5:ADR 0024 | tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、NOTES 波標記 | pre-commit | 1 | — | 閘可無語意區塊、名冊三處分叉、預算超限靜默 |
+| GT-12 | RL-0052 | 名冊同源與數量預算 | rev5:ADR 0024 | tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、NOTES 波標記 | pre-commit | 1 | — | 閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有 |
 
 ## Day-1 豁免登記（鍵｜理由｜解除謂詞｜登記日）
 
