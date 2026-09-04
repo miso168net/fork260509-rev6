@@ -82,7 +82,7 @@ def gate_id(fn):
 # Day-1 具名豁免（§4.6 四欄：鍵→理由、解除謂詞、到期即紅、登記日）
 # ---------------------------------------------------------------------------
 DAY1_EXEMPTIONS = {
-    "GT-08.lessons-absent": Day1Exemption("GT-08.lessons-absent", "首條 LL 教訓尚未落地", lambda ctx: ctx.exists(LESSONS_DIR), "2026-09-03", "docs/ops/LESSONS/ 目錄存在（首條 LL 落地）"),
+    # 目前零筆：GT-08.lessons-absent（登記 2026-09-03）隨 LL-00001 落地（2026-09-04）解除、依 RL-0052 到期即移除；新豁免逐筆具名帶解除謂詞。
 }
 
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -60,11 +60,23 @@ staged=$(git diff --cached --name-only)
 if echo "$staged" | grep -q '^tools/docsync/'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
-for t in tools/wf-watchdog.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
+for t in tools/wf-watchdog.py tools/schema-gate.py tools/entity-drift-gate.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
   if echo "$staged" | grep -qxF "$t"; then
     pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
   fi
 done
+# entity 漂移閘（碼面閘、不入 GATES 名冊；承 rev5:.githooks/pre-commit 同段形、rev4:B-110 階段 0）：rust-api gitlink 變動
+# （pin bump）或 schema 快照本身 staged 時，比對 rust-api/entity/src vs 工作樹快照（＝待提交態）docs/ops/reference-src/schema-snapshot.json
+# ——零 docker、秒級；casbin_rule 雙向豁免（rev4:ADR 0015）；有漂移＝rc 1、entity 目錄缺席等結構異常＝rc 2、皆擋（補救見工具輸出）。
+# ★快照缺席＝Day-1 具名跳過（schema 基線刀 refresh 前的創世期 pin 首記；快照就位後本段自動轉實跑、無需改 hook）；
+#   快照在場而漂移＝照擋（真故障面不受跳過分支影響）。
+if echo "$staged" | grep -qxF -e 'rust-api' -e 'docs/ops/reference-src/schema-snapshot.json'; then
+  if [ -f "$HOOK_DIR/../docs/ops/reference-src/schema-snapshot.json" ]; then
+    pc_run "entity-drift" python3 "$HOOK_DIR/../tools/entity-drift-gate.py" check
+  else
+    echo "[pre-commit] ⤳ entity-drift 跳過：schema 快照缺席（就位後自動實跑）"
+  fi
+fi
 pc_join || exit 1
 # ── 全鏈耗時評估（僅在全部閘通過後執行）──────────────────────────────────────
 PRECOMMIT_ELAPSED=$(( $(date +%s) - PRECOMMIT_T0 ))

@@ -9,7 +9,7 @@
 # ★每條 allowlist 收錄前必雙向突變實證（加豁免→rc 0、拔豁免→回到命中）並記入 commit 訊息。
 # rev6 誤報基線（2026-09-03 全史預設規則掃描零命中）：首版**零 allowlist**。已知會在日後出現的兩條
 #   （承 rev5 基線、屆時實證後才收）：①docs/ops/events.jsonl 之 merge／pins 40-hex SHA 撞 generic-api-key
-#   （首刀 feature_close 時）②rust-api vendored sea-orm-adapter 測試碼假 DSN（該 crate 拷入時）。
+#   （首刀 feature_close 時）②（已撤：vendored sea-orm-adapter 測試碼假 DSN 依 RL-0054 改執行期串接、零 allowlist；001 analyze 2026-09-04）。
 
 [extend]
 useDefault = true

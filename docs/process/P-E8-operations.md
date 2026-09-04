@@ -31,7 +31,7 @@ rad_ai_map:
 
 ### 回退政策
 
-類比張力：對得上——治理閘改壞→`git revert` 該顆＋`python3 tools/docsync generate` 重算；規則列回退→RULES-VERSION 重算、EXAMPLE 版本字面同批重烤；換模回退＝改回 `*_OPTS`；一切回退走 pre-commit 全鏈、不 `--no-verify`。
+類比張力：對得上——治理閘改壞→`git revert` 該顆＋`python3 tools/docsync generate` 重算；規則列回退→RULES-VERSION 重算、組裝成品 script 版本字面同批重烤；換模回退＝改回 `*_OPTS`；一切回退走 pre-commit 全鏈、不 `--no-verify`。
 
 ### 事故應變
 

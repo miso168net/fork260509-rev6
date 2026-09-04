@@ -65,7 +65,7 @@
 　①復核 agent 回報（逐項自 grep 驗證、不採信；凡本單元改變的字面→`python3 tools/docsync errata <詞>` 跨檔假述枚舉、改完復掃）
 　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事）
 　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
-　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated`
+　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md`（後兩件＝例外註冊生成物、同在 GENERATED_FILES）
 　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」，rev5:L-022、RL-0008）。
 　★③必須早於⑤：STATE.md 帳面統計與 pins 由 generate 現讀，反序即產出舊值且無 diff 可察（rev5:L-018）。
 ★單元一支接一支連續跑完、**不停下來等 user 首肯**；唯三種情形停：①拍板級問題（判準＝RULES 名詞段「拍板級」）②到了需要 push/merge 的時點③觸及 §6 硬禁令。
@@ -78,7 +78,7 @@
   一次性遷移（改名／搬移／基線前進／拓樸調整）之 brainstorm 或 spec 附 Risk／Guard／Rollback 三欄表。
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
   程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。
-- **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES 改下一步 ③`python3 tools/docsync generate`
+- **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES 改下一步 ③`python3 tools/docsync generate`＋`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md`
   → 一筆簿記 commit、lint 全綠放行。簿記一律排在 merge 之後。④簿記 commit 落地後量該顆牆鐘、append 一筆 `close_bookkeeping` perf 事件（隨下一顆 commit 入帳）。
 - **review 輪**：findings 一律三分流（修／轉 BL-NNNNN／won't-fix ADR）；承載處二分——不定期獨立輪落報告 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件；
   feature／維護批收刀之 final holistic review 不落報告不落事件、以收單 commit 訊息逐項列處置（RL-0073、承 rev5:ADR 0075）。

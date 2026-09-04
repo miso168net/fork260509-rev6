@@ -21,3 +21,7 @@ CONSTITUTION = ".specify/memory/constitution.md"
 DEFAULT_BRANCH = "rev6-admin-root"
 SUBMODULES = ("base-web", "rust-api")
 COMPOSE_FILES = ("docker-compose.yml", "docker-compose.dev.yml", "docker-compose.example.yml")
+REFERENCE_SRC_DIR = "docs/ops/reference-src"   # 快照與歸屬三檔（refresh 產兩快照；archetype-map 人寫）
+SCHEMA_SNAPSHOT = f"{REFERENCE_SRC_DIR}/schema-snapshot.json"
+ACCOUNTS_SNAPSHOT = f"{REFERENCE_SRC_DIR}/accounts-snapshot.json"
+ARCHETYPE_MAP = f"{REFERENCE_SRC_DIR}/archetype-map.json"

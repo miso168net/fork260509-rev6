@@ -2,7 +2,7 @@
 
 本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
 本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
-創世期章節現況：§1／§7 抬頭／§12／§14 為最小必備章、§15 為指針章；其餘各章隨對應刀補實文，章內不放未經實跑的命令。
+創世期章節現況：§1／§7 抬頭／§10／§12／§14 為已補實文章、§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。
 
 ## 1. 快速啟動（新機五步）
 
@@ -51,7 +51,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 ## 9. 維運端點與 DB 直連
 
-隨對應刀補實文（埠＝`docs/generated/reference/ports.md`；rev6 的 psql 絕不指向 rev5 庫）。
+DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。其餘維運端點隨對應刀補實文。
 
 ## 9c. CDP 真登入走查的環境還原契約
 
@@ -59,7 +59,19 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 ## 10. migration 操作
 
-migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 `rev5:m001`→`m0001` 改名）。其餘隨首個 schema 刀補實文。
+migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 `rev5:m001`→`m0001` 改名）。基線＝`m0001_baseline_schema`（結構）＋`m0002_baseline_seeds`（seed、完全決定性），程式內容逐位元承襲 rev5 終態（憲法 §I.5 例外②、ADR-00009／ADR-00010）；第一支 delta 自 `m0003` 起編。重放＝`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm migrate`（＝migration up、容器內；已 applied 即回「No pending migrations」）；`seaql_migrations` 記錄名＝四碼新名。
+
+★**Day-1 登記紀律（隨刀常設）**：每支帶 migration 的刀**收刀前必跑**下列三步（契約＝`specs/001-schema-baseline/contracts/gates.md` §5；`rev4:` 紅燈裸奔兩刀教訓、`rev5:K1-39`）：
+
+1. `python3 tools/docsync refresh` —— 照相（schema／accounts 兩快照前進、六撈全成功才原子落檔；需運行中 stack）
+2. 登記 `docs/ops/reference-src/schema-evolution.json` —— 該刀**全部**結構／seed 變更逐筆入帳；形（kind 枚舉、每筆必備鍵、來源刀編號）與壞形斷言＝`specs/001-schema-baseline/contracts/schema-evolution.md` §2。
+   - ★唯一操作分岔：本刀含**刪除性**演進＝不入本檔、屬拍板級（走新 ADR 基線翻案）。
+   - 工具回 rc 2＝登記壞形或合成未內建，一律照其輸出訊息的補救提示處置（勿自行放行）。
+3. `python3 tools/schema-gate.py check` —— 三閘（gate1 結構／gate2 欄序＋seed／audit archetype）全綠才收刀；未登記漂移一律紅。
+   - 一次性 pristine 場景加 `--container <容器名>`（預設＝compose dev stack）。
+   - 判讀提示：同庫反覆 DROP→ADD COLUMN（含 down→up）後 gate1 會因 PG attnum 空洞報 ordinal 差——補救＝pristine 重放、勿誤判真漂移（承 `rev5:RUNBOOK` §10 實證）。
+
+新業務表另備兩件：先補 `specs/001-schema-baseline/data-model.md` §1 archetype 歸屬、再登記 `docs/ops/reference-src/archetype-map.json`——否則 audit 表清單守門攔。
 
 ## 11. 觀測層維運
 
@@ -77,9 +89,12 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/docsync rules emit --scope <implementer\|review\|fix\|主線\|人> [--format js]` | 規則塊＋`RULES-VERSION`（Workflow script 必帶、PreToolUse hook 對賬） | 否 |
 | `python3 tools/docsync errata <詞>` | 全 repo（含兩子庫 pin 樹）同語意枚舉 | 否 |
 | `python3 tools/docsync test` | 治理工具自測（語料面 tests/） | 否 |
+| `python3 tools/docsync refresh` | 自實庫撈 schema／accounts 兩快照（`docs/ops/reference-src/{schema,accounts}-snapshot.json`；六撈全成功才原子落檔；Day-1 三步之①、§10） | 是 |
+| `python3 tools/schema-gate.py check｜test｜doccheck` | check＝三閘全跑（gate1 結構／gate2 欄序＋seed／audit archetype；三閘左源與判準＝ADR-00010；入口先自證 self-test；不進 pre-commit、手動／review 輪跑；一次性 pristine 加 `--container <容器名>`）／test＝離線自測（含 negative 五類）／doccheck＝data-model §2／§6／§9 vs 凍結 fixtures 離線對賬（★不入 pre-commit 常跑鏈、護雙錨）；rc 0 全等／1 差異／2 環境或結構異常／64 用法錯 | check 是；test／doccheck 否 |
+| `python3 tools/entity-drift-gate.py check｜test` | check＝`rust-api/entity/src` vs schema 快照雙向比對（表／欄完整性＋型別＋可空性；欄序歸 gate2、index／constraint 歸 gate1）——pre-commit entity-drift 段於 rust-api pin bump 或快照 staged 時實跑、快照缺席具名跳過／test＝自測；rc 同上 | 否 |
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
-| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs>`／`harness-test-quality-only.mjs <script.mjs>` | 編排骨架 harness 自測（十案） | 否 |
+| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | 編排骨架 harness 自測（十案、逐項斷言、rc 1 即紅） | 否 |
 | `node tools/orchestration/cdp.mjs` | CDP 對照走查工具（127.0.0.1:9229；CLAUDE.md §7） | 是（host 瀏覽器） |
 | `python3 deploy/generate-secrets.py [--force\|--compose-only]` | 十三機密缺則補／全重生／只重組 composite | 否（需 docker） |
 | `python3 deploy/preflight-secrets.py` | 上機前把關 | 否 |
@@ -90,7 +105,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
-碼面閘（schema-gate、entity-drift-gate、wire-schema、fork-delta-lint、route-artifact-gate、view-render-guard、seed-view-gate、rust-fmt-gate）隨子庫刀進場、進場時入本表；碼面閘屬系統面、不計入 GT-12 的 ≤12 治理閘預算（啟動書 §4.2 拍板）。
+碼面閘（`tools/` 工具檔形制＝啟動書 §3.2 樹）：schema-gate、entity-drift-gate 已入本表（上列兩列）；wire-schema、fork-delta-lint、route-artifact-gate、view-render-guard、seed-view-gate、rust-fmt-gate 隨子庫刀進場、進場時入本表。碼面閘屬系統面、不計入 GT-12 的 ≤12 治理閘預算（啟動書 §4.2 拍板；該處碼面閘類另含 `rev5:Lint24` msg key 契約——非 `tools/` 工具檔形、rev6 承載形未定，定案時同樣入本表）。
 
 ## 13. 故障排除速查
 
@@ -98,7 +113,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 
 ## 14. 埠與帳號
 
-- 真相源：埠全表→`docs/generated/reference/ports.md`（機器生成；配號紀律＝ADR-00001、世代 3xxxx）；帳號／角色→`docs/generated/reference/accounts.md`（隨首個 schema 刀產出；dev 帳號 Super／Admin／User 承 rev5 對照基準）。
+- 真相源：埠全表→`docs/generated/reference/ports.md`（機器生成；配號紀律＝ADR-00001、世代 3xxxx）；帳號／角色→`docs/generated/reference/accounts.md`（generate 產；真源＝`docs/ops/reference-src/accounts-snapshot.json`、`python3 tools/docsync refresh` 自實庫照相；dev 三帳 Super／Admin／User 之角色綁定承 rev5 對照基準、全表見該檔）。
 - 本檔命令帶字面埠純為可複製執行；動埠的刀照勘誤紀律（`python3 tools/docsync errata <埠>`）機器枚舉全 repo 同步、含本檔。
 
 ## 15. SOPS 機密營運（密文入版控 × age 私鑰）

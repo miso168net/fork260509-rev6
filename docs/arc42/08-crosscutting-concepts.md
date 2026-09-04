@@ -6,7 +6,7 @@ rad_ai_stage: 3
 rev5_blueprint:
   §8 橫切概念: 承襲（四子節形制）
   fork-delta 接線現況（base-web）: 承襲（指針形：規則面承 rev5 FORK-DELTA-WIRING、接線 as-built 隨 base-web 各刀重生）
-  資料慣例: 隨刀：schema 基線刀（archetype 四變體與成對條款已入憲法 §I.6、本波留指針）
+  資料慣例: 承襲（archetype 四變體與成對條款在憲法 §I.6；三閘／演進帳／歸屬帳＝ADR-00010；memo 欄與 ORM 紀律見 §8.1）
   API 慣例: 隨刀：wire 地基刀（信封、碼表、i64 守衛已入憲法 §I.3；部分更新三態承 rev5:ADR 0023 隨刀重審）
   授權慣例: 隨刀：授權治理刀（憲法 §I.7 島 G／I；判定單點與 DB-fresh 已入憲法 §I.2、本波留指針）
 ---
@@ -14,7 +14,11 @@ rev5_blueprint:
 
 ## 8.1 資料慣例
 
-紀律上位＝憲法 §I.6（業務表審計欄四變體：A 業務全六欄／B append-only／C join·狀態機·衛星／D 治理；成對條款）。schema 基線、漂移三閘、受管演進帳與 archetype 歸屬帳隨 schema 基線刀進場（承 rev5:ADR 0006、rev5:ADR 0007 的形、隨刀重審）；表清單與欄型正典的家＝`docs/generated/reference/schema.md`（隨該刀生成）。
+紀律上位＝憲法 §I.6（業務表審計欄四變體：A 業務全六欄／B append-only／C join·狀態機·衛星／D 治理；成對條款）。schema 基線＝`rust-api/migration/src/m0001_baseline_schema.rs`（結構）＋`m0002_baseline_seeds.rs`（seed、完全決定性；程式內容逐位元承襲 rev5 終態、ADR-00009），對 pristine 重放兩支即得全庫；漂移三閘＝`tools/schema-gate.py`（gate1 結構／gate2 欄序＋seed／audit archetype）、entity 漂移閘＝`tools/entity-drift-gate.py`（pre-commit 條件實跑：rust-api pin bump 或 schema 快照 staged 時）、受管演進帳＝`docs/ops/reference-src/schema-evolution.json`、歸屬帳＝`docs/ops/reference-src/archetype-map.json`——四者的左源、判準與登記紀律＝ADR-00010（承 rev5:ADR 0006、rev5:ADR 0007 的形）；表清單與欄型正典的家＝`docs/generated/reference/schema.md`（`python3 tools/docsync refresh` 照相、generate 產）。
+
+memo 欄家族（`user_memo`／`role_memo`／`menu_memo`／`wbip_memo` 與 `role_desc` 的分工）語意權威＝`specs/001-schema-baseline/data-model.md` §5（凍結面）、UI 兌現隨對應 UI 刀。
+
+ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯關聯不建 Relation、需要即手寫 join）、`ActiveModelBehavior` 恆空（審計欄由 model/facade 顯式成對寫、憲法 §I.6 成對條款）——`rust-api/entity/` 已依此宣告，機器錨承 `rev5:server/tests/entity_behavior_lint.rs` 形、隨 server crate 進場（BL-00008）。
 
 ## 8.2 API 慣例
 
