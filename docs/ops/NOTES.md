@@ -8,7 +8,7 @@
 ## 下一步
 
 - **001 schema 基線刀已收刀**（波 6 首刀、橫切地基；merge `d04a41c`、feature 分支 `001-schema-baseline` 保留）：資料庫基線＝rust-api workspace 三 crate（`migration` 之 m0001 結構＋m0002 seed、`entity` 15 表、`sea-orm-adapter`），凍結面＝`specs/001-schema-baseline/fixtures/` 四件，閘＝`tools/schema-gate.py` 三閘與 `tools/entity-drift-gate.py`（後者入 pre-commit 條件實跑），正典真表＝`docs/generated/reference/{schema,accounts}.md`（`python3 tools/docsync refresh` 照相後 generate 產）。憲法 1.1.0；ADR-00009／ADR-00010 accepted；LL-00001／LL-00002。
-- **下一刀＝002**（刀序 001→008 承 rev5、D13；範圍由其 brainstorm 定）：起手＝階段 0 brainstorm（`docs/brainstorms/002-<slug>.md`）→ SDD 五步 → TDD 編排。★動工前先掃 `docs/ops/BACKLOG.md` 觸發欄中時點落在該刀內的條目——現有觸發於 002 者：BL-00008（`ActiveModelBehavior` 恆空機器錨隨 server crate）、BL-00010（entity-drift 段快照缺席改即紅＝閘行為變更、需 spec 面拍板；補償控制已驗、曝險面小）、BL-00011（碼面閘名冊承載處與 `rev5:Lint24` 去處，隨 wire-schema 進場）。★002 前的可直改條目已於 2026-09-05 維護批一次收掉十二條（A＋B 類）；schema 定稿權威改住 `docs/ops/reference-src/schema-definition.md`（ADR-00012）——新表先補該檔 §1 再登記 archetype-map、不再回頭改已收刀的 spec 目錄。
+- **002 system-settings 進行中**（波 6 第二刀、server crate 進場首刀；分支 `002-system-settings`、brainstorm `docs/brainstorms/002-system-settings.md` 定稿 2026-09-05、spec 已落 `specs/002-system-settings/`）：範圍＝承 rev5 讀＋寫＋前端接線層兩新檔、零 migration、憲法零 Amendment；治理項全落刀內 U0（三支碼面閘隨遷、entity-drift 缺席即紅、RUNBOOK §12 碼面閘表＋GT-12 腿、名詞段「碼面閘」、ADR 五筆）。★SDD 下一步＝`/speckit-clarify`（brainstorm §5 列六個候選）→ plan（憲法 §IV 九題預答在 brainstorm §4）→ tasks → analyze；TDD 起手前主線先直改名詞段並 bump RULES-VERSION。BL-00008／BL-00010／BL-00011 於本刀兌現、收刀 backlog_done；BL-00002／00003／00006／00007／00021 觸發未到。
 - migration 檔名四碼、delta 自 `m0003`（ADR-00008）；每支帶 migration 的刀收刀前必跑 Day-1 登記紀律三步（RUNBOOK §10）；rust-fmt-gate 隨 002。rev5 藍本去處見 `docs/generated/reference/rev5-blueprint-map.md`、島進場規則見憲法 §I.7；三指標首值待三刀後由 STATE 現讀。
 
 ## 未決
