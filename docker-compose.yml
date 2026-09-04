@@ -51,7 +51,7 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      # jwt／refresh／redis_url 本刀接而不讀（compose 接線就位、消費歸後續功能刀）
+      # jwt／refresh／redis_url rev5 接線時接而不讀（compose 接線就位、消費歸後續功能刀）
       APP_JWT_JWT_SECRET_FILE: /run/secrets/jwt_secret
       APP_JWT_REFRESH_TOKEN_SECRET_FILE: /run/secrets/refresh_token_secret
       APP_DATABASE_URL_FILE: /run/secrets/database_url

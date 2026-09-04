@@ -69,6 +69,7 @@ class TestMilestonesAndStateRendering(unittest.TestCase):
         self.assertIn("｜perf｜close_bookkeeping｜close_bookkeeping 6.5 秒 rc=0", out)
         self.assertIn("｜review｜sc｜findings 0（修 0／BL 0／ADR 0）", out)
         self.assertIn("| 閘數 | ", out)
+        self.assertRegex(out, r"\| docsync 行數 \| \d+ \| 4000 \| [內超] \|")   # BL-00012：SC-007 目標入表、非閘
         self.assertNotIn("| BACKLOG 開放 | ", out)          # ADR-00011：觀測值不入預算對賬表
         self.assertIn("- BACKLOG 開放：", out)               # 仍在帳面統計段報現值
 
@@ -105,7 +106,7 @@ class TestGenerateIdempotent(unittest.TestCase):
 
 
 class TestMilestonesEventFieldRendering(unittest.TestCase):
-    """本刀 U5（BL-00005 四處渲染）：misc.workflow／feature_close.kind／spec_supersessions／非 perf 型 notes 附錄節，各一正一反。"""
+    """001 刀 U5（BL-00005 四處渲染）：misc.workflow／feature_close.kind／spec_supersessions／非 perf 型 notes 附錄節，各一正一反。"""
 
     @staticmethod
     def _fc(date, summary, **extra):
@@ -168,7 +169,7 @@ class TestMilestonesEventFieldRendering(unittest.TestCase):
         heads = [ln for ln in out.split("\n") if ln.startswith("### ")]
         expected = [e for e in events if e.get("type") != "perf" and e.get("notes")]
         self.assertEqual(len(heads), len(expected))   # 期望自事件源現算（append-only 帳本不釘常數、收刀 append 不連動轉紅）
-        self.assertGreaterEqual(len(expected), 9)     # 本刀收單時實資料 misc 7＋review 2 為下限
+        self.assertGreaterEqual(len(expected), 9)     # 001 刀收單時實資料 misc 7＋review 2 為下限
         self.assertEqual(sum("｜misc｜" in h for h in heads), sum(e["type"] == "misc" for e in expected))
         self.assertEqual(sum("｜review｜" in h for h in heads), sum(e["type"] == "review" for e in expected))
         self.assertIn("| misc | governance｜000-r1-doc-governance |", out)

@@ -92,7 +92,7 @@ VERIFY_ARGV_TAIL = ("exec", "-T", "postgres", "sh", "-c", VERIFY_SH)
 #     產生，值域＝[0-9a-f]，單引號／反斜線結構性不可能出現；
 #   ②rev5:B-037 U2 明載「ALTER ROLE 的 SQL 形一個字元都不能漂」，效果等價由主線真 stack 一輪另驗，
 #     此處任何「順手補跳脫」都會讓新舊 stdin payload 分岔、且真 stack 那輪失去可比基準。
-#   ★已知極限（等價矩陣情境④實證、非本刀處理面）：手改成含單引號的密碼會產出語法破裂的
+#   ★已知極限（等價矩陣情境④實證、非本工具處理面）：手改成含單引號的密碼會產出語法破裂的
 #     SQL、psql 非零退出（fail-loud、不是靜默錯設），與舊檔同一行為。要改成 dollar-quoting
 #     屬**行為變更**，須走 ADR 拍板、不在等價重寫射程內。
 SQL_ALTER_HEAD = b"ALTER ROLE reaper LOGIN PASSWORD '"
@@ -476,7 +476,7 @@ class TestLiteralsPinned(unittest.TestCase):
                          b"ALTER ROLE reaper LOGIN PASSWORD 'XX';\n")
 
     def test_password_never_appears_in_any_argv(self):
-        """★密碼零進 argv（本刀主要收益的機器化）：兩發 argv 都與密碼無關（純函式、不收 pw）。"""
+        """★密碼零進 argv（本工具主要收益的機器化）：兩發 argv 都與密碼無關（純函式、不收 pw）。"""
         pw = _PW_PLAIN.encode("utf-8")
         for argv in (psql_argv(), verify_argv()):
             for token in argv:

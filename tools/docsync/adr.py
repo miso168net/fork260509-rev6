@@ -168,12 +168,19 @@ def gt_04(ctx):
 
 
 def gen_decisions_index(adrs, events):
-    """DECISIONS-INDEX.md 本文：feature 欄自 events.feature_close.adrs 反查、查無印「輕量軌」。"""
+    """DECISIONS-INDEX.md 本文：feature 欄自 events 的 `adrs` 欄反查——feature_close 印刀名、
+    misc（輕量軌收單即立 ADR）印「輕量軌｜<workflow 或日期>」、查無才印裸「輕量軌」（BL-00004）。
+    ★events 須為 `events_view` 的更正後視圖（erratum 補欄才看得見）。"""
     feat = {}
     for e in events:
         if e.get("type") == "feature_close":
             for a in e.get("adrs", []) or []:
                 feat.setdefault(a, e.get("feature"))
+    for e in events:                                   # 第二輪：feature_close 優先、misc 補位
+        if e.get("type") == "misc":
+            tag = f"輕量軌｜{e.get('workflow') or e.get('date')}"
+            for a in e.get("adrs", []) or []:
+                feat.setdefault(a, tag)
     lines = [GENERATED_HEADER, "# DECISIONS-INDEX — ADR 索引", "",
              "| id | status | date | title | feature | supersedes | superseded_by |", "|---|---|---|---|---|---|---|"]
     for key in sorted(adrs):

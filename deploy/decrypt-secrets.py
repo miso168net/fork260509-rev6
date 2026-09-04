@@ -928,7 +928,7 @@ class TestExtractPayload(unittest.TestCase):
 
 
 class TestRestoreValue(unittest.TestCase):
-    """★A2 還原面（本刀刪斷言的正當性證據）：舊 bash 版對這些值一律 FAIL 指名「無法還原
+    """★A2 還原面（rev5 該次改版刪斷言的正當性證據）：舊 bash 版對這些值一律 FAIL 指名「無法還原
     原值」（首字元落 `" ' | >` 四者）或逐字寫入含引號的壞值；真 JSON 解析後逐位元組正確。
 
     ★本層只驗**還原**：區塊純量（含換行）在此同樣逐位元組還原成功，它之所以仍不進落點是
@@ -957,7 +957,7 @@ class TestRestoreValue(unittest.TestCase):
 
     def test_old_bash_predicate_would_have_rejected_these(self):
         """★對照案：舊版判準（值首字元落 `" ' | >`）套在 sops 的 YAML 輸出上會把這些值
-        整批打成 FAIL——證明本刀刪的是「解析力不足的補丁」而非一道真防線。
+        整批打成 FAIL——證明 rev5 該次改版刪的是「解析力不足的補丁」而非一道真防線。
         （判準逐字重建於此，僅供對照、不參與生產路徑。）"""
         yaml_tokens = ["'FAKE-pg: colon-space'", "'FAKE-redis #hash-inside'",
                        "' FAKE-jwt-leading-and-trailing '", "|-"]
@@ -1260,7 +1260,7 @@ class _StubStdin:
 class TestPrepareDirs(unittest.TestCase):
     """兩支安全自證函式（隔離暫存；絕不觸真落點、絕不觸真密文）。
 
-    ★這兩支是本刀的安全核心、必須有常駐回歸網：prepare_tmp_dir 條件寫壞＝10 支完整明文
+    ★這兩支是本工具的安全核心、必須有常駐回歸網：prepare_tmp_dir 條件寫壞＝10 支完整明文
     落到 9p（chmod no-op＝實效 777、Windows 側可見，rev4:FR-021／rev4:SC-005）；
     prepare_secrets_dir 條件寫壞＝落點權限失守（rev4:P4.4／rev4:P4.6）。
     ★mode 不符兩分支以 mock 注入 _mode_of／fs_type：真 no-op fs 造不出來，靠沙盒碰運氣＝
@@ -1628,7 +1628,7 @@ class TestAutoDriver(unittest.TestCase):
     """自動應答 driver（rev5:B-036）：真 pty ＋假 sops 樁，離線、不需 docker、不觸真密文。
 
     ★樁落在 <root>/deploy/sops.sh——driver 叫用的就是這個相對路徑，故「wrapper 怎麼被起」
-    也在射程內，且不必另開注入面（不開 CLI／環境變數面是本刀的硬約束）。
+    也在射程內，且不必另開注入面（不開 CLI／環境變數面是本工具的硬約束）。
     ★getpass 一律 mock 成固定假字串；真 /dev/tty 面不強求自動化。
     ★樁只把**次數**寫進記錄檔（prompts／match／nonempty），連假 passphrase 都不落磁碟。
     """

@@ -45,7 +45,7 @@ rad_ai_map:
 
 ### 隱私流
 
-稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族：①**來源 IP**——四張皆帶（前三張欄名 `real_ip`、`session_event` 欄名 `source_ip`；`real_ip` 全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另各帶 `peer_ip`（傳輸層對端位址）、`x_forwarded_for`（轉發鏈原文）、`region`（GeoIP 填值）③**帳號原文**——`sys_login_attempt.attempted_user_name`（登入嘗試輸入的帳號字面）④**實體快照**——`sys_operation_log.payload_before`／`payload_after`（實體變更前後、內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉；全欄集與欄型正典＝`docs/generated/reference/schema.md`（本節不抄欄型）。保留期：目前無——稽核表 append-only、無 retention 政策與清理排程（承 rev5 終態、rev5 留帳 `rev5:B-016`）；政策與權威釋義隨**稽核域行為島**進場回填（憲法 §I.6 變體 B 句、§I.7 島 J），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）。
+稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族（★本節只寫語意、不抄欄名——欄名與欄型正典＝`docs/generated/reference/schema.md`，該表由 `python3 tools/docsync refresh` 照相後 generate 產、隨 delta 自動前進；本節逐族指向該表對應表節即可）：①**來源 IP**——四張皆帶（前三張與 `session_event` 的欄名不同源，一律以真表為準；全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另帶傳輸層對端位址、轉發鏈原文與 GeoIP 填值三欄③**帳號原文**——`sys_login_attempt` 帶登入嘗試輸入的帳號字面一欄④**實體快照**——`sys_operation_log` 帶實體變更前後兩欄（內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉。保留期：目前無——稽核表 append-only、無 retention 政策與清理排程（承 rev5 終態、rev5 留帳 `rev5:B-016`）；政策與權威釋義隨**稽核域行為島**進場回填（憲法 §I.6 變體 B 句、§I.7 島 J），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）。
 
 ### schema 登錄
 

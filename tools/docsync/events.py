@@ -20,7 +20,8 @@ RE_LID = re.compile(r"^LL-\d{5}$")
 SUMMARY_CHAR_LIMIT = 300
 PIN_KEYS = (("web", "base-web"), ("api", "rust-api"))
 PERF_KINDS = ("close_bookkeeping", "precommit_chain")
-ERRATUM_FIELDS = ("merge", "pins.web", "pins.api", "commit")
+ERRATUM_FIELDS = ("merge", "pins.web", "pins.api", "commit", "adrs")
+ERRATUM_SHA_FIELDS = ("merge", "pins.web", "pins.api", "commit")   # 其餘欄之 corrected 依欄別分型
 CATEGORIES = ("product", "governance")
 
 EVENT_SCHEMAS = {
@@ -31,7 +32,7 @@ EVENT_SCHEMAS = {
     },
     "misc": {
         "required": ("type", "date", "summary", "category", "backlog_add"),
-        "optional": ("notes", "backlog_done", "merge", "workflow"),
+        "optional": ("notes", "backlog_done", "merge", "workflow", "adrs"),
     },
     "review": {
         "required": ("type", "date", "scope", "report", "findings"),
@@ -56,6 +57,25 @@ def _id_list_ok(v, pattern):
     return isinstance(v, list) and all(isinstance(x, str) and pattern.fullmatch(x) for x in v)
 
 
+def notes_gt06_risks(text):
+    """notes 全文會原樣進 MILESTONES 附錄（BL-00005 拍板：不截斷不轉義），因而落入 GT-06 掃描面
+    （face＝全部 tracked md、含 GENERATED_FILES）。事件源 append-only、寫進去即無乾淨補救——故在**真源側**先擋（BL-00013）。
+    四腿正則自 `book.py` 取用、不另抄一份（判準單一家）。回錯誤訊息 list。"""
+    from . import book as book_mod
+    errs = []
+    for m in book_mod.RE_LINENO.finditer(text):
+        errs.append(f"notes 含行號形引用「{m.group(0)}」——會讓 MILESTONES 觸 GT-06；改用節名或整檔")
+    for m in book_mod.RE_DEEP.finditer(text):
+        errs.append(f"notes 含帳本 deep-link「{m.group(0)}」——BACKLOG／NOTES／STATE 只可整檔引用")
+    for m in book_mod.RE_HOME.finditer(text):
+        errs.append(f"notes 含 per-machine 路徑「{m.group(0)}」——repo 文件不引用本機 .claude 路徑")
+    for m in book_mod.LINK.finditer(text):
+        t = m.group(1)
+        if not t.startswith(("http://", "https://", "mailto:", "#")):
+            errs.append(f"notes 含相對 markdown 連結「{t}」——渲染後基準為 docs/generated/、GT-06 連結腿必紅；改寫成純路徑文字")
+    return errs
+
+
 def _check_event(e):
     """單筆事件的欄位驗證；回錯誤訊息 list（形承 rev5 docs-sync、正則換 rev6 五碼）。"""
     if not isinstance(e, dict):
@@ -76,6 +96,8 @@ def _check_event(e):
         return errs
     if not RE_DATE.fullmatch(str(e["date"])):
         errs.append(f"date 格式須為 YYYY-MM-DD：{e['date']!r}")
+    if isinstance(e.get("notes"), str):
+        errs += notes_gt06_risks(e["notes"])
     if "summary" in e:
         s = e["summary"]
         if not isinstance(s, str) or "\n" in s or "\r" in s:
@@ -117,6 +139,8 @@ def _check_event(e):
             errs.append(f"merge 須為 40 位 hex SHA：{e['merge']!r}")
         if "workflow" in e and not (isinstance(e["workflow"], str) and e["workflow"].strip()):
             errs.append("workflow 須為非空字串")
+        if "adrs" in e and not _id_list_ok(e["adrs"], RE_ADR):
+            errs.append("adrs 須為 ADR-NNNNN 字串 list（收單即立 ADR 的維護批用；DECISIONS-INDEX 反查左源）")
     elif etype == "review":
         if not (isinstance(e["scope"], str) and e["scope"].strip()):
             errs.append("scope 須為非空字串")
@@ -136,8 +160,12 @@ def _check_event(e):
             errs.append(f"target_line 須為正整數（events.jsonl 行號）：{e['target_line']!r}")
         if e["field"] not in ERRATUM_FIELDS:
             errs.append(f"field 須為 {'/'.join(ERRATUM_FIELDS)} 之一：{e['field']!r}")
-        if not (isinstance(e["corrected"], str) and RE_SHA.fullmatch(e["corrected"])):
-            errs.append(f"corrected 須為 40 位 hex SHA：{e['corrected']!r}")
+        if e["field"] in ERRATUM_SHA_FIELDS:
+            if not (isinstance(e["corrected"], str) and RE_SHA.fullmatch(e["corrected"])):
+                errs.append(f"corrected 須為 40 位 hex SHA：{e['corrected']!r}")
+        elif e["field"] == "adrs":
+            if not _id_list_ok(e["corrected"], RE_ADR):
+                errs.append("field=adrs 之 corrected 須為 ADR-NNNNN 字串 list")
         r = e["reason"]
         if not (isinstance(r, str) and r.strip() and "\n" not in r and "\r" not in r):
             errs.append("reason 須為非空單行字串")
@@ -176,6 +204,38 @@ def _parse_lines(text):
     return out
 
 
+def events_view(text):
+    """人讀面用的**更正後視圖**（BL-00004／000-r1 R1-003）：事件源 append-only、原列永不改；
+    本函式把每筆 erratum 的 `corrected` 套到 `target_line` 指向那列的 `field` 上，回 (events, errors)。
+    `pins.web`／`pins.api` 寫進巢狀 `pins` 子鍵；套不上（行號越界、該列非事件、欄不在該型 schema）＝回一筆 error、不靜默。
+    ★渲染面（MILESTONES／perf／STATE／DECISIONS-INDEX）一律吃本視圖；驗證面吃 parse_events 原值。"""
+    rows = list(_parse_lines(text))
+    by_line = {ln: e for ln, e, _ in rows if e is not None}
+    events = [e for _, e, _ in rows if e is not None]
+    errors = [(ln, m) for ln, _, errs in rows for m in errs]
+    import copy
+    view = copy.deepcopy(events)
+    idx = {id(o): v for o, v in zip(events, view)}
+    for ln, e, _ in rows:
+        if e is None or e.get("type") != "erratum":
+            continue
+        tgt = by_line.get(e["target_line"])
+        if tgt is None:
+            errors.append((ln, f"erratum target_line {e['target_line']} 不指向任何合法事件列"))
+            continue
+        v, f = idx[id(tgt)], e["field"]
+        allowed = EVENT_SCHEMAS[tgt["type"]]
+        if f.split(".")[0] not in set(allowed["required"]) | set(allowed["optional"]):
+            errors.append((ln, f"erratum 欄「{f}」不在 {tgt['type']} 事件的欄集"))
+            continue
+        if "." in f:
+            top, sub = f.split(".", 1)
+            v.setdefault(top, {})[sub] = e["corrected"]
+        else:
+            v[f] = e["corrected"]
+    return view, errors
+
+
 def parse_events(text):
     """回 (events, errors)；errors＝[(lineno, msg)]；schema 不合的列不入 events。"""
     events, errors = [], []
@@ -207,6 +267,8 @@ def _erratum_view(rows):
             (field == "merge" and t.get("type") in ("feature_close", "misc") and "merge" in t)
             or (field.startswith("pins.") and t.get("type") == "feature_close")
             or (field == "commit" and t.get("type") == "perf" and "commit" in t)
+            # adrs：補「當時 schema 尚無此欄」的漏記，故不要求該欄已在（BL-00004）
+            or (field == "adrs" and t.get("type") in ("feature_close", "misc"))
         )
         if not ok:
             errs.append((ln, f"erratum target_line {e['target_line']} 無可更正之欄「{field}」（列不存在、型不符或該欄缺席）"))
@@ -252,7 +314,8 @@ def gt_02(ctx):
         where = f"{EVENTS}:{ln}"
         t = e.get("type")
         for field in ("merge", "commit", "corrected"):
-            if field in e and t != "erratum" or (field == "corrected" and t == "erratum" and not e["field"].startswith("pins.")):
+            if field in e and t != "erratum" or (field == "corrected" and t == "erratum"
+                                                 and e["field"] in ERRATUM_SHA_FIELDS and not e["field"].startswith("pins.")):
                 if not _sha_exists(ctx, e[field]):
                     out.append(finding(ERROR, "GT-02", where, f"{field} {e[field][:12]} 外層 git 實證失敗（無此 commit）"))
         if t == "feature_close" or (t == "erratum" and e["field"].startswith("pins.")):

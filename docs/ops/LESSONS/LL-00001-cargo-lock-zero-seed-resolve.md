@@ -5,7 +5,7 @@ promotion_surface: none
 ---
 LL-00001｜零種子 fresh resolve 讓 Cargo.lock 拉到 toolchain 不支援的新版 crate（tinyvec 1.13.0 vs rustc 1.96.1）
 
-**徵狀**：本刀 U1 首建 rust-api workspace 時，無 Cargo.lock 直接容器內 `cargo build --workspace`，cargo 對全部傳遞依賴解析到「最新相容版」（`Locking 369 packages to latest compatible versions`）；`tinyvec 1.13.0` 用到 rustc 1.96.1 沒有的巨集（`error: cannot find macro vec in this scope`）、build rc 101；且 lock 圖與 rev5 大面積分歧，違背 research R0「Cargo.lock 其餘同 rev5」與 spec FR-004「依賴首源＝rev5 lockfile」。
+**徵狀**：001 刀 U1 首建 rust-api workspace 時，無 Cargo.lock 直接容器內 `cargo build --workspace`，cargo 對全部傳遞依賴解析到「最新相容版」（`Locking 369 packages to latest compatible versions`）；`tinyvec 1.13.0` 用到 rustc 1.96.1 沒有的巨集（`error: cannot find macro vec in this scope`）、build rc 101；且 lock 圖與 rev5 大面積分歧，違背 research R0「Cargo.lock 其餘同 rev5」與 spec FR-004「依賴首源＝rev5 lockfile」。
 
 **成因**：manifest 只釘直接依賴五支的完整版號；傳遞依賴的版本由 lock 決定，零種子＝把「傳遞依賴用 rev5 已驗證組合」這個前提丟掉，crates.io 上比 rev5 收官晚發的新版自然被選進來，而 toolchain 釘在 1.96.1（`rust-toolchain.toml`＝deploy 映像同值）不動。
 
