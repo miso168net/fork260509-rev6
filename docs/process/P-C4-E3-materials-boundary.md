@@ -29,7 +29,7 @@ flowchart LR
 | Claude 執筆 | 非確定性 | 只經 pre-commit（機器閘）＋人審 |
 | 機器生成 | 確定性（真源重算、GT-01） | generate 寫檔；禁手改 |
 | user 拍板 | 人在迴圈 | AskUserQuestion 一題一問；merge 當次同意 |
-| pre-commit | 機器閘 | betterleaks→check＋lint→工具自測→entity-drift（條件實跑） |
+| pre-commit | 機器閘 | betterleaks→check＋lint→工具自測→entity-drift／schema-frozen（條件實跑） |
 | repo | 確定性區域 | default branch `rev6-admin-root` |
 
 ### 邊界介面

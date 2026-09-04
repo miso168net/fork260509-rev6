@@ -1,4 +1,4 @@
-<!-- next: BL-00020 -->
+<!-- next: BL-00023 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -21,3 +21,6 @@
 - BL-00017｜governance｜GT-05 子庫 pin 樹腿（`tools/docsync/book.py` 之 `SUB_SCAN`）只覆蓋 `B-NNN`／`L-NNN` 兩形，外層現在式面（`BARE_REV5`）覆蓋五形（另含 `ADR 0NNN`／`Lint NN`／裸刀名）：ADR-00009 條件②與 spec FR-006② 以「GT-05 掃子庫 pin 樹綠」作 17 檔註解重寫的機器兜底，而被拷貝的 17 檔全住子庫、rev5 註解最常見者恰為 `ADR 00NN` 與裸刀名兩形（現況實查零殘留＝潛在缺口非現存漏網）——`SUB_SCAN` 對齊五形、配一正一反自證｜觸發：002 刀（首個再拷子庫碼的刀）開分支後首個 Workflow 前
 - BL-00018｜governance｜`tools/schema-gate.py` 之 `compare_seed` 判準「normalize 後未排序逐列 diff、★禁全檔排序」零測試載體：把兩側改為 `sorted(...)` 甚至 `sorted(set(...))` 後自帶 103 案仍全綠（隨遷自 rev5、rev5 亦缺）——補一案：取 `_ST_DUMP` 之 normalize 結果把某表整列搬到另一表 COPY 段（多重集不變、逐列序改變），斷言 `compare_seed` 非空｜觸發：下一次動 schema-gate 的刀或維護批
 - BL-00019｜governance｜ADR-00009 後果段宣告「RULES 名詞段『隨遷工具』的語意判準自此同時涵蓋資料形狀三件」，但 RULES 名詞段射程字面仍只列 tools/／deploy/／hooks 與編排骨架、零指針，單看 RULES 讀不出 17 檔適用同一四型失效引用判準：RULES 該行補一句射程指針（動 RULES 會 bump RULES-VERSION、須同批重組未發射 script）｜觸發：下一維護批
+- BL-00020｜governance｜audit A 變體的 `active_unique` 只單向驗（map 列出的索引名逐支在場且含 `WHERE deleted_at IS NULL`），無反向完整性：實庫存在活性唯一 partial index 卻未登進 `archetype-map.json` 即靜默不驗（今日實查零缺口、5 支全登記）——同工具在 `sequence_roster`／`compare_dump_owner` 對「查空集合恆綠」是明文防過的、此處漏一致性；補反向：逐表比對實庫 unique partial index 集合 ⊇／＝ map 之 `active_unique`、差集報 finding｜觸發：下一次動 schema-gate 的刀或維護批
+- BL-00021｜governance｜憲法 §I.5 例外②射程鎖 17 檔，但五個宣告「自寫」的檔去註解後與 rev5 程式面等價（`migration/src/main.rs` 僅差變數改名 `file_path`→`path`、`migration/src/lib.rs` 僅差 `m001`→`m0001` 模組名、`entity/src/lib.rs` 與兩支 member `Cargo.toml` 零差異）：屬 40 行 env 橋接與 manifest「承形自寫」的自然收斂、非例外射程擴張（001 收單 commit be69543 訊息已記 main.rs 一項），但機器面分不出「重打字收斂」與「拷貝」，日後做例外邊界稽核會撞見沒人記過的近全等——在下一次動 §I.5 相關文件時補一句定性｜觸發：下一次動憲法 §I.5 或 ADR-00009 射程的刀
+- BL-00022｜governance｜`specs/001-schema-baseline/` 混了凍結史料與跨刀活體權威：`fixtures/` 宣告永不改寫，但 `contracts/gates.md` §3 與 RUNBOOK §10 要求後續刀回頭改 `data-model.md`（新表先補 §1 再登記 map），且 `tools/schema-gate.py` 之 `parse_data_model_five` 硬編碼 `if len(tables) != 14`——002 之後首支加表的刀會同時撞到「改別人的 spec 目錄」與「改工具常數」；釘死定位（schema 常設權威、恰好誕生於 001／或 001 史料、日後另立）並據以調整表數斷言｜觸發：002 開分支前（拍板級）

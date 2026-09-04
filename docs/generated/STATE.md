@@ -14,9 +14,9 @@
 ## 帳面統計
 - ADR：11（proposed 0、accepted 10、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
-- BACKLOG 開放：17｜滯後：0
+- BACKLOG 開放：20｜滯後：0
 - LESSONS：2 筆
-- events：20 筆（feature_close 1、misc 8、perf 9、review 2）
+- events：21 筆（feature_close 1、misc 8、perf 9、review 3）
 - CLAUDE.md 行數：159（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -38,6 +38,6 @@
 | RULES 人 | 10 | 12 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-04｜review｜001-schema-baseline｜findings 8（修 6／BL 2／ADR 0）；BL-00020、BL-00021
 - 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 9.57 秒 rc=0
 - 2026-09-04｜misc｜governance｜數量預算改為只警告不擋（ADR-00011 supersede ADR-00004）：BACKLOG 開放取消上限、改觀測值只報表；閘數 12 與 RULES 
-- 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 8.0 秒 rc=0
