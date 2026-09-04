@@ -16,7 +16,7 @@
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：17｜滯後：0
 - LESSONS：2 筆
-- events：17 筆（feature_close 1、misc 7、perf 7、review 2）
+- events：18 筆（feature_close 1、misc 7、perf 8、review 2）
 - CLAUDE.md 行數：159（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -39,6 +39,6 @@
 | BACKLOG 開放 | 17 | 25 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 8.0 秒 rc=0
 - 2026-09-04｜feature_close｜001-schema-baseline｜001 schema 基線刀收單：rust-api workspace 三 crate＋m0001／m0002＋entity 15 檔逐位元承襲（憲法 §I.5
 - 2026-09-04｜perf｜precommit_chain｜precommit_chain 16.91 秒 rc=0
-- 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 6.51 秒 rc=0
