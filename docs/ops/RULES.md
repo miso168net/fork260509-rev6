@@ -93,3 +93,4 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 - **系統層**＝arc42 E 子節、docs/c4、docs/compliance 所述之 rev6 系統本體；**流程層**＝docs/process 所述之開發流程 AI 代理（啟動書 D16）；**例外註冊**＝住 docs/generated/ 之外但入 GENERATED_FILES 名冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`）。
 - **獨立輪**＝RL-0073 的不定期 review 輪（非刀、非波）；分支與 misc 事件 workflow 欄用 `000-rN-<scope>`（N＝輪序號、`000-` 家族免裸刀名閘）、報告住 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件。
 - **隨遷工具**＝啟動書 D10／§4.5 授權自 rev5 整檔搬運的 tools/、deploy/、.githooks／.githooks-submodule、.claude/hooks 與編排骨架：逐字承襲允許、憲法 §I.5 的重打字紀律不及於此；但其註解與字串字面的四型失效引用（章節號指到 rev6 不存在的節、無前綴前代編號、rev5 語境事實、repo 外權威）須 rev6 化（憲法 §I.5 例外②之資料形狀契約三件〔基線結構 migration／基線 seed migration／entity 欄宣告〕依 ADR-00009 後果段適用同一四型判準；加 `rev5:`／`rev4:` 前綴、或改指 rev6 去處）。
+- **碼面閘**＝`tools/` 頂層對子庫碼或跨端契約做 check 的系統面機器閘（隨刀進場、不計入 GT-12 治理閘預算、名冊＝RUNBOOK §12 碼面閘表；環境缺席＝具名跳過、工具缺席＝fail-loud）；**治理閘**＝GT-NN（名冊＝GATES.md）。

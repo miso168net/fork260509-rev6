@@ -23,7 +23,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 
 **Purpose**: 名詞段先落＝後續 script 以新 RULES-VERSION 組裝；環境就緒
 
-- [ ] T001 ★主線直改（不入 agent 單元）：`docs/ops/RULES.md` 名詞段加「碼面閘／治理閘」定義（字面＝contracts/code-gates.md §3）→ `python3 tools/docsync generate`（`tools/orchestration/_sk_rules.js` 重產、RULES-VERSION bump）→ `python3 tools/docsync test`／`lint` 綠 → 外層 commit；此後一切 Workflow script 以新版 `python3 tools/docsync rules emit --scope <…>` 組裝
+- [x] T001 ★主線直改（不入 agent 單元）：`docs/ops/RULES.md` 名詞段加「碼面閘／治理閘」定義（字面＝contracts/code-gates.md §3）→ `python3 tools/docsync generate`（`tools/orchestration/_sk_rules.js` 重產、RULES-VERSION bump）→ `python3 tools/docsync test`／`lint` 綠 → 外層 commit；此後一切 Workflow script 以新版 `python3 tools/docsync rules emit --scope <…>` 組裝
 - [ ] T002 前置體檢：`bash tools/bootstrap.sh` 綠；`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait postgres redis base-web` 起（rust-api 於 U1 前起不來屬預期）；`rev6-admin-rust-api:dev` 映像在位、容器內 `cargo --version`＝1.96.1、`cargo fmt --version` 可用；base-web 容器 `pnpm typecheck` 基線綠
 
 ---
