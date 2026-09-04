@@ -6,6 +6,7 @@ import re
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 
 from docsync import gates, common, ROOT, RULES, NOTES
 from docsync.tests.test_book_ids import stub, errs, RULES_TEXT
@@ -141,15 +142,34 @@ class TestGt12(unittest.TestCase):
         files.update(extra or {})
         return files
 
-    def test_wave_lag_and_budget_levels(self):
+    def test_wave_lag_and_missing_wave_still_error(self):
+        """波標記兩腿與預算無關、維持 ERROR（ADR-00011 只改預算腿嚴厲度）。"""
         fs = gates.gt_12(stub(self._files(5, extra={"specs/001-x/spec.md": "s\n"})))
         self.assertTrue(any("波標記落後" in f[3] for f in errs(fs)))
-        over = RULES_TEXT.replace("上限（D8）：總 3", "上限（D8）：總 1")
-        self.assertTrue(any("RULES 總" in f[3] for f in errs(gates.gt_12(stub(self._files(6, over))))))
-        fs1 = gates.gt_12(stub(self._files(1, over)))
-        self.assertTrue(any("RULES 總" in f[3] for f in fs1 if f[0] == "WARN"))
-        self.assertFalse(any("RULES 總" in f[3] for f in errs(fs1)))
         self.assertTrue(any("波標記缺席" in f[3] for f in errs(gates.gt_12(stub({RULES: RULES_TEXT})))))
+
+    def test_rules_budget_is_warn_only_at_any_wave(self):
+        """ADR-00011：RULES per-scope 超上限一律 WARN、不再隨波轉 ERROR（波 6 為分界舊值）。"""
+        over = RULES_TEXT.replace("上限（D8）：總 3", "上限（D8）：總 1")
+        for wave in (1, 6, 9):
+            fs = gates.gt_12(stub(self._files(wave, over)))
+            self.assertTrue(any("RULES 總" in f[3] for f in fs if f[0] == "WARN"), wave)
+            self.assertFalse(any("RULES 總" in f[3] for f in errs(fs)), wave)
+
+    def test_gate_count_over_cap_is_warn_and_not_structural_error(self):
+        """ADR-00011：閘數超上限只 WARN；結構斷言不再混入數量（舊碼以 len != BUDGET_GATES 無條件 ERROR）。"""
+        with unittest.mock.patch.object(gates, "BUDGET_GATES", len(gates.ROSTER) - 1):
+            fs = gates.gt_12(stub(self._files(6)))
+        self.assertTrue(any("閘數" in f[3] and "超上限" in f[3] for f in fs if f[0] == "WARN"))
+        self.assertFalse(any("區塊集合" in f[3] or "閘數 ≠" in f[3] for f in errs(fs)))
+
+    def test_backlog_open_has_no_cap_leg(self):
+        """ADR-00011：BACKLOG 開放為觀測值、不設上限——任何條數都不出 finding。"""
+        from docsync import BACKLOG
+        many = "<!-- next: BL-00099 -->\n" + "".join(f"- BL-{i:05d}｜governance｜x｜觸發：t\n" for i in range(1, 41))
+        fs = gates.gt_12(stub(self._files(6, extra={BACKLOG: many})))
+        self.assertEqual([f for f in fs if "BACKLOG 開放" in f[3]], [])
+        self.assertFalse(hasattr(gates, "BUDGET_BACKLOG_OPEN"))
 
     def test_three_sources_skip_when_absent_and_red_when_mismatch(self):
         fs = gates.gt_12(stub(self._files(1)))

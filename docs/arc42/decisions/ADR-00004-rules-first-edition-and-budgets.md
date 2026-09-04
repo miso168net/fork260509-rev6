@@ -2,9 +2,9 @@
 id: "ADR-00004"
 title: RULES.md 首版 73 條與數量上限——總 92、per-scope 實算 ＋25%；六件套與看門狗紀律入 RULES；agent 面不可違反項自 CLAUDE.md 範本補列
 date: 2026-09-03
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00011]
 provenance: "啟動書 §3.6／D8（附錄 F R2-F12／R2-F13 採）＋user 拍板 2026-09-03（計畫 grill：六件套與看門狗紀律全入 RULES、RULES-VERSION 全 script 必帶）＋user 審表 2026-09-03"
 tags: [governance, rules, budget]
 ---

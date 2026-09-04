@@ -68,7 +68,9 @@ class TestMilestonesAndStateRendering(unittest.TestCase):
         out = references.gen_state(stub(files))
         self.assertIn("｜perf｜close_bookkeeping｜close_bookkeeping 6.5 秒 rc=0", out)
         self.assertIn("｜review｜sc｜findings 0（修 0／BL 0／ADR 0）", out)
-        self.assertIn("| 閘數 | ", out); self.assertIn("| BACKLOG 開放 | ", out)
+        self.assertIn("| 閘數 | ", out)
+        self.assertNotIn("| BACKLOG 開放 | ", out)          # ADR-00011：觀測值不入預算對賬表
+        self.assertIn("- BACKLOG 開放：", out)               # 仍在帳面統計段報現值
 
 
 class TestGenerateIdempotent(unittest.TestCase):

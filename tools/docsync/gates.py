@@ -9,7 +9,7 @@ import json
 import os
 import re
 
-from . import RULES, NOTES, BACKLOG, LESSONS_INDEX, LESSONS_DIR
+from . import RULES, NOTES, LESSONS_INDEX, LESSONS_DIR
 from .common import ERROR, WARN, SKIP, Day1Exemption, GENERATED_HEADER, GitError, finding
 from . import events as ev_mod
 from . import adr as adr_mod
@@ -32,7 +32,10 @@ HOOKS_DIR = ".claude/hooks"
 ROSTER_PREFIXES = ("tools/", "deploy/", ".githooks/", ".claude/")
 EXEC_REQUIRED = (".githooks/pre-commit", ".githooks/pre-push", ".githooks-submodule/pre-commit", ".githooks-submodule/pre-push",
                  "deploy/sops.sh", "deploy/generate-age-key.sh", "deploy/generate-dev-cert.sh", "tools/bootstrap.sh")
-BUDGET_GATES, BUDGET_BACKLOG_OPEN, BUDGET_ERROR_WAVE = 12, 25, 6
+# 數量預算（ADR-00011 supersede ADR-00004）：閘數與 RULES per-scope 保留上限但**一律 WARN**（不隨波轉 ERROR、不擋 commit）；
+# BACKLOG 開放為觀測值、**不設上限**（壓低它只有「真做掉」或「不記」兩途，後者是治理面最不該給的誘因）。
+BUDGET_GATES = 12
+KNIFE_START_WAVE = 6   # 波 6 起＝刀期（只服務波標記落後腿；與數量預算無關）
 MIN_SECRET_LEN = 8
 PLACEHOLDER_LITERALS = frozenset({"https://CHANGE-ME.invalid/alert-webhook-placeholder"})  # 與 deploy/preflight-secrets.py 雙記帳（rev5:ADR 0003）
 # 機密樣式四組（S1 補強面；主防線＝betterleaks；樣本於自測執行期串接、不落字面）
@@ -304,7 +307,7 @@ def gt_12(ctx, extra_sources=None):
       face=tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、NOTES 波標記
       trigger=pre-commit
       rc=1
-      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限靜默
+      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有
     """
     out = []
     sources = package_sources()
@@ -320,8 +323,8 @@ def gt_12(ctx, extra_sources=None):
         missing = [k for k in GATE_KEYS if k not in b]
         if missing:
             out.append(finding(ERROR, "GT-12", "tools/docsync", f"{gid} GATE 區塊缺鍵：{'、'.join(missing)}"))
-    if set(blocks) != roster_ids or len(roster_ids) != BUDGET_GATES:
-        out.append(finding(ERROR, "GT-12", "tools/docsync", f"區塊集合 {sorted(blocks)} ≠ ROSTER {sorted(roster_ids)} 或閘數 ≠ {BUDGET_GATES}"))
+    if set(blocks) != roster_ids:   # 只驗名冊一致；數量歸下方預算腿（ADR-00011：兩種語意分離）
+        out.append(finding(ERROR, "GT-12", "tools/docsync", f"區塊集合 {sorted(blocks)} ≠ ROSTER {sorted(roster_ids)}"))
     gates_md = ctx.text(GATES_MD)
     if gates_md is not None:
         ids = set(re.findall(r"^\| (GT-\d{2}) \|", gates_md, re.M))
@@ -335,7 +338,7 @@ def gt_12(ctx, extra_sources=None):
         m = RE_GT_RANGE.search(head)
         ids = {f"GT-{i:02d}" for i in range(int(m.group(1)), int(m.group(2)) + 1)} if m else set()
         if ids != roster_ids:
-            out.append(finding(ERROR, "GT-12", PRECOMMIT, f"pre-commit 檔頭範圍字串 {'缺席' if not m else m.group(0)} ≠ ROSTER（GT-01～GT-{BUDGET_GATES}）"))
+            out.append(finding(ERROR, "GT-12", PRECOMMIT, f"pre-commit 檔頭範圍字串 {'缺席' if not m else m.group(0)} ≠ ROSTER（{min(sorted(roster_ids))}～{max(sorted(roster_ids))}）"))
     rb = ctx.text(RUNBOOK)
     if rb is None:
         out.append(finding(SKIP, "GT-12", RUNBOOK, "GT-12.runbook-absent：RUNBOOK 尚未建（Day-1；波 2 即解除）"))
@@ -344,23 +347,18 @@ def gt_12(ctx, extra_sources=None):
     wave = book_mod.current_wave(ctx)
     if wave is None:
         out.append(finding(ERROR, "GT-12", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->"))
-    level = ERROR if (wave or 0) >= BUDGET_ERROR_WAVE else WARN
-    if wave is not None and wave < BUDGET_ERROR_WAVE:
+    level = WARN   # ADR-00011：數量預算一律只警告、不擋 commit（舊形＝波 6 起 ERROR）
+    if wave is not None and wave < KNIFE_START_WAVE:
         knives = {r.split("/")[1] for r in ctx.tracked if r.startswith("specs/") and r.count("/") >= 2 and re.match(r"\d{3}-", r.split("/")[1])}
         if knives:
-            out.append(finding(ERROR, "GT-12", NOTES, f"波標記落後：specs/ 已有刀目錄 {sorted(knives)} 而現在波 {wave} < {BUDGET_ERROR_WAVE}（波次出口須 bump 標記）"))
+            out.append(finding(ERROR, "GT-12", NOTES, f"波標記落後：specs/ 已有刀目錄 {sorted(knives)} 而現在波 {wave} < {KNIFE_START_WAVE}（波次出口須 bump 標記）"))
     if len(roster_ids) > BUDGET_GATES:
-        out.append(finding(level, "GT-12", "tools/docsync", f"閘數 {len(roster_ids)} 超上限 {BUDGET_GATES}（一進一出）"))
+        out.append(finding(level, "GT-12", "tools/docsync", f"閘數 {len(roster_ids)} 超上限 {BUDGET_GATES}（一進一出；本腿只警告、不擋）"))
     counts, caps = rules_mod.budget_counts(ctx.text(RULES) or "")
     for k, n in counts.items():
         cap = caps.get(k)
         if isinstance(cap, int) and n > cap:
-            out.append(finding(level, "GT-12", RULES, f"RULES {k} {n} 超上限 {cap}（超限只擋新增、不可調數字；改上限＝supersede ADR-00004）"))
-    bl = ctx.text(BACKLOG)
-    if bl is not None:
-        n_open = len(book_mod.RE_ENTRY["BL"].findall(bl))
-        if n_open > BUDGET_BACKLOG_OPEN:
-            out.append(finding(level, "GT-12", BACKLOG, f"BACKLOG 開放 {n_open} 超上限 {BUDGET_BACKLOG_OPEN}"))
+            out.append(finding(level, "GT-12", RULES, f"RULES {k} {n} 超上限 {cap}（一進一出或改上限＝supersede ADR-00011；本腿只警告、不擋）"))
     return out
 
 
@@ -392,7 +390,7 @@ def run_lint(ctx):
 def gen_gates_md(ctx):
     blocks = parse_gate_blocks("\n".join(package_sources().values()))
     lines = [GENERATED_HEADER, "# GATES — 閘名冊（§4.1）", "",
-             f"閘數 {len(ROSTER)}／上限 {BUDGET_GATES}（一進一出）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。"
+             f"閘數 {len(ROSTER)}／上限 {BUDGET_GATES}（一進一出；超限只警告不擋＝ADR-00011）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。"
              f"Day-1 豁免 {len(DAY1_EXEMPTIONS)} 筆（§4.6；到期即紅）。", "",
              "| 閘 | 守哪條 RULES／ADR | 監測哪一面的漂移 | 真源 | 掃描面 | 觸發時機 | 紅時 rc | Day-1 豁免狀態 | 拿掉會壞什麼 |",
              "|---|---|---|---|---|---|---|---|---|"]
