@@ -15,7 +15,7 @@
 - ADR：11（proposed 0、accepted 10、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：20｜滯後：0
-- LESSONS：2 筆
+- LESSONS：3 筆
 - events：21 筆（feature_close 1、misc 8、perf 9、review 3）
 - CLAUDE.md 行數：159（只報表、不擋）
 
