@@ -28,7 +28,7 @@ fork260509-rev6/
 │   ├── bootstrap.sh                 新機重建／體檢：源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數
 │   ├── wf-watchdog.py               workflow 編排看門狗（stall／runaway 保險絲、可鎖定目標 run）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／rules emit／errata／test；tests/ 為語料面
-│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架；_sk_rules.js＝generate 產物）、harness-test 十案（斷言＋退出碼）、cdp.mjs
+│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架；_sk_rules.js＝generate 產物）、harness-test 十案（斷言＋退出碼）、cdp.mjs、EXAMPLE 組裝成品
 ├── deploy/                          營運面：dev stack 部署資產＋機密管線（管「跑起來的系統」）
 │   ├── secrets_common.py            機密落點三級解析共用庫（消費者＝下列 CLI＋docsync GT-07）
 │   ├── preflight-secrets.py         機密上機前把關（缺檔／CR·LF／composite drift）

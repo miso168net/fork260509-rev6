@@ -10,8 +10,9 @@
 | `_sk_main.js` | 主流程（serial）：依 `IMPL_STAGES` 逐支派 implementer（前支 report 原文轉交後支）→ SpecReview cycle → CodeQualityReview cycle；起手自我斷言 `IMPL_STAGES.length === IMPLEMENTERS`（保險絲推導同源）；1～N 支 implementer 同一支 main |
 | `harness-test.mjs` | **控制流十案＋逐項斷言＋退出碼**：`node harness-test.mjs <script.mjs> [spec\|quality]`（quality＝樁把 blocker 打在碼品質段）；期望值自 script 的 `const IMPLEMENTERS = <n>` 推導；樁走真 `spawn`／`guard`、只替換 `agent()`；秒級 |
 | `cdp.mjs` | CDP 對照工具：接 host 瀏覽器除錯埠、開分頁對照 rev5／rev6 UI（CLAUDE.md §7） |
+| `EXAMPLE-dual-implementer.mjs` | 完整組裝成品（＝001 刀 U1 原樣）：雙 implementer serial、impl-1 的 report 原文轉交 impl-2；供組裝法參考、勿照抄執行（事實接地以該單元 commit 訊息為準） |
 
-組裝成品範例：目前無——前代 rev5:008 兩支成品已刪（000-r1 R1-059／060／062／087／088：內含 rev5 事實與行號形引用、非 rev6 現況）；回填義務＝首個單元收尾以其真 script 落 `EXAMPLE-<unit>.mjs`（`specs/001-schema-baseline/tasks.md` T001 附註）。
+組裝成品範例＝`EXAMPLE-dual-implementer.mjs`（001 刀 U1 原樣；前代 rev5:008 兩支成品已刪＝000-r1 R1-059／060／062／087／088：內含 rev5 事實與行號形引用）。
 
 ## 組裝法
 
@@ -42,4 +43,4 @@ fix `blocked` 立即 return／最壞路徑支數 < `AGENT_FUSE`／**fix `done_wi
 - 陣列元素用單引號時，**元素內含單引號**（如 TS 字面 `'true' | 'false'`）會斷字串 → 該元素改用雙引號包。
 - shell quoted heredoc 裡**不能用** `'"'"'` 轉義（會原樣寫入而斷 JS）；要表達單引號用 `\x27`（JS 轉義、渲染正確）或改雙引號元素。
 - 批次改寫引號的腳本會**誤傷字串拼接**（`'…第 ' + roundNo + ' 輪…'` 被當撞引號改寫，插值靜默失效而 `node --check` 照樣綠）→ 改完逐行看被改的是哪幾行。
-- model 字串：`opus[1m]`＝`claude-opus-5[1m]`（000-r1 實證）；`fable[1m]` 於 rev5 解析為 `claude-fable-5`——別名不等於 user 拍板的 fable 5.1，實際字串以本 repo 的探針 run（persisted `workflows/wf_*.json` 之 `model` 欄）為準。
+- model 字串：`opus[1m]`＝`claude-opus-5[1m]`（000-r1 實證）；`fable[1m]`＝`claude-fable-5-1`（本 repo 探針 run 2026-09-04：`fable[1m]`／`claude-fable-5-1[1m]`／`claude-fable-5-1` 三種寫法於 persisted `workflows/wf_*.json` 之 `model` 欄皆解析為同一 id——fable 的 1M 為原生、後綴被正規化）。

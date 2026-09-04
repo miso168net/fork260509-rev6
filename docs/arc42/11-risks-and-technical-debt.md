@@ -26,9 +26,8 @@ rev5_blueprint:
 
 | 債 | 現況 | 去處 |
 |---|---|---|
-| Day-1 豁免一筆（GT-08.lessons-absent） | 閘腿以豁免鍵跳過、解除謂詞具名 | 首條 LL 檔落地同 commit 移除 |
+| Day-1 豁免（GT-12 到期即紅） | 目前零筆（GT-08.lessons-absent 隨 LL-00001 落地移除） | 新豁免逐筆具名帶解除謂詞、到期同 commit 自 `DAY1_EXEMPTIONS` 移除 |
 | 編排範本的版本字面耦合 | 組裝成品 script（`EXAMPLE-<unit>.mjs`／單元 script）烤入 RULES-VERSION 字面，規則列一改即過期、hook 擋發射 | 改規則列時同批重烤（`python3 tools/docsync rules emit`） |
-| 骨架多份變體 | `_sk_head*.js`／`_sk_main*.js` 三份變體各持一組 `*_OPTS` | 名冊＝`docs/generated/reference/agents.md`；收斂隨首個編排刀 |
 
 ## ※11.3 E7 AI 債務登記
 

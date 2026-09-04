@@ -29,7 +29,7 @@
       `RULES_REVIEW`／RL-0070、R1-082 `harness-test.mjs` 斷言退出碼、R1-059／060／062／087／088 `EXAMPLE-single-implementer.mjs`／`EXAMPLE-dual-implementer.mjs` 重組）；
       `node tools/orchestration/harness-test.mjs` 十案綠；`docs/generated/reference/agents.md` 由 generate 重算；`docs/ops/BACKLOG.md` BL-00001 於收刀事件帶 backlog_done
       ✔ 已落（Task 0 commit）：單一 `_sk_head.js`／`_sk_main.js`（`IMPLEMENTERS` 移 `_vars`、`IMPL_STAGES` 泛化 1～N 支）、review 烤 `RULES_REVIEW`／fix 烤 `RULES_FIX`、harness 帶斷言退出碼（spec｜quality 二模式）、七支舊檔刪除；
-      ★回填義務：`EXAMPLE-<unit>.mjs` 由 U1 收尾以其真 script 落（tools/orchestration/README.md「組裝成品範例」句同步改現在式）
+      ✔ 回填已落（U1 收尾）：`tools/orchestration/EXAMPLE-dual-implementer.mjs`＝U1 組裝成品原樣、README 檔表同批列入
 - [x] T002 前置體檢：`bash tools/bootstrap.sh` 綠（掃描防線＋rev5 凍結 SHA 斷言）；dev stack 機密解密（RUNBOOK §15、`deploy/`）；
       `docker compose -f docker-compose.yml -f docker-compose.dev.yml build migrate` 產 `rev6-admin-rust-api:dev`；容器內 `cargo --version`＝1.96.1
       ✔ 已落：bootstrap 綠（首跑 docsync 自測 6 案 drvfs 瞬時 getcwd ENOENT、重跑全綠 rc 0）；機密 13 檔在位；`rev6-admin-rust-api:dev` build rc 0；容器內 cargo 1.96.1／rustc 1.96.1／rustfmt 1.9.0-stable
@@ -42,22 +42,22 @@
 
 **⚠️ CRITICAL**: tools/ 兩支之 `test` 讀真 repo（data-model／archetype-map／fixtures），其 commit 必與 US1 T020、US3 T025 同單元（U2）
 
-- [ ] T003 `rust-api/Cargo.toml`：workspace members＝`["migration", "entity", "sea-orm-adapter"]`、`resolver = "2"`、`[workspace.package] edition = "2024"`、
+- [x] T003 `rust-api/Cargo.toml`：workspace members＝`["migration", "entity", "sea-orm-adapter"]`、`resolver = "2"`、`[workspace.package] edition = "2024"`、
       `[workspace.dependencies]` 恰五支＝sea-orm 1.1.20（default-features=false）／sea-orm-migration 1.1.20／tokio 1.53.1／async-trait 0.1.92／casbin 2.20.0
       （default-features=false）（research R1；註解 rev6 語境、承 `rev5:Cargo.toml` 形）
-- [ ] T004 [P] `rust-api/rust-toolchain.toml`（`channel = "1.96.1"`）＋`rust-api/rustfmt.toml`（max_width 100／use_small_heuristics Max／style_edition 2024；
+- [x] T004 [P] `rust-api/rust-toolchain.toml`（`channel = "1.96.1"`）＋`rust-api/rustfmt.toml`（max_width 100／use_small_heuristics Max／style_edition 2024；
       註解重寫、出處帶 `rev5:B-112`／`rev5:ADR 0057`）
-- [ ] T005 [P] `rust-api/migration/Cargo.toml`（sea-orm-adapter path＋sea-orm-migration features sqlx-postgres／runtime-tokio-rustls／cli＋tokio rt-multi-thread／net／time）
+- [x] T005 [P] `rust-api/migration/Cargo.toml`（sea-orm-adapter path＋sea-orm-migration features sqlx-postgres／runtime-tokio-rustls／cli＋tokio rt-multi-thread／net／time）
       ＋`rust-api/entity/Cargo.toml`（sea-orm features macros／with-chrono／with-json／with-ipnetwork）——承 `rev5:` 形自寫
-- [ ] T006 [P] `rust-api/sea-orm-adapter/`（§I.5 例外①整檔拷貝自 `../fork260509-rev5/rust-api/sea-orm-adapter/`：Cargo.toml＋`src/{action,adapter,entity,lib,migration}.rs`＋
+- [x] T006 [P] `rust-api/sea-orm-adapter/`（§I.5 例外①整檔拷貝自 `../fork260509-rev5/rust-api/sea-orm-adapter/`：Cargo.toml＋`src/{action,adapter,entity,lib,migration}.rs`＋
       `examples/*`）：註解與字串之四型失效引用 rev6 化（前代編號帶前綴、章節號改指 rev6 去處）；`src/adapter.rs` 測試模組之假 DSN 字面改為執行期串接（RL-0054：憑證樣式不落完整字面；
       如 `format!("mysql://{}:{}@localhost:3306/casbin", "root", "123456")`）、零 allowlist；`betterleaks` 掃描零命中與「與 rev5 差一行」記 commit 訊息
-- [ ] T007 `rust-api/migration/src/lib.rs`（`mod m0001_baseline_schema; mod m0002_baseline_seeds;`＋`Migrator`，doc 註解 rev6）＋`rust-api/migration/src/main.rs`
+- [x] T007 `rust-api/migration/src/lib.rs`（`mod m0001_baseline_schema; mod m0002_baseline_seeds;`＋`Migrator`，doc 註解 rev6）＋`rust-api/migration/src/main.rs`
       （`APP_DATABASE_URL_FILE`／`APP_DATABASE_URL` 解析、CHANGE-ME 拒啟、`run_cli`；檔頭契約註解 rev6、承 `rev5:main.rs` 形重打字）
-- [ ] T008 `rust-api/entity/src/lib.rs`（15 支 `pub mod`、自寫）
-- [ ] T009 [P] `rust-api/entity/src/{casbin_rule,session_event,sys_access_log,sys_casbin_policy_archive,sys_ip_rule,sys_login_attempt,sys_menu,sys_operation_log,sys_pwd_custody,sys_role,sys_token,sys_user,sys_user_email_verify,sys_user_role,system_settings}.rs`
+- [x] T008 `rust-api/entity/src/lib.rs`（15 支 `pub mod`、自寫）
+- [x] T009 [P] `rust-api/entity/src/{casbin_rule,session_event,sys_access_log,sys_casbin_policy_archive,sys_ip_rule,sys_login_attempt,sys_menu,sys_operation_log,sys_pwd_custody,sys_role,sys_token,sys_user,sys_user_email_verify,sys_user_role,system_settings}.rs`
       （§I.5 例外②：自 rev5 `92919b9` 照抄、程式零改；註解語意重寫——六檔各一處前代引用帶前綴；`sys_user_role.rs` 兩條真 FK Relation 保留）
-- [ ] T010 容器內 `cargo build --workspace`（serial；`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm --entrypoint cargo migrate build --workspace`——
+- [x] T010 容器內 `cargo build --workspace`（serial；`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm --entrypoint cargo migrate build --workspace`——
       dev override 之 migrate entrypoint 已核可整段覆寫）綠；
       `rust-api/Cargo.lock` 入版控（async-trait 0.1.92 一處與 rev5 異、其餘同）
 - [ ] T011 `tools/schema-gate.py` 隨遷（自 `../fork260509-rev5/tools/schema-gate.py`；research R6）：座標常數同名核對；**去除** `SEED_DECISION` 與其讀取（sequence 名冊改自
@@ -70,6 +70,8 @@
 
 **Checkpoint**: workspace 建置綠、兩支工具在場（其 `test` 綠於 U2 commit 時與 fixtures／map 同批成立）
 
+✔ U1 已落（T003～T010）：五支骨架檔＋adapter 十檔（程式面差三行＝假 DSN 執行期串接＋兩處 `#[ignore]` 訊息 rev6 化；`betterleaks dir` 零命中、零 allowlist）＋entity 15 檔（實查需改註解 9 檔、通用同文零改 6 檔——非「六檔各一處」）＋自寫 lib／main；容器內 `cargo build --workspace --locked` 綠、0 warning；Cargo.lock 以 `rev5:Cargo.lock` 為種子後 cargo 剪枝（372 套件、唯一版本異動 async-trait 0.1.89→0.1.92、零新增；零種子 resolve 踩坑＝LL-00001）；T011～T013 歸 U2。
+
 ---
 
 ## Phase 3: User Story 1 - 基線結構與 seed 逐位元承襲落地 (Priority: P1) 🎯 MVP
@@ -80,13 +82,13 @@
 
 ### Implementation for User Story 1
 
-- [ ] T014 [P] [US1] `rust-api/migration/src/m0001_baseline_schema.rs`：`cp` 自 rev5 `m001_baseline_schema.rs`、程式零改；註解語意重寫（兩處裸 `rev4:m009`／`rev4` 引用帶前綴、
+- [x] T014 [P] [US1] `rust-api/migration/src/m0001_baseline_schema.rs`：`cp` 自 rev5 `m001_baseline_schema.rs`、程式零改；註解語意重寫（兩處裸 `rev4:m009`／`rev4` 引用帶前綴、
       檔頭改 rev6 語境；通用註解可同文）
-- [ ] T015 [P] [US1] `rust-api/migration/src/m0002_baseline_seeds.rs`：`cp` 自 rev5 `m002_baseline_seeds.rs`、程式零改（PHC 常數、定稿時戳 `2026-08-05T00:00:00+00:00` 字面照舊）；
+- [x] T015 [P] [US1] `rust-api/migration/src/m0002_baseline_seeds.rs`：`cp` 自 rev5 `m002_baseline_seeds.rs`、程式零改（PHC 常數、定稿時戳 `2026-08-05T00:00:00+00:00` 字面照舊）；
       註解中 seed-decision.json／seed-review.md 引用改指 `rev5:` 史料與 `fixtures/seed.sql`
-- [ ] T016 [US1] 17 檔 parity 自證（quickstart A；ADR-00009 ①命令形）：`strip()` diff 逐檔零輸出＋`python3 tools/docsync lint` GT-05 綠；結果（檔數、rc）記 rust-api commit 訊息
+- [x] T016 [US1] 17 檔 parity 自證（quickstart A；ADR-00009 ①命令形）：`strip()` diff 逐檔零輸出＋`python3 tools/docsync lint` GT-05 綠；結果（檔數、rc）記 rust-api commit 訊息
       與外層 pin bump 訊息
-- [ ] T017 [US1] dev stack 重放：`docker compose … up -d --wait postgres` → `run --rm migrate`；驗 `seaql_migrations` 恰兩筆＝`m0001_baseline_schema`／`m0002_baseline_seeds`；
+- [x] T017 [US1] dev stack 重放：`docker compose … up -d --wait postgres` → `run --rm migrate`；驗 `seaql_migrations` 恰兩筆＝`m0001_baseline_schema`／`m0002_baseline_seeds`；
       `SHOW timezone`＝`UTC`
 - [ ] T018 [US1] pristine 一次性重放：`docker network create rev6-u2-fixnet`＋`postgres:18.4-alpine` 容器 `rev6-u2-fixpg`（零 host 埠、拋棄式密碼）→ 以 `rev6-admin-rust-api:dev`
       容器內 `cargo run --bin migration up`（`APP_DATABASE_URL` 指向該容器）→ `python3 tools/schema-gate.py check --container rev6-u2-fixpg` gate2 欄序面綠
@@ -96,6 +98,8 @@
       日期／映像／rust-api commit SHA／rev5 來源座標＋cmp 紀錄／欄序驗紀錄／命令形）；拆容器、network、匿名 PGDATA volume（`docker volume ls -f dangling=true` 核對）
 
 **Checkpoint**: 基線可獨立驗證交付——重放成形、與 rev5 逐位元同形、凍結面就位
+
+✔ U1 已落（T014～T017）：m0001／m0002 `cp`＋註解語意重寫；17 檔 parity 17/17 零輸出（fmt 後復驗同）、lint 0 錯；dev stack 重放 `seaql_migrations` 恰兩列四碼名、`SHOW timezone`＝UTC、public 16 表、sys_user 3 列；T018～T020 歸 U2。
 
 ---
 
@@ -109,13 +113,14 @@
 
 - [x] T021 [US2] 憲法 §I.5 例外②＋§V.3 補句＋1.1.0＋ADR-00009 accepted（`.specify/memory/constitution.md`、`docs/arc42/decisions/ADR-00009-data-shape-copy-exception.md`；
       已落 52fb52f、早於 plan）
-- [ ] T022 [US2] 註解語意重寫清單：17 檔＋adapter 逐檔列出四型失效引用之改寫項（原文→rev6 文；通用同文者免列），落 rust-api commit 訊息並作 ADR-00010 證據素材
+- [x] T022 [US2] 註解語意重寫清單：17 檔＋adapter 逐檔列出四型失效引用之改寫項（原文→rev6 文；通用同文者免列），落 rust-api commit 訊息並作 ADR-00010 證據素材
 - [ ] T023 [US2] 防回歸審查：`git -C ../fork260509-rev5/rust-api diff 4bbc989 92919b9 -- entity/src migration/src` 實查後刀差異 → 清單（預期唯一＝`sys_user_role.rs` 真 FK
       Relation、形狀派生保留；`m001` 之 fmt 存量與註解變動屬非語意）→ 記 ADR-00010 證據段
-- [ ] T024 [US2] 機器閘證據：`python3 tools/docsync lint` 0 錯（GT-05 掃 tools/ 與子庫 pin 樹）；`betterleaks git --config .gitleaks.toml` 全史掃描結果（命中條目＝T006 allowlist、
-      其餘零）記 commit 訊息
+- [x] T024 [US2] 機器閘證據：`python3 tools/docsync lint` 0 錯（GT-05 掃 tools/ 與子庫 pin 樹）；`betterleaks git --config .gitleaks.toml` 全史掃描結果（零命中、零 allowlist——adapter 假 DSN 依 T006 改執行期串接、analyze C1）記 commit 訊息
 
 **Checkpoint**: 例外依規則成立、四條件證據在案
+
+✔ U1 已落（T022／T024）：註解改寫清單（23 檔機器對賬、14 檔差異逐項）落 rust-api 本單元 commit 訊息＝ADR-00010 證據素材；lint 0 錯、`betterleaks dir rust-api` 與 `betterleaks git` 全史皆零命中；T023 歸 U2。
 
 ---
 
