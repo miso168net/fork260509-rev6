@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-04 | misc | governance | 001 刀規格對照審查（獨立輪 spec-compliance-001）修單收單：schema-gate 自帶測試 103→118 案補回歸保護（audit 變體驗則面、gate1 索引與約束兩節、seed_add 欄集）、D 變體補 archived_by、pre-commit 加 schema-frozen 條件段、contracts/gates.md §4 negative 義務五類擴為六類。 | 39232de | — | — |
 | 2026-09-04 | review | 001-schema-baseline | findings 8（修 6／BL 2／ADR 0）；BL-00020、BL-00021 | — | — | — |
 | 2026-09-04 | misc | governance | 數量預算改為只警告不擋（ADR-00011 supersede ADR-00004）：BACKLOG 開放取消上限、改觀測值只報表；閘數 12 與 RULES 總／per-scope 上限保留數值但超限一律 WARN、不進 lint 退出碼、不擋 commit；pre-commit 硬擋機制不動。 | 1e0d89b | — | — |
 | 2026-09-04 | feature_close｜horizontal | 001-schema-baseline | 001 schema 基線刀收單：rust-api workspace 三 crate＋m0001／m0002＋entity 15 檔逐位元承襲（憲法 §I.5 例外②）、sea-orm-adapter 例外①；schema 三閘＋entity 漂移閘隨遷並自證；凍結 fixtures 四件雙源互證；docsync refresh 照相＋兩張正典真表；pre-commit entity-drift 條件實跑段。 | d04a41c | ADR-00009、ADR-00010 | §5、§8、§11 |
@@ -17,6 +18,14 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-04｜misc｜governance
+
+審查形式＝一支唯讀 agent（opus[1m]、ultrathink）、對象 16358f1..432e47b、烤入 RULES scope=review 全塊；零 Critical、8 筆三分流＝修 6／轉 BL 2／won't-fix 0；報告見 docs/reviews/20260904-spec-compliance-001.md。
+主線依 CLAUDE.md §5 獨立復現：廢 _check_col 型別腿／gate1 索引·約束整節／seed_add 欄集斷言，自帶 103 案皆照綠——三處判準是憲法 §I.6 六審計欄與 ADR-00010 決定 7 的唯一機器載體，可被無聲拿掉。
+驗證分兩形（不可混稱）：archived_by 一項為真先紅後綠（驗則原不存在）；其餘判準本就正確、加案即綠，故改以十發變異探針逐一打在對應判準腿上驗紅（全數轉紅、在同構目錄副本上做、repo 零寫入）。hook 面另做真演練：注入假漂移→git add→commit 被 schema-frozen 擋下、HEAD 未動。
+契約側同批：I-1／I-2 同時是 spec 自身未列義務（§4 只列五類、且「結構」字面只涵蓋 columns 節），實作是照 spec 做的，故擴為六類並註明⑥與①～⑤的差別（前五類注入實庫漂移、第六類注入驗則會不會抓）。
+LL-00003 為本批演練踩坑：git checkout -- <路徑> 在檔案已 staged 時從 index 取而非 HEAD，還原等於沒還原；靠 RL-0005 的還原後 porcelain 對賬當場抓到，凍結面四檔已對 rev5 逐位元還原、sha256 合 provenance §4。
 
 ### 2026-09-04｜review｜001-schema-baseline
 
