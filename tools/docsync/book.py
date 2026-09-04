@@ -23,7 +23,9 @@ RE_ADR_FILE = re.compile(r"^ADR-(\d{5})-")
 BARE_REV5 = re.compile(r"(?<![A-Za-z0-9:_/-])(B-\d{3}|L-\d{3}|ADR 0\d{3}|Lint\d{2}|\d{3}-[a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![A-Za-z0-9-])")
 MENTION = re.compile(r"`[^`\n]*`|「[^」\n]*」")
 RE_KNIFE = re.compile(r"^\d{3}-")
-SUB_SCAN = r"(^|[^A-Za-z0-9:_-])(B-[0-9]{3}|L-[0-9]{3})([^0-9]|$)"
+# 子庫 pin 樹粗篩（git grep ERE；五形與 BARE_REV5 同源、精判與 rev6 刀集豁免共用外層那套——# 只對齊正則不共用豁免會讓自家刀名整批誤紅，BL-00017）
+SUB_SCAN = (r"(^|[^A-Za-z0-9:_/-])(B-[0-9]{3}|L-[0-9]{3}|ADR 0[0-9]{3}|Lint[0-9]{2}"
+            r"|[0-9]{3}-[a-z][a-z0-9]*(-[a-z0-9]+)+)([^A-Za-z0-9-]|$)")
 
 PRESENT_TENSE_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/", "docs/ops/", "docs/generated/",
                       "README.md", "CLAUDE.md", CONSTITUTION, "tools/", "deploy/", ".githooks/", ".githooks-submodule/", ".claude/hooks/", ".claude/settings.json")
@@ -169,11 +171,23 @@ def gt_05(ctx):
             continue
         rc, stdout = ctx.git_try("grep", "-nE", SUB_SCAN, "HEAD", "--", cwd=os.path.join(ctx.root, sub))
         if rc == 0:
-            lines = [l for l in stdout.split("\n") if l]
-            for l in lines[:10]:
-                out.append(finding(ERROR, "GT-05", f"{sub}/{l.split(':', 1)[-1]}", "子庫碼面裸 rev5 編號（B-NNN／L-NNN）——一律 rev5: 前綴"))
-            if len(lines) > 10:
-                out.append(finding(ERROR, "GT-05", sub, f"…另 {len(lines) - 10} 處"))
+            hits = []
+            for l in stdout.split("\n"):
+                if not l:
+                    continue
+                rest = l.split(":", 1)[-1]                      # 去 "HEAD:" 前綴
+                parts = rest.split(":", 2)
+                where, content = ":".join(parts[:2]), parts[2] if len(parts) > 2 else ""
+                for m in BARE_REV5.finditer(MENTION.sub("", content)):   # 精判與外層同源
+                    tok = m.group(1)
+                    if RE_KNIFE.match(tok) and (tok.startswith("000-") or tok in knives):
+                        continue                                # rev6 自家刀名＝合法（豁免與外層共用）
+                    hits.append((where, tok))
+            for where, tok in hits[:10]:
+                kind = "裸刀名（rev6 刀集外）" if RE_KNIFE.match(tok) else "裸 rev5 編號"
+                out.append(finding(ERROR, "GT-05", f"{sub}/{where}", f"子庫碼面{kind}「{tok}」——一律 rev5:／rev4: 前綴"))
+            if len(hits) > 10:
+                out.append(finding(ERROR, "GT-05", sub, f"…另 {len(hits) - 10} 處"))
         elif rc not in (0, 1):
             out.append(finding(ERROR, "GT-05", sub, f"子庫 git grep 失敗 rc={rc}（掃描未執行即紅）"))
     return out

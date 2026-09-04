@@ -5,7 +5,7 @@ promotion_surface: none
 ---
 LL-00002｜fix 升級後的續跑：骨架不支援只跑審查段、主線落地又未先自掃同語意列舉——兩支續跑 run 各被 README 一行打回
 
-**徵狀**：本刀 U3 主 run 在規格審查段以 rev5:L-078 分支收場（唯一 blocker＝README 樹行殘留已兌現預告、fix 判成立但落授權面外、正確零改動升級主線）。主線落地後依 RL-0010 需「新開一支只跑審查段的 workflow」，但單一骨架斷言 IMPLEMENTERS ≥ 1、無此形；補上續跑形發射後，第一支續跑 run 又被 README `docs/generated/` 樹行的成員窮舉未隨名冊 12→14 補列打回（同樣 rev5:L-078 分支）；第二支才收斂。多花兩支 run（約 55 萬 token、40 分鐘）。
+**徵狀**：001 刀 U3 主 run 在規格審查段以 rev5:L-078 分支收場（唯一 blocker＝README 樹行殘留已兌現預告、fix 判成立但落授權面外、正確零改動升級主線）。主線落地後依 RL-0010 需「新開一支只跑審查段的 workflow」，但單一骨架斷言 IMPLEMENTERS ≥ 1、無此形；補上續跑形發射後，第一支續跑 run 又被 README `docs/generated/` 樹行的成員窮舉未隨名冊 12→14 補列打回（同樣 rev5:L-078 分支）；第二支才收斂。多花兩支 run（約 55 萬 token、40 分鐘）。
 
 **成因**：①骨架把「有 implementer」寫死為前提，RL-0010 的續跑形沒有原生載體；②主線落地升級項時只改了被指名的那一行，未先以 RL-0011 對「本單元改變的集合」（生成物名冊 12→14、pre-commit 段集）全 repo 掃同語意命中——README 三處（樹行成員窮舉、查詢表、守門鏈列舉）與 `docs/process/P-E1-boundary.md` 一處同時過時，而 GT-09 掃描面不含 docs/、對此類列舉恆假綠（BL-00009）。
 

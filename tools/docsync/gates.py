@@ -226,13 +226,33 @@ def _covered(rel, declared, leaf_dirs):
     return any(rel.startswith(d) for d in leaf_dirs)
 
 
+def readme_generated_members(text):
+    """README 樹之 `docs/generated/` 行描述文字 → 成員相對路徑集（BL-00009）。
+    形＝`… 嚴禁手改：A／B／…／reference/{x,y,z}`：以「：」取右段、`／` 分隔、`{a,b}` 展開為 `前綴a`…。
+    找不到該行回 None（與「行在但成員集為空」區分——後者是真漂移）。"""
+    m = re.search(r"^\s*[│├└─\s]*docs/generated/\s+[^\n：]*：([^\n]+)$", text or "", re.M)
+    if m is None:
+        return None
+    members = set()
+    for tok in m.group(1).split("／"):
+        tok = tok.strip()
+        if not tok:
+            continue
+        b = re.match(r"^(.*?)\{([^}]*)\}$", tok)
+        if b:
+            members |= {f"{b.group(1)}{x.strip()}" for x in b.group(2).split(",") if x.strip()}
+        else:
+            members.add(tok)
+    return members
+
+
 def gt_09(ctx):
     """GATE:
       id=GT-09
       rule=RL-0057
       source=rev5:L-061
       drift=接線與實檔集
-      face=README 樹、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED
+      face=README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED
       trigger=pre-commit
       rc=1
       breaks-if-removed=hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉
@@ -252,6 +272,18 @@ def gt_09(ctx):
         for rel in sorted(tracked):
             if rel.startswith(ROSTER_PREFIXES) and not _covered(rel, declared, leaf_dirs):
                 out.append(finding(ERROR, "GT-09", rel, "tracked 檔未列於 README 樹（列檔、或列其目錄且不展開子項）"))
+        # docs/generated 成員窮舉腿（BL-00009）：ROSTER_PREFIXES 不含 docs/，該行歷來只能人工同刀改齊
+        _GEN_PREFIX = "docs/generated/"
+        declared_gen = readme_generated_members(readme)
+        if declared_gen is None:
+            out.append(finding(ERROR, "GT-09", README, "README 樹缺 docs/generated/ 成員行（形＝「…：A／B／reference/{x,y}」）"))
+        else:
+            actual_gen = {r[len(_GEN_PREFIX):-3] for r in ref_mod.GENERATED_FILES
+                          if r.startswith(_GEN_PREFIX) and r.endswith(".md")}
+            for x in sorted(declared_gen - actual_gen):
+                out.append(finding(ERROR, "GT-09", README, f"README generated 成員行列 {x} 但不在 GENERATED_FILES 名冊"))
+            for x in sorted(actual_gen - declared_gen):
+                out.append(finding(ERROR, "GT-09", README, f"GENERATED_FILES 有 {x} 但 README generated 成員行未列（名冊變動須同刀改齊）"))
     hooks_absent = not ctx.exists(PRECOMMIT)
     if hooks_absent:
         out.append(finding(SKIP, "GT-09", ".githooks", "GT-09.hooks-absent：.githooks 尚未落地（Day-1；波 1 Task 11 即解除）——其餘 EXEC_REQUIRED 照驗"))

@@ -136,6 +136,39 @@ class TestGt09(unittest.TestCase):
         self.assertTrue(any(f[0] == "SKIP" and "GT-09.readme-absent" in f[3] for f in fs2))
 
 
+class TestGt09GeneratedMembers(unittest.TestCase):
+    """GT-09 之 docs/generated 成員行對賬腿（BL-00009）：ROSTER_PREFIXES 不含 docs/，
+    名冊 12→14 時該行歷來只能人工同刀改齊——001 刀 U3 連兩支審查 run 被此類漏改打回（LL-00002）。"""
+
+    LINE = ("├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES"
+            "／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents,schema,accounts}")
+
+    def _parse(self, line):
+        return gates.readme_generated_members("```text\n" + line + "\n```\n")
+
+    def test_real_readme_matches_roster(self):
+        from docsync import references, ROOT
+        from docsync.common import Ctx
+        declared = gates.readme_generated_members(Ctx(ROOT).text("README.md"))
+        actual = {r[len("docs/generated/"):-3] for r in references.GENERATED_FILES
+                  if r.startswith("docs/generated/") and r.endswith(".md")}
+        self.assertEqual(declared, actual)
+
+    def test_brace_expansion_and_slash_split(self):
+        self.assertEqual(self._parse(self.LINE),
+                         {"STATE", "MILESTONES", "DECISIONS-INDEX", "GATES", "RAD-AI-MAP",
+                          "reference/ports", "reference/perf", "reference/rev5-blueprint-map",
+                          "reference/agents", "reference/schema", "reference/accounts"})
+
+    def test_missing_member_red(self):
+        got = self._parse(self.LINE.replace("agents,", ""))
+        self.assertNotIn("reference/agents", got)
+
+    def test_ghost_member_and_absent_line(self):
+        self.assertIn("GHOST", self._parse(self.LINE + "／GHOST"))
+        self.assertIsNone(gates.readme_generated_members("```text\n├── tools/  x\n```\n"))
+
+
 class TestGt12(unittest.TestCase):
     def _files(self, wave, rules_text=RULES_TEXT, extra=None):
         files = {RULES: rules_text, NOTES: f"<!-- wave: {wave} -->\n"}

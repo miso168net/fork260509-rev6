@@ -12,11 +12,11 @@
 - 版本：1.1.0
 
 ## 帳面統計
-- ADR：11（proposed 0、accepted 10、superseded 1）
+- ADR：12（proposed 0、accepted 11、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
-- BACKLOG 開放：20｜滯後：0
+- BACKLOG 開放：8｜滯後：0
 - LESSONS：3 筆
-- events：23 筆（feature_close 1、misc 9、perf 10、review 3）
+- events：24 筆（erratum 1、feature_close 1、misc 9、perf 10、review 3）
 - CLAUDE.md 行數：159（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
@@ -36,8 +36,9 @@
 | RULES fix | 15 | 19 | 內 |
 | RULES 主線 | 42 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
+| docsync 行數 | 2727 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-05｜erratum｜行 19｜該筆收單漏記 adrs（misc 當時無此欄）——DECISIONS-INDEX 之 feature 欄因而對 ADR-00011 印裸「輕量軌」；BL-000
 - 2026-09-04｜perf｜close_bookkeeping｜close_bookkeeping 6.04 秒 rc=0
 - 2026-09-04｜misc｜governance｜001 刀規格對照審查（獨立輪 spec-compliance-001）修單收單：schema-gate 自帶測試 103→118 案補回歸保護（audit 變
-- 2026-09-04｜review｜001-schema-baseline｜findings 8（修 6／BL 2／ADR 0）；BL-00020、BL-00021

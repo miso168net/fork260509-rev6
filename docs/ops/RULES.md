@@ -27,7 +27,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0017 | 完成通知一到立即 TaskStop 該看門狗（run 後 journal 永不再動＝必誤報 stall）；stall 閾值語意＝agent 邊界間隔上限。 | 主線 | checklist | rev5:L-051 |
 | RL-0018 | 冒煙 token 置於所有 agent prompt 共用段，與「zh-TW」字面同列渲染斷言一併檢查，不得只烤在 implementer prompt。 | 主線 | checklist | rev5:L-057 |
 | RL-0019 | 暫改真檔驗紅後以存原文寫回還原、禁 `git checkout` 整檔還原（會丟該檔其它未 commit 改動）；還原後 `git diff --name-only` 證零殘留。 | implementer,fix | prompt | rev5:L-060 |
-| RL-0020 | ops 帳本提及刀號／單元輪次一律寫「本刀 U2」形、不寫裸刀號；新建 ops 檔先 `git add` 再驗 lint 才進掃描面。 | implementer,主線 | prompt | rev5:L-067 |
+| RL-0020 | 提及刀號／單元輪次寫「本刀 U2」形、不寫裸刀號；★跨刀存活面（BACKLOG／LESSONS／工具與 hook 註解）改寫刀名形「001 刀 U2」——「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；新建 ops 檔先 `git add` 再驗 lint 才進掃描面。 | implementer,主線 | prompt | rev5:L-067 |
 | RL-0021 | 變異紅證必印 skipped=0；探針就地變異或改寫 ROOT、不自 repo 外載入 mutant。 | implementer | prompt | rev5:L-073 |
 | RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
 | RL-0023 | 枚舉同語意命中逐行剝 token 再判、不 `grep -v` 過濾整行（同行雙 token 會漏）；枚舉筆數要有第二來源對賬。 | implementer,fix | prompt | rev5:L-076 |
@@ -60,7 +60,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0050 | BL／LL／RL 配號取檔頭 `<!-- next: -->` 後 bump、單調遞增、號碼永不回收；刪條目前先掃現在式引用。 | implementer,主線 | lint | rev5:ADR 0012 |
 | RL-0051 | 每條閘一正一反自證、掃描面空集合即紅、變異要打在判準上；Day-1 豁免逐筆具名帶解除謂詞、到期即紅。 | implementer,review | lint | rev5:ADR 0024 |
 | RL-0052 | 數量預算＝閘 ≤12 與 RULES 總／per-scope 上限；超限一律只警告、不擋 commit、不可調數字，一進一出或走 ADR。BACKLOG 開放為觀測值、不設上限、只報現值。 | 主線,人 | lint | ADR-00011 |
-| RL-0053 | 收刀簿記＝events append（feature_close 或 misc）→NOTES 改下一步→generate，一顆簿記 commit、排在 merge 之後；簿記落地後量該顆牆鐘、append 一筆 close_bookkeeping perf 事件隨下一顆 commit 入帳。 | 主線 | checklist | ADR-00004 |
+| RL-0053 | 收刀簿記＝events append（feature_close 或 misc）→NOTES 改下一步→generate，一顆簿記 commit、排在 merge 之後；★牆鐘無法回溯量測：以 `date +%s.%N` 包住簿記 commit 命令當場取值（命令形＝RUNBOOK §12b），append 一筆 close_bookkeeping perf 事件隨下一顆 commit 入帳。 | 主線 | checklist | ADR-00004 |
 | RL-0054 | 機密實值與憑證樣式永不入版控面（含史料面與 tests）；合成樣本執行期串接、不落完整字面；`CHANGE-ME` 起首佔位值不算機密。 | implementer,fix,主線 | lint | rev5:ADR 0003 |
 | RL-0055 | 事件帳一行一 JSON 事件、逐型 schema、SHA 逐列向 git 實證；feature_close 帶序號 window；不記「已 push／未 push」揮發狀態、只記 SHA。 | 主線 | lint | rev5:ADR 0012 |
 | RL-0056 | bash 內 `$VAR` 後不得緊接非 ASCII（bash 3.2 會黏進變數名）；shebang 只用白名單形。 | implementer,fix | lint | rev5:L-001 |
@@ -92,4 +92,4 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 - **提及**＝反引號或「」內的引用、不算使用（裸編號閘不判）；**人審**＝merge 回 default 前 user 的當次明確同意＋拍板級親決（憲法 §I.8）。
 - **系統層**＝arc42 E 子節、docs/c4、docs/compliance 所述之 rev6 系統本體；**流程層**＝docs/process 所述之開發流程 AI 代理（啟動書 D16）；**例外註冊**＝住 docs/generated/ 之外但入 GENERATED_FILES 名冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`）。
 - **獨立輪**＝RL-0073 的不定期 review 輪（非刀、非波）；分支與 misc 事件 workflow 欄用 `000-rN-<scope>`（N＝輪序號、`000-` 家族免裸刀名閘）、報告住 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件。
-- **隨遷工具**＝啟動書 D10／§4.5 授權自 rev5 整檔搬運的 tools/、deploy/、.githooks／.githooks-submodule、.claude/hooks 與編排骨架：逐字承襲允許、憲法 §I.5 的重打字紀律不及於此；但其註解與字串字面的四型失效引用（章節號指到 rev6 不存在的節、無前綴前代編號、rev5 語境事實、repo 外權威）須 rev6 化（加 `rev5:`／`rev4:` 前綴、或改指 rev6 去處）。
+- **隨遷工具**＝啟動書 D10／§4.5 授權自 rev5 整檔搬運的 tools/、deploy/、.githooks／.githooks-submodule、.claude/hooks 與編排骨架：逐字承襲允許、憲法 §I.5 的重打字紀律不及於此；但其註解與字串字面的四型失效引用（章節號指到 rev6 不存在的節、無前綴前代編號、rev5 語境事實、repo 外權威）須 rev6 化（憲法 §I.5 例外②之資料形狀契約三件〔基線結構 migration／基線 seed migration／entity 欄宣告〕依 ADR-00009 後果段適用同一四型判準；加 `rev5:`／`rev4:` 前綴、或改指 rev6 去處）。

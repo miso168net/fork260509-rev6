@@ -1,5 +1,6 @@
 """語料面：GT-05 ID 家族（next／唯一／單調／不回收）、跨代裸編號（面×提及×刀集）、子庫碼面；GT-08 LESSONS 側。"""
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -123,6 +124,44 @@ class TestGt08LessonsSide(unittest.TestCase):
         self.assertEqual(errs(rules.gt_08(stub_({rel: self._lesson(rule_id="none：尚無規則位", surface="none", recurrence="RL-0002")}))), [])
         fs = rules.gt_08(stub_({}))
         self.assertTrue(any(f[0] == "SKIP" and "GT-08.lessons-absent" in f[3] for f in fs))
+
+
+class TestSubScanFiveForms(unittest.TestCase):
+    """GT-05 子庫 pin 樹腿對齊外層五形＋共用 rev6 刀集豁免（BL-00017）。
+    ★只對齊正則不共用豁免會讓自家刀名整批誤紅——實測 rust-api 六處命中全是 `001-schema-baseline`。"""
+
+    SUB = re.compile(book.SUB_SCAN)
+
+    def _judge(self, content, knives=frozenset()):
+        """精判＝外層同一套：MENTION 剝提及形 → BARE_REV5 → rev6 刀集豁免。回報紅 token 清單。"""
+        out = []
+        for m in book.BARE_REV5.finditer(book.MENTION.sub("", content)):
+            tok = m.group(1)
+            if book.RE_KNIFE.match(tok) and (tok.startswith("000-") or tok in knives):
+                continue
+            out.append(tok)
+        return out
+
+    def test_prefilter_covers_five_forms(self):
+        for txt in ("承 B-065 之形", "見 L-015", "承 ADR 0057 拍板", "參 Lint24 契約", "隨 004-ip-trust-anchor 進場"):
+            self.assertTrue(self.SUB.search(txt), txt)
+        self.assertIsNone(self.SUB.search("m0001 與 RL-0052 皆非本腿射程"))
+
+    def test_five_forms_all_red_without_prefix(self):
+        for txt, tok in (("承 B-065 之形", "B-065"), ("見 L-015", "L-015"), ("承 ADR 0057 拍板", "ADR 0057"),
+                         ("參 Lint24 契約", "Lint24"), ("隨 004-ip-trust-anchor 進場", "004-ip-trust-anchor")):
+            self.assertEqual(self._judge(txt), [tok], txt)
+
+    def test_prefixed_and_mention_forms_green(self):
+        for txt in ("承 rev5:B-065 之形", "承 `B-065` 之形", "承「L-015」之形", "承 rev4:ADR 0057"):
+            self.assertEqual(self._judge(txt), [], txt)
+
+    def test_rev6_knife_names_exempt_like_outer_leg(self):
+        """反例：豁免拿掉即紅——正是 BL-00017 所防的「對齊正則卻不共用豁免」。"""
+        line = "//! 承 001-schema-baseline 之 m0001 逐位元"
+        self.assertEqual(self._judge(line, knives={"001-schema-baseline"}), [])
+        self.assertEqual(self._judge(line, knives=frozenset()), ["001-schema-baseline"])
+        self.assertEqual(self._judge("計畫 000-w1-governance-tooling"), [])   # 000- 創世家族恆豁免
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 """語料面：events 的正反自證（schema、空行、window、三指標、GT-02 SHA 實證／pin 互證、GT-03 收刀完整性）。"""
+import inspect
 import json
 import os
 import subprocess
@@ -185,6 +186,91 @@ class TestGt03(unittest.TestCase):
         write(self.root, "docs/ops/events.jsonl", rv + "\n")
         fs = events.gt_03(common.Ctx(self.root))
         self.assertTrue(any("report" in f[3] for f in fs) and any("ADR-00002" in f[3] for f in fs))
+
+
+class TestNotesGt06Guard(unittest.TestCase):
+    """notes 全文入 MILESTONES 附錄後落進 GT-06 掃描面；事件源 append-only、寫進去無乾淨補救，
+    故在真源側先擋（BL-00013）。四腿正則自 book.py 取用、不另抄——本組同時釘住「不另抄」這件事。"""
+
+    def test_four_legs_each_red(self):
+        for text, needle in (("見 docs/ops/RULES.md:12", "行號形"),
+                             ("見 BACKLOG.md#bl-00001", "deep-link"),
+                             ("鑰在 ~/.claude/hooks/x.sh", "per-machine"),
+                             ("詳見 [報告](../docs/reviews/a.md)", "相對 markdown 連結")):
+            self.assertTrue(any(needle in x for x in events.notes_gt06_risks(text)), text)
+
+    def test_safe_notes_green(self):
+        for text in ("出口驗收：docsync test 134 綠、lint 0 錯；報告見 docs/reviews/20260904-spec-compliance-001.md",
+                     "外連 [規格](https://example.invalid/spec) 與錨點 [節](#a) 不擋"):
+            self.assertEqual(events.notes_gt06_risks(text), [], text)
+
+    def test_wired_into_check_event(self):
+        """整合面：帶危險 notes 的事件必須被 parse 擋下、不是只有 helper 會叫。"""
+        e = {"type": "misc", "date": "2026-09-05", "summary": "s", "category": "governance",
+             "backlog_add": [], "notes": "見 STATE.md#git"}
+        self.assertTrue(any("deep-link" in x for x in events._check_event(e)))
+
+    def test_regexes_are_not_re_copied(self):
+        """判準單一家：events 用的就是 book 那四支物件本身。"""
+        from docsync import book
+        src = inspect.getsource(events.notes_gt06_risks)
+        self.assertIn("book_mod.RE_LINENO", src)
+        self.assertIn("book_mod.LINK", src)
+        self.assertNotIn("re.compile", src)
+
+
+class TestErrataViewAndMiscAdrs(unittest.TestCase):
+    """erratum 更正視圖套用到人讀四面 ＋ misc 收單即立 ADR 的 DECISIONS-INDEX 反查（BL-00004／000-r1 R1-003／R1-008）。
+    ★事件源 append-only：原列永不改，更正只活在 `events_view` 的視圖裡。"""
+
+    MISC = ('{"type":"misc","date":"2026-09-05","summary":"s","category":"governance",'
+            '"backlog_add":[],"merge":"%s"}' % ("a" * 40))
+    PERF = '{"type":"perf","date":"2026-09-05","kind":"close_bookkeeping","wall_s":1.0,"commit":"%s","notes":"n"}' % ("b" * 40)
+
+    def _view(self, *lines):
+        return events.events_view("\n".join(lines) + "\n")
+
+    def test_sha_field_corrected_in_view_only(self):
+        err = ('{"type":"erratum","date":"2026-09-05","target_line":1,"field":"merge",'
+               '"corrected":"%s","reason":"打錯"}' % ("c" * 40))
+        view, errs = self._view(self.MISC, err)
+        self.assertEqual(errs, [])
+        self.assertEqual(view[0]["merge"], "c" * 40)                      # 視圖已更正
+        raw, _ = events.parse_events(self.MISC + "\n" + err + "\n")
+        self.assertEqual(raw[0]["merge"], "a" * 40)                       # 原值不動（append-only）
+
+    def test_adrs_field_can_add_absent_key(self):
+        """adrs 型 erratum 補的是「當時 schema 尚無此欄」的漏記，故容許目標列原無該欄。"""
+        err = ('{"type":"erratum","date":"2026-09-05","target_line":1,"field":"adrs",'
+               '"corrected":["ADR-00011"],"reason":"補漏記"}')
+        view, errs = self._view(self.MISC, err)
+        self.assertEqual(errs, [])
+        self.assertEqual(view[0]["adrs"], ["ADR-00011"])
+
+    def test_bad_target_and_bad_field_are_loud(self):
+        for err, needle in ((('{"type":"erratum","date":"2026-09-05","target_line":9,"field":"merge",'
+                              '"corrected":"%s","reason":"r"}' % ("c" * 40)), "不指向任何合法事件列"),
+                            (('{"type":"erratum","date":"2026-09-05","target_line":1,"field":"commit",'
+                              '"corrected":"%s","reason":"r"}' % ("c" * 40)), "不在 misc 事件的欄集")):
+            _, errs = self._view(self.MISC, err)
+            self.assertTrue(any(needle in m for _, m in errs), (needle, errs))
+
+    def test_corrected_typing_by_field(self):
+        base = '{"type":"erratum","date":"2026-09-05","target_line":1,"field":"%s","corrected":%s,"reason":"r"}'
+        self.assertTrue(any("ADR-NNNNN" in x for x in events._check_event(json.loads(base % ("adrs", '"notalist"')))))
+        self.assertTrue(any("40 位 hex" in x for x in events._check_event(json.loads(base % ("merge", '"short"')))))
+
+    def test_decisions_index_reverse_lookup_from_misc(self):
+        from docsync import adr as adr_mod
+
+        class _A:
+            def __init__(self):
+                self.id, self.status, self.date, self.title = "ADR-00011", "accepted", "2026-09-04", "t"
+                self.supersedes, self.superseded_by = [], []
+        view, _ = self._view(self.MISC.replace('"backlog_add":[]', '"backlog_add":[],"adrs":["ADR-00011"]'))
+        out = adr_mod.gen_decisions_index({"ADR-00011": _A()}, view)
+        self.assertIn("輕量軌｜2026-09-05", out)
+        self.assertNotIn("| 輕量軌 |", out)
 
 
 if __name__ == "__main__":

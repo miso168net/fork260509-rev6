@@ -71,7 +71,7 @@ migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 
    - 一次性 pristine 場景加 `--container <容器名>`（預設＝compose dev stack）。
    - 判讀提示：同庫反覆 DROP→ADD COLUMN（含 down→up）後 gate1 會因 PG attnum 空洞報 ordinal 差——補救＝pristine 重放、勿誤判真漂移（承 `rev5:RUNBOOK` §10 實證）。
 
-新業務表另備兩件：先補 `specs/001-schema-baseline/data-model.md` §1 archetype 歸屬、再登記 `docs/ops/reference-src/archetype-map.json`——否則 audit 表清單守門攔。
+新業務表另備兩件：先補 `docs/ops/reference-src/schema-definition.md` §1 archetype 歸屬、再登記 `docs/ops/reference-src/archetype-map.json`——否則 audit 表清單守門攔。
 
 ## 11. 觀測層維運
 
@@ -106,6 +106,21 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
 碼面閘（`tools/` 工具檔形制＝啟動書 §3.2 樹）：schema-gate、entity-drift-gate 已入本表（上列兩列）；wire-schema、fork-delta-lint、route-artifact-gate、view-render-guard、seed-view-gate、rust-fmt-gate 隨子庫刀進場、進場時入本表。碼面閘屬系統面、不計入 GT-12 的 ≤12 治理閘預算（啟動書 §4.2 拍板；該處碼面閘類另含 `rev5:Lint24` msg key 契約——非 `tools/` 工具檔形、rev6 承載形未定，定案時同樣入本表）。
+
+## 12b. 收刀簿記牆鐘量法（perf 事件 `close_bookkeeping` 的唯一命令形）
+
+牆鐘**無法回溯量測**，必須在下 commit 之前就把命令包起來——RL-0053 的「簿記落地後量該顆牆鐘」講的是時序（先量再記），不是「事後補量」。
+
+```sh
+t0=$(date +%s.%N)
+git commit -F <訊息檔>                     # 簿記顆；訊息含反引號一律 -F、絕不 -m
+rc=$?; t1=$(date +%s.%N)
+python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
+```
+
+`wall_s` 取兩位小數、`rc` 同記；事件另帶 `commit`（該簿記顆的 40 位 hex）與 `notes`（該顆 staged 面、哪些條件段未觸發）。append 後隨**下一顆** commit 入帳（該顆需同批 `generate` 重算 `reference/perf.md` 與 `STATE.md`）。
+
+同法適用 `precommit_chain`（量的是帶 gitlink 或工具本體的單元 commit，用以對雙錨 45／90 秒）。
 
 ## 13. 故障排除速查
 

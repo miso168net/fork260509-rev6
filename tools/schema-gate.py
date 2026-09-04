@@ -69,7 +69,7 @@ import unittest
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FIXTURES_DIR = os.path.join("specs", "001-schema-baseline", "fixtures")
-DATA_MODEL = os.path.join("specs", "001-schema-baseline", "data-model.md")
+DATA_MODEL = os.path.join("docs", "ops", "reference-src", "schema-definition.md")   # 人寫定稿左源（跨刀活體；BL-00022）
 LEDGER = os.path.join("docs", "ops", "reference-src", "schema-evolution.json")
 ARCHETYPE_MAP = os.path.join("docs", "ops", "reference-src", "archetype-map.json")
 
@@ -483,7 +483,7 @@ def parse_data_model_five(text):
             raise GateError(f"data-model §2 解析自檢敗：{t} 宣告 {n} 欄、解析得 "
                             f"{len(tables[t])}")
     if len(tables) != 14:
-        raise GateError(f"data-model §2 解析自檢敗：期望 14 親排表、解析得 {len(tables)}")
+        raise GateError(f"schema-definition §2 解析自檢敗：期望 14 親排表、解析得 {len(tables)}")
     return tables
 
 
@@ -1165,6 +1165,14 @@ def audit_archetype(map_rows, actual_cols, actual_idxs, actual_cons):
                 elif "deleted_at IS NULL" not in definition:
                     fnd.append(f"[audit] {t}｜索引 {iname} 定義缺 WHERE "
                                f"(deleted_at IS NULL)：{definition!r}")
+            # 反向完整性（BL-00020）：實庫有活性唯一 partial index 卻未登進 map＝靜默不驗；
+            # 本工具在 sequence_roster／compare_dump_owner 對「查空集合恆綠」是明文防過的，此處補齊一致性。
+            declared_au = set(row["active_unique"] or [])
+            for extra in sorted({n for (tt, n), d in idx_by.items()
+                                 if tt == t and "UNIQUE INDEX" in d.upper() and "deleted_at IS NULL" in d}
+                                - declared_au):
+                fnd.append(f"[audit] {t}｜實庫活性唯一索引 {extra} 未登進 archetype-map 之 active_unique"
+                           "（登記或說明；未登記＝該支永不受本閘驗）")
         elif label == "B append-only":
             # 前綴判準（rev5:ADR 0016）：updated_*／deleted_* 起首即紅；豁免走 AUDIT_B_EXEMPT
             for bad in sorted(tc):
@@ -1629,21 +1637,21 @@ class TestNegativeInjection(unittest.TestCase):
         self.assertTrue(any("columns/t_ok/id" in x for x in f))
 
     def test_1c_structure_index_missing_red(self):
-        """gate1 indexes 節：期望有、實庫無（本刀 review I-2）。"""
+        """gate1 indexes 節：期望有、實庫無（spec-compliance-001 review I-2）。"""
         drifted = json.loads(json.dumps(self.healthy))
         drifted["indexes"] = []
         f = compare_structure(synth_expected(self.fix, []), drifted)
         self.assertTrue(any("indexes/t_ok/t_ok_pkey" in x for x in f), f)
 
     def test_1d_structure_constraint_def_change_red(self):
-        """gate1 constraints 節：定義字串異（本刀 review I-2）。"""
+        """gate1 constraints 節：定義字串異（spec-compliance-001 review I-2）。"""
         drifted = json.loads(json.dumps(self.healthy))
         drifted["constraints"][0]["definition"] = "PRIMARY KEY (name)"
         f = compare_structure(synth_expected(self.fix, []), drifted)
         self.assertTrue(any("constraints/t_ok/t_ok_pkey" in x for x in f), f)
 
     def test_1e_structure_index_unregistered_red(self):
-        """gate1 indexes 節：實庫有、期望無（本刀 review I-2）。"""
+        """gate1 indexes 節：實庫有、期望無（spec-compliance-001 review I-2）。"""
         drifted = json.loads(json.dumps(self.healthy))
         drifted["indexes"].append({"table": "t_ok", "name": "t_ok_ghost_idx",
                                    "definition": "CREATE INDEX t_ok_ghost_idx ON public.t_ok USING btree (name)"})
@@ -1837,8 +1845,19 @@ class TestDetailBadForms(unittest.TestCase):
     def setUp(self):
         self.norm = normalize_seed_dump(_ST_DUMP)
 
+    def test_row_order_swap_red(self):
+        """多重集不變、逐列序改變＝必紅：`compare_seed` 判準「normalize 後未排序逐列 diff、★禁全檔排序」
+        的唯一載體（BL-00018；改 sorted() 後既有案仍全綠、故非 vacuous 的只有本案）。"""
+        norm = normalize_seed_dump(_ST_DUMP)
+        lines = norm.split("\n")
+        i, j = lines.index("1\ta"), lines.index("2\tb")
+        swapped = list(lines)
+        swapped[i], swapped[j] = swapped[j], swapped[i]
+        self.assertEqual(sorted(lines), sorted(swapped))              # 多重集確實不變
+        self.assertTrue(compare_seed(norm, "\n".join(swapped)))       # 逐列序變即紅
+
     def test_bad1b_seed_add_values_col_set_mismatch(self):
-        """壞形①姊妹案：seed_add 的 values 欄集 ≠ COPY 欄集（前世 d["values"][c] 拋 KeyError；本刀 review M-3）。"""
+        """壞形①姊妹案：seed_add 的 values 欄集 ≠ COPY 欄集（前世 d["values"][c] 拋 KeyError；spec-compliance-001 review M-3）。"""
         e = _entry(kind="seed_add", table="t_ok", detail={"pk": ["id"], "values": {"id": 9}})
         with self.assertRaisesRegex(GateError, "values 欄集"):
             apply_seed_entries(self.norm, [e])
@@ -2118,7 +2137,7 @@ class TestCmdCheckGreenPath(unittest.TestCase):
              "specs/001-schema-baseline/fixtures/indexes.json",
              "specs/001-schema-baseline/fixtures/constraints.json",
              "specs/001-schema-baseline/fixtures/seed.sql",
-             "specs/001-schema-baseline/data-model.md",
+             "docs/ops/reference-src/schema-definition.md",
              "docs/ops/reference-src/archetype-map.json")
 
     def test_green_path_sql_dispatch_summary_rc0(self):
@@ -2439,6 +2458,19 @@ class TestAuditArchetypeNegative(unittest.TestCase):
             i[:] = [x for x in i if x["name"] != "sys_user_user_name_active_uniq"]
         self._red(mut, "sys_user", "活性唯一索引", "不在實庫")
 
+    def test_a_active_unique_reverse_completeness(self):
+        """反向完整性（BL-00020）：實庫多一支活性唯一 partial index 而 map 未登記＝紅。"""
+        def mut(c, i, n):
+            i.append({"table": "sys_user", "name": "sys_user_ghost_active_uniq",
+                      "definition": "CREATE UNIQUE INDEX sys_user_ghost_active_uniq ON public.sys_user "
+                                    "USING btree (nick_name) WHERE (deleted_at IS NULL)"})
+        self._red(mut, "sys_user", "sys_user_ghost_active_uniq", "未登進")
+        # 正例：非 partial（無 WHERE）或非 UNIQUE 的索引不入本腿射程
+        def mut2(c, i, n):
+            i.append({"table": "sys_user", "name": "sys_user_plain_idx",
+                      "definition": "CREATE INDEX sys_user_plain_idx ON public.sys_user USING btree (nick_name)"})
+        self.assertEqual([x for x in self._run(mut2) if "未登進" in x], [])
+
     def test_a_active_unique_where_leg(self):
         def mut(c, i, n):
             for x in i:
@@ -2458,7 +2490,7 @@ class TestAuditArchetypeNegative(unittest.TestCase):
                   "casbin_rule.protected", "default")
 
     def test_d_archive_archived_by_leg(self):
-        """憲法 §I.6 變體 D 明列 archive 表帶 archived_by——本刀 review M-1 補入驗則。"""
+        """憲法 §I.6 變體 D 明列 archive 表帶 archived_by——spec-compliance-001 review M-1 補入驗則。"""
         self._red(lambda c, i, n: self._col(c, "sys_casbin_policy_archive", "archived_by").update(type="text"),
                   "sys_casbin_policy_archive.archived_by", "型別")
 
@@ -2766,12 +2798,13 @@ class TestConstantsPinned(unittest.TestCase):
                          msg=f"RUNTIME_APPEND_TABLES 值欄重複：{sorted(vals)}")
 
     def test_paths_are_rev6_001_coordinates(self):
-        """rev6 座標釘死：凍結面／data-model 指 specs/001-schema-baseline、登記檔／map 指
-        docs/ops/reference-src；工具零 rev5 專屬 seed 決策 json 依賴（名冊自凍結 seed 取）。"""
-        for p in (FIXTURES_DIR, DATA_MODEL):
-            self.assertIn("001-schema-baseline", p)
-        for p in (LEDGER, ARCHETYPE_MAP):
+        """rev6 座標釘死：**凍結面**（fixtures）指 specs/001-schema-baseline＝該刀當下史料；
+        **跨刀活體**（定稿左源／登記檔／歸屬帳）一律指 docs/ops/reference-src（BL-00022 抽取模式）。
+        工具零 rev5 專屬 seed 決策 json 依賴（名冊自凍結 seed 取）。"""
+        self.assertIn("001-schema-baseline", FIXTURES_DIR)
+        for p in (DATA_MODEL, LEDGER, ARCHETYPE_MAP):
             self.assertTrue(p.startswith(os.path.join("docs", "ops", "reference-src")), p)
+        self.assertTrue(DATA_MODEL.endswith("schema-definition.md"), DATA_MODEL)
 
 
 class TestUsage(unittest.TestCase):

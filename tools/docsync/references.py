@@ -92,7 +92,7 @@ def gen_reference_ports(ctx):
 
 def gen_reference_perf(events):
     lines = [GENERATED_HEADER, "# reference/perf — 收刀簿記與 pre-commit 效能資料點", "",
-             "來源＝docs/ops/events.jsonl 的 perf 事件（generate 重算；kind＝close_bookkeeping／precommit_chain、量測法承 rev5:RUNBOOK §12.1）。", "",
+             "來源＝docs/ops/events.jsonl 的 perf 事件（generate 重算；kind＝close_bookkeeping／precommit_chain、量測法＝RUNBOOK §12b）。", "",
              "| date | kind | wall_s | rc | commit | notes |", "|---|---|---|---|---|---|"]
     for e in events:
         if e.get("type") != "perf":
@@ -339,6 +339,12 @@ def gen_reference_agents(ctx):
     return "\n".join(lines) + "\n"
 
 
+def _docsync_lines(ctx):
+    """docsync package 行數（wc -l 口徑＝`cat tools/docsync/*.py | wc -l`；不含 tests/ 語料面，與 CLAUDE.md 行數同法）。"""
+    return sum((ctx.text(rel) or "").count("\n") for rel in ctx.tracked
+               if rel.startswith("tools/docsync/") and rel.endswith(".py") and rel.count("/") == 2)
+
+
 def _budget_rows(ctx, counts, caps):
     rows = []
     try:
@@ -350,6 +356,7 @@ def _budget_rows(ctx, counts, caps):
     for k in ("總",) + rules_mod.SCOPES:
         if k in counts:
             rows.append((f"RULES {k}", counts[k], caps.get(k, "—")))
+    rows.append(("docsync 行數", _docsync_lines(ctx), 4000))   # 啟動書 §4.3／spec SC-007＝目標非閘（GT-12 不加腿；BL-00012）
     lines = ["| 項目 | 現值 | 上限 | 狀態 |", "|---|---|---|---|"]
     for name, val, cap in rows:
         status = "—" if not isinstance(val, int) or not isinstance(cap, int) else ("內" if val <= cap else "超")
@@ -358,7 +365,7 @@ def _budget_rows(ctx, counts, caps):
 
 
 def gen_state(ctx):
-    events, _ = ev_mod.parse_events(ctx.text(EVENTS))
+    events, _ = ev_mod.events_view(ctx.text(EVENTS))   # 人讀面吃更正視圖（BL-00004）
     adrs = adr_mod.load_adrs(ctx)
     by_status = {}
     for a in adrs.values():
@@ -398,7 +405,7 @@ def gen_state(ctx):
 
 def compute_generated(ctx):
     """名冊→內容。GATES.md 由 gates.gen_gates_md 產（gates 模組缺席時暫不入計算面）。"""
-    events, _ = ev_mod.parse_events(ctx.text(EVENTS))
+    events, _ = ev_mod.events_view(ctx.text(EVENTS))   # 人讀面吃更正視圖（BL-00004）
     out = {
         "docs/generated/STATE.md": gen_state(ctx),
         "docs/generated/MILESTONES.md": gen_milestones(events),
