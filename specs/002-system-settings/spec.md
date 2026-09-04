@@ -10,7 +10,17 @@
 
 > 摘要：立 rust-api server crate（workspace 第四 member），打通「路由→授權→handler→設定值 registry 驗證→facade→回應信封→前端接線層」
 > 整條縱切管線；功能面＝系統設定**讀（一次回 16 鍵）＋寫（單鍵更新、三態部分更新）**；前端腿恰兩新檔（typings＋service）、view 與真登入不入。
-> 同刀完成治理進場：三支碼面閘隨遷入 pre-commit、碼面閘名冊定形、msg key 後端側閉環、ADR 五筆；零 migration、憲法零 Amendment。
+> 同刀完成治理進場：三支碼面閘隨遷入 pre-commit、碼面閘名冊定形、msg key 後端側閉環、ADR 六筆；零 migration、憲法零 Amendment。
+
+## Clarifications
+
+### Session 2026-09-05
+
+- Q: 已知鍵的庫中 `setting_type` 字面與 registry 宣告型別不一致時，讀寫該鍵回 `5000` 還是照 registry 驗證並忽略庫值？（FR-009）→ A: **A 不一致→`5000` fail-loud**（讀寫觸及皆同、不跳過該列；registry 與庫中型別為同一事實兩副本、分叉即紅；rev5 只對未知字面 fail-loud＝本刀新增判準，記拍板差異點）。
+- Q: 讀端某鍵 `description` 在庫中為 NULL 時，wire 上該欄缺席還是回 `null`？（FR-003／FR-017）→ A: **A 欄位缺席**（後端 NULL 不上 wire；讀端 typings `description?: string`、快照裁判斷言不含 null；寫端請求物件仍 `description?: string | null` 承載三態——讀端缺席語意與寫端 null 清空語意是兩件事、沿 rev5 形）。
+- Q: 單鍵更新成功時回應 `data` 回 `null` 還是更新後的該鍵物件？（FR-005）→ A: **A `data: null`**（回包恰 `{data:null, code:"0000", msg:"common.success"}`；service 回傳型別 null；驗收以回讀端比對；沿 rev5 形與 base-web 改動類 service 慣例）。
+- Q: 已註冊路徑但方法不符（GET-only 路徑收 POST 等）回框架預設無信封 405、還是視同未匹配回 `4040` 信封？（FR-019）→ A: **B `4040` 信封**（HTTP 404、`system.notFound`；router 對「未註冊路徑」與「方法不符」同一 fallback 形；信封例外維持憲法字面恰二；rev5 為框架預設 405＝本刀拍板差異點）。
+- Q: 容器依賴型碼面閘（rust 格式閘、wire 契約閘）在 docker 不在或容器未起時，pre-commit 具名跳過放行、還是擋下 commit？（FR-025／FR-026）→ A: **A 具名跳過 rc 0**（印跳過行；容器在而工具缺或重抽失敗＝fail-loud rc 2；環境缺席≠tracked 檔缺席、方向各自成立；rev6 立 ADR 承 rev5:ADR 0057 決定 3、RUNBOOK 碼面閘表「觸發時機」欄寫明）。
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -28,7 +38,7 @@ rev6 第一條後端管線自此存在。
 **Acceptance Scenarios**:
 
 1. **Given** seed 基線 16 鍵在庫、全部預設業務件起得齊，**When** R_SUPER 身分呼叫讀取端點，**Then** 回應信封 `{data, code:"0000", msg}`、
-   data 含 16 鍵完整清單（settingKey／settingType／settingValue／description），內容與 seed 定稿逐鍵全等、以 settingKey 升冪穩定序；僅回未刪列。
+   data 含 16 鍵完整清單（settingKey／settingType／settingValue／description；description 為 NULL 者該欄缺席、不回 null），內容與 seed 定稿逐鍵全等、以 settingKey 升冪穩定序；僅回未刪列。
 2. **Given** 前端接線層新檔（typings＋service），**When** 以其宣告型別消費回包，**Then** 逐欄位型別對齊、零手工轉換；
    自 typings 抽出的契約快照對後端序列化輸出裁判全過。
 3. **Given** R_ADMIN 身分（政策無讀取授權），**When** 呼叫讀取端點，**Then** 授權拒絕（`5003`、HTTP 403）、data 不含任何設定內容。
@@ -121,7 +131,7 @@ rev6 第一條後端管線自此存在。
 
 作為 workspace 維護者，我要在 server 首支程式碼落地前，把三支碼面閘（rust 格式、wire 契約快照、fork-delta 標記）自 rev5 隨遷入 pre-commit、
 碼面閘名冊定形於 RUNBOOK 並由 GT-12 機器對賬、entity 漂移段快照缺席改即紅、pre-commit 與 README 對 schema-frozen 觸發面的失準修正、
-「碼面閘」入 RULES 名詞段；並於刀內立五筆 ADR、兌現三條 BACKLOG 觸發項、活書同刀更新——
+「碼面閘」入 RULES 名詞段；並於刀內立六筆 ADR、兌現三條 BACKLOG 觸發項、活書同刀更新——
 使 002 期間手寫 rust 碼與 base-web 新檔自第一行起就有機器守門，且每筆拍板都有家。
 
 **Why this priority**: 治理項與功能可分開驗收，但 brainstorm 方案 A 拍定「全落 002 內、首單元」——它是功能單元的前置，不是收尾。
@@ -137,7 +147,7 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
    還原後 `git status --porcelain` 零差異。
 3. **Given** RUNBOOK 碼面閘表與 GT-12 新腿，**When** 表內少列一支存在的閘工具、或多列一支不存在的，**Then** lint 紅並指名；對齊後綠。
 4. **Given** 失準修單，**When** 以 errata 枚舉「schema-frozen」，**Then** 全 repo 零處仍寫舊觸發面。
-5. **Given** 五筆 ADR 與名詞段定義，**When** 收刀，**Then** ADR 皆 accepted、RULES-VERSION 已 bump、BL-00008／BL-00010／BL-00011 於收刀事件 `backlog_done`。
+5. **Given** 六筆 ADR 與名詞段定義，**When** 收刀，**Then** ADR 皆 accepted、RULES-VERSION 已 bump、BL-00008／BL-00010／BL-00011 於收刀事件 `backlog_done`。
 
 ---
 
@@ -149,6 +159,7 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
 - **角色軟刪或停用**：授權判定只認未刪且啟用的角色；測試態身分掛的角色被軟刪或停用＝視同無該角色（US4 場景 4）。
 - **未知型 fail-loud**：庫中 setting_type 字面不在 registry 認識集 → `5000`（US3 場景 5）；registry 絕不「跳過不認識的型」。
 - **registry 宣告型別與庫中 setting_type 字面不一致**：registry 為驗證權威、庫中 setting_type 為資料；已知鍵而兩者不一致＝資料完整性異常，處置同未知型 fail-loud（`5000`），不採其一靜默放行。
+- **讀端 description 為 NULL**：該欄缺席、不回 null；讀端型別不含 null（clarify 2026-09-05）。
 - **description 空字串 vs null**：空字串＝設值為空（落 ""）、JSON null＝清空（落 NULL）、缺席＝不動——三形各有測試案（US5）。
 - **enum 大小寫**：enum 值正規形＝原值、大小寫敏感；`ON`／`On` 皆值域外拒收。
 - **跨鍵一致性**：password_min_length 與 password_max_length、captcha_after 與 max_fails 兩組鍵的順序關係非本刀驗證面（brainstorm Q6）；
@@ -156,9 +167,10 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
 - **msg 訊息鍵未命中前端字典**：前端 graceful fallback（憲法 §I.3 既定）；本刀 msg 一律穩定 i18n key、不回人話字串；跨端鍵集閘延前端 i18n 刀（Q4）。
 - **不認識的 header**：一律忽略（憲法 §II #1），契約測試不因多餘 header 改變行為。
 - **值長度**：本刀不設字串長度上限（庫真表 setting_value／description 皆無長度上限；enum 值域自然限長、number 由範圍限長）。
+- **方法不符**：已註冊路徑收到未註冊的方法（如 POST `/health`、GET 更新端點）→ 與未註冊路徑同形回 `4040` 信封（HTTP 404）、零無信封回應（clarify 2026-09-05；rev5 為框架 405＝差異點）。
 - **4 保留碼與未進場碼**：`7778`／`8889`／`9998`／`9999` 與 `1000`／`3333`／`7777` 後端於本刀零發出（構造層不可發出）、契約測試斷言。
 - **rust 格式閘首跑撞 001 逐位元承襲檔**：預期綠（rev5 存量已格式化、toolchain 同版）；若紅＝格式化即破 ADR-00009 條件①→停手升 user、不得自行格式化。
-- **容器未起時的碼面閘**：rust 格式閘於 docker 缺或 `rust-api` 未在跑＝具名跳過；容器在而格式工具缺＝fail-loud；wire 契約閘於 staged 區間零 typings 變動即跳過。
+- **容器未起時的碼面閘**：rust 格式閘與 wire 契約閘於 docker 缺或對應容器未在跑＝具名跳過 rc 0（印跳過行、放行 commit）；容器在而格式工具缺或重抽失敗＝fail-loud；wire 契約閘另於 staged 區間零 typings 變動即跳過。環境缺席（本條）與 tracked 檔缺席（entity 漂移段、即紅）方向各自成立（clarify 2026-09-05）。
 - **DDL 冒出**：clarify／plan 若出現任何 migration 需求 → 走 RUNBOOK §10 Day-1 三步並改 schema 閘表數斷言（FR-021）；本刀預期零 migration。
 - **rev5 側唯讀紀律**：一切讀取對凍結 worktree；絕不寫入、不動其 stack。
 
@@ -172,18 +184,18 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
   `up -d --wait` 起得齊（migrate 啟動閘之後 server 常駐、容器健康判定可過）。
 - **FR-002**: 路由 MUST 收斂單檔 ROUTES 常量；本刀 route 集＝業務 2＋信封例外 2 恰四條：業務＝`GET /systemManage/getSystemSettings`＋
   `POST /systemManage/updateSystemSetting`（路徑與方法由 casbin seed 政策列 66／67 錨定；本刀 MUST NOT 動 casbin seed 與 sys_menu seed）；
-  信封例外＝`/health`（plain text "ok"）＋`/metrics`（Prometheus exposition）皆 MUST 隨 server 就位（憲法 §I.3 例外集恰二；驗收＝dev 直連埠直打）。
+  信封例外＝`/health`（plain text "ok"）＋`/metrics`（Prometheus exposition）皆 MUST 隨 server 就位（憲法 §I.3 例外集恰二；驗收＝dev 直連埠直打）；未註冊路徑與「已註冊路徑但方法不符」MUST 走同一 fallback 回 `4040` 信封（clarify 2026-09-05）、MUST NOT 露出框架預設的無信封 405。
   ROUTES 字面形 MUST 可被 docsync 新生成器重算為 routes 參考真表（生成物名冊 14→15、README 成員行同步）。
 
 **讀端**
 
-- **FR-003**: 讀取端點 MUST 一次回傳全部 16 鍵（settingKey／settingType／settingValue／description），僅未刪列、settingKey 升冪穩定序；
+- **FR-003**: 讀取端點 MUST 一次回傳全部 16 鍵（settingKey／settingType／settingValue／description；description 為 NULL 時該欄 MUST 缺席、不得回 `null`），僅未刪列、settingKey 升冪穩定序；
   回傳形＝非分頁清單（16 鍵固定集、PageRes 不適用）；審計欄不上 wire；信封與逐欄位型別忠實 typings 權威（憲法 §I.3）。
 - **FR-004**: 讀端授權 MUST 依 casbin seed 現況＝僅 R_SUPER；其餘角色→授權拒絕（FR-019 碼表）。
 
 **寫端與設定值 registry**
 
-- **FR-005**: 寫端 MUST 為單鍵更新：以 settingKey 定位、提交新值；成功→`0000`、落庫、回讀一致。可更新欄集＝settingValue（必）＋description（三態，FR-011）；
+- **FR-005**: 寫端 MUST 為單鍵更新：以 settingKey 定位、提交新值；成功→`0000`、回包 `data` MUST 為 `null`（不回更新後物件；驗收以回讀端比對）、落庫、回讀一致。可更新欄集＝settingValue（必）＋description（三態，FR-011）；
   settingKey／settingType 不可經寫端變更；無新增鍵／刪除鍵端點（16 鍵集合凍結）。併發語意＝單鍵原子更新、last-write-wins、無樂觀鎖；同值更新照寫審計欄。
 - **FR-006**: registry MUST 為每鍵顯式宣告型別與值域：型別集以現庫 16 鍵定形——字面＝setting_type 資料真值 `number`（區間型、10 鍵）／
   `enum:on,off`（開關型、6 鍵）兩型起步、可擴；每 `number` 鍵 MUST 有顯式含界範圍（逐鍵值域＝承 rev5 定稿原值、隨 plan 之 data-model 凍結）；
@@ -216,7 +228,7 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
 **wire 契約（憲法 §I.3）**
 
 - **FR-017**: wire 權威＝base-web typings 新檔（`rev6-` 前綴、§III.1 ADAPT 軌道、新增型圈界標記）；型別以 declaration merging 併入既有 `Api.SystemManage`
-  命名空間、不改既有 typings 檔；後端序列化 MUST 逐欄位忠實 typings 宣告；description 於 typings 為可選且允許 null（三態欄）。
+  命名空間、不改既有 typings 檔；後端序列化 MUST 逐欄位忠實 typings 宣告；description 於讀端列型為可選、不含 null（NULL＝缺席），於寫端請求物件為可選且允許 null（三態欄）——同名兩形、契約快照各自斷言。
 - **FR-018**: 契約機器化 MUST 就位（本刀＝憲法 §I.3 之「wire 地基刀」）：容器內自 typings 抽 JSON Schema 快照（落 rust-api 測試 fixtures、抽取唯讀、輸出確定性）、
   契約測試離線消費快照裁判序列化輸出（含三態欄之 null 允許）；coverage gate＝契約測試案登記表與 ROUTES 之 case 鍵**雙向**比對——每條 route 必有案（缺即紅指名）、
   每個案必對 route（殭屍即紅指名）；wire 契約閘 MUST 入 pre-commit（base-web 變動時重抽比對、staged 區間零 typings 變動即跳過）。
@@ -231,7 +243,7 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
   | 授權拒絕（政策無授、角色軟刪或停用） | `5003` | 403 |
   | 庫中未知 setting_type／型別與 registry 不一致（fail-loud） | `5000` | 200 |
   | 未認證（標頭缺席／非 Bearer 形／token 不在表） | `8888` | 200 |
-  | 路由未匹配（router fallback、非本刀業務路徑） | `4040` | 404 |
+  | 路由未匹配（未註冊路徑、或已註冊路徑但方法不符；router fallback） | `4040` | 404 |
 
   `1000`／`3333`／`7777` 與 4 保留碼 MUST 於構造層不可發出並由契約測試斷言零發出；msg MUST 為穩定 i18n key；信封三欄宣告序 data→code→msg、
   code 恆字串、錯誤 `data:null` 不省略。
@@ -251,22 +263,23 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
 - **FR-023**: 前端腿 MUST 恰為兩新檔：typings 型別宣告檔（ADAPT 軌道）＋service 接線檔（WRAPPER 軌道、`rev6-` 前綴、不入 barrel）；
   兩檔檔頭 MUST 帶 `rev6-inline` 新增型圈界標記並註明軌道與刀名；全程零 inline 改動、零修憲、零 ★軌道；view 不入本刀、manage_system-settings 選單點擊 404 為已知態；
   `.env` MUST NOT 被本刀改動（route mode 翻 dynamic 延 003，Q7）。
-- **FR-024**: 接線層 MUST 完整可消費：兩端點各有型別完備的呼叫函式（讀無參、寫收單一請求物件），未來 view 刀接上即用、不需回頭補型別；容器內 typecheck 綠。
+- **FR-024**: 接線層 MUST 完整可消費：兩端點各有型別完備的呼叫函式（讀無參、回列型陣列；寫收單一請求物件、回傳型別 null），未來 view 刀接上即用、不需回頭補型別；容器內 typecheck 綠。
 
 **治理進場（U0 組合拳）**
 
 - **FR-025**: 三支碼面閘 MUST 自 rev5 依「隨遷工具」紀律整檔搬運並於 server 首支 rust 碼落地前就位：rust 格式閘（容器內唯讀檢查、docker 缺或容器未起＝具名跳過、
-  容器在而格式工具缺＝fail-loud）、wire 契約閘（FR-018）、fork-delta 標記閘（新增型圈界腿＋§III.1 範圍腿；結構斷言 MUST 改為容 rev6 空 ★軌道表——
+  容器在而格式工具缺＝fail-loud）、wire 契約閘（FR-018；docker 缺或 `base-web` 容器未起＝具名跳過 rc 0、容器在而重抽失敗或快照不一致＝紅）、fork-delta 標記閘（新增型圈界腿＋§III.1 範圍腿；結構斷言 MUST 改為容 rev6 空 ★軌道表——
   零列時必見「空表——尚無 ★ 軌道」哨兵句、否則 ≥1 列，哨兵句被移除即紅、Q5）；三支皆 MUST 自帶測試綠、註解與字串之四型失效引用 rev6 化、
   入 pre-commit 條件自測迴圈與 README 樹。
 - **FR-026**: pre-commit MUST 同段改六處：①自測迴圈加三支 ②rust 格式段（staged 含 rust-api 變動即跑）③wire 契約段（staged 含 base-web 變動即跑）
   ④fork-delta 段（staged 含 base-web 變動、該工具或憲法即跑）⑤entity 漂移段快照缺席由具名跳過改為非零退出並附補救提示（BL-00010、Q2；
   hook 面真演練＝移走快照→commit 被擋→還原→porcelain 對賬）⑥檔頭對 schema-frozen 觸發面的陳述補上 schema 定稿檔；失準修單 MUST 以 errata 枚舉全 repo 逐處處置。
-- **FR-027**: 碼面閘名冊 MUST 定形於 RUNBOOK §12 碼面閘表（工具檔｜守什麼｜觸發時機｜根據 ADR；含 msg key 跨端閘之延後註記列），GT-12 MUST 加一腿：
+- **FR-027**: 碼面閘名冊 MUST 定形於 RUNBOOK §12 碼面閘表（工具檔｜守什麼｜觸發時機（含環境缺席時的跳過語意）｜根據 ADR；含 msg key 跨端閘之延後註記列），GT-12 MUST 加一腿：
   tools/ 頂層工具檔集減去非閘名冊常數＝表列工具檔集、雙向差集即紅、一正一反自證（BL-00011、Q3）；RULES 名詞段 MUST 補「碼面閘」定義並 bump RULES-VERSION
   （於首個 Workflow 派發前由主線直改、後續 script 一律以新版組裝，Q8）；治理閘數 MUST 維持 12、碼面閘不計入 GT-12 預算。
 - **FR-028**: ADR MUST 於刀內落地 accepted、一決策一檔、皆帶 rev5 provenance：①部分更新三態約定 ②授權拒絕語意＋no-escalation seam ③碼面閘名冊承載於 RUNBOOK §12＋GT-12 腿
-  ④msg key 跨端契約延前端 i18n 刀、002 後端側閉環 ⑤entity 漂移段快照缺席即紅；收刀 `feature_close` 事件 adrs 列全五筆。憲法 MUST 零 Amendment。
+  ④msg key 跨端契約延前端 i18n 刀、002 後端側閉環 ⑤entity 漂移段快照缺席即紅 ⑥容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud（clarify 2026-09-05、承 rev5:ADR 0057 決定 3）；
+  收刀 `feature_close` 事件 adrs 列全六筆。憲法 MUST 零 Amendment。
 - **FR-029**: BACKLOG 時點 MUST 兌現：BL-00008（機器錨）、BL-00010（缺席即紅）、BL-00011（名冊）於收刀 `backlog_done`；新記兩條＝msg key 跨端閘（觸發＝首個接 i18n 的前端刀）
   與 registry 跨鍵不變式（觸發＝004／007 消費側進場）；活書 MUST 同刀更新（建構視圖 server 管線形、API 慣例之契約機器化與三態 as-built、授權慣例之拒絕語意 as-built；
   現在式、feature branch 內改；C4-L2 拓樸不變零改）。
@@ -296,12 +309,12 @@ GT-12 新腿一正一反、errata 復掃零殘留；不需任何 server 碼即�
 - **SC-004**: 授權矩陣全數正確：R_SUPER 讀寫皆 `0000`；R_ADMIN 讀寫皆 `5003`（HTTP 403）且回包不含政策明細；未認證三形（標頭缺席／非 Bearer／token 不在表）皆 `8888`；
   角色軟刪或停用案 `5003`。
 - **SC-005**: 三態矩陣全數正確：description 缺席不動／null 清空落 NULL／空字串落空字串／設值生效；settingValue 顯式清空拒收——五案各有契約測試。
-- **SC-006**: 契約覆蓋自證：兩業務 route 皆有契約測試案，抽掉任一 route 之案 coverage gate 即紅並指名、加一殭屍案亦紅（negative 自證）；
+- **SC-006**: 契約覆蓋自證：兩業務 route 皆有契約測試案，抽掉任一 route 之案 coverage gate 即紅並指名、加一殭屍案亦紅（negative 自證）；未註冊路徑與方法不符兩案皆回 `4040` 信封（獨立測試、不入 case 登記表）；
   `1000`／`3333`／`7777` 與 4 保留碼零發出斷言在案；msg 名冊雙向斷言在案。
 - **SC-007**: DoD 鏈全綠：七件預設業務件 `up -d --wait` 起得齊（`/health` 直打回 "ok"、`/metrics` exposition 可取得）＋quickstart 讀端／授權矩陣／寫端往返經 front-nginx 真 HTTP 走查全通
   ＋entity 漂移閘綠＋schema 三閘綠＋lint 全量零紅＋GT-12 預算內（治理閘 12、生成物名冊 15）。
 - **SC-008**: 治理全綠：三支碼面閘各一正一反自證通過、hook 面缺席演練被擋且還原後 porcelain 零差異、GT-12 新腿一正一反通過、errata「schema-frozen」復掃零殘留、
-  RULES-VERSION 已 bump 且名詞段含「碼面閘」、ADR 五筆 accepted、BL-00008／00010／00011 收刀 `backlog_done`、新記兩條 BACKLOG 在案。
+  RULES-VERSION 已 bump 且名詞段含「碼面閘」、ADR 六筆 accepted、BL-00008／00010／00011 收刀 `backlog_done`、新記兩條 BACKLOG 在案。
 - **SC-009**: pre-commit 全鏈實測 ≤45 秒（雙錨警戒線；含新增三段）並記 perf 事件；rust 格式閘首跑對 001 承襲檔綠（若紅＝升 user、不自行格式化）。
 
 ## Assumptions
