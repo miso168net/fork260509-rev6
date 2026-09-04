@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-from docsync import references, common, book, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR, LESSONS_DIR
+from docsync import references, common, book, events as ev_mod, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR, LESSONS_DIR
 from docsync.tests.test_book_ids import stub, RULES_TEXT
 from docsync.tests import test_snapshot
 
@@ -100,6 +100,77 @@ class TestGenerateIdempotent(unittest.TestCase):
         ctx = common.Ctx(root)
         self.assertEqual(references.check_generated(ctx, references.compute_generated(ctx)), [])
         self.assertTrue(all(t.startswith(common.GENERATED_HEADER) or t.startswith("// 機器生成") for t in first.values()))
+
+
+class TestMilestonesEventFieldRendering(unittest.TestCase):
+    """本刀 U5（BL-00005 四處渲染）：misc.workflow／feature_close.kind／spec_supersessions／非 perf 型 notes 附錄節，各一正一反。"""
+
+    @staticmethod
+    def _fc(date, summary, **extra):
+        return {"type": "feature_close", "date": date, "feature": "001-schema-baseline", "summary": summary, "merge": "a" * 40,
+                "pins": {"web": "b" * 40, "api": "c" * 40}, "adrs": [], "arch_impact": [], "backlog_add": [], "backlog_done": [], "window": 1, **extra}
+
+    def test_misc_workflow_renders_in_target_column(self):
+        ev = [{"type": "misc", "date": "2026-09-03", "summary": "無 workflow", "category": "governance", "backlog_add": []},
+              {"type": "misc", "date": "2026-09-03", "summary": "有 workflow", "category": "governance", "backlog_add": [], "workflow": "000-w1-governance-tooling"}]
+        out = references.gen_milestones(ev)
+        self.assertIn("| misc | governance｜000-w1-governance-tooling | 有 workflow |", out)
+        self.assertIn("| misc | governance | 無 workflow |", out)
+        self.assertEqual(out.count("｜000-w1-governance-tooling"), 1)
+
+    def test_feature_close_kind_renders_in_type_column(self):
+        ev = [self._fc("2026-09-05", "無 kind"), self._fc("2026-09-05", "有 kind", kind="vertical")]
+        out = references.gen_milestones(ev)
+        self.assertIn("| 2026-09-05 | feature_close｜vertical | 001-schema-baseline | 有 kind |", out)
+        self.assertIn("| 2026-09-05 | feature_close | 001-schema-baseline | 無 kind |", out)
+        out3 = references.gen_milestones([self._fc("2026-09-05", "帶 notes", kind="vertical", notes="n")])
+        self.assertIn("\n### 2026-09-05｜feature_close｜vertical｜001-schema-baseline\n", out3)   # 附錄標題 type 與表列同形（含 kind）
+
+    def test_spec_supersessions_appended_to_summary(self):
+        ss = [{"feature": "001-schema-baseline", "item": "FR-012", "note": "改走 ADR"}, {"feature": "002-xxx", "item": "FR-003", "note": ""}]
+        out = references.gen_milestones([self._fc("2026-09-05", "收刀", spec_supersessions=ss)])
+        self.assertIn("| 收刀；翻案：001-schema-baseline/FR-012（改走 ADR）、002-xxx/FR-003 |", out)
+        out2 = references.gen_milestones([self._fc("2026-09-05", "空陣列", spec_supersessions=[]), self._fc("2026-09-05", "無欄")])
+        self.assertNotIn("翻案", out2)
+        self.assertIn("| 空陣列 |", out2); self.assertIn("| 無欄 |", out2)
+
+    def test_notes_appendix_lists_non_perf_events_with_notes_only(self):
+        ev = [{"type": "misc", "date": "2026-09-03", "summary": "s", "category": "governance", "backlog_add": [], "notes": "第一行\n第二行全文"},
+              {"type": "perf", "date": "2026-09-03", "kind": "close_bookkeeping", "wall_s": 1.0, "rc": 0, "notes": "perf 備註不入"},
+              {"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/x.md",
+               "findings": {"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}}]
+        out = references.gen_milestones(ev)
+        self.assertIn("| s | — | — | — |\n\n## 備註（notes）\n\n### 2026-09-03｜misc｜governance\n\n第一行\n第二行全文\n", out)
+        self.assertEqual(out.count("\n### "), 1)
+        self.assertNotIn("perf 備註不入", out)
+        self.assertNotIn("｜review｜", out)
+        self.assertTrue(out.endswith("第二行全文\n"))
+
+    def test_notes_appendix_absent_when_no_notes_and_ordered_newest_first(self):
+        base = {"type": "misc", "category": "governance", "backlog_add": []}
+        out = references.gen_milestones([{**base, "date": "2026-09-03", "summary": "a"},
+                                         {**base, "date": "2026-09-03", "summary": "b"}])
+        self.assertNotIn("備註", out)
+        self.assertTrue(out.endswith("| b | — | — | — |\n| 2026-09-03 | misc | governance | a | — | — | — |\n"))
+        out2 = references.gen_milestones([{**base, "date": "2026-09-03", "summary": "a", "notes": "A 註"},
+                                          {**base, "date": "2026-09-04", "summary": "b", "notes": "B 註", "workflow": "000-w1-x"},
+                                          {**base, "date": "2026-09-03", "summary": "c", "notes": "C 註"}])
+        heads = [ln for ln in out2.split("\n") if ln.startswith("### ")]
+        self.assertEqual(heads, ["### 2026-09-04｜misc｜governance｜000-w1-x", "### 2026-09-03｜misc｜governance", "### 2026-09-03｜misc｜governance"])
+        self.assertLess(out2.index("B 註"), out2.index("C 註")); self.assertLess(out2.index("C 註"), out2.index("A 註"))   # 同日後 append 在前
+
+    def test_real_repo_appendix_matches_events_and_workflow_target(self):
+        events, errs = ev_mod.parse_events(common.Ctx(ROOT).text(EVENTS))
+        self.assertEqual(errs, [])
+        out = references.gen_milestones(events)
+        heads = [ln for ln in out.split("\n") if ln.startswith("### ")]
+        expected = [e for e in events if e.get("type") != "perf" and e.get("notes")]
+        self.assertEqual(len(heads), len(expected))   # 期望自事件源現算（append-only 帳本不釘常數、收刀 append 不連動轉紅）
+        self.assertGreaterEqual(len(expected), 9)     # 本刀收單時實資料 misc 7＋review 2 為下限
+        self.assertEqual(sum("｜misc｜" in h for h in heads), sum(e["type"] == "misc" for e in expected))
+        self.assertEqual(sum("｜review｜" in h for h in heads), sum(e["type"] == "review" for e in expected))
+        self.assertIn("| misc | governance｜000-r1-doc-governance |", out)
+        self.assertIn("| misc | governance｜000-w1-governance-tooling |", out)
 
 
 if __name__ == "__main__":

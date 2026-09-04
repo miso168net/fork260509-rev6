@@ -102,14 +102,27 @@ def gen_reference_perf(events):
     return "\n".join(lines) + "\n"
 
 
+def _type_cell(e):
+    """type 欄：feature_close 帶 kind 者組字「feature_close｜<kind>」（BL-00005）；表列與附錄標題共用、不改 e["type"]。"""
+    return f"{e['type']}｜{e['kind']}" if e.get("type") == "feature_close" and e.get("kind") else e["type"]
+
+
 def _target(e):
+    """標的欄：feature／scope／category／kind／erratum 行號；misc 帶 workflow 者附「｜<workflow>」（本刀 U5、BL-00005）。"""
+    if e.get("type") == "misc" and e.get("category") and e.get("workflow"):
+        return f"{e['category']}｜{e['workflow']}"
     return e.get("feature") or e.get("scope") or e.get("category") or e.get("kind") or (f"行 {e['target_line']}" if e.get("type") == "erratum" else "—")
 
 
 def _event_summary(e):
-    """人讀摘要：summary／reason 直出；review 型渲染 findings 三分流 zh-TW 摘要（不印 dict 字面）；perf 型渲染 kind／wall_s／rc。"""
+    """人讀摘要：summary／reason 直出（feature_close 帶非空 spec_supersessions 者尾附「；翻案：<feature>/<item>（note）」、多筆頓號連接；BL-00005）；
+    review 型渲染 findings 三分流 zh-TW 摘要（不印 dict 字面）；perf 型渲染 kind／wall_s／rc。"""
     if e.get("summary") or e.get("reason"):
-        return e.get("summary") or e.get("reason")
+        s = e.get("summary") or e.get("reason")
+        ss = e.get("spec_supersessions") if e.get("type") == "feature_close" else None
+        if isinstance(ss, list) and ss:
+            s += "；翻案：" + "、".join(f"{x.get('feature')}/{x.get('item')}" + (f"（{x['note']}）" if x.get("note") else "") for x in ss)
+        return s
     if e.get("type") == "review" and isinstance(e.get("findings"), dict):
         fd = e["findings"]; bl = fd.get("to_backlog") or []; adr = fd.get("wontfix_adr") or []
         s = f"findings {fd.get('total', 0)}（修 {fd.get('fixed', 0)}／BL {len(bl)}／ADR {len(adr)}）"
@@ -119,16 +132,29 @@ def _event_summary(e):
     return ""
 
 
+def _notes_appendix(ordered):
+    """非 perf 型帶 notes 事件的附錄節（BL-00005）：表後空一行、`## 備註（notes）`、每筆 `### <date>｜<type>｜<標的>`＋空行＋notes 全文（保留換行、不截斷、不轉義）；
+    順序＝表列同序（已排序的 ordered 直用）；零筆帶 notes 時回空 list（連標題都不出）。perf 型 notes 住 reference/perf.md、不入。"""
+    noted = [e for e in ordered if e.get("notes")]
+    if not noted:
+        return []
+    lines = ["", "## 備註（notes）"]
+    for e in noted:
+        lines += ["", f"### {e['date']}｜{_type_cell(e)}｜{_target(e)}", "", str(e["notes"])]
+    return lines
+
+
 def gen_milestones(events):
     lines = [GENERATED_HEADER, "# MILESTONES — 事件表（新在前）——perf 型另居 reference/perf.md", "",
              "| date | type | 標的 | summary | merge | adrs | arch |", "|---|---|---|---|---|---|---|"]
     rows = [e for e in events if e.get("type") != "perf"]
-    for _, e in sorted(enumerate(rows), key=lambda t: (t[1]["date"], t[0]), reverse=True):   # 同日依檔內序、新（後 append）在前
+    ordered = [e for _, e in sorted(enumerate(rows), key=lambda t: (t[1]["date"], t[0]), reverse=True)]   # 同日依檔內序、新（後 append）在前
+    for e in ordered:
         summary = _event_summary(e)
         merge = str(e.get("merge") or e.get("corrected") or "")[:7] or "—"
-        lines.append(f"| {e['date']} | {e['type']} | {_target(e)} | {summary} | {merge} | {'、'.join(e.get('adrs', []) or []) or '—'} | "
+        lines.append(f"| {e['date']} | {_type_cell(e)} | {_target(e)} | {summary} | {merge} | {'、'.join(e.get('adrs', []) or []) or '—'} | "
                      f"{'、'.join(e['arch_impact']) if isinstance(e.get('arch_impact'), list) else e.get('arch_impact', '—')} |")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines + _notes_appendix(ordered)) + "\n"
 
 
 def _pin(ctx, sub):

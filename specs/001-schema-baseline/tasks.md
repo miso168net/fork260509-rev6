@@ -208,10 +208,12 @@
 
 ### Implementation for User Story 6
 
-- [ ] T038 [US6] **BL-00005**（拍板級、user 親決）：事件欄無家群（misc.workflow、feature_close.kind／spec_supersessions、非 perf 型 notes）補渲染或刪欄——
+- [x] T038 [US6] **BL-00005**（拍板級、user 親決）：事件欄無家群（misc.workflow、feature_close.kind／spec_supersessions、非 perf 型 notes）補渲染或刪欄——
       `tools/docsync/events.py`／`references.py`（MILESTONES／STATE 渲染）＋一正一反自證；若改 schema 立 `docs/arc42/decisions/ADR-00011-*.md`；`docs/ops/BACKLOG.md` 標處置
-- [ ] T039 [US6] `docs/ops/BACKLOG.md`：BL-00001 消化紀錄（收刀 misc／feature_close 事件帶 backlog_done）；append「STATE 預算表納 docsync 行數對賬」條目（取檔頭 next 配號）；
+- [x] T039 [US6] `docs/ops/BACKLOG.md`：BL-00001 消化紀錄（收刀 misc／feature_close 事件帶 backlog_done）；append「STATE 預算表納 docsync 行數對賬」條目（取檔頭 next 配號）；
       `docs/ops/LESSONS/` 首條 LL（任一單元踩坑即落、解除 GT-08.lessons-absent）
+
+✔ U5 已落（T038、T039）：BL-00005 四題 user 一題一問拍板（2026-09-04）＝①misc.workflow 補渲染（MILESTONES 標的欄 `category｜workflow`）②feature_close.kind 保留並渲染（type 欄 `feature_close｜kind`、附錄標題同形）③spec_supersessions 保留並渲染（summary 尾「；翻案：feature/item（note）」）④非 perf notes 渲染為 MILESTONES 附錄節（`## 備註（notes）`、每筆 `### date｜type｜標的`＋全文、表列同序）；四者皆不改 schema、不立 ADR。碼面＝`references.py` `_type_cell`／`_target`／`_event_summary`／`_notes_appendix`／`gen_milestones`（events.py／events.jsonl 零改動）＋`test_references.py` 六案先紅後綠（docsync test 117→123；真 repo 案期望自事件源現算、不釘常數）；generate 只更新 MILESTONES（14→52 行、附錄 9 小節）與 STATE 一行。T039：BL-00012（STATE 預算表納 docsync 行數）已 append；BL-00001 消化＝收刀 feature_close backlog_done（簿記 commit 刪列）；首條 LL＝LL-00001（U1）。BL-00013（GT-06 vs notes 全文）隨 U5 留帳。編排＝一 run 3 支（規格 1 輪＋品質 1 輪零 blocker）。
 
 ---
 
