@@ -106,7 +106,7 @@ README.md                        # tools/ 樹加三行（U0）＋docs/generated 
 tools/bootstrap.sh               # run_tool_test 加三支（U0）
 docs/generated/reference/routes.md   # generate 產（U1）
 docs/arc42/{05,08}-*.md          # as-built（U8）
-docs/arc42/decisions/ADR-00013～00018   # 六筆（U6／U7／U8 落）
+docs/arc42/decisions/ADR-000NN-*.md     # 六筆（U6／U7／U8 落；序號落檔時取、現況 next＝ADR-00013）
 docs/ops/BACKLOG.md              # 三條 done（收刀）、兩條新記（U8）
 ```
 

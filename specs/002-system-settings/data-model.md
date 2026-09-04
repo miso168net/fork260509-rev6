@@ -84,7 +84,7 @@ password_forbid_username／password_require_digit／password_require_lowercase�
 ## §5 AppState 與 dev-only 測試態身分
 
 - `AppState`（`#[derive(Clone)]`）＝`db: DatabaseConnection`＋`enforcer: Arc<tokio::sync::RwLock<Enforcer>>`——恰兩欄。
-- **dev identity 查表**（`#[cfg(debug_assertions)]`、research R8；沿 rev5 三 token）：
+- **測試態身分（dev-only）查表**（`#[cfg(debug_assertions)]`、research R8；沿 rev5 三 token）：
 
   | token 字面 | uid | 對應 seed 帳號 |
   |---|---|---|

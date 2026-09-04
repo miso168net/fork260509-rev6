@@ -69,7 +69,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 - [ ] T023 [P] `rust-api/server/src/request_context.rs`（seam 介面位空殼）＋`model/mod.rs`＋`model/facade/mod.rs`＋`model/facade/sys_user_role.rs`（`roles_of_user`：`sys_user_role` join `sys_role`、`deleted_at IS NULL`＋`status=1` 兩濾網）；純函式／facade 測先紅後綠
 - [ ] T024 `enforce_mw` 掛 Policy 路由（router build 依 Protection 分派；Public 不掛）＋`contract.rs` 補 Policy 路由通則 case 形（未認證→8888 免 DB oneshot；★對未認證先回 8888 而非 405）；容器內 cargo test 綠；worktree commit＋pin bump（單元邊界）
 
-**Checkpoint（U2）**: 授權判定單點在場、dev 身分可用、Policy 路由未認證 8888——user story 解鎖
+**Checkpoint（U2）**: 授權判定單點在場、測試態身分（dev-only）可用、Policy 路由未認證 8888——user story 解鎖
 
 ---
 
@@ -103,7 +103,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 
 - [ ] T032 [US2] facade `system_settings.rs` 補：`find_by_key`（`deleted_at IS NULL`、軟刪視同 miss→`Ok(None)`）＋`build_update_active_model`（純測 seam、now 注入、§I.6 updated_at／by 成對 Set、description 三態 Set 或不動）＋`update_by_key`（單鍵原子 UPDATE、無 op-log）；純函式測先紅後綠
 - [ ] T033 [US2] handler 補：`UpdateSystemSettingReq`（三態承載 `Option<Option<String>>`＋default＋自訂 `deserialize_with`——rev5:L-009；settingKey／settingValue 寬鬆承載、缺席或型別不符由 handler 判 2222；JSON 反序列化失敗以自訂 rejection 落 2222 信封 HTTP 200）＋`update_system_setting`（解析→授權→一致性守衛→registry 驗證→facade→`Res::ok(())` ★data:null——clarify Q3；未知鍵→2222 notFound）＋`router.rs` 掛 `POST /systemManage/updateSystemSetting`（Policy）＋`contract.rs` 補 update-system-setting case（含未認證 8888、★`GET` 打此路徑→4040 信封案）＋`wire_schema.rs` 補 UpdateReq 裁判
-- [ ] T034 [US2] integration（handler mod tests）：number `"+10"`／`" 7 "`／`"007"`→canonical 落庫＋enum 更新＋審計欄成對（operator uid＝1）＋回讀一致＋★同值再寫 updated_at 前進（SC-002、US2 場景 1～4）；容器內 cargo test 綠
+- [ ] T034 [US2] integration（handler mod tests）：number `"+10"`／`" 7 "`／`"007"`→canonical 落庫＋enum 更新＋審計欄成對（operator uid＝1）＋回讀一致＋★同值再寫 updated_at 前進（SC-002、US2 場景 1～4）＋★FR-016 斷言：合法更新前後 `sys_operation_log`／`sys_access_log` 列數不變（本刀零稽核寫入）；容器內 cargo test 綠
 - [ ] T035 [US2] service `rev6-settings.ts` 補 `fetchUpdateSystemSetting(req): request<null>`（型別完備）；`pnpm typecheck` 綠；fork-delta rc 0；worktree commit＋pin bump（單元邊界）；quickstart §3 首例走查記 commit 訊息
 
 ---
@@ -116,7 +116,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] integration 失敗矩陣（handler mod tests）：型別不符／小數／溢位／超範圍／enum 外含大小寫→2222 invalidValue；未知鍵→2222 notFound；settingKey 或 settingValue 缺席／型別非 string／JSON 壞形→2222 invalidValue；庫中手植未知 setting_type 列→讀端 find_all 與寫端 update 觸及**兩案皆** 5000（測試內 SQL 植入後 RAII 還原）；★已知鍵型別不一致寫端案→5000；全案回讀斷言原值保留零寫入（SC-003）；msg 名冊雙向斷言此時可完整成立（七鍵皆有發出點）；容器內 cargo test 綠；worktree commit＋pin bump
+- [ ] T036 [US3] integration 失敗矩陣（handler mod tests）：型別不符／小數／溢位／超範圍／enum 外含大小寫→2222 invalidValue；未知鍵→2222 notFound；settingKey 或 settingValue 缺席／型別非 string／JSON 壞形→2222 invalidValue；庫中手植未知 setting_type 列→讀端 find_all 與寫端 update 觸及**兩案皆** 5000（測試內 SQL 植入後 RAII 還原）；★已知鍵型別不一致寫端案→5000；全案回讀斷言原值保留零寫入（SC-003）＋★FR-016：非法路徑亦斷言兩 log 表列數不變；msg 名冊雙向斷言此時可完整成立（七鍵皆有發出點）；容器內 cargo test 綠；worktree commit＋pin bump
 
 ---
 
@@ -156,8 +156,8 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 
 - [ ] T041 [US6] ★主線任務：ADR ③碼面閘名冊承載於 RUNBOOK §12＋GT-12 腿（BL-00011；含非閘名冊常數形與 ≥8 支翻案觸發器）、④msg key 跨端契約延前端 i18n 刀＋後端側閉環（brainstorm Q4）、⑤entity 漂移段快照缺席即紅（BL-00010）、⑥容器依賴型碼面閘環境缺席＝具名跳過／工具缺席 fail-loud（clarify Q5、承 rev5:ADR 0057 決定 3）——四檔 `docs/arc42/decisions/ADR-000NN-*.md` accepted＋generate；回填 T007 表「根據 ADR」欄序號
 - [ ] T042 [P] [US6] `docs/ops/BACKLOG.md` append 兩條（取檔頭 next 配號）：msg key 跨端閘（後端名冊 ⊆ 前端字典；觸發＝首個接 i18n 的前端刀）；registry 跨鍵不變式（min≤max、captcha_after≤max_fails；觸發＝004 ip-trust-anchor／007 user-password-admin 消費側進場）；BL-00008／00010／00011 於收刀事件 `backlog_done`（簿記 commit 刪列、本 task 只預告）
-- [ ] T043 [P] [US6] 活書 as-built（feature branch 內、現在式）：`docs/arc42/05-building-block-view.md` §5.1 樹列 server crate＋§5.2 server 管線句改現在式＋frontmatter `rev5_blueprint` §5「隨刀」→「承襲」；`docs/arc42/08-crosscutting-concepts.md` §8.2（契約機器化＋三態＝ADR ① 指針、msg 名冊後端閉環）／§8.3（拒絕語意＝ADR ② 指針）改現在式；`docs/generated/reference/rev5-blueprint-map.md` 由 generate 重算（§8 API 慣例列「隨刀」→「承襲」）；C4-L2 拓樸不變零改（核對）
-- [ ] T044 [US6] 勘誤：`python3 tools/docsync errata` 逐詞掃本刀改變的字面（`wire 地基刀`、`隨 002`、`rust-fmt-gate 隨 002`、`server 隨 002`、`Lint24`）→ 現在式面逐處改為現在式或指針、史料面不動；`docs/ops/NOTES.md`「rust-fmt-gate 隨 002」等句改為已在
+- [ ] T043 [P] [US6] 活書 as-built（feature branch 內、現在式）：`docs/arc42/05-building-block-view.md` §5.1 樹列 server crate＋§5.2 server 管線句改現在式＋frontmatter `rev5_blueprint` §5「隨刀」→「承襲」；`docs/arc42/08-crosscutting-concepts.md` §8.2（契約機器化＋三態＝ADR ① 指針、msg 名冊後端閉環）／§8.3（拒絕語意＝ADR ② 指針）改現在式＋★frontmatter `rev5_blueprint` 之「API 慣例」列「隨刀：wire 地基刀…」→「承襲（…）」；`docs/generated/reference/rev5-blueprint-map.md` 由 generate 自該 frontmatter 重算；C4-L2 拓樸不變零改（核對）
+- [ ] T044 [US6] 勘誤：`python3 tools/docsync errata` 逐詞掃本刀改變的字面（`wire 地基刀`、`隨 002`、`rust-fmt-gate 隨 002`、`server 隨 002`、`Lint24`）→ 現在式面逐處改為現在式或指針、史料面不動；★憲法命中（§I.3「機制隨 wire 地基刀落地」）＝不動（provenance 陳述、非未來式；憲法只走 §V.2 Amendment、非勘誤射程）並記 commit 訊息；arc42 01／04 之紀律敘述句不改；只改 08 frontmatter／§8.2 與 NOTES 的「隨刀」「隨 002」形；`docs/ops/NOTES.md`「rust-fmt-gate 隨 002」等句改為已在
 
 ---
 
