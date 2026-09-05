@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00009 -->
+<!-- next: LL-00010 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -14,3 +14,4 @@
 | LL-00006 | 能力落地後只掃了能力名與未來式短語、沒掃「數量詞」——同一檔 §5.1 改對、§5.2「三 crate」留假述，確認輪多跑一輪 | RL-0011 | none | [LL-00006-count-word-sweep-missed-in-same-file.md](LESSONS/LL-00006-count-word-sweep-missed-in-same-file.md) |
 | LL-00007 | 生成物名冊 14→15 時 README 只補了 tasks 條指名的樹行、「想知道 X 看 Y」查詢表漏列——LL-00002 點名的三處列舉面再犯一處 | RL-0011 | none | [LL-00007-readme-lookup-table-missed-on-roster-growth.md](LESSONS/LL-00007-readme-lookup-table-missed-on-roster-growth.md) |
 | LL-00008 | 碼內具名預告的回填條靠審查員清單補、未自行機器枚舉——第二輪補四條、第三輪又抓一組 | RL-0015 | none | [LL-00008-foretold-backfill-inventory-by-grep.md](LESSONS/LL-00008-foretold-backfill-inventory-by-grep.md) |
+| LL-00009 | fix 輪新寫的 tracing 捕捉測 flaky——scoped `set_default` 與並行測試共用 callsite 的 Interest 快取競態 | none：本坑＝碼面測試件設計（tracing scoped dispatcher 與行程級 Interest 快取相剋），防法已落 test_kit 本體與其 doc；連跑判準寫進本檔守法、不加規則 | code | [LL-00009-scoped-tracing-capture-flaky-under-parallel-tests.md](LESSONS/LL-00009-scoped-tracing-capture-flaky-under-parallel-tests.md) |
