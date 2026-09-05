@@ -128,7 +128,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 
 ### Implementation for User Story 4
 
-- [ ] T037 [US4] ★主線任務（不入 agent 執行單元）：`docs/arc42/decisions/ADR-000NN-authz-denial-semantics-and-no-escalation-seam.md`（ADR ②：5003＋HTTP 403＋`msg` 純 key `system.forbidden`、不揭露政策明細與角色集；掛點簽章 `no_escalation_check(db, actor_uid, path, method) -> Result<(), AppError>` 本刀恆 Ok、enforce 進入點唯一呼叫；provenance 引 rev5:ADR 0022＋brainstorm §4；翻案觸發器＝受眾邊界重評）→ accepted＋`python3 tools/docsync generate` 同 commit
+- [x] T037 [US4] ★主線任務（不入 agent 執行單元）：`docs/arc42/decisions/ADR-00014-authz-denial-semantics-and-no-escalation-seam.md`（ADR ②：5003＋HTTP 403＋`msg` 純 key `system.forbidden`、不揭露政策明細與角色集；掛點簽章 `no_escalation_check(db, actor_uid, path, method) -> Result<(), AppError>` 本刀恆 Ok、enforce 進入點唯一呼叫；provenance 引 rev5:ADR 0022＋brainstorm §4；翻案觸發器＝受眾邊界重評）→ accepted＋`python3 tools/docsync generate` 同 commit
 - [ ] T038 [US4] integration 授權矩陣（handler mod tests）：dev-admin 讀／寫→5003、dev-user 讀／寫→5003、無標頭讀／寫→8888、非 Bearer 形→8888、token 不在表→8888（SC-004）＋dev-admin 寫被拒後 dev-super 回讀該鍵 settingValue 與 updated_at 皆未變＋★角色軟刪／停用案（測試內 UPDATE sys_role.deleted_at 或 status 後還原→5003）＋no-escalation 掛點可觀察形（測試替身使掛點回 Err→請求被 5003 擋＝掛點在判定鏈上）＋`error.rs` 5003 變體註解「拒絕語意隨 002 刀 U6 ADR 定形」改指 ADR ②序號（U1 具名預告）；容器內 cargo test 綠；worktree commit＋pin bump
 
 ---
