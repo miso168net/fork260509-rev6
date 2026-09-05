@@ -20,7 +20,7 @@ fork260509-rev6/
 ├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；已補實文 §1／§7 抬頭／§10／§12／§14、§15 為指針、§9 部分補實、其餘隨刀補實
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
-├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents,schema,accounts}
+├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents,schema,accounts,routes}
 ├── docs/brainstorms/                史料面：啟動書 000-doc-architecture、波 1 計畫 000-w1-governance-tooling、各刀階段 0 產出
 ├── docs/reviews/                    史料面：不定期獨立 review 報告 YYYYMMDD-<scope>.md（review 事件 report 欄指向此；首份＝文件創世驗收）
 ├── specs/<NNN>-<feature-name>/      spec-kit per-feature 文件（首刀時出現、收刀即凍結）
@@ -107,5 +107,6 @@ fork260509-rev6/
 | 編排 agent 用哪個模型 | `docs/generated/reference/agents.md`（真源＝`tools/orchestration/` 的 `*_OPTS` 常數） |
 | 全量正典 schema 長怎樣（表×archetype、欄／索引／約束） | `docs/generated/reference/schema.md`（真源＝`docs/ops/reference-src/` 快照＋archetype-map；`python3 tools/docsync refresh` 照相） |
 | dev 三帳與角色綁定 | `docs/generated/reference/accounts.md`（真源＝`docs/ops/reference-src/accounts-snapshot.json`） |
+| 後端路由真表（path×method×protection×case_key×信封例外） | `docs/generated/reference/routes.md`（真源＝`rust-api/server/src/router.rs` 的 ROUTES const；generate 重算） |
 | 收刀／review 史 | `docs/generated/MILESTONES.md`（真源＝`docs/ops/events.jsonl`） |
 | rev5 藍本 | `../fork260509-rev5/`（唯讀；憲法 §I.5、CLAUDE.md §7） |

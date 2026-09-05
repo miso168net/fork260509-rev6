@@ -288,7 +288,7 @@ class TestWiring(unittest.TestCase):
     def test_roster_contains_two_new_keys(self):
         for rel in ("docs/generated/reference/schema.md", "docs/generated/reference/accounts.md"):
             self.assertIn(rel, references.GENERATED_FILES)
-        self.assertEqual(len(references.GENERATED_FILES), 14)
+        self.assertEqual(len(references.GENERATED_FILES), 15)
 
     def test_real_repo_snapshots_present_and_generators_run(self):
         """快照為 tracked 檔、落地後恆在：真 repo 兩生成器可算、且 archetype-map 15 表全數入表。"""

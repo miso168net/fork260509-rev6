@@ -3,6 +3,7 @@
 references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_reference_perf、gen_milestones、gen_state（git／波／憲法／帳面／三指標／預算／尾 3 事件）、
 gen_lessons_index（例外註冊；next＝檔集最大號＋1、ADR-00005）、gen_architecture_index（例外註冊；arc42 節檔 frontmatter）、gen_rad_ai_map（兩層填實計數）、
 gen_rev5_blueprint_map（rev5 藍本對照表；frontmatter rev5_blueprint 對 20 列名冊、缺列可見不斷言、ADR-00006）、gen_reference_agents（編排 script 的 *_OPTS 名冊）、
+parse_router_routes／gen_reference_routes（rust-api/server/src/router.rs 之 ROUTES const 全量表；窄假設行級解析、偏離即 raise、列序＝宣告序；002 刀 U1）、
 compute_generated（名冊→內容；reference/schema.md／accounts.md 兩鍵委給 snapshot.gen_reference_*）、check_generated（缺／漂移／名冊外）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
 """
 import os
@@ -23,6 +24,7 @@ GENERATED_FILES = (
     "docs/arc42/ARCHITECTURE.md", "docs/ops/LESSONS.md",  # 例外註冊兩件（啟動書 §3.1；ADR-00005）
     "docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md",  # 波 3（ADR-00006；啟動書 §3.2 P-E2）
     "docs/generated/reference/schema.md", "docs/generated/reference/accounts.md",  # 001-schema-baseline（ADR-00010；真源＝reference-src 快照＋archetype-map）
+    "docs/generated/reference/routes.md",  # 002 刀 U1（contracts/code-gates.md §4；真源＝rust-api/server/src/router.rs ROUTES const、無 Day-1 豁免）
 )
 RE_CHAPTER = re.compile(r"^docs/arc42/(\d{2})-[a-z0-9-]+\.md$")
 RE_H1 = re.compile(r"^#\s+(?:§\s*\d+\s+)?(.+?)\s*$", re.M)
@@ -339,6 +341,107 @@ def gen_reference_agents(ctx):
     return "\n".join(lines) + "\n"
 
 
+# ─── reference/routes：rust-api/server/src/router.rs 之 ROUTES const 全量表（002 刀 U1；契約＝contracts/code-gates.md §4） ───
+# 窄假設行級解析（標準庫、不 parse Rust）＝data-model §4 機器契約：只認 router.rs 現行實際使用的字面形；任一偏離
+# 即 RouterRoutesError（fail-loud、generate 非零、GT-01 連帶紅）——寧可擋下、絕不靜默漏列一條 route。
+ROUTER_SOURCE = "rust-api/server/src/router.rs"
+ROUTE_METHODS = {"Get": "GET", "Post": "POST", "Delete": "DELETE"}   # HttpMethod variant → casbin act 字面（全集；新增 variant 即紅逼同步）
+ROUTE_PROTECTIONS = ("Public", "Authed", "Policy")                     # Protection 三態（全集）
+ROUTE_REQUIRED_FIELDS = ("path", "method", "case_key", "envelope_exception", "protection")   # handler 識形後不入表
+RE_ROUTES_CONST_OPEN = re.compile(r"^pub const ROUTES:\s*&\[RouteDef\]\s*=\s*&\[$")
+RE_ROUTE_FIELD_PATH = re.compile(r'^path:\s*"([^"]*)",$')
+RE_ROUTE_FIELD_METHOD = re.compile(r"^method:\s*HttpMethod::(\w+),$")
+RE_ROUTE_FIELD_HANDLER = re.compile(r"^handler:\s*\|\|\s*(?:get|post|delete)\(.+\),$")
+RE_ROUTE_FIELD_CASE_KEY = re.compile(r'^case_key:\s*"([^"]*)",$')
+RE_ROUTE_FIELD_ENVELOPE = re.compile(r"^envelope_exception:\s*(true|false),$")
+RE_ROUTE_FIELD_PROTECTION = re.compile(r"^protection:\s*Protection::(\w+),$")
+
+
+class RouterRoutesError(Exception):
+    """router.rs ROUTES 解析失敗（fail-loud：來源缺席／字面形偏離／未知 variant 一律拋、不設 Day-1 豁免）。"""
+
+
+def _parse_route_field(stripped, rel, n):
+    """RouteDef 條目內單行欄位 → (key, value)；handler 閉包識形後回 (None, None)（不入表）。
+    不認得的欄／形、未知 HttpMethod／Protection variant → RouterRoutesError 指名 rel:行。"""
+    m = RE_ROUTE_FIELD_PATH.fullmatch(stripped)
+    if m:
+        return "path", m.group(1)
+    m = RE_ROUTE_FIELD_CASE_KEY.fullmatch(stripped)
+    if m:
+        return "case_key", m.group(1)
+    m = RE_ROUTE_FIELD_ENVELOPE.fullmatch(stripped)
+    if m:
+        return "envelope_exception", m.group(1) == "true"
+    m = RE_ROUTE_FIELD_METHOD.fullmatch(stripped)
+    if m:
+        if m.group(1) not in ROUTE_METHODS:
+            raise RouterRoutesError(f"{rel}:行 {n}｜未知 HttpMethod::{m.group(1)}（已知：{'／'.join(ROUTE_METHODS)}；router.rs 新增動詞須同步擴充本解析器）")
+        return "method", ROUTE_METHODS[m.group(1)]
+    m = RE_ROUTE_FIELD_PROTECTION.fullmatch(stripped)
+    if m:
+        if m.group(1) not in ROUTE_PROTECTIONS:
+            raise RouterRoutesError(f"{rel}:行 {n}｜未知 Protection::{m.group(1)}（已知：{'／'.join(ROUTE_PROTECTIONS)}；router.rs 新增授權態須同步擴充本解析器）")
+        return "protection", m.group(1)
+    if RE_ROUTE_FIELD_HANDLER.fullmatch(stripped):
+        return None, None
+    raise RouterRoutesError(f"{rel}:行 {n}｜RouteDef 內不認得的欄/形「{stripped}」（僅支援 path／method／handler／case_key／envelope_exception／protection 六欄、每欄一行 `key: value,`；router.rs 改寫法須同步擴充本解析器）")
+
+
+def parse_router_routes(text, rel):
+    """解析 router.rs 的 `pub const ROUTES: &[RouteDef] = &[` … `];` block → [(path, method, protection, case_key, envelope_exception)]，列序＝宣告序。
+    block 頂層只認 `RouteDef {`（起條目）／`}`、`},`（收條目）／`];`（收尾）／空行／`//` 註解；條目內每欄一行、handler 識形後略過；
+    缺欄／重複欄／未知欄或 variant／找不到精確開頭／block 未收尾 → RouterRoutesError 指名 rel:行。const 外一律不碰（struct 定義、build 迭代、doc 註解）。"""
+    rows, entry, entry_line, found, in_block = [], None, None, False, False
+    for n, raw in enumerate(text.splitlines(), start=1):
+        stripped = raw.strip()
+        if not in_block:
+            if RE_ROUTES_CONST_OPEN.fullmatch(stripped):
+                found = in_block = True
+            continue
+        if not stripped or stripped.startswith("//"):
+            continue
+        if entry is None:
+            if stripped == "];":
+                in_block = False
+                break
+            if stripped == "RouteDef {":
+                entry, entry_line = {}, n
+                continue
+            raise RouterRoutesError(f"{rel}:行 {n}｜ROUTES block 頂層不認得的行「{stripped}」（頂層只准 RouteDef 條目、// 註解與收尾 ];）")
+        if stripped in ("}", "},"):
+            missing = [f for f in ROUTE_REQUIRED_FIELDS if f not in entry]
+            if missing:
+                raise RouterRoutesError(f"{rel}:行 {entry_line}｜RouteDef 條目缺欄 {missing}")
+            rows.append((entry["path"], entry["method"], entry["protection"], entry["case_key"], entry["envelope_exception"]))
+            entry = None
+            continue
+        key, value = _parse_route_field(stripped, rel, n)
+        if key is None:
+            continue
+        if key in entry:
+            raise RouterRoutesError(f"{rel}:行 {n}｜RouteDef 條目重複欄「{key}」")
+        entry[key] = value
+    if not found:
+        raise RouterRoutesError(f"{rel}｜找不到精確開頭 `pub const ROUTES: &[RouteDef] = &[`——routes 真表無法重算")
+    if in_block:
+        raise RouterRoutesError(f"{rel}｜ROUTES block 未見收尾 ];（防半解析漏列）")
+    return rows
+
+
+def gen_reference_routes(ctx):
+    """reference/routes ← router.rs ROUTES const 全量表（來源缺席＝raise；列序＝ROUTES 宣告序、不排序）。"""
+    text = ctx.text(ROUTER_SOURCE)
+    if text is None:
+        raise RouterRoutesError(f"{ROUTER_SOURCE}｜router 來源檔缺席——routes 真表無法重算（002 刀 U1 起永不缺席、無 Day-1 豁免）")
+    lines = [GENERATED_HEADER, "# reference/routes — 全量正典表", "",
+             f"來源＝{ROUTER_SOURCE} 的 ROUTES const（generate 重算；handler 閉包不入表）。", "",
+             "| path | method | protection | case_key | envelope 例外 |", "|---|---|---|---|---|"]
+    for path, method, protection, case_key, env in parse_router_routes(text, ROUTER_SOURCE):
+        lines.append(f"| {path} | {method} | {protection} | {case_key} | {'是' if env else '否'} |")
+    return "\n".join(lines) + "\n"
+
+
 def _docsync_lines(ctx):
     """docsync package 行數（wc -l 口徑＝`cat tools/docsync/*.py | wc -l`；不含 tests/ 語料面，與 CLAUDE.md 行數同法）。"""
     return sum((ctx.text(rel) or "").count("\n") for rel in ctx.tracked
@@ -420,6 +523,7 @@ def compute_generated(ctx):
         "docs/generated/reference/agents.md": gen_reference_agents(ctx),
         "docs/generated/reference/schema.md": snapshot_mod.gen_reference_schema(ctx),
         "docs/generated/reference/accounts.md": snapshot_mod.gen_reference_accounts(ctx),
+        "docs/generated/reference/routes.md": gen_reference_routes(ctx),
     }
     try:
         from . import gates

@@ -92,6 +92,7 @@ class TestGenerateIdempotent(unittest.TestCase):
         w(f"{ADR_DIR}/ADR-00002-b.md", '---\nid: "ADR-00002"\ntitle: t2\ndate: 2026-09-03\nstatus: accepted\nsupersedes: [ADR-00001]\nsuperseded_by: []\n---\nb\n')
         for rel, text in test_snapshot.src_files().items():   # reference-src 三檔＝reference/schema.md／accounts.md 的存在前提（缺席 fail-loud、不設 stub）
             w(rel, text)
+        w(references.ROUTER_SOURCE, TestRoutes.ROUTES_TEXT)   # router.rs＝reference/routes.md 的存在前提（同樣缺席 fail-loud）：合成 repo 補樁、與 TestRoutes 共用同一份語料
         subprocess.run(["git", "-C", root, "add", "-A"], check=True)
         written = references.cmd_generate(common.Ctx(root))
         self.assertIn(f"{ADR_DIR}/ADR-00001-a.md", written)  # 對稱回填
@@ -245,9 +246,9 @@ class TestBlueprintMap(unittest.TestCase):
         self.assertTrue(out.rstrip().endswith("缺：17｜重複：1｜未知鍵：1｜形制：1"), out[-120:])
         self.assertTrue(references.gen_rev5_blueprint_map(stub({})).rstrip().endswith("缺：20｜重複：0｜未知鍵：0｜形制：0"))
 
-    def test_roster_fourteen(self):
-        self.assertEqual(len(references.GENERATED_FILES), 14)
-        for rel in ("docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md"):
+    def test_roster_fifteen(self):
+        self.assertEqual(len(references.GENERATED_FILES), 15)
+        for rel in ("docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md", "docs/generated/reference/routes.md"):
             self.assertIn(rel, references.GENERATED_FILES)
 
 
@@ -263,3 +264,83 @@ class TestAgentsTable(unittest.TestCase):
         self.assertIn("| EXAMPLE-x.mjs | REVIEW_OPTS | opus[1m] | high |", out)
         self.assertNotIn("FAKE_OPTS", out)
         self.assertIn("| — | — | — | — |", references.gen_reference_agents(stub({})))
+
+
+class TestRoutes(unittest.TestCase):
+    """reference/routes（002 刀 U1；contracts/code-gates.md §4）：合成 ROUTES 四條→四列且序＝宣告序（正）；缺精確開頭／未知
+    HttpMethod／未知 Protection／缺欄／頂層多餘行／來源缺席→各 raise（反）；真 repo 恰兩列 health／metrics。"""
+
+    @staticmethod
+    def _entry(path, method, handler, case_key, env, prot, tail="},"):
+        return (f"    RouteDef {{\n        path: \"{path}\",\n        method: HttpMethod::{method},\n        handler: || {handler},\n"
+                f"        case_key: \"{case_key}\",\n        envelope_exception: {env},\n        protection: Protection::{prot},\n    {tail}\n")
+
+    ROUTES_TEXT = ("use axum::Router;\n"
+                   "pub struct RouteDef {\n    pub path: &'static str,\n}\n"   # ROUTES block 外的 RouteDef 出現處：不碰
+                   "pub const ROUTES: &[RouteDef] = &[\n"
+                   "    // block 頂層允許 // 註解與空行\n"
+                   + _entry.__func__("/zeta", "Get", "get(zeta)", "zeta", "true", "Public")
+                   + _entry.__func__("/alpha", "Post", "post(alpha)", "alpha", "false", "Policy")
+                   + "\n"
+                   + _entry.__func__("/beta", "Delete", "delete(beta)", "beta", "false", "Authed")
+                   + _entry.__func__("/gamma", "Get", "get(gamma).layer(x)", "gamma", "false", "Policy", tail="}")
+                   + "];\n"
+                   "pub const ROUTES_COUNT: usize = 4;\n")
+
+    def _gen(self, text):
+        return references.gen_reference_routes(stub({references.ROUTER_SOURCE: text}))
+
+    def test_synthetic_four_rows_in_declaration_order(self):
+        rows = references.parse_router_routes(self.ROUTES_TEXT, references.ROUTER_SOURCE)
+        self.assertEqual(rows, [("/zeta", "GET", "Public", "zeta", True), ("/alpha", "POST", "Policy", "alpha", False),
+                                ("/beta", "DELETE", "Authed", "beta", False), ("/gamma", "GET", "Policy", "gamma", False)])
+        out = self._gen(self.ROUTES_TEXT)
+        self.assertTrue(out.startswith(common.GENERATED_HEADER))
+        self.assertIn("來源＝rust-api/server/src/router.rs 的 ROUTES const（generate 重算；handler 閉包不入表）", out)
+        table = [ln for ln in out.split("\n") if ln.startswith("| /")]
+        self.assertEqual(table, ["| /zeta | GET | Public | zeta | 是 |", "| /alpha | POST | Policy | alpha | 否 |",
+                                 "| /beta | DELETE | Authed | beta | 否 |", "| /gamma | GET | Policy | gamma | 否 |"])   # 宣告序、非 path 排序
+        self.assertNotIn("get(zeta)", out)   # handler 閉包不入表
+
+    def test_missing_exact_opener_raises(self):
+        bent = self.ROUTES_TEXT.replace("pub const ROUTES: &[RouteDef] = &[\n", "pub const ROUTES: &[RouteDef] = &[ // 尾註\n")
+        with self.assertRaisesRegex(references.RouterRoutesError, "找不到"):
+            references.parse_router_routes(bent, "x.rs")
+
+    def test_unknown_method_variant_raises(self):
+        with self.assertRaisesRegex(references.RouterRoutesError, "HttpMethod::Put"):
+            references.parse_router_routes(self.ROUTES_TEXT.replace("HttpMethod::Post", "HttpMethod::Put"), "x.rs")
+
+    def test_unknown_protection_variant_raises(self):
+        with self.assertRaisesRegex(references.RouterRoutesError, "Protection::Admin"):
+            references.parse_router_routes(self.ROUTES_TEXT.replace("Protection::Authed", "Protection::Admin"), "x.rs")
+
+    def test_missing_field_raises(self):
+        with self.assertRaisesRegex(references.RouterRoutesError, "缺欄.*case_key"):
+            references.parse_router_routes(self.ROUTES_TEXT.replace('        case_key: "zeta",\n', ""), "x.rs")
+
+    def test_top_level_stray_line_raises(self):
+        bent = self.ROUTES_TEXT.replace("    // block 頂層允許 // 註解與空行\n", "    let stray = 1;\n")
+        with self.assertRaisesRegex(references.RouterRoutesError, "頂層不認得的行"):
+            references.parse_router_routes(bent, "x.rs")
+        unclosed = self.ROUTES_TEXT[:self.ROUTES_TEXT.index("];\n")]   # 檔案在收尾前截斷（半解析）
+        with self.assertRaisesRegex(references.RouterRoutesError, "未見收尾"):
+            references.parse_router_routes(unclosed, "x.rs")
+
+    def test_source_absent_raises(self):
+        with self.assertRaisesRegex(references.RouterRoutesError, "router.rs"):
+            references.gen_reference_routes(stub({}))
+
+    # 回填點＝002 刀 T029（U3）／T033（U4）：ROUTES 掛上業務兩條（getSystemSettings／updateSystemSetting）時，本測之真 repo
+    # 釘值須同批增列。★釘值形刻意保留——「真表首算＝恰兩列」是 002 刀 U1 的驗收面，不以「非空＋包含」弱化。
+    # ★本檔已納 U3／U4 允許檔面（research R12 表；限定＝只准增列本測釘值）；回填條＝tasks T029／T033。
+    # ★紅而不自明的窗口：pre-commit 只在 staged 含 tools/docsync/ 時才跑 selftest-docsync（.githooks/pre-commit 同段），
+    #   而 GT-01 漂移在 U3 跑過 generate 後即消——故本測不同批改＝一路綠燈到有人跑 docsync test／bootstrap 才浮出。
+    def test_real_repo_two_rows_health_metrics(self):
+        ctx = common.Ctx(ROOT)
+        rows = references.parse_router_routes(ctx.text(references.ROUTER_SOURCE), references.ROUTER_SOURCE)
+        self.assertEqual(rows, [("/health", "GET", "Public", "health", True), ("/metrics", "GET", "Public", "metrics", True)])
+        out = references.gen_reference_routes(ctx)
+        self.assertEqual([ln for ln in out.split("\n") if ln.startswith("| /")],
+                         ["| /health | GET | Public | health | 是 |", "| /metrics | GET | Public | metrics | 是 |"])
+        self.assertIn("docs/generated/reference/routes.md", references.compute_generated(ctx))
