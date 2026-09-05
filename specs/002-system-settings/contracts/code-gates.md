@@ -26,7 +26,7 @@
 - 兩腿：修改型缺「原行:」（本刀 vacuous——零 inline）；新增型缺圈界標記（本刀兩新檔）。授權判定＝憲法 §III.2 ★軌道（軌道×用途×檔案）三元組硬邊界＋§III.1 三軌道範圍收窄（ADAPT 修改型限根層 `.env*`；WRAPPER 掃描面內不可修改型）；新增檔標記所稱軌道與檔路徑不符＝紅。
 - ★標記字面（新增型檔頭一行、契約定形）：`// [rev6-inline <軌道名>+ <刀名>] <一句話理由>`——token `rev6-inline`（CLAUDE.md §1）、`+` 尾綴＝新增型、軌道名 ∈ 憲法 §III.1 表首欄字面（`BASE-WEB-ADAPT`／`BASE-WEB-WRAPPER`）、刀名＝`002-system-settings`。
 - ★結構斷言改形（brainstorm Q5）：名冊載入對 §III.2 ★段——零資料列時 MUST 命中哨兵句字面「（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）」、否則 ≥1 列；§III.1 恰 3 列與其餘斷言不變；self-test 一正一反：合成憲法文本「零列＋哨兵句」＝綠、「零列＋無哨兵句」＝紅（守不消失）。日常一律用預設憲法路徑，`--constitution` 只供自身變異驗證。
-- rc：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗）；源倉缺席＝具名跳過（bootstrap 已斷言在場、正常不觸）。
+- rc：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗）；源倉缺席或未切在 `example`＝rc 2 fail-loud（`assert_baseline` die；bootstrap 已斷言在場、正常不觸——as-built 校正 2026-09-05 U0：原句「具名跳過」與碼相反，rev5 原檔同為 die、fail-loud 方向較安全）。
 - pre-commit 觸發：staged 含 `base-web`、`tools/fork-delta-lint.py` 或 `.specify/memory/constitution.md`。
 
 ## §2 pre-commit 六處改動契約（`.githooks/pre-commit`；雙錨 45／90 秒與並行 harness 不動）

@@ -211,8 +211,75 @@ class TestGt12(unittest.TestCase):
         bad = self._files(1, extra={".githooks/pre-commit": "#!/bin/sh\n# lint（GT-01～GT-11）\n", "docs/ops/RUNBOOK.md": "| GT-01 | x |\n"})
         msgs = [f[3] for f in errs(gates.gt_12(stub(bad)))]
         self.assertTrue(any("pre-commit" in m for m in msgs) and any("RUNBOOK" in m for m in msgs))
-        good = self._files(1, extra={".githooks/pre-commit": "#!/bin/sh\n# lint（GT-01～GT-12）\n", "docs/ops/RUNBOOK.md": "| `lint` | GT-01～GT-12 |\n"})
-        self.assertEqual([f for f in errs(gates.gt_12(stub(good))) if "pre-commit" in f[3] or "RUNBOOK" in f[3]], [])
+        # 002 刀 U0 起 RUNBOOK 多一腿（碼面閘表 ⇔ tools/ 頂層 *.py）：good 合成 RUNBOOK 須帶一張表、stub tracked 帶同一支工具，否則新腿判表缺席即紅
+        good = self._files(1, extra={".githooks/pre-commit": "#!/bin/sh\n# lint（GT-01～GT-12）\n",
+                                     "docs/ops/RUNBOOK.md": "| `lint` | GT-01～GT-12 |\n\n" + CODEGATE_TABLE_HEAD + "| `tools/x-gate.py` | x | y | z |\n"})
+        self.assertEqual([f for f in errs(gates.gt_12(stub(good, tracked=list(good) + ["tools/x-gate.py"]))) if "pre-commit" in f[3] or "RUNBOOK" in f[3]], [])
+
+
+CODEGATE_TABLE_HEAD = "| 工具檔 | 守什麼 | 觸發時機（含環境缺席語意） | 根據 ADR |\n|---|---|---|---|\n"
+CODEGATE_TOOLS = ["tools/schema-gate.py", "tools/entity-drift-gate.py", "tools/rust-fmt-gate.py", "tools/wire-schema.py", "tools/fork-delta-lint.py"]
+
+
+class TestGt12CodeGateTable(unittest.TestCase):
+    """GT-12 碼面閘表腿（002 刀 U0；contracts/code-gates.md §3）：S_tools＝tools/ 頂層 tracked *.py − NON_GATE_TOOLS ⇔ S_table＝RUNBOOK 碼面閘表首欄反引號路徑集。
+    每案問「把被守的那行改壞會不會紅」：斷言針對訊息字面（工具路徑＋方向）。"""
+
+    def _runbook(self, tools=CODEGATE_TOOLS, note_row=True, table=True):
+        rb = "| `lint` | GT-01～GT-12 |\n\n"
+        if table:
+            rb += CODEGATE_TABLE_HEAD
+            for t in tools:
+                rb += f"| `{t}` | 守 | 觸發 | ADR |\n"
+            if note_row:
+                rb += "| msg key 跨端閘 | 註記列（非路徑） | 延前端 i18n 刀 | ADR |\n"
+        return rb
+
+    def _run(self, rb, tracked_tools):
+        files = {RULES: RULES_TEXT, NOTES: "<!-- wave: 6 -->\n", ".githooks/pre-commit": "#!/bin/sh\n# lint（GT-01～GT-12）\n", "docs/ops/RUNBOOK.md": rb}
+        tracked = list(files) + list(tracked_tools) + ["tools/docsync/gates.py", "tools/orchestration/x.mjs", "tools/bootstrap.sh"]
+        return [f[3] for f in errs(gates.gt_12(stub(files, tracked=tracked))) if "碼面閘" in f[3]]
+
+    def test_five_rows_five_tools_plus_non_gate_is_green(self):
+        msgs = self._run(self._runbook(), CODEGATE_TOOLS + list(gates.NON_GATE_TOOLS))
+        self.assertEqual(msgs, [])
+        self.assertIn("tools/wf-watchdog.py", gates.NON_GATE_TOOLS)
+
+    def test_missing_row_is_red_and_names_tool(self):
+        rows = [t for t in CODEGATE_TOOLS if t != "tools/wire-schema.py"]
+        msgs = self._run(self._runbook(tools=rows), CODEGATE_TOOLS + list(gates.NON_GATE_TOOLS))
+        self.assertTrue(any("tools/wire-schema.py" in m and "未列" in m for m in msgs), msgs)
+        self.assertFalse(any("tools/schema-gate.py" in m for m in msgs), msgs)
+
+    def test_ghost_row_is_red_and_names_tool(self):
+        msgs = self._run(self._runbook(tools=CODEGATE_TOOLS + ["tools/ghost-gate.py"]), CODEGATE_TOOLS + list(gates.NON_GATE_TOOLS))
+        self.assertTrue(any("tools/ghost-gate.py" in m and "幽靈" in m for m in msgs), msgs)
+
+    def test_table_absent_is_red(self):
+        msgs = self._run(self._runbook(table=False), CODEGATE_TOOLS)
+        self.assertTrue(any("碼面閘表" in m and "缺席" in m for m in msgs), msgs)
+
+    def test_table_with_zero_path_rows_is_red(self):
+        msgs = self._run(self._runbook(tools=[]), CODEGATE_TOOLS)
+        self.assertTrue(any("零" in m and "空集合" in m for m in msgs), msgs)
+
+    def test_non_gate_constant_is_load_bearing(self):
+        """NON_GATE_TOOLS 被清空→wf-watchdog 立刻被判「未列」；常數就是那條被守的線。"""
+        with unittest.mock.patch.object(gates, "NON_GATE_TOOLS", ()):
+            msgs = self._run(self._runbook(), CODEGATE_TOOLS + ["tools/wf-watchdog.py"])
+        self.assertTrue(any("tools/wf-watchdog.py" in m and "未列" in m for m in msgs), msgs)
+
+    def test_nested_and_non_py_tools_not_counted(self):
+        """tools/docsync/*.py、tools/orchestration/*、tools/bootstrap.sh 皆非頂層 *.py——不進 S_tools、不誤紅。"""
+        msgs = self._run(self._runbook(), CODEGATE_TOOLS + list(gates.NON_GATE_TOOLS) + ["tools/docsync/book.py", "tools/orchestration/_sk_core.js"])
+        self.assertEqual(msgs, [])
+
+    def test_real_runbook_table_matches_tracked_tools(self):
+        """真 repo：RUNBOOK 碼面閘表首欄集 ＝ git ls-files tools/*.py − NON_GATE_TOOLS（U0 收尾＝五支）。"""
+        ctx = common.Ctx(ROOT)
+        s_tools = {p for p in ctx.tracked if p.startswith("tools/") and p.count("/") == 1 and p.endswith(".py")} - set(gates.NON_GATE_TOOLS)
+        self.assertEqual(gates.runbook_codegate_tools(ctx.text("docs/ops/RUNBOOK.md")), s_tools)
+        self.assertGreaterEqual(len(s_tools), 5)
 
 
 class TestRunLint(unittest.TestCase):

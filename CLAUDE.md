@@ -15,7 +15,7 @@
 - 短名／長名分工：目錄與口語用短名；git branch／push 一律用長名。
 - fork 源倉目錄（repo 根下 `fork260509-soybean-admin-base/` 與 `fork260509-rev2-anew-rust-api/`、gitignored）必須保留——worktree 的 `.git` 檔指向它。
 - **最原始源**（base-web fork-delta「原行」基線）＝upstream `soybeanjs/soybean-admin` 的 `example` 分支＝本機源倉恆切在 `example` tip（bootstrap 斷言）。
-  base-web 修改型 inline 標記必含 `原行:`、新增型走圈界、token `rev6-inline`——紀律上位＝憲法 §III；機器強制（fork-delta-lint）隨子庫刀進場。
+  base-web 修改型 inline 標記必含 `原行:`、新增型走圈界、token `rev6-inline`——紀律上位＝憲法 §III；機器強制＝`tools/fork-delta-lint.py`（pre-commit fork-delta 段；名冊＝RUNBOOK §12 碼面閘表）。
 - 外層只記 gitlink SHA（pin）；worktree 模式下 `git submodule status` 行首「-」永遠出現、屬正常。
 - host 埠世代 3xxxx（ADR-00001；真表＝`docs/generated/reference/ports.md`）；rev5 對照 stack 常駐 2xxxx、兩 stack 併行是預期形（§7）。
 

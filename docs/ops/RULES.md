@@ -22,7 +22,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0012 | agent status 分 `blocked`（整件做不下去、主線立刻接手）與 `done_with_escalation`（交付已完成、只有清單外待辦、附 escalations）兩值；只有前者觸發 script 立即 return、後者照常進審查。 | implementer,fix | prompt | rev5:L-035 |
 | RL-0013 | 棄案論證寫完必回頭對所選方案跑同一反例；寫「結構性保證」前先找一條讓它不成立的輸入；雙上限設計必寫「只滿足其一時會怎樣」。 | 人,主線 | checklist | rev5:L-037 |
 | RL-0014 | 允許檔清單答「碰得到什麼」而非 task 寫了什麼：對實碼查值域／建構點／下游消費者，另納會因本單元改動而連動的釘值測所在檔、寧可多列。 | 主線 | checklist | rev5:L-042 |
-| RL-0015 | 預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由」當同義集掃。 | implementer,review | lint | rev5:L-043 |
+| RL-0015 | 預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由／隨…刀進場／尚無…」當同義集掃；落地某能力的單元必以其名掃「隨…進場」形改現在式。 | implementer,review | lint | rev5:L-043 |
 | RL-0016 | Workflow launch 被擋即 TaskStop 已 armed 的看門狗，重發後帶明確 runId 重掛；ARMED 行冒煙命中 0 或 run id 不對＝鎖錯標的。 | 主線 | checklist | rev5:L-049 |
 | RL-0017 | 完成通知一到立即 TaskStop 該看門狗（run 後 journal 永不再動＝必誤報 stall）；stall 閾值語意＝agent 邊界間隔上限。 | 主線 | checklist | rev5:L-051 |
 | RL-0018 | 冒煙 token 置於所有 agent prompt 共用段，與「zh-TW」字面同列渲染斷言一併檢查，不得只烤在 implementer prompt。 | 主線 | checklist | rev5:L-057 |

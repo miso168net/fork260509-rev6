@@ -6,7 +6,7 @@ RL-0005｜子庫 git 操作一律 \`git -C <子庫>\` 形、不 cd 進子庫；�
 RL-0007｜非零退出先看首行輸出：\`error:\` 起首＝工具層拒跑、\`FAILED\`／\`panicked\`＝受測物真失敗；迴圈跑測試連首行錯誤一併印。
 RL-0011｜凡改變某數字／集合／方向／名稱／單一權威＝\`grep -rn\` 枚舉全 repo 同語意命中逐處回報；允許清單內自改、清單外依 status 分值升級；史述保留、現在式改對。
 RL-0012｜agent status 分 \`blocked\`（整件做不下去、主線立刻接手）與 \`done_with_escalation\`（交付已完成、只有清單外待辦、附 escalations）兩值；只有前者觸發 script 立即 return、後者照常進審查。
-RL-0015｜預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由」當同義集掃。
+RL-0015｜預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由／隨…刀進場／尚無…」當同義集掃；落地某能力的單元必以其名掃「隨…進場」形改現在式。
 RL-0019｜暫改真檔驗紅後以存原文寫回還原、禁 \`git checkout\` 整檔還原（會丟該檔其它未 commit 改動）；還原後 \`git diff --name-only\` 證零殘留。
 RL-0020｜提及刀號／單元輪次寫「本刀 U2」形、不寫裸刀號；★跨刀存活面（BACKLOG／LESSONS／工具與 hook 註解）改寫刀名形「001 刀 U2」——「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；新建 ops 檔先 \`git add\` 再驗 lint 才進掃描面。
 RL-0021｜變異紅證必印 skipped=0；探針就地變異或改寫 ROOT、不自 repo 外載入 mutant。
@@ -38,11 +38,11 @@ RL-0066｜TDD 先紅後綠：每個可測面先寫會紅的測、跑到真的紅
 RL-0067｜變異自證前提＝被守面已有實例；零實例＝測空集合、紅證結構性 vacuous——延後到實例出現後補做並在 tasks 記回填條。
 RL-0068｜對破壞性守門做變異測試先掛快照還原式守衛（arm 拍快照、drop 還原）；刪除式清理守衛救不了 seed 列。
 RL-0069｜「應該被拒」的負向樣本業務鍵也帶清理鍵前綴（帶前綴但仍違規的構造），否則守門被改壞那一發的殘列圈不到。
-RULES-VERSION: bcce5abe6593
+RULES-VERSION: 9285f12cc1b5
 `;
 const RULES_REVIEW = `=== RULES scope=review（14 條）===
 RL-0011｜凡改變某數字／集合／方向／名稱／單一權威＝\`grep -rn\` 枚舉全 repo 同語意命中逐處回報；允許清單內自改、清單外依 status 分值升級；史述保留、現在式改對。
-RL-0015｜預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由」當同義集掃。
+RL-0015｜預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由／隨…刀進場／尚無…」當同義集掃；落地某能力的單元必以其名掃「隨…進場」形改現在式。
 RL-0026｜驗「呼叫處恰 N 處」取 \`name(\`／\`(name)\`／\`::name\` 三形聯集，或改名讓編譯器列出真實使用點；處數型驗收由測試釘、不由人 grep。
 RL-0033｜走查回報「無可觀察實例」或「契約豁免」須附機器反證（psql／grep／原文行號），否則 redo、不得記已知態。
 RL-0035｜模板是起手結構不是表單：每節依實況寫，無實體即一句「目前無」附理由；不填樣板文、不留佔位符。
@@ -55,7 +55,7 @@ RL-0063｜agent 絕不 push／merge／git commit／git checkout；只改工作�
 RL-0070｜可見性放寬（私有→pub）前先 grep 函式體內有無被 token 掃描閘守著的呼叫；有則以 finding 要求同批補消費者名冊閘、由 fix 輪落地。
 RL-0071｜fix 後次輪 review prompt 必附前輪已駁回 findings 清單（file×summary＋駁回理由）、明令勿沿用被駁論據重報；同一 finding 再報須附新證據，否則計入收斂判定。
 RL-0073｜review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處二分：不定期獨立輪落 \`docs/reviews/\` 報告＋review 事件，feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。
-RULES-VERSION: bcce5abe6593
+RULES-VERSION: 9285f12cc1b5
 `;
 const RULES_FIX = `=== RULES scope=fix（15 條）===
 RL-0005｜子庫 git 操作一律 \`git -C <子庫>\` 形、不 cd 進子庫；破壞性驗證每項還原後立即 \`git -C <子庫> status --porcelain\` 確認回基準態、單獨跑不疊加。
@@ -73,5 +73,5 @@ RL-0063｜agent 絕不 push／merge／git commit／git checkout；只改工作�
 RL-0064｜絕不寫入 \`../fork260509-rev5/\`（含子庫與源倉；凍結 SHA 由 bootstrap 斷言）；讀取允許且必要；rev5 stack（埠 2xxxx）不做 schema／seed／設定變更或 \`down -v\`，rev6 走 3xxxx。
 RL-0066｜TDD 先紅後綠：每個可測面先寫會紅的測、跑到真的紅、再寫實作到綠；分階段推進，每階段容器內 serial 跑一次測試確認綠再進下一階段。
 RL-0070｜可見性放寬（私有→pub）前先 grep 函式體內有無被 token 掃描閘守著的呼叫；有則以 finding 要求同批補消費者名冊閘、由 fix 輪落地。
-RULES-VERSION: bcce5abe6593
+RULES-VERSION: 9285f12cc1b5
 `;
