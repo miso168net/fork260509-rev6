@@ -228,7 +228,7 @@ class TestGeneratedIndexes(unittest.TestCase):
 
 
 class TestBlueprintMap(unittest.TestCase):
-    """rev5 藍本對照表（ADR-00006）：frontmatter rev5_blueprint → 表；缺／重複／未知鍵／形制只排列、不拋錯；名冊長度由 test_roster_fourteen 釘。"""
+    """rev5 藍本對照表（ADR-00006）：frontmatter rev5_blueprint → 表；缺／重複／未知鍵／形制只排列、不拋錯；名冊長度由 test_roster_fifteen 釘。"""
 
     def test_map_lists_defects_and_never_raises(self):
         files = {"docs/arc42/01-introduction-and-goals.md": "---\nsection: 1\nrev5_blueprint:\n  §1 簡介與目標: 承襲（一句）\n---\n# §1\n",
