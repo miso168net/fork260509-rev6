@@ -36,14 +36,14 @@ if (IMPL_STAGES.length === 0) log(START_LOG)
 phase('SpecReview')
 const c1 = await cycle('SpecReview', SPEC_REVIEW_PROMPT, 'spec')
 if (!c1.converged) {
-  return { unit: UNIT, status: 'unresolved', stage: 'SpecReview', reason: c1.reason, blockers: c1.blockers, rejected: c1.rejected, escalations: c1.escalations || [], implReports: reportsSoFar(), agentsSpawned: spawned }
+  return { unit: UNIT, status: 'unresolved', stage: 'SpecReview', reason: c1.reason, blockers: c1.blockers, rejected: c1.rejected, escalations: c1.escalations || [], escalatedBlockers: c1.escalated || [], implReports: reportsSoFar(), agentsSpawned: spawned }
 }
-log('規格對照審查收斂（' + c1.rounds + ' 輪）→ 進碼品質審查')
+log('規格對照審查收斂（' + c1.rounds + ' 輪' + ((c1.escalated || []).length ? '、' + c1.escalated.length + ' 項清單外升級主線〔RL-0025〕' : '') + '）→ 進碼品質審查')
 
 phase('CodeQualityReview')
 const c2 = await cycle('CodeQualityReview', QUALITY_REVIEW_PROMPT, 'quality')
 if (!c2.converged) {
-  return { unit: UNIT, status: 'unresolved', stage: 'CodeQualityReview', reason: c2.reason, blockers: c2.blockers, rejected: c2.rejected, escalations: c2.escalations || [], implReports: reportsSoFar(), specNotes: c1.notes, agentsSpawned: spawned }
+  return { unit: UNIT, status: 'unresolved', stage: 'CodeQualityReview', reason: c2.reason, blockers: c2.blockers, rejected: c2.rejected, escalations: (c1.escalations || []).concat(c2.escalations || []), escalatedBlockers: (c1.escalated || []).concat(c2.escalated || []), implReports: reportsSoFar(), specNotes: c1.notes, agentsSpawned: spawned }
 }
 
 return {
@@ -52,7 +52,10 @@ return {
   implStatuses: impls.map(function (x) { return x.status }),
   implReports: reportsSoFar(),
   filesChanged: impls.reduce(function (a, x) { return a.concat(x.filesChanged || []) }, []),
-  escalations: impls.reduce(function (a, x) { return a.concat(x.escalations || []) }, []),
+  escalations: impls.reduce(function (a, x) { return a.concat(x.escalations || []) }, []).concat(c1.escalations || [], c2.escalations || []),
+  // ★RL-0025／ADR-00013：兩審查段中「成立但落允許清單外、零改動升級」的 blockers（主線收尾 commit 處理）；escalatedStages 標出處。
+  escalatedBlockers: (c1.escalated || []).concat(c2.escalated || []),
+  escalatedStages: [].concat((c1.escalated || []).length ? ['SpecReview'] : [], (c2.escalated || []).length ? ['CodeQualityReview'] : []),
   specReviewRounds: c1.rounds,
   specReviewNotes: c1.notes,
   qualityReviewRounds: c2.rounds,

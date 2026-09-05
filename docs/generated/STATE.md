@@ -12,7 +12,7 @@
 - 版本：1.1.0
 
 ## 帳面統計
-- ADR：12（proposed 0、accepted 11、superseded 1）
+- ADR：13（proposed 0、accepted 12、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：12｜滯後：0
 - LESSONS：9 筆

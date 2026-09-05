@@ -32,7 +32,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
 | RL-0023 | 枚舉同語意命中逐行剝 token 再判、不 `grep -v` 過濾整行（同行雙 token 會漏）；枚舉筆數要有第二來源對賬。 | implementer,fix | prompt | rev5:L-076 |
 | RL-0024 | 對賬 schema 真源腳本化：真源與文件各拉 {欄名:可空性} 比對；可空性以 migration／entity 為準；同檔同型欄寫法不一致即失真訊號。 | implementer | prompt | rev5:L-077 |
-| RL-0025 | fix 對 `done_with_escalation`＋零改動當場 return 升級主線、置於零改動偵測之前；零改動偵測只服務 status ok 的真空轉。 | 主線 | prompt | rev5:L-078 |
+| RL-0025 | fix 對 `done_with_escalation`＋零改動＝該批未駁回 blocker 成立但落允許清單外、記為已升級主線：零駁回即判該段收斂帶升級項進下一段（碼品質段照跑、不終止 run）、有駁回續下一輪 review 核駁回；已升級 blocker 於後續輪次過濾不計入收斂比較；此分支置於零改動偵測之前、零改動偵測只服務 status ok 的真空轉。 | 主線 | prompt | ADR-00013 |
 | RL-0026 | 驗「呼叫處恰 N 處」取 `name(`／`(name)`／`::name` 三形聯集，或改名讓編譯器列出真實使用點；處數型驗收由測試釘、不由人 grep。 | implementer,review | prompt | rev5:L-079 |
 | RL-0027 | 連動面盤點數字釘與手抄名冊釘並行（新增一個檔本身就是集合改變）；新增檔的單元把全量測試排在實作早期。 | implementer,主線 | prompt | rev5:L-080 |
 | RL-0028 | agent prompt 的事實接地每條附出處（檔:行／指令）、不憑印象寫；同段明令「與碼衝突以碼為準並回報」。 | 主線 | checklist | rev5:L-081 |

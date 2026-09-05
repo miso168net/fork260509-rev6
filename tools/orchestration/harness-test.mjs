@@ -1,4 +1,4 @@
-// 編排骨架 harness（控制流十案；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置）。
+// 編排骨架 harness（控制流十一案；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置）。
 // 用法：node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec|quality]
 //   spec（預設）＝樁把 blocker 打在規格對照段；quality＝打在碼品質段（原 quality-only 變體併入、以第二參數切換）。
 // 期望值自 script 的 `const IMPLEMENTERS = <n>` 行推導（樁對每支 implementer 回同一形；n=0＝續跑形、案7 改驗零 implementer 直入審查）；任一斷言不符→逐項列出、exit 1；用法錯 exit 2。
@@ -136,14 +136,38 @@ await run('案9 該段跑滿（確認輪仍有 blocker）→ 在該段 return、
   return CLEAN
 }, (o) => { noThrow(o); status(o, 'unresolved'); stage(o); reason(o, '確認輪仍有 blocker'); count(o, PRE + 7) })
 
-// 案10：★rev5:L-078——fix 回 done_with_escalation 且零改動 → 應「當場 return 升級」而非判不收斂
+// 案10：★RL-0025（ADR-00013、承 rev5:L-078 改形）——fix 回 done_with_escalation 且零改動、零駁回 → 該段判收斂帶升級項、進下一段（不終止 run）
+const AFTER = TAG === 'quality' ? 0 : 1 // spec 模式：規格段收斂後尚有品質段一支 review
 let n10 = 0
-await run('案10 fix done_with_escalation＋零改動 → 當場 return 升級（rev5:L-078，非不收斂）', (label) => {
+await run('案10 fix done_with_escalation＋零改動＋零駁回 → 該段收斂帶升級、進下一段（RL-0025／ADR-00013）', (label) => {
   if (label.includes('implementer')) return OKW
   if (isRev(label)) { n10++; return B('清單外檔的缺陷' + n10) }
   if (isFix(label)) return { status: 'done_with_escalation', report: '該檔在不得動清單', filesChanged: [], escalations: ['data-model.md 那列要主線改'] }
   return CLEAN
-}, (o) => { noThrow(o); status(o, 'unresolved'); stage(o); reason(o, '已升級主線'); count(o, PRE + 2); expect(Array.isArray(o.r.escalations) && o.r.escalations.length === 1, 'escalations 帶回 1 條', JSON.stringify(o.r.escalations)) })
+}, (o) => {
+  noThrow(o); status(o, 'ok'); count(o, PRE + 2 + AFTER)
+  expect(o.r[ROUNDS_KEY] === 1, ROUNDS_KEY + '=1', o.r[ROUNDS_KEY])
+  expect(Array.isArray(o.r.escalations) && o.r.escalations.length === 1, 'escalations 帶回 1 條', JSON.stringify(o.r.escalations))
+  expect(Array.isArray(o.r.escalatedBlockers) && o.r.escalatedBlockers.length === 1, 'escalatedBlockers 帶回 1 條', JSON.stringify(o.r.escalatedBlockers))
+  expect(Array.isArray(o.r.escalatedStages) && o.r.escalatedStages.includes(STAGE), 'escalatedStages 含 ' + STAGE, JSON.stringify(o.r.escalatedStages))
+})
 
-console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')
+// 案11：★RL-0025——fix 零改動升級但駁回其一 → 續下一輪 review 核駁回（RL-0071）；已升級項被重報＝過濾不計、該段收斂
+let n11 = 0
+await run('案11 fix 零改動升級＋駁回一項 → 續審駁回、已升級項重報被過濾、該段收斂（RL-0025／RL-0071）', (label) => {
+  if (label.includes('implementer')) return OKW
+  if (isRev(label)) {
+    n11++
+    if (n11 === 1) return { agentStatus: 'ok', blockers: [{ file: 'a.ts', summary: '清單外真缺陷', detail: 'd' }, { file: 'b.ts', summary: '誤報', detail: 'd' }], notes: '' }
+    return { agentStatus: 'ok', blockers: [{ file: 'a.ts', summary: '清單外真缺陷', detail: '重報' }], notes: '' }
+  }
+  if (isFix(label)) return { status: 'done_with_escalation', report: 'a.ts 清單外、b.ts 誤報', filesChanged: [], escalations: ['a.ts 那行要主線改'], rejectedFindings: [{ file: 'b.ts', summary: '誤報', why: '碼已如此' }] }
+  return CLEAN
+}, (o) => {
+  noThrow(o); status(o, 'ok'); count(o, PRE + 3 + AFTER)
+  expect(o.r[ROUNDS_KEY] === 2, ROUNDS_KEY + '=2', o.r[ROUNDS_KEY])
+  expect(Array.isArray(o.r.escalatedBlockers) && o.r.escalatedBlockers.length === 1 && o.r.escalatedBlockers[0].file === 'a.ts', 'escalatedBlockers 恰 a.ts 一條', JSON.stringify(o.r.escalatedBlockers))
+})
+
+console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十一案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')
 process.exit(failed ? 1 : 0)

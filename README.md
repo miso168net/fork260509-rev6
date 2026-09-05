@@ -33,7 +33,7 @@ fork260509-rev6/
 │   ├── wire-schema.py               wire 契約閘：extract（typings→JSON Schema 快照、需 stack）／check [--staged-gate]（重抽 byte 比對、絕不覆寫；pre-commit wire-schema 段＝base-web pin bump 時、容器未起＝具名跳過 rc 0）／test（隨遷自 rev5）
 │   ├── fork-delta-lint.py           base-web fork-delta 標記閘：修改型缺原行／新增型缺圈界（含新檔檔頭一行＋所稱軌道×檔路徑）／授權判定（§III.1 檔面收窄＋§III.2 三元組）、空 ★表以哨兵句守（隨遷自 rev5；pre-commit fork-delta 段＝base-web pin bump、本檔或憲法 staged 時全掃；test＝離線自測；--constitution 只供自身變異驗證）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／refresh（快照照相、需 dev stack）／rules emit／errata／test；tests/ 為語料面
-│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架；_sk_rules.js＝generate 產物）、harness-test 十案（斷言＋退出碼）、cdp.mjs、EXAMPLE 組裝成品
+│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架；_sk_rules.js＝generate 產物）、harness-test 十一案（斷言＋退出碼）、cdp.mjs、EXAMPLE 組裝成品
 ├── deploy/                          營運面：dev stack 部署資產＋機密管線（管「跑起來的系統」）
 │   ├── secrets_common.py            機密落點三級解析共用庫（消費者＝下列 CLI＋docsync GT-07）
 │   ├── preflight-secrets.py         機密上機前把關（缺檔／CR·LF／composite drift）
