@@ -60,6 +60,16 @@ const WORK_SCHEMA = {
         properties: { file: { type: 'string' }, summary: { type: 'string' }, why: { type: 'string' } },
       },
     },
+    // ★LL-00010：升級的 finding 結構化指名（file×summary 逐字沿用摘要）——cycle 據此記入 escalated／過濾、不論本輪改動數。
+    escalatedFindings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['file', 'summary'],
+        properties: { file: { type: 'string' }, summary: { type: 'string' } },
+      },
+    },
   },
 }
 

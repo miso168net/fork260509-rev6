@@ -1,4 +1,4 @@
-// 編排骨架 harness（控制流十一案；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置）。
+// 編排骨架 harness（控制流十二案；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置）。
 // 用法：node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec|quality]
 //   spec（預設）＝樁把 blocker 打在規格對照段；quality＝打在碼品質段（原 quality-only 變體併入、以第二參數切換）。
 // 期望值自 script 的 `const IMPLEMENTERS = <n>` 行推導（樁對每支 implementer 回同一形；n=0＝續跑形、案7 改驗零 implementer 直入審查）；任一斷言不符→逐項列出、exit 1；用法錯 exit 2。
@@ -169,5 +169,22 @@ await run('案11 fix 零改動升級＋駁回一項 → 續審駁回、已升級
   expect(Array.isArray(o.r.escalatedBlockers) && o.r.escalatedBlockers.length === 1 && o.r.escalatedBlockers[0].file === 'a.ts', 'escalatedBlockers 恰 a.ts 一條', JSON.stringify(o.r.escalatedBlockers))
 })
 
-console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十一案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')
+// 案12：★LL-00010——fix 部分改動＋以 escalatedFindings 結構化升級一項 → 次輪同 file×summary 重報被過濾、該段第 2 輪收斂帶升級
+let n12 = 0
+await run('案12 fix 部分改動＋結構化升級一項 → 次輪重報被過濾、第 2 輪收斂帶升級（RL-0025／LL-00010）', (label) => {
+  if (label.includes('implementer')) return OKW
+  if (isRev(label)) {
+    n12++
+    if (n12 === 1) return { agentStatus: 'ok', blockers: [{ file: 'a.ts', summary: '清單外真缺陷', detail: 'd' }, { file: 'c.ts', summary: '可修缺陷', detail: 'd' }], notes: '' }
+    return { agentStatus: 'ok', blockers: [{ file: 'a.ts', summary: '清單外真缺陷', detail: '換措辭重報' }], notes: '' }
+  }
+  if (isFix(label)) return { status: 'done_with_escalation', report: 'c.ts 已修、a.ts 清單外', filesChanged: ['c.ts'], escalations: ['a.ts 那行要主線改'], escalatedFindings: [{ file: 'a.ts', summary: '清單外真缺陷' }] }
+  return CLEAN
+}, (o) => {
+  noThrow(o); status(o, 'ok'); count(o, PRE + 3 + AFTER)
+  expect(o.r[ROUNDS_KEY] === 2, ROUNDS_KEY + '=2', o.r[ROUNDS_KEY])
+  expect(Array.isArray(o.r.escalatedBlockers) && o.r.escalatedBlockers.length === 1 && o.r.escalatedBlockers[0].file === 'a.ts' && o.r.escalatedBlockers[0].detail === 'd', 'escalatedBlockers 恰 a.ts 一條（帶原 detail）', JSON.stringify(o.r.escalatedBlockers))
+})
+
+console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十二案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')
 process.exit(failed ? 1 : 0)

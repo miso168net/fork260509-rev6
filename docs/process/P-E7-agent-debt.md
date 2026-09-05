@@ -39,7 +39,7 @@ rad_ai_map:
 | 債型 | 徵狀 | 來源 | 影響面 | 觸發 | 處置 | 守門 | 狀態 | 覆審條件 |
 |---|---|---|---|---|---|---|---|---|
 | review 沿用被駁論據 | 同一 finding 換句重報 | rev6（ADR-00004） | fix 迴圈 | 每輪 | 次輪 prompt 附前輪駁回清單 | RL-0071 | 已守 | 次個編排刀收刀 |
-| 零改動被判不收斂 | fix 正確零改動（finding 在清單外）卻觸發不收斂 | rev5:L-078 | 收斂偵測 | fix 回 done_with_escalation | 升級判定置於零改動偵測之前；升級不終止 run、該段收斂帶升級項進下一段、已升級項重報過濾（ADR-00013） | RL-0025 | 已守 | 同上 |
+| 零改動被判不收斂 | fix 正確零改動（finding 在清單外）卻觸發不收斂 | rev5:L-078 | 收斂偵測 | fix 回 done_with_escalation | 升級判定置於零改動偵測之前；升級不終止 run、該段收斂帶升級項進下一段、已升級項重報過濾（ADR-00013）；升級項以結構化 `escalatedFindings` 記入、不論改動數（LL-00010） | RL-0025 | 已守 | 同上 |
 
 ### 資料依賴債
 
@@ -63,7 +63,7 @@ rad_ai_map:
 | resume 誤用 | 把續跑當「某支重跑」 | rev5:L-027 | 續跑 | 需重跑某階段時 | 新開只跑該階段的 workflow | RL-0010 | 已守 | 同上 |
 | 冒煙 token 蒸發 | 派生 script 時 token 隨 prompt 段消失 | rev5:L-057 | 冒煙 | 派生 script 時 | token 置於共用段、渲染斷言 | RL-0018 | 已守 | 同上 |
 | 現成工件不用 | 自拼射程更窄的 grep／helper | rev5:L-085、rev5:L-087 | 工具面 | 寫驅動件前 | 先 `ls -R tmp/`、errata 優先 | RL-0032 | 已守 | 同上 |
-| 骨架多變體 | 骨架收斂為單一 `_sk_head.js`／`_sk_cycle.js`／`_sk_main.js`；變動段（`_vars`／`_allowed`／`_context`／`_prompts`）逐單元另寫、組裝成品自帶複本屬必然 | rev6 現況 | 編排骨架 | 每次組裝 | 已收斂；成品由組裝器產出、`harness-test.mjs` 十一案守控制流 | 名冊可見（`docs/generated/reference/agents.md`）＋harness 退出碼 | 已守 | 次個編排刀收刀 |
+| 骨架多變體 | 骨架收斂為單一 `_sk_head.js`／`_sk_cycle.js`／`_sk_main.js`；變動段（`_vars`／`_allowed`／`_context`／`_prompts`）逐單元另寫、組裝成品自帶複本屬必然 | rev6 現況 | 編排骨架 | 每次組裝 | 已收斂；成品由組裝器產出、`harness-test.mjs` 十二案守控制流 | 名冊可見（`docs/generated/reference/agents.md`）＋harness 退出碼 | 已守 | 次個編排刀收刀 |
 
 ### 設定債
 
