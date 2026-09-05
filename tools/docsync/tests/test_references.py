@@ -331,18 +331,19 @@ class TestRoutes(unittest.TestCase):
         with self.assertRaisesRegex(references.RouterRoutesError, "router.rs"):
             references.gen_reference_routes(stub({}))
 
-    # 真 repo 釘值＝ROUTES 現行列集逐列全等（002 刀 U1 兩列＋U3 之 getSystemSettings 列已增）；回填點＝002 刀 T033（U4）：
-    # ROUTES 掛上 updateSystemSetting 時本測釘值須同批增列。★釘值形刻意保留——逐列全等是各單元的驗收面，不以「非空＋包含」弱化。
-    # ★本檔已納 U4 允許檔面（research R12 表；限定＝只准增列本測釘值）；回填條＝tasks T033。
+    # 真 repo 釘值＝ROUTES 現行列集逐列全等（002 刀 U1 兩列＋U3 之 getSystemSettings 列＋U4 之 updateSystemSetting 列；
+    # 002 刀四條全數在表）。★釘值形刻意保留——逐列全等是各單元的驗收面，不以「非空＋包含」弱化；日後加 route 時本測釘值須同批增列。
     # ★紅而不自明的窗口：pre-commit 只在 staged 含 tools/docsync/ 時才跑 selftest-docsync（.githooks/pre-commit 同段），
     #   而 GT-01 漂移在 U3 跑過 generate 後即消——故本測不同批改＝一路綠燈到有人跑 docsync test／bootstrap 才浮出。
     def test_real_repo_pinned_rows(self):
         ctx = common.Ctx(ROOT)
         rows = references.parse_router_routes(ctx.text(references.ROUTER_SOURCE), references.ROUTER_SOURCE)
         self.assertEqual(rows, [("/health", "GET", "Public", "health", True), ("/metrics", "GET", "Public", "metrics", True),
-                                ("/systemManage/getSystemSettings", "GET", "Policy", "get-system-settings", False)])
+                                ("/systemManage/getSystemSettings", "GET", "Policy", "get-system-settings", False),
+                                ("/systemManage/updateSystemSetting", "POST", "Policy", "update-system-setting", False)])
         out = references.gen_reference_routes(ctx)
         self.assertEqual([ln for ln in out.split("\n") if ln.startswith("| /")],
                          ["| /health | GET | Public | health | 是 |", "| /metrics | GET | Public | metrics | 是 |",
-                          "| /systemManage/getSystemSettings | GET | Policy | get-system-settings | 否 |"])
+                          "| /systemManage/getSystemSettings | GET | Policy | get-system-settings | 否 |",
+                          "| /systemManage/updateSystemSetting | POST | Policy | update-system-setting | 否 |"])
         self.assertIn("docs/generated/reference/routes.md", references.compute_generated(ctx))
