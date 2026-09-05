@@ -26,7 +26,8 @@
 
 ★新檔面（002 刀 U0 fix 輪補；contracts/code-gates.md §1.3「新增型缺圈界標記（本刀兩新檔）」、
 spec FR-025／US6）：基線沒有的**整檔**（我方新檔）rev5 形整檔豁免——既不驗圈界也不驗授權，
-兩腿對 002 刀唯一的 fork-delta 面（該刀 U3／U4 兩支 base-web 新檔）覆蓋率為 0。改形＝新檔走兩道：
+兩腿對 002 刀唯一的 fork-delta 面（該刀 U3 兩支 base-web 新檔：T025 typings／T031 service wrapper；
+U4 之 T035 續補 T031 該檔、不增新檔支數——該檔對基線恆為我方新檔、兩道判定照跑）覆蓋率為 0。改形＝新檔走兩道：
 ①檔頭圈界標記必在（憲法 §III「新增型…新檔僅檔頭一行標記」；限檔頭區、埋在檔中不算）
 ②標記自稱 §III.1 軌道時、檔路徑須落該軌道範圍欄之新增面（[`S1_NEW_FILE_FACE`]）。名冊外之名
 不做名冊斷言——§III.2 表外宣告 3 與 rev5:ADR 0021 款 1 明寫「純新增檔不觸 ★軌道、§III.1 三軌道表
@@ -71,8 +72,28 @@ MARKER = re.compile(r"原行:\s*(.*\S)\s*$")
 # 名冊側 `**`／`★` 裝飾（由 load_roster 剝）。
 TRACK = re.compile(r"\[rev6-inline\s+([A-Z][A-Z0-9-]*)(?:\(([a-z]+)\))?")
 
+# ★§III.1「範圍」欄字面對賬（002 刀 U0 fix 輪第 1 輪補）：鍵＝§III.1 表首欄字面、值＝該列範圍欄
+# 之反引號 token **集**（以 [`_expand_range_files`] 抽取、與 §III.2 半邊共用同一支展開器）。
+# ★比對以集合為之、次序不計（fix 輪第 3 輪校正）：下游（[`S1_NEW_FILE_FACE`] 的 lambda、§III.2 半邊
+#   的 `files` 授權集）一律只做成員判定，token 在欄內的先後無語意。序敏感比對會對「兩 token 前後
+#   對調」這種純排版 Amendment 擋下 commit，且訊息指向「lambda 須同批重導」的錯修法——誤報加誤導。
+#   收窄／擴張／改名（真正會讓 lambda 失準的三形）在集合比對下照樣不等、照樣 die（RG21～RG23 釘住）。
+# 為何非有不可：[`S1_NEW_FILE_FACE`] 的新增面判定是本檔寫死的 lambda，缺此對賬則走 §V.2 Amendment
+# 收窄範圍欄（例：`src/service/api/rev6-*.ts` 改成 `…/rev6-settings.ts`）之後——軌道名集不變、
+# s1_rows 仍恰 3、[`new_file_track_issue`] 的缺鍵 fail-loud 也不觸發——全鏈照綠，而 lambda 仍放行
+# 整個舊面：**放寬**方向（over-permit）的靜默失準，正是 §III.2 半邊 RG8／RG9／RG11 三守
+# 「檔級硬邊界不因憲法措辭而放寬」在 §III.1 半邊的同一失效類。
+# ★RUSTAPI-SOURCE-ISOLATION 範圍欄「rust-api 整棵樹」無反引號 token＝空序；其新增面判定恆 False
+#   （base-web 掃描面一律無授權、deny-all），放寬方向本就封死，空序是誠實值而非漏守。
+S1_RANGE_LITERAL = {
+    "BASE-WEB-ADAPT": (".env*", "src/typings/api/"),
+    "BASE-WEB-WRAPPER": ("src/service/api/rev6-*.ts",),
+    "RUSTAPI-SOURCE-ISOLATION": (),
+}
+
 # ★新檔標記之「軌道 × 檔路徑」判準（002 刀 U0 fix 輪）：鍵＝憲法 §III.1 表首欄字面、
-# 值＝(該軌道新增面判定, 新增面描述)，判定逐字取自同表「範圍」欄。
+# 值＝(該軌道新增面判定, 新增面描述)，判定逐字取自同表「範圍」欄——該「逐字取自」由
+# [`S1_RANGE_LITERAL`] 於 [`load_roster`] 每次載入時機器對賬（見該常數註）、非僅口頭斷言。
 # 射程界定：只在新檔檔頭標記**自稱**這三名時比對——名冊外之名不做名冊斷言（§III.2 表外宣告 3
 # 「新增型 `NAME+` 標記不入名冊」＋rev5:ADR 0021 款 1「base-web 純新增檔不觸 ★軌道；§III.1
 # 三軌道表＝常用新增面之預設清單、非新增面之窮舉排除」）。鍵集與 §III.1 三軌道名同步：在冊卻
@@ -139,10 +160,13 @@ def load_roster(path=CONSTITUTION):
     ＝矛盾亦 die（首列落入時哨兵句須同批移除）③§III.1 恰 3 列④§III.2 表外宣告 2 明文「不另開軌道」
     之兩名不在冊⑤（rev5:B-068 增）每 ★ 列的用途識別符與檔案集不得為空、檔案集不得殘留 brace／
     全形括號、且每支須為路徑形（含 `/` 或根層 `.env*`——反引號包的裝飾性措辭不得靜默放寬檔級
-    硬邊界；縮窄／放寬兩向皆 die 不靜默）。"""
+    硬邊界；縮窄／放寬兩向皆 die 不靜默）⑥（002 刀 U0 fix 輪第 1 輪增）§III.1 實名列的範圍欄
+    反引號 token 集須逐字＝[`S1_RANGE_LITERAL`]（次序不計——下游只做成員判定），不等即 die（[`S1_NEW_FILE_FACE`] 的 lambda
+    與憲法字面脫節＝新檔腿按舊面放行；射程＝憲法實名列，合成憲法之化名列不做此對賬）。"""
     if not os.path.isfile(path):
         die(f"constitution 不存在：{path}（授權名冊來源、缺之即無授權判準）")
     s1, s2, s1_rows, s2_rows, section = set(), {}, 0, 0, None
+    s1_face = {}                             # §III.1 軌道名 → 該列「範圍」欄原文（字面對賬用）
     sentinel_seen = False
     for line in open(path, encoding="utf-8").read().splitlines():
         if line.startswith("### III.1"):
@@ -192,6 +216,7 @@ def load_roster(path=CONSTITUTION):
         if section == 1:
             s1.add(name)
             s1_rows += 1
+            s1_face[name] = cells[2] if len(cells) > 2 else ""
             continue
         s2_rows += 1
         m = re.match(r"\(([a-z]+)\)", cells[2].strip() if len(cells) > 2 else "")
@@ -243,6 +268,22 @@ def load_roster(path=CONSTITUTION):
         if absent in roster:
             die(f"{absent} 被掃進名冊——§III.2 表外宣告 2 明文不另開此軌道，"
                 f"掃描面誤及散文或違宣告開列＝名冊失真（反例斷言）")
+    # ★§III.1 範圍欄字面對賬（斷言⑥；射程＝憲法實名列——合成憲法之化名列一名都不在鍵集即整段跳過，
+    #   名冊守 RG1～RG19 的化名表因此不受影響）。實得 ≠ 期望即 die，兩種病灶同一道：①範圍欄內容被
+    #   Amendment 改動（放寬／收窄皆然）②實名列被改名／移除而少收（此時 got 缺該鍵、亦不等）。
+    if any(n in S1_RANGE_LITERAL for n in s1_face):
+        got = {n: frozenset(_expand_range_files(c))
+               for n, c in s1_face.items() if n in S1_RANGE_LITERAL}
+        want = {n: frozenset(v) for n, v in S1_RANGE_LITERAL.items()}
+        if got != want:
+            bad = sorted(n for n in set(got) | set(want) if got.get(n) != want.get(n))
+            # 訊息用：集合本身無序，逐名 sorted 後呈現（同一病灶每次輸出同一行、便於對賬）。
+            got_shown = {n: sorted(got.get(n, ())) for n in bad}
+            want_shown = {n: sorted(want.get(n, ())) for n in bad}
+            die(f"§III.1 範圍欄字面與本工具 S1_RANGE_LITERAL 不符（不符軌道：{bad}）——"
+                f"實得 {got_shown}／期望 {want_shown}；"
+                f"憲法 §III.1 表已變更，S1_NEW_FILE_FACE 的新增面判定須同批重導，"
+                f"否則新檔腿仍按舊面放行＝授權靜默放寬")
     return s1, s2
 
 
@@ -699,7 +740,8 @@ def self_test():
     # ── 新檔兩道（002 刀 U0 fix 輪補；contracts/code-gates.md §1.3「新增型缺圈界標記（本刀兩新檔）」、
     #    spec FR-025／US6、brainstorm Q5「本刀能守＝兩新檔檔頭標記＋路徑落在所稱軌道範圍內」）：
     #    ①檔頭圈界標記 ②軌道×路徑相符。★rev5 形對「基線沒有的整檔」整檔豁免＝兩腿對 002 刀唯一的
-    #    fork-delta 面（該刀 U3／U4 兩支 base-web 新檔）覆蓋率 0；下列各案即該退化形的測紅面。
+    #    fork-delta 面（該刀 U3 兩支 base-web 新檔：T025 typings／T031 service wrapper；U4 之 T035
+    #    續補 T031 該檔、不增新檔支數——對基線恆為我方新檔、兩道判定照跑）覆蓋率 0；下列各案即該退化形的測紅面。
     nf_bare = "declare namespace Api {\n  type S = { a: string };\n}\n"
     nf_head = ("// [rev6-inline BASE-WEB-ADAPT+ 002-system-settings] 系統設定 wire 型別新檔\n"
                + nf_bare)
@@ -817,7 +859,8 @@ def self_test():
 
     # ── load_roster 守門自證（rev5 fix 輪第 2 輪先釘五守、確認輪補齊 RG9～RG15；rev6 R10 改形：
     #    RG14 由「≥4 樓地板」改為「零列＋無哨兵句＝紅」，另加 RG16～RG18 三案把空表哨兵句一正一反與
-    #    樓地板移除的正向面釘住）。合成憲法片段走**真** load_roster（path 參數化、同 B63f 之
+    #    樓地板移除的正向面釘住；fix 輪第 1 輪再加 RG20～RG23＝§III.1 範圍欄字面對賬一正三反、
+    #    第 3 輪加 RG24＝純次序對調須綠）。合成憲法片段走**真** load_roster（path 參數化、同 B63f 之
     #    changed_files 範式）；die 走 sys.exit(2)、以 SystemExit 承接並驗 stderr 錯因關鍵詞（錯因驗對支、
     #    防「die 了但不是那道守」的假殺）。──────
     hdr = (
@@ -840,7 +883,9 @@ def self_test():
             open(p, "w", encoding="utf-8").write(header + body)
             return load_roster(p)
 
-        def roster_die(tag, body, want, header=hdr):
+        def roster_die(tag, body, want, header=hdr, unwanted=()):
+            # unwanted＝錯因**不得**出現的字面（002 刀 U0 fix 輪第 1 輪增）：只驗「有出現關鍵詞」
+            # 會被「把全部軌道一起 dump」的籠統訊息滿足＝指名性被無聲放寬仍全綠。
             err = io.StringIO()
             try:
                 with contextlib.redirect_stderr(err):
@@ -848,6 +893,10 @@ def self_test():
             except SystemExit:
                 assert want in err.getvalue(), \
                     f"self-test {tag}：die 錯因不含「{want}」（實得 {err.getvalue()!r}）"
+                for u in unwanted:
+                    assert u not in err.getvalue(), \
+                        (f"self-test {tag}：die 錯因不應含未漂移軌道「{u}」——籠統列出全部軌道＝"
+                         f"讀者無從辨識何者漂移（實得 {err.getvalue()!r}）")
                 return
             raise AssertionError(f"self-test {tag}：壞名冊形（{want}）未 die——該守被移除即此恆綠形")
 
@@ -914,6 +963,43 @@ def self_test():
             f"self-test RG18：★段 2 列無哨兵句須載入為 s2 兩名（rev5 ≥4 樓地板已移除；實得 {sorted(s2two)}）"
         # RG19：哨兵句字面被改（少一字）＝不算哨兵、零列即 die——strip 後全等判準之非 vacuous 證。
         roster_die("RG19", "\n" + SENTINEL.replace("首列", "") + "\n", "哨兵")
+        # ── RG20～RG23（002 刀 U0 fix 輪第 1 輪補）：§III.1 範圍欄字面對賬（load_roster 斷言⑥）。
+        #    化名表（hdr 之 A-ONE／A-TWO／A-THREE）射程外，故此四案改用**憲法實名三列**的合成表頭；
+        #    缺此對賬則 Amendment 收窄範圍欄後 S1_NEW_FILE_FACE 的 lambda 仍放行舊面而全鏈照綠
+        #    （放寬方向靜默失準）——RG21～RG23 即該守被移除時的恆綠形。
+        hdr_real = (
+            "### III.1 預設可動軌道\n\n"
+            "| 軌道 | 範圍 | 紀律 |\n|---|---|---|\n"
+            "| **BASE-WEB-ADAPT** | `.env*`＋`src/typings/api/` 新檔 | y |\n"
+            "| **BASE-WEB-WRAPPER** | `src/service/api/rev6-*.ts` 新檔 | y |\n"
+            "| **RUSTAPI-SOURCE-ISOLATION** | rust-api 整棵樹 | y |\n\n"
+            "### III.2 ★ 需 constitution 顯式授權軌道\n\n"
+            "| 軌道 | 用途 | 範圍（檔案） | 紀律 |\n|---|---|---|---|\n"
+        )
+        s1r, _s2r = roster(rows_ok, header=hdr_real)
+        assert s1r == set(S1_RANGE_LITERAL), \
+            f"self-test RG20：憲法 §III.1 實名三列逐字須綠（實得 s1={sorted(s1r)}）"
+        # RG21：WRAPPER 範圍欄由 `rev6-*.ts` 收窄為 `rev6-settings.ts`——名字集不變、s1_rows 仍 3、
+        #   缺鍵 fail-loud 不觸發，唯本對賬攔得住（finding 所述之 over-permit 失效鏈）。
+        roster_die("RG21", rows_ok, "範圍欄字面", header=hdr_real.replace(
+            "`src/service/api/rev6-*.ts` 新檔", "`src/service/api/rev6-settings.ts` 新檔"))
+        # RG22：ADAPT 範圍欄的 typings 目錄被改——die 須**只**指名漂移的那一條（未漂移的另兩名
+        #   不得出現：籠統 dump 全表＝讀者無從辨識何者漂移）。
+        roster_die("RG22", rows_ok, "BASE-WEB-ADAPT", header=hdr_real.replace(
+            "`src/typings/api/` 新檔", "`src/typings/` 新檔"),
+            unwanted=("BASE-WEB-WRAPPER", "RUSTAPI-SOURCE-ISOLATION"))
+        # RG23：實名列被改名（少收一鍵）——got 缺該鍵亦不等，同一道守即時攔下（原僅由
+        #   new_file_track_issue 於「有新檔自稱該名」時才 fail-late）。
+        roster_die("RG23", rows_ok, "BASE-WEB-WRAPPER", header=hdr_real.replace(
+            "**BASE-WEB-WRAPPER**", "**BASE-WEB-WRAPPER-X**"),
+            unwanted=("BASE-WEB-ADAPT", "RUSTAPI-SOURCE-ISOLATION"))
+        # RG24（fix 輪第 3 輪補）：ADAPT 範圍欄兩 token **純前後對調**＝語意等價（下游只做成員判定、
+        #   欄內先後無語意）須**綠**。序敏感比對（tuple）會把這種純排版 Amendment 判成 rc 2、且訊息
+        #   指向「S1_NEW_FILE_FACE 須同批重導」的錯修法——把本對賬改回 tuple 比較即本案紅。
+        s1swap, _s2swap = roster(rows_ok, header=hdr_real.replace(
+            "`.env*`＋`src/typings/api/` 新檔", "`src/typings/api/` 新檔＋`.env*`"))
+        assert s1swap == set(S1_RANGE_LITERAL), \
+            f"self-test RG24：範圍欄純對調須綠（次序不計；實得 s1={sorted(s1swap)}）"
     finally:
         shutil.rmtree(rtmp, ignore_errors=True)
 
@@ -1035,9 +1121,11 @@ def main(argv):
     if test_only:
         print("[fork-delta-lint] ✓ self-test 過（修改型缺原行／新增型缺圈界／新檔檔頭標記＋軌道×路徑"
               "（含真 scan 接線 fixture）／五形抽取＋token 換世代／"
-              "分層授權判定／範圍欄展開器／掃描面 fixture／名冊載入守 RG1～RG19 含空 ★表哨兵句一正一反／CLI 引數）")
+              "分層授權判定／範圍欄展開器／掃描面 fixture／名冊載入守 RG1～RG24 含空 ★表哨兵句一正一反"
+              "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／CLI 引數）")
         return 0
-    s1, s2 = load_roster(constitution)  # 含結構斷言（空名冊／★段零列須哨兵句／§III.1 恰 3／表外宣告 2 反例／升維非空＝die）
+    # 含結構斷言（空名冊／★段零列須哨兵句／§III.1 恰 3／表外宣告 2 反例／升維非空／§III.1 範圍欄字面對賬＝die）
+    s1, s2 = load_roster(constitution)
     assert_baseline()
     tip = sh(["git", "rev-parse", "--short", BASELINE], BASEWEB).stdout.strip()
     errs, unmarked, rogue, checked_total, stats = scan(s1, s2)

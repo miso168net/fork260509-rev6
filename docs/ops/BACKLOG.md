@@ -1,4 +1,4 @@
-<!-- next: BL-00025 -->
+<!-- next: BL-00026 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -14,3 +14,4 @@
 - BL-00021｜governance｜憲法 §I.5 例外②射程鎖 17 檔，但五個宣告「自寫」的檔去註解後與 rev5 程式面等價（`migration/src/main.rs` 僅差變數改名 `file_path`→`path`、`migration/src/lib.rs` 僅差 `m001`→`m0001` 模組名、`entity/src/lib.rs` 與兩支 member `Cargo.toml` 零差異）：屬 40 行 env 橋接與 manifest「承形自寫」的自然收斂、非例外射程擴張（001 收單 commit be69543 訊息已記 main.rs 一項），但機器面分不出「重打字收斂」與「拷貝」，日後做例外邊界稽核會撞見沒人記過的近全等——在下一次動 §I.5 相關文件時補一句定性｜觸發：下一次動憲法 §I.5 或 ADR-00009 射程的刀
 - BL-00023｜governance｜pre-commit 碼面閘接線（rust-fmt／wire-schema／fork-delta／entity-drift／schema-frozen 五段＋`for` 自測迴圈名冊）零機器守衛——002 刀 U0 變異實測：刪三段後 `python3 tools/docsync lint` 仍 0 錯、三支 self-test 仍綠；rev5 曾以 `rev5:tools/docs-sync.py` TestGateWiring 乾跑案釘住、隨遷未帶進 rev6。候選＝`tools/docsync/tests/` 加語料面案讀真 `.githooks/pre-commit` 斷言各段觸發條件與命令字面、或 GT-12 加腿（一進一出）｜觸發：下一支碼面閘進場的刀、或任一 hook 段被誤刪實例出現時
 - BL-00024｜governance｜`tools/fork-delta-lint.py` 新檔檔頭標記腿未強制契約定形之 `+` 尾綴（`// [rev6-inline <軌道>+ <刀名>]`）、且軌道名只在自稱 §III.1 三軌道時比對路徑（名冊外之名不斷言——依憲法 §III.2 表外宣告 3 讀法）；補 `+` 尾綴判定＋一正一反 self-test｜觸發：002 刀 U3 兩新檔（typings／service）落地時同批補
+- BL-00025｜governance｜憲法 §I.5 例外①（`sea-orm-adapter/` 5 支整檔拷貝自 rev5@92919b9）零機器自證面——ADR-00009 條件①逐位元自證只鎖例外② 17 檔、entity-drift 閘只比 entity×快照、rust-fmt 閘紅時只能靠 `EXEMPT_WARN` 告誡停手；候選＝bootstrap 或 schema-gate 加對 rev5 凍結樹 `sea-orm-adapter/` 之 `diff -r` 自證腿（002 刀 U0 審查觀察）｜觸發：下一次動 rust-api 承襲面或 ADR-00009 射程的刀（與 BL-00021 同批）

@@ -22,8 +22,17 @@ rustfmt.toml；RULES 名詞段「隨遷工具」）。rev6 拍板＝002 刀 clar
 ★**刪掉它會怎樣**：格式回到「靠人記得在容器裡跑一次」，而 rev6 沒有第二道 fmt 防線
 （零 CI）——漏跑零訊號、下一個人的 diff 裡混進大量與其改動無關的重排。
 ★**改壞被測物會怎樣**：任一 .rs 檔多一個空格／少一個換行 ⇒ 本閘 rc 1 並印出段數與前幾行
-diff 摘要。★首跑守則（002 刀 U0）：對 001 刀逐位元承襲之存量（entity／migration 兩 crate）若紅
-＝停手升 user——格式化即破 ADR-00009 條件①；實跑＝rc 0（存量於 rev5 已格式化、toolchain 同版）。
+diff 摘要。★首跑守則（002 刀 U0）：`--all` 的射程＝`rust-api/Cargo.toml` 全 workspace members（隨刀增列、
+本檔不寫死 crate 數與檔數），其中兩個例外面的紅燈處置與其餘自寫碼不同——
+  ①`entity/` 15 檔＋`migration/m0001`／`m0002`＝憲法 §I.5 例外②（逐位元承襲 17 檔）：紅＝格式化即破
+    ADR-00009 條件①自證
+  ②`sea-orm-adapter/` 5 支＝憲法 §I.5 例外①（整檔拷貝自 rev5@`92919b9`）：紅＝格式化即破整檔
+    拷貝，且該例外**無**逐位元自證閘（ADR-00009 條件①射程不含它）＝被改寫後零機器訊號
+  ③例外面以外之自寫碼（各 crate 入口檔、`server/` 全樹等）：紅＝照常格式化即可
+  ★①②任一支紅即停手升 user、**絕不跑 `FIX_CMD`**——它是無條件的 `cargo fmt --all`、一跑就連②
+  一起就地重寫；同一告誡由 [`EXEMPT_WARN`] 在執行期隨補救行印出（hook 輸出看得到的只有那幾行、
+  不是本 docstring）。實跑＝rc 0（存量於 rev5 已以同一組 rustfmt.toml 三值格式化、toolchain 同版；
+  002 刀 T002 與 U0 對當時 workspace 實跑取證）。
 
 ════════ 四態與退出碼（★跳過與通過在輸出上必須看得出差別） ════════
 
@@ -62,20 +71,12 @@ self-test 案 `…read_only_check_form` 逐字比對實際下達的 argv，拿�
   ④`README.md` 目錄樹（GT-09 對賬）、`docs/ops/RUNBOOK.md` §12 工具鏈速查表＋碼面閘表
     （GT-12 碼面閘表腿對賬：tools/ 頂層工具檔集＝表列集；碼面閘不計入治理閘預算）。
 
-  ★**①那段接線本身無機器守衛（002 刀 U0 fix 輪實測查明、已升級主線）**：②③④三處對賬的都是
-    「名冊成員資格」（`for t in` 名冊／bootstrap `run_tool_test`／README 樹＋RUNBOOK 碼面閘表×
-    GT-12 腿）——它們回答「本檔在不在冊」，**不**回答「①那段 hook 條件判斷還在不在」。實測：
-    把 pre-commit 的 rust-fmt／wire-schema／fork-delta 三段整段刪除後，三支工具本體仍 tracked、
-    README 樹與 RUNBOOK 碼面閘表仍列、三支 self-test 仍綠、`python3 tools/docsync lint` 仍回
-    「0 錯誤／0 警告／0 閘跳過」——閘被靜默關掉且零機器訊號。entity-drift 段（002 刀 U0 才把
-    「快照缺席具名跳過」改成「缺席即紅」）同樣曝險：整段被刪＝該改動連同原本的漂移守門一起無聲消失。
-  ★把斷言寫進本檔 self-test 對此失效模式**無效**：self-test 只在本檔自身 staged 時才由 `for t in`
-    迴圈觸發，而「只改 hook」的 commit 不會 stage 本檔（rev5 於 `rev5:tools/docs-sync.py` 之
-    `TestGateWiring.test_dry_run_rust_fmt_gate_trigger_conditions` 逐字記過同一論證；該案是 rev5 全庫
-    唯一釘住本閘觸發行為者，隨遷時未帶進 rev6）。守衛的正確落點＝每顆 commit 必跑的 `docsync lint`／
-    `docsync test` 面（rev5 即置於其測試套件），而該面在 002 刀 U0 的允許檔清單之外，故本輪不擅改、
-    以 escalation 交主線處置。主線可採之形：`tools/docsync/tests/` 加一支語料面案，對每支碼面閘同時
-    斷言「觸發條件字面＋`pc_run` 標籤＋命令形」三件在場，一案覆蓋六段、刪任一段即紅。
+  ★**①那段接線本身無機器守衛**：②③④三處對賬的都是「名冊成員資格」（`for t in` 名冊／
+    bootstrap `run_tool_test`／README 樹＋RUNBOOK 碼面閘表×GT-12 腿）——它們回答「本檔在不在冊」，
+    **不**回答「①那段 hook 條件判斷還在不在」；pre-commit 的每一段碼面閘接線（含 entity-drift 之
+    「快照缺席即紅」）同屬此曝險面。守衛落點不在本檔 self-test——self-test 只在本檔自身 staged 時
+    才由 `for t in` 迴圈觸發，而「只改 hook」的 commit 不 stage 本檔。追蹤與候選修法＝
+    `docs/ops/BACKLOG.md` BL-00023（單一承載處；本檔不開第二個家）。
 
 ★輸出紀律（同 tools/wf-watchdog.py）：一切輸出走 `_say()`（`print(..., flush=True)`）——
 pre-commit 把 hook 輸出接管道時 python 預設塊緩衝，不 flush 的行會與後續閘的輸出錯序。
@@ -107,6 +108,16 @@ SUMMARY_HEAD = 12       # 紅訊息只印前 N 行 diff 摘要（全文動輒數
 _COMPOSE = "docker compose -f docker-compose.yml -f docker-compose.dev.yml"
 REBUILD_CMD = f"{_COMPOSE} build rust-api && {_COMPOSE} up -d rust-api"
 FIX_CMD = f"{_COMPOSE} exec -T rust-api cargo fmt --all"
+# ★例外面告誡（002 刀 U0 fix 輪第 3 輪補）：[`FIX_CMD`] 是**無條件**的 `cargo fmt --all`，而 `--all`
+# 的射程＝全 workspace（隨刀增列、本檔不寫死計數），其中憲法 §I.5 例外面固定兩組——例外②`entity/` 15 檔與
+# `migration/m0001`／`m0002`（逐位元承襲、ADR-00009 條件①「去註解後 diff 全等」自證），例外①
+# `sea-orm-adapter/` 5 支（整檔拷貝自 rev5@`92919b9`，ADR-00009 條件①射程**不含**它＝被就地重寫後
+# 零機器訊號）。檔頭首跑守則已寫「絕不跑 FIX_CMD」，但 hook 路徑上操作者看得到的只有本檔輸出的那幾
+# 行、不是 docstring——故凡印出該命令的路徑都必須同印本行（rev5 無此例外面、其補救行字面對 rev6 已
+# 失效＝RULES 名詞段「隨遷工具」四型失效引用之第三型）。self-test 逐案釘字面、移除即紅。
+EXEMPT_WARN = ("★先看 diff 落點：`entity/`／`migration/m0001`／`m0002`（憲法 §I.5 例外②、ADR-00009 "
+               "條件①逐位元自證）或 `sea-orm-adapter/`（例外①、無逐位元自證閘）——命中即停手升 user、"
+               "絕不跑上列命令（`--all` 會連同例外面一起就地重寫）")
 
 
 def _say(msg, err=False):
@@ -190,6 +201,7 @@ def fmt_verdict(rc, stdout, stderr, elapsed):
     lines += [f"  {ln}" for ln in body]
     lines.append(f"  補救：容器內跑 `{FIX_CMD}` 後重新 stage"
                  f"（設定＝rust-api/rustfmt.toml；承 rev5:B-112）")
+    lines.append(f"  {EXEMPT_WARN}")
     return 1, lines
 
 
@@ -201,7 +213,8 @@ def run_check(root):
                    f"——docker 與 compose 檔就位後自動恢復實跑"]
     if not container_is_running(root):
         return 0, [f"[rust-fmt-gate] ⤳ 跳過：rust-api 容器未在跑"
-                   f"——起 stack 後自動恢復實跑；自律補救＝容器內 cargo fmt --all（{FIX_CMD}）"]
+                   f"——起 stack 後自動恢復實跑；自律補救＝容器內 cargo fmt --all（{FIX_CMD}）",
+                   f"  {EXEMPT_WARN}"]
     lines = []
     if worktree_dirty(root):
         lines.append("[rust-fmt-gate] ⚠ rust-api worktree 有未 commit 變動"
@@ -403,6 +416,34 @@ class TestRunningStates(unittest.TestCase):
                        "docker-compose.dev.yml", "exec", "-T", "rust-api",
                        "cargo", "fmt", "--all", "--check"], log, msg=str(log))
 
+    def test_fix_cmd_never_printed_without_exception_scope_warning(self):
+        """★凡印出 `FIX_CMD` 的路徑都必須同印例外面告誡（[`EXEMPT_WARN`]）——rc 1 紅路徑與
+        ②容器未起之具名跳過路徑兩處。理由：`FIX_CMD` 是無條件 `cargo fmt --all`，`--all` 射程
+        含憲法 §I.5 例外①`sea-orm-adapter/`（5 支、ADR-00009 條件①射程不含它＝重寫後零機器
+        訊號）與例外②的 17 檔；只印命令＝操作者照做即破例外，而檔頭首跑守則在 hook 輸出裡看
+        不到。刪掉任一處 append（或把告誡改成不提例外檔路徑）即本案紅。"""
+        seen = []
+        with _FakeRoot() as root, unittest.mock.patch("shutil.which", return_value=FAKE_DOCKER), \
+                unittest.mock.patch("subprocess.run",
+                                    side_effect=_stub_run(fmt_rc=1, fmt_out=FMT_DIRTY_OUT)):
+            seen.append(("rc1", run_check(root)[1]))
+        with _FakeRoot() as root, unittest.mock.patch("shutil.which", return_value=FAKE_DOCKER), \
+                unittest.mock.patch("subprocess.run", side_effect=_stub_run(running=False)):
+            seen.append(("skip-not-running", run_check(root)[1]))
+        for tag, lines in seen:
+            text = "\n".join(lines)
+            self.assertIn(FIX_CMD, text, msg=f"{tag}：本案前提（該路徑會印補救命令）已不成立")
+            self.assertIn(EXEMPT_WARN, text, msg=f"{tag}：印了 {FIX_CMD} 卻沒印例外面告誡：{text}")
+        # 反向成對：例外面告誡只在印命令時出現——綠路徑不得有（恆印＝失去鑑別力、也會灌 hook 輸出）。
+        with _FakeRoot() as root, unittest.mock.patch("shutil.which", return_value=FAKE_DOCKER), \
+                unittest.mock.patch("subprocess.run", side_effect=_stub_run(fmt_rc=0)):
+            green = "\n".join(run_check(root)[1])
+        self.assertNotIn(EXEMPT_WARN, green)
+        # 告誡本身須指名兩個例外面的檔路徑（改成籠統一句「小心」即紅）。
+        for token in ("entity/", "migration/m0001", "sea-orm-adapter/"):
+            self.assertIn(token, EXEMPT_WARN)
+
+
 
 class TestUsageAndOutput(unittest.TestCase):
     def test_usage_guard_rejects_unknown_subcommand(self):
@@ -430,8 +471,9 @@ def main(argv):
         if result.wasSuccessful():
             _say("[rust-fmt-gate] ✓ self-test 過（①docker 缺席／compose 檔缺席兩跳過態、"
                  "②容器未跑跳過、③綠、④未格式化 rc1＋段數、⑤cargo-fmt 缺席 rc2 fail-loud、"
-                 "⑥worktree 髒警示成對＋GIT_* 洩漏免疫、⑦唯讀 argv 逐字、⑧用法守衛、"
-                 "⑨print 全 flush）")
+                 "⑥worktree 髒警示成對＋GIT_* 洩漏免疫、⑦唯讀 argv 逐字、"
+                 "⑧補救命令必帶例外面告誡（兩輸出路徑＋綠路徑反向）、⑨用法守衛、"
+                 "⑩print 全 flush）")
             return 0
         return 1
     if cmd != "check":

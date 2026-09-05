@@ -9,7 +9,7 @@
 
 - 子命令：`check`（預設）＝容器內 `docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T rust-api cargo fmt --all --check`（唯讀、絕不寫檔）；`test`＝離線 self-test（subprocess 全樁、毫秒級）。
 - rc：0＝全格式化、或具名跳過（docker 不在 PATH／repo 根缺 compose 兩檔／`rust-api` 容器未在跑——印一行「⤳ 跳過：…」；clarify Q5）；1＝未格式化（逐段計數＋前幾行 diff 摘要＋補救命令 `… exec -T rust-api cargo fmt --all`）；2＝容器在而 cargo-fmt 缺（fail-loud；rev6 映像已裝 rustfmt component、預期不發生）。
-- ★首跑守則：對 001 逐位元承襲 17 檔若紅→停手升 user（格式化即破 ADR-00009 條件①）；預期綠（rev5 92919b9 存量已 fmt、toolchain 1.96.1 同版）。
+- ★首跑守則：對 001 承襲存量若紅→停手升 user——例外② 17 檔（`entity/` 15＋`migration/m0001`／`m0002`；格式化即破 ADR-00009 條件①）與例外① `sea-orm-adapter/` 5 支（整檔拷貝、無逐位元自證閘；格式化即破整檔拷貝且零機器訊號——as-built 校正 2026-09-05 U0 審查：原句只框 17 檔）；工具 `EXEMPT_WARN` 於紅／跳過輸出隨補救命令印同一告誡；預期綠（rev5 92919b9 存量已 fmt、toolchain 1.96.1 同版；T002／U0 實跑 rc 0）。
 - pre-commit 觸發：staged 含 `rust-api`（gitlink）或 `tools/rust-fmt-gate.py`。
 
 ### §1.2 `tools/wire-schema.py`（承 rev5 650 行）
@@ -25,7 +25,7 @@
 - 掃描面：base-web `src/` 之 .ts／.vue＋`build/` 之 .ts＋根層 `.env*`；基線＝源倉 `fork260509-soybean-admin-base/` @ `example` tip（bootstrap 斷言在場）。
 - 兩腿：修改型缺「原行:」（本刀 vacuous——零 inline）；新增型缺圈界標記（本刀兩新檔）。授權判定＝憲法 §III.2 ★軌道（軌道×用途×檔案）三元組硬邊界＋§III.1 三軌道範圍收窄（ADAPT 修改型限根層 `.env*`；WRAPPER 掃描面內不可修改型）；新增檔標記所稱軌道與檔路徑不符＝紅。
 - ★標記字面（新增型檔頭一行、契約定形）：`// [rev6-inline <軌道名>+ <刀名>] <一句話理由>`——token `rev6-inline`（CLAUDE.md §1）、`+` 尾綴＝新增型、軌道名 ∈ 憲法 §III.1 表首欄字面（`BASE-WEB-ADAPT`／`BASE-WEB-WRAPPER`）、刀名＝`002-system-settings`。
-- ★結構斷言改形（brainstorm Q5）：名冊載入對 §III.2 ★段——零資料列時 MUST 命中哨兵句字面「（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）」、否則 ≥1 列；§III.1 恰 3 列與其餘斷言不變；self-test 一正一反：合成憲法文本「零列＋哨兵句」＝綠、「零列＋無哨兵句」＝紅（守不消失）。日常一律用預設憲法路徑，`--constitution` 只供自身變異驗證。
+- ★結構斷言改形（brainstorm Q5）：名冊載入對 §III.2 ★段——零資料列時 MUST 命中哨兵句字面「（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）」、否則 ≥1 列；§III.1 恰 3 列與其餘斷言不變＋第⑥道（as-built 2026-09-05 U0 審查補）＝§III.1 三實名列範圍欄之反引號 token 集 ⇔ 工具常數 `S1_RANGE_LITERAL`（次序不計）、不符即 rc 2——Amendment 改範圍欄即紅、與 pre-commit 憲法觸發源連動；self-test 一正一反：合成憲法文本「零列＋哨兵句」＝綠、「零列＋無哨兵句」＝紅（守不消失）。日常一律用預設憲法路徑，`--constitution` 只供自身變異驗證。
 - rc：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗）；源倉缺席或未切在 `example`＝rc 2 fail-loud（`assert_baseline` die；bootstrap 已斷言在場、正常不觸——as-built 校正 2026-09-05 U0：原句「具名跳過」與碼相反，rev5 原檔同為 die、fail-loud 方向較安全）。
 - pre-commit 觸發：staged 含 `base-web`、`tools/fork-delta-lint.py` 或 `.specify/memory/constitution.md`。
 
