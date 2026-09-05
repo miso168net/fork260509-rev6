@@ -123,4 +123,4 @@ password_forbid_username／password_require_digit／password_require_lowercase�
 
 部分更新請求之每一可選欄：**欄位缺席＝不動；欄位值 JSON null＝顯式清空（NOT NULL 欄→`2222` 拒收、nullable 欄→落 NULL）；欄位有值＝設值（空字串亦為設值）**。
 解析層以三態型別區分「未出現」與「null」（serde `Option<Option<T>>`＋default＋自訂 deserialize_with）。逐域欄級三態表由各域刀自定；本約定僅鎖 envelope 級語意；
-射程＝部分更新請求 body（create 請求與 query 參數不在射程）。★本條文隨 U7 轉錄為 ADR（承 rev5:ADR 0023；憲法 §V.1 權威鏈落點）——accepted 後以該 ADR 為權威、本節轉指引。
+射程＝部分更新請求 body（create 請求與 query 參數不在射程）。★權威＝`docs/arc42/decisions/ADR-00015-partial-update-tristate-envelope-convention.md`（accepted；承 rev5:ADR 0023；憲法 §V.1 權威鏈落點）——本節為指引。
