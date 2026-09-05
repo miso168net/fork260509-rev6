@@ -28,7 +28,8 @@
 spec FR-025／US6）：基線沒有的**整檔**（我方新檔）rev5 形整檔豁免——既不驗圈界也不驗授權，
 兩腿對 002 刀唯一的 fork-delta 面（該刀 U3 兩支 base-web 新檔：T025 typings／T031 service wrapper；
 U4 之 T035 續補 T031 該檔、不增新檔支數——該檔對基線恆為我方新檔、兩道判定照跑）覆蓋率為 0。改形＝新檔走兩道：
-①檔頭圈界標記必在（憲法 §III「新增型…新檔僅檔頭一行標記」；限檔頭區、埋在檔中不算）
+①檔頭圈界標記必在（憲法 §III「新增型…新檔僅檔頭一行標記」；限檔頭區、埋在檔中不算）且定形
+　`[rev6-inline <軌道名>+ <刀名>]`——`+` 尾綴＝新增型、缺即紅指名（契約 §1.3；002 刀 U3 補）
 ②標記自稱 §III.1 軌道時、檔路徑須落該軌道範圍欄之新增面（[`S1_NEW_FILE_FACE`]）。名冊外之名
 不做名冊斷言——§III.2 表外宣告 3 與 rev5:ADR 0021 款 1 明寫「純新增檔不觸 ★軌道、§III.1 三軌道表
 ＝常用新增面之預設清單、非新增面之窮舉排除」。生成檔仍豁免（同上一段）。
@@ -513,14 +514,20 @@ def find_new_file_marker(content):
 
 
 def new_file_track_issue(rel, marker, s1):
-    """新檔檔頭標記的「軌道 × 檔路徑」判定（contracts/code-gates.md §1.3「新增檔標記所稱軌道與
-    檔路徑不符＝紅」）：回錯因字串、合格回 None。射程＝標記自稱 §III.1 三軌道時比對
-    [`S1_NEW_FILE_FACE`]；名冊外之名不做名冊斷言（§III.2 表外宣告 3、rev5:ADR 0021 款 1——
+    """新檔檔頭標記的「定形 × 軌道 × 檔路徑」判定（contracts/code-gates.md §1.3「新增檔標記所稱軌道與
+    檔路徑不符＝紅」＋「`+` 尾綴＝新增型」）：回錯因字串、合格回 None。定形＝軌道名後緊接 `+`（002 刀 U3 補）；
+    軌道射程＝標記自稱 §III.1 三軌道時比對 [`S1_NEW_FILE_FACE`]；名冊外之名不做名冊斷言（§III.2 表外宣告 3、rev5:ADR 0021 款 1——
     純新增檔本就不觸 ★軌道，於此報「不在名冊」即與憲法字面相衝）。"""
     m = TRACK.search(marker)
     if not m:
         return "檔頭標記抽不出軌道名（形制須為 `[rev6-inline <軌道名>+ <刀名>] <一句話理由>`）"
     name = m.group(1)
+    # ★`+` 尾綴定形（002 刀 U3 補；contracts/code-gates.md §1.3「`+` 尾綴＝新增型」）：軌道名後須**緊接**
+    #   `+`——`NAME 刀名`（.env 修改型裸形）／`NAME(a) 刀名`（★軌道修改型用途形）皆非新檔形、缺即紅。
+    #   置於名冊判定之前：形制約束對名冊外之名同樣成立（§III.2 表外宣告 3 的新增型形本就是 `NAME+`）。
+    if marker[m.end(1):m.end(1) + 1] != "+":
+        return (f"檔頭標記缺新增型 `+` 尾綴（軌道名 {name} 後須緊接 `+`；契約定形 "
+                f"`[rev6-inline <軌道名>+ <刀名>] <一句話理由>`、contracts/code-gates.md §1.3）")
     if name not in s1:
         return None                          # §III.1 外之名：不做名冊斷言（rev5:ADR 0021 款 1）
     if name not in S1_NEW_FILE_FACE:
@@ -781,6 +788,19 @@ def self_test():
         "self-test NF12：§III.1 在冊卻無新增面判準須 fail-loud（憲法表被改名／增列之偵測）"
     assert new_file_track_issue("src/x.ts", "// [rev6-inline] 無軌道名", s1_real) is not None, \
         "self-test NF13：檔頭標記抽不出軌道名須攔（形制不符）"
+    # ── `+` 尾綴定形（002 刀 U3 補；contracts/code-gates.md §1.3「`+` 尾綴＝新增型」）：新檔檔頭標記須為
+    #    `[rev6-inline <軌道名>+ <刀名>]`——軌道名後緊接 `+`、缺即形制不符、紅指名；名冊外之名同受形制約束
+    #    （§III.2 表外宣告 3 的新增型形本就是 `NAME+`）。一正一反、`.env*` 之 `#` 臂同釘。
+    assert new_file_track_issue("src/typings/api/rev6-settings.d.ts",
+                                "// [rev6-inline BASE-WEB-ADAPT+ 002-system-settings] r", s1_real) is None \
+        and new_file_track_issue(".env.test", "# [rev6-inline BASE-WEB-ADAPT+ 002-system-settings] r",
+                                 s1_real) is None, \
+        "self-test NF17：帶 `+` 尾綴之新檔檔頭標記須過（`//` 與 `#` 兩臂）"
+    for noplus in ("// [rev6-inline BASE-WEB-ADAPT 002-system-settings] r",       # .env 修改型裸形
+                   "// [rev6-inline BASE-WEB-ADAPT(a) 002-system-settings] r",    # ★軌道修改型用途形
+                   "// [rev6-inline SOME-STAR-TRACK 002-system-settings] r"):     # 名冊外之名、仍缺 `+`
+        assert "`+` 尾綴" in (new_file_track_issue("src/typings/api/rev6-settings.d.ts", noplus, s1_real) or ""), \
+            f"self-test NF18：新檔檔頭標記缺 `+` 尾綴須攔並指名形制（{noplus}）"
 
     # ── rev5:B-063 掃描面自證：暫存 git fixture 走**真** changed_files（pathspec＋濾網零打樁）——
     #    變異「pathspec 縮回 -- src/」或「濾網丟 .env」即在此測紅；根層限定與副檔名濾網一併釘住。
@@ -1119,7 +1139,7 @@ def main(argv):
     except AssertionError as e:
         die(f"self-test 失敗（lint 邏輯壞）：{e}")
     if test_only:
-        print("[fork-delta-lint] ✓ self-test 過（修改型缺原行／新增型缺圈界／新檔檔頭標記＋軌道×路徑"
+        print("[fork-delta-lint] ✓ self-test 過（修改型缺原行／新增型缺圈界／新檔檔頭標記（含 `+` 尾綴定形）＋軌道×路徑"
               "（含真 scan 接線 fixture）／五形抽取＋token 換世代／"
               "分層授權判定／範圍欄展開器／掃描面 fixture／名冊載入守 RG1～RG24 含空 ★表哨兵句一正一反"
               "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／CLI 引數）")
@@ -1147,11 +1167,11 @@ def main(argv):
         if rogue:
             print(f"[fork-delta-lint] ✗ {len(rogue)} 個標記未過授權判定"
                   f"（修改型＝§III.2 ★軌道驗軌道×用途×檔案三元組＋§III.1 三軌道驗檔面收窄；"
-                  f"新檔＝檔頭標記自稱軌道之 §III.1 範圍欄新增面）：")
+                  f"新檔＝檔頭標記 `+` 尾綴定形＋自稱軌道之 §III.1 範圍欄新增面）：")
             for rel, line, why in rogue:
                 print(f"    {rel}｜{why}｜{line}")
             print("  補法：修改型標記改用名冊內（軌道,用途）實名且只落授權檔，新用途／新軌道須先走"
-                  " §V.2 Amendment 開立；新檔標記改用範圍欄涵蓋該路徑的軌道"
+                  " §V.2 Amendment 開立；新檔標記帶 `+` 尾綴、改用範圍欄涵蓋該路徑的軌道"
                   "（§III.1；純新增檔不觸 ★軌道＝rev5:ADR 0021 款 1）。")
         return 1
     if checked_total < 1:

@@ -58,7 +58,7 @@ COMPOSE = ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compos
 BASE_WEB_EXEC = COMPOSE + ["exec", "-T", "-w", "/app", "base-web"]
 
 # 快照輸出路徑（追蹤、隨 rust-api worktree；rev6 002 刀 contracts/wire-settings.md §4；
-# 首抽隨 002 刀 U3 typings 新檔落地——U0 時 `rust-api/server/` 尚未建、check 對缺席快照 rc 2＝正確 fail-loud）。
+# 首抽已隨 002 刀 U3 之 base-web typings 新檔落地；快照缺席時 check 走 rc 2 fail-loud）。
 OUTPUT_PATH = os.path.join("rust-api", "server", "tests", "fixtures", "wire-schema.json")
 
 # stack 啟動提示（fail-loud 補救命令）。

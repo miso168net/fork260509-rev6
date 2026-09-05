@@ -1,4 +1,4 @@
-<!-- next: BL-00027 -->
+<!-- next: BL-00029 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -16,3 +16,5 @@
 - BL-00024｜governance｜`tools/fork-delta-lint.py` 新檔檔頭標記腿未強制契約定形之 `+` 尾綴（`// [rev6-inline <軌道>+ <刀名>]`）、且軌道名只在自稱 §III.1 三軌道時比對路徑（名冊外之名不斷言——依憲法 §III.2 表外宣告 3 讀法）；補 `+` 尾綴判定＋一正一反 self-test｜觸發：002 刀 U3 兩新檔（typings／service）落地時同批補
 - BL-00025｜governance｜憲法 §I.5 例外①（`sea-orm-adapter/` 5 支整檔拷貝自 rev5@92919b9）零機器自證面——ADR-00009 條件①逐位元自證只鎖例外② 17 檔、entity-drift 閘只比 entity×快照、rust-fmt 閘紅時只能靠 `EXEMPT_WARN` 告誡停手；候選＝bootstrap 或 schema-gate 加對 rev5 凍結樹 `sea-orm-adapter/` 之 `diff -r` 自證腿（002 刀 U0 審查觀察）｜觸發：下一次動 rust-api 承襲面或 ADR-00009 射程的刀（與 BL-00021 同批）
 - BL-00026｜product｜server boot 沿 sea-orm 預設 `sqlx_logging`（INFO 級逐句印 SQL、compose `RUST_LOG=info` 下 boot log 首行即 sqlx notice）——rev5 以 `ConnectOptions::sqlx_logging_level(log::LevelFilter::Debug)` 降級（rev5:B-045、需具名 `log` crate），002 刀 research R1 判 `log` 為域外未進；候選＝進 `log`（lock 已有 0.4.33、零新套件）並降至 Debug、或 `sqlx_logging(false)`｜觸發：首次觀測層維護批、或 003 auth 刀 boot 鏈再動時
+- BL-00027｜product｜讀端 wire 集合≠registry 鍵集：`check_type_consistency` 第③臂讓宣告集外之列（setting_type 在認識集）照常上 wire——沿 rev5 讀端只驗認識集、spec FR-009 射程外（`rust-api/server/src/validation.rs` 已自陳）；若要求「registry 集合＝wire 集合」須另立拍板｜觸發＝設定頁 view 刀進場、或 registry 鍵集首次變動時
+- BL-00028｜governance｜002 刀 U3 兩份手工轉錄雙表零機器互鎖：handler `SEED_EXPECTED`↔`migration` m0002 `SEED_SYSTEM_SETTINGS`、`validation.rs` `REGISTRY`↔data-model §3——測試側只擋日後單邊漂移、擋不住初次轉錄同錯（U3 審查以 python 解析字面機器比對過一次＝全等）；改以自真源字面解析驅動期望表或加跨檔對賬測｜觸發＝m0002 seed 或 data-model §3 任一變動時
