@@ -4,7 +4,7 @@
 
 隨遷工具（承 rev5:tools/wire-schema.py 逐字承襲、座標同名核對零改：compose 兩檔名／`base-web` 服務名／
 `-w /app`／快照路徑／TYPINGS_GLOB／TSJS 釘版；RULES 名詞段「隨遷工具」）。rev6 拍板＝002 刀 clarify Q5、
-ADR 題名「容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud」（名冊＝RUNBOOK §12 碼面閘表）。
+ADR-00019「容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud」（名冊＝RUNBOOK §12 碼面閘表）。
 
 子命令：
   extract   base-web 容器內 npx 抽取 typings → draft-07 JSON Schema 快照，

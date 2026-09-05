@@ -3,7 +3,7 @@
 """tools/rust-fmt-gate.py — rust 格式守門（`cargo fmt --all --check` 之 pre-commit 承載；承 rev5:B-112／rev5:ADR 0057 決定 3）
 
 隨遷工具（承 rev5:tools/rust-fmt-gate.py 逐字承襲、座標同名核對零改：compose 兩檔名／`rust-api` 服務名／
-rustfmt.toml；RULES 名詞段「隨遷工具」）。rev6 拍板＝002 刀 clarify Q5、ADR 題名「容器依賴型碼面閘之
+rustfmt.toml；RULES 名詞段「隨遷工具」）。rev6 拍板＝002 刀 clarify Q5、ADR-00019「容器依賴型碼面閘之
 環境缺席語意＝具名跳過、工具缺席＝fail-loud」（名冊＝RUNBOOK §12 碼面閘表）。
 
 子命令：
