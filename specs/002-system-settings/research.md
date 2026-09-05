@@ -88,8 +88,8 @@ rev6 compose `metrics` profile 之 prometheus 刮取 `rust-api:8080/metrics`（`
 ## R7 測試分層（沿 rev5 實形；容器內 serial）
 
 1. **純函式單元測**（免 DB）：registry 紅綠矩陣（含型別一致性守衛）、error 碼映射、build_update_active_model 欄映射（now 注入純測 seam）、三態 deserialize 三形。
-2. **oneshot 契約測**（免 DB、tests/ crate）：case registry 全 route（未認證 8888 形、信封例外形）＋快照裁判＋覆蓋閘＋fallback 兩案（未註冊路徑／方法不符→4040）＋msg 名冊雙向＋entity_access_lint＋entity_behavior_lint。
-3. **真 DB integration**（handler `mod tests` 形、`Database::connect(db_url)`＋real_app oneshot）：授權矩陣（uid 1／2／3＋未認證×兩端點）、寫端往返（含同值更新）、驗證失敗零寫入、三態落庫效果（含空字串）、型別不一致 5000（以測試中改列後 RAII 還原）；★寫測試掛 panic-safe RAII 還原守衛（rev5 002 收刀坑）。
+2. **oneshot 契約測**（tests/ crate；免 DB——★恰一例外＝msg 名冊全等案 `msg_roster_every_key_has_an_emitter` 取 `real_seed_app` 真 seed app 補集、須容器內跑）：case registry 全 route（未認證 8888 形、信封例外形）＋快照裁判＋覆蓋閘＋fallback 兩案（未註冊路徑／方法不符→4040）＋msg 名冊雙向（免 DB 面 ∪ 真 seed app 面）＋entity_access_lint＋entity_behavior_lint。
+3. **真 DB integration**（handler `endpoint_tests` 形、`Database::connect(db_url)`＋real_app oneshot；tests/ crate 側另有分層 2 登記之唯一例外）：授權矩陣（uid 1／2／3＋未認證×兩端點）、寫端往返（含同值更新）、驗證失敗零寫入、三態落庫效果（含空字串）、型別不一致 5000（以測試中改列後 RAII 還原）；★寫測試掛 panic-safe RAII 還原守衛（rev5 002 收刀坑）。
 
 ## R8 dev-only 測試態身分
 

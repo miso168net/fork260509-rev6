@@ -5,7 +5,7 @@
 **Prerequisites**: plan.md、spec.md（US1～US6、clarify Q1～Q5）、research.md（R1 依賴表、R2 對應碼、R3 差異點、R12 單元切法、R13 反例）、data-model.md、contracts/wire-settings.md、contracts/code-gates.md、quickstart.md；
 憲法 1.1.0（零 Amendment）；ADR 六筆待立（序號自 ADR-00013 起於落檔時取）。
 
-**Tests**: 本 repo TDD＝CLAUDE.md §2 紀律、**非可選**——每實作 task 內先紅後綠；測試層對照（research R7）：「契約測試」＝`server/tests/contract.rs` per-route 覆蓋閘（oneshot 免 DB）；
+**Tests**: 本 repo TDD＝CLAUDE.md §2 紀律、**非可選**——每實作 task 內先紅後綠；測試層對照（research R7）：「契約測試」＝`server/tests/contract.rs` per-route 覆蓋閘（oneshot 免 DB；恰一例外＝msg 名冊全等案取真 seed app、容器內——research R7 分層 2 登記）；
 registry 紅綠矩陣／三態五案／授權矩陣／型別不一致＝真 DB integration（handler `mod tests`、RAII 還原守衛）；工具之先紅＝自帶 `test`＋一正一反；判準本就正確的案「案綠→打壞判準→案紅→還原」才算驗證。
 
 **Organization**: 依 user story 分 phase（US1～US6）；本刀為縱切地基刀、story 間有天然順序相依（見 Dependencies）；**執行單元對映**（research R12）另列於文末，主線編排以單元為 Workflow 派發粒度、每單元一顆外層 commit（單元收尾六步序＝CLAUDE.md §2）。
@@ -116,7 +116,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] integration 失敗矩陣（handler mod tests）：型別不符／小數／溢位／超範圍／enum 外含大小寫→2222 invalidValue；未知鍵→2222 notFound；settingKey 或 settingValue 缺席／型別非 string／JSON 壞形→2222 invalidValue；庫中手植未知 setting_type 列→讀端 find_all 與寫端 update 觸及**兩案皆** 5000（測試內 SQL 植入後 RAII 還原）；★已知鍵型別不一致寫端案→5000；全案回讀斷言原值保留零寫入（SC-003）＋★FR-016：非法路徑亦斷言兩 log 表列數不變；msg 名冊雙向斷言此時可完整成立（七鍵皆有發出點）——`observed_msgs` 補齊剩餘發出點使 `MSG_KEYS` 七鍵全覆蓋（成功 0000／5000／5003；contract 層 oneshot 不可觀察者改以 real_seed_app 案承載並在 report 指明）、方可移除 `contract.rs` 之 `msg_roster_every_key_has_an_emitter` `#[ignore]` 與其回填點註記，並同批改檔頭「待七鍵發出點落齊」指針句為現在式（U1 具名回填；`error.rs` `msg_key` 頭註「構造點隨 U3～U5 落」已於 U3 收尾改現在式）＋`handler/system_settings.rs` `endpoint_tests` 頭註「寫端案歸 002 刀 U4／U5」之 U5 半句改現在式（U3 具名預告）；容器內 cargo test 綠；worktree commit＋pin bump
+- [x] T036 [US3] integration 失敗矩陣（handler mod tests）：型別不符／小數／溢位／超範圍／enum 外含大小寫→2222 invalidValue；未知鍵→2222 notFound；settingKey 或 settingValue 缺席／型別非 string／JSON 壞形→2222 invalidValue；庫中手植未知 setting_type 列→讀端 find_all 與寫端 update 觸及**兩案皆** 5000（測試內 SQL 植入後 RAII 還原）；★已知鍵型別不一致寫端案→5000；全案回讀斷言原值保留零寫入（SC-003）＋★FR-016：非法路徑亦斷言兩 log 表列數不變；msg 名冊雙向斷言此時可完整成立（七鍵皆有發出點）——`observed_msgs` 補齊剩餘發出點使 `MSG_KEYS` 七鍵全覆蓋（成功 0000／5000／5003；contract 層 oneshot 不可觀察者改以 real_seed_app 案承載並在 report 指明）、方可移除 `contract.rs` 之 `msg_roster_every_key_has_an_emitter` `#[ignore]` 與其回填點註記，並同批改檔頭「待七鍵發出點落齊」指針句為現在式（U1 具名回填；`error.rs` `msg_key` 頭註「構造點隨 U3～U5 落」已於 U3 收尾改現在式）＋`handler/system_settings.rs` `endpoint_tests` 頭註「寫端案歸 002 刀 U4／U5」之 U5 半句改現在式（U3 具名預告）；容器內 cargo test 綠；worktree commit＋pin bump
 
 ---
 
