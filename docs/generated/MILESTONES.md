@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | misc | governance｜maint-backlog-6 | 輕量軌 maint-backlog-6 收單：BL-00006 review 骨架入庫——_sk_review.js（lens／兩鏡三態／grader／critic）與 TDD 形共用 _sk_head.js、assemble.py 雙模式組裝器、harness-test 十五案／harness-review 九案、三支單元定義範例、agents.md 七角色入冊；dogfood 自審一輪三分流；ADR-00020 GT-09 子名冊腿；BL-00032～34 當批收掉、BL-00034 併 BL-00023。 | eda591d | ADR-00020 | — |
 | 2026-09-06 | feature_close | 002-system-settings | 002 system-settings 收單（server crate 進場首刀）：rust-api server crate 從零（router／auth／handler／validation／facade／error 13 碼矩陣）＋契約機器化（wire-schema 快照裁判、contract 雙向覆蓋閘、msg 名冊後端閉環）＋endpoint_tests 32＋1 案；base-web 兩支新增型新檔；三支碼面閘＋RUNBOOK §12 碼面閘表＋GT-12 腿；零 migration、憲法零 Amendment；ADR-00013～00019；活書 05／08 as-built。 | ecea8ee | ADR-00013、ADR-00014、ADR-00015、ADR-00016、ADR-00017、ADR-00018、ADR-00019 | §5、§8 |
 | 2026-09-05 | misc | governance | 002 開分支前 BACKLOG 清償：A＋B 十二條一批收掉（BACKLOG 20→8）——RULES 三條、活書一條、docsync 四條、schema-gate 兩條、生成器補全群與 schema 定稿抽出；RULES-VERSION bump、rev6 首筆 erratum、ADR-00012 accepted。 | 2c35da6 | ADR-00012 | — |
 | 2026-09-05 | erratum | 行 19 | 該筆收單漏記 adrs（misc 當時無此欄）——DECISIONS-INDEX 之 feature 欄因而對 ADR-00011 印裸「輕量軌」；BL-00004 補欄後以本筆更正 | ['ADR-0 | — | — |
@@ -21,6 +22,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜misc｜governance｜maint-backlog-6
+
+三顆 8731bb6／9231ce9／306eea0；002 改良折入 review 骨架（升級不殺 run 精神＝null／failed 留帳續跑 status partial、RULES 塊整塊烤入＋guard 逐支斷言 RULES-VERSION、保險絲同源推導 review 每 run ≤24、結構化三態聚合供主線三分流）；dogfood run wf_2d17e389-f37（9 支、13 筆＝12 confirmed／1 refuted；修 11／BL 3 當批收掉／駁回 1）；RULES RL-0058／RL-0060 與 CLAUDE.md §2①③ 同步實況、RULES-VERSION 88e0f431b504→741ae996dc61；BL-00034 併入 BL-00023（同族一併涵蓋）、三號碼消耗、next BL-00035；tmp/001-assemble.py／002-assemble.py 由 tools/orchestration/assemble.py 取代。
 
 ### 2026-09-05｜misc｜governance
 

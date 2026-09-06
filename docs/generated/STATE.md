@@ -14,15 +14,15 @@
 ## 帳面統計
 - ADR：20（proposed 0、accepted 19、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
-- BACKLOG 開放：13｜滯後：0
+- BACKLOG 開放：12｜滯後：0
 - LESSONS：11 筆
-- events：30 筆（erratum 1、feature_close 2、misc 10、perf 14、review 3）
+- events：31 筆（erratum 1、feature_close 2、misc 11、perf 14、review 3）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
 | 指標 | 值 | 目標 |
 |---|---|---|
-| 治理批對 feature 比 | 5.0 | ≤1 |
+| 治理批對 feature 比 | 5.5 | ≤1 |
 | LESSONS 重複率 | 0.27 | 0 |
 | BACKLOG 淨流量（rolling 3 刀） | n/a | ≤0 |
 
@@ -39,6 +39,6 @@
 | docsync 行數 | 2891 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-07｜misc｜governance｜maint-backlog-6｜輕量軌 maint-backlog-6 收單：BL-00006 review 骨架入庫——_sk_review.js（lens／兩鏡三態／grader／crit
 - 2026-09-06｜perf｜close_bookkeeping｜close_bookkeeping 13.76 秒 rc=0
 - 2026-09-06｜feature_close｜002-system-settings｜002 system-settings 收單（server crate 進場首刀）：rust-api server crate 從零（router／auth／h
-- 2026-09-06｜perf｜precommit_chain｜precommit_chain 15.94 秒 rc=0
