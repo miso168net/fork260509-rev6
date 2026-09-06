@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00011 -->
+<!-- next: LL-00012 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -16,3 +16,4 @@
 | LL-00008 | 碼內具名預告的回填條靠審查員清單補、未自行機器枚舉——第二輪補四條、第三輪又抓一組 | RL-0015 | none | [LL-00008-foretold-backfill-inventory-by-grep.md](LESSONS/LL-00008-foretold-backfill-inventory-by-grep.md) |
 | LL-00009 | fix 輪新寫的 tracing 捕捉測 flaky——scoped `set_default` 與並行測試共用 callsite 的 Interest 快取競態 | none：本坑＝碼面測試件設計（tracing scoped dispatcher 與行程級 Interest 快取相剋），防法已落 test_kit 本體與其 doc；連跑判準寫進本檔守法、不加規則 | code | [LL-00009-scoped-tracing-capture-flaky-under-parallel-tests.md](LESSONS/LL-00009-scoped-tracing-capture-flaky-under-parallel-tests.md) |
 | LL-00010 | fix「部分改動＋升級」的升級項不入 `escalated`——次輪審查員換措辭重報、碼品質段多跑兩輪 | RL-0025 | code | [LL-00010-partial-change-escalation-not-recorded-rereported.md](LESSONS/LL-00010-partial-change-escalation-not-recorded-rereported.md) |
+| LL-00011 | 限定式允許清單按「節」列舉、同檔同事實的他節被鎖成清單外——agent 掃到也只能升級、主線收尾才改對 | RL-0014 | none | [LL-00011-allowed-list-by-section-locks-out-same-fact-sibling.md](LESSONS/LL-00011-allowed-list-by-section-locks-out-same-fact-sibling.md) |
