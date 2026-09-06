@@ -1,7 +1,7 @@
 """守 RL-0055／RL-0053：事件帳逐型 schema 與 SHA 實證；收刀與 review 事件完整性。
 
 events.py：parse_events（jsonl、行界只認 \\n）、EVENT_SCHEMAS（rev6 欄位：五碼 ID、feature_close.window、misc.category）、
-gt_02（schema／SHA 實證／pin 互證／window 序號）、gt_03（specs／ADR／report 存在）、metrics（§4.3 三指標）。
+gt_02（schema／SHA 實證／pin 互證／window 序號）、gt_03（specs／ADR／report 存在）、metrics（§4.3 三指標＋ADR-00021 檢索性第四指標）。
 """
 import json
 import os
@@ -20,9 +20,10 @@ RE_LID = re.compile(r"^LL-\d{5}$")
 SUMMARY_CHAR_LIMIT = 300
 PIN_KEYS = (("web", "base-web"), ("api", "rust-api"))
 PERF_KINDS = ("close_bookkeeping", "precommit_chain")
-ERRATUM_FIELDS = ("merge", "pins.web", "pins.api", "commit", "adrs")
+ERRATUM_FIELDS = ("merge", "pins.web", "pins.api", "commit", "adrs", "probe")
 ERRATUM_SHA_FIELDS = ("merge", "pins.web", "pins.api", "commit")   # 其餘欄之 corrected 依欄別分型
 CATEGORIES = ("product", "governance")
+PROBE_KEYS = ("questions", "found", "detour", "not_found", "wrong", "avg_min_hops")   # ADR-00021：review 事件 probe 欄（冷啟動探針一組；negative＝否定對照題同形、可缺席）
 
 EVENT_SCHEMAS = {
     "feature_close": {
@@ -36,7 +37,7 @@ EVENT_SCHEMAS = {
     },
     "review": {
         "required": ("type", "date", "scope", "report", "findings"),
-        "optional": ("feature", "notes"),
+        "optional": ("feature", "notes", "probe"),
     },
     "erratum": {
         "required": ("type", "date", "target_line", "field", "corrected", "reason"),
@@ -55,6 +56,28 @@ def _is_int(v):
 
 def _id_list_ok(v, pattern):
     return isinstance(v, list) and all(isinstance(x, str) and pattern.fullmatch(x) for x in v)
+
+
+def _check_probe(p, label="probe"):
+    """ADR-00021 probe 欄形檢：鍵集固定、四計數守恆＝questions、avg_min_hops 非負數；negative（否定對照題）同形且不再巢套。只存計數、比例由 metrics 現算。"""
+    if not isinstance(p, dict):
+        return [f"{label} 須為物件 {{questions, found, detour, not_found, wrong, avg_min_hops[, negative]}}"]
+    extra = set(p) - set(PROBE_KEYS) - ({"negative"} if label == "probe" else set())
+    missing = set(PROBE_KEYS) - set(p)
+    if extra or missing:
+        return [f"{label} 鍵集須為 {'/'.join(PROBE_KEYS)}" + ("（另可帶 negative）" if label == "probe" else "") + f"：多 {sorted(extra)}、缺 {sorted(missing)}"]
+    errs = []
+    counts = [p[k] for k in PROBE_KEYS[:5]]
+    if not all(_is_int(v) and v >= 0 for v in counts) or p["questions"] < 1:
+        errs.append(f"{label} 計數須為非負整數且 questions ≥1")
+    elif sum(counts[1:]) != counts[0]:
+        errs.append(f"{label} 四值不守恆：found＋detour＋not_found＋wrong 須＝questions")
+    h = p["avg_min_hops"]
+    if not (isinstance(h, (int, float)) and not isinstance(h, bool) and h >= 0):
+        errs.append(f"{label}.avg_min_hops 須為非負數（grader 最短 hops 平均）")
+    if "negative" in p:
+        errs += _check_probe(p["negative"], "probe.negative")
+    return errs
 
 
 def notes_gt06_risks(text):
@@ -155,6 +178,8 @@ def _check_event(e):
             errs.append("findings 須為 {total≥0, fixed≥0, to_backlog[BL-NNNNN…], wontfix_adr[ADR-NNNNN…]}")
         elif fd["fixed"] + len(fd["to_backlog"]) + len(fd["wontfix_adr"]) != fd["total"]:
             errs.append("findings 分流不守恆：fixed＋len(to_backlog)＋len(wontfix_adr) 須＝total")
+        if "probe" in e:
+            errs += _check_probe(e["probe"])
     elif etype == "erratum":
         if not (_is_int(e["target_line"]) and e["target_line"] >= 1):
             errs.append(f"target_line 須為正整數（events.jsonl 行號）：{e['target_line']!r}")
@@ -166,6 +191,8 @@ def _check_event(e):
         elif e["field"] == "adrs":
             if not _id_list_ok(e["corrected"], RE_ADR):
                 errs.append("field=adrs 之 corrected 須為 ADR-NNNNN 字串 list")
+        elif e["field"] == "probe":
+            errs += _check_probe(e["corrected"])
         r = e["reason"]
         if not (isinstance(r, str) and r.strip() and "\n" not in r and "\r" not in r):
             errs.append("reason 須為非空單行字串")
@@ -269,6 +296,8 @@ def _erratum_view(rows):
             or (field == "commit" and t.get("type") == "perf" and "commit" in t)
             # adrs：補「當時 schema 尚無此欄」的漏記，故不要求該欄已在（BL-00004）
             or (field == "adrs" and t.get("type") in ("feature_close", "misc"))
+            # probe：同理——ADR-00021 前的 review 事件無此欄、回填以 erratum 補（000-r1）
+            or (field == "probe" and t.get("type") == "review")
         )
         if not ok:
             errs.append((ln, f"erratum target_line {e['target_line']} 無可更正之欄「{field}」（列不存在、型不符或該欄缺席）"))
@@ -391,11 +420,24 @@ def gt_03(ctx):
     return out
 
 
+def _probe_retrieval(events):
+    """ADR-00021：最近一筆帶 probe 的 review 事件→{scope, le3_ratio（found/questions＝≤3 跳且答對）, hit_ratio（(found＋detour)/questions）, not_found, wrong,
+    negative_wrong（否定對照題答錯；缺席＝"—"）}；無＝"n/a"。"""
+    for e in reversed(events):
+        p = e.get("probe") if e.get("type") == "review" else None
+        if isinstance(p, dict) and not _check_probe(p):
+            q, neg = p["questions"], p.get("negative")
+            return {"scope": e["scope"], "le3_ratio": round(p["found"] / q, 2), "hit_ratio": round((p["found"] + p["detour"]) / q, 2),
+                    "not_found": p["not_found"], "wrong": p["wrong"], "negative_wrong": neg["wrong"] if neg else "—"}
+    return "n/a"
+
+
 def metrics(events, lessons, min_window=3):
-    """§4.3 三指標：gov_ratio（全期）、lessons_dup_rate（全期）、backlog_net（最近 min_window 個 feature_close 自然窗）；空值一律 "n/a"。"""
+    """§4.3 三指標＋ADR-00021 檢索性：gov_ratio（全期）、lessons_dup_rate（全期）、backlog_net（最近 min_window 個 feature_close 自然窗）、
+    probe_retrieval（最近一筆帶 probe 之 review 事件、比例自計數現算）；空值一律 "n/a"。"""
     fcs = [e for e in events if e.get("type") == "feature_close"]
     gov = sum(1 for e in events if e.get("type") == "misc" and e.get("category") == "governance")
-    out = {"gov_ratio": round(gov / len(fcs), 2) if fcs else "n/a"}
+    out = {"gov_ratio": round(gov / len(fcs), 2) if fcs else "n/a", "probe_retrieval": _probe_retrieval(events)}
     out["lessons_dup_rate"] = round(sum(1 for l in lessons if l.get("recurrence_of")) / len(lessons), 2) if lessons else "n/a"
     if len(fcs) < min_window:
         out["backlog_net"] = "n/a"

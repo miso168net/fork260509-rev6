@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | erratum | 行 13 | ADR-00021 回填：000-r1 探針結果自報告 §3 逐題表回算（冷啟動 25 題＋否定對照 7 題、grader 最短 hops 平均）——當時 review 事件無 probe 欄、只落 notes 自由文 | {'quest | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-21 | 輕量軌 maint-backlog-21 收單：BL-00021 憲法 §I.5 例外②邊界定性——RUNBOOK §10 補一句「migration／entity 兩 crate 之 main.rs／lib.rs／Cargo.toml 五檔為承形自寫之自然收斂（去註解後只差改名級差異）、不屬例外②射程亦非未登記拷貝、稽核以 ADR-00009 之 17 檔為準」；ADR-00009／憲法不動。 | 3b42b40 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-25 | 輕量軌 maint-backlog-25 收單：BL-00025 憲法 §I.5 例外① 自證腿——docsync vendored-check（rust-api/sea-orm-adapter 全部 tracked 檔去整行註解後 diff rev5 凍結樹、差異須逐對在 tools/docsync/vendored.py 具名 ALLOWLIST 附理由、rev5 側存雜湊）＋bootstrap 3c 步每台機器體檢；ADR-00009 不動；LL-00012。 | c705ab2 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-23 | 輕量軌 maint-backlog-23 收單：BL-00023 pre-commit 接線機器守衛——tools/docsync/tests/test_hook_wiring.py 純函式對賬固定鏈、七條件段觸發／命令字面、for 自測名冊 ⊇ 碼面閘表∪NON_GATE_TOOLS、未登記段即紅（一正六反）；hook 新段 orchestration（tools/orchestration 之 js|mjs|py staged→三支入庫範例組裝＋harness）；hook 本體 staged 亦跑 docsync test。 | 24d4e2a | — | — |

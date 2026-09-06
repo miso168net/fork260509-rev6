@@ -1,4 +1,4 @@
-"""語料面：events 的正反自證（schema、空行、window、三指標、GT-02 SHA 實證／pin 互證、GT-03 收刀完整性）。"""
+"""語料面：events 的正反自證（schema、空行、window、三指標＋ADR-00021 檢索性、GT-02 SHA 實證／pin 互證、GT-03 收刀完整性）。"""
 import inspect
 import json
 import os
@@ -87,6 +87,20 @@ class TestSchema(unittest.TestCase):
                 findings={"total": 3, "fixed": 1, "to_backlog": ["BL-00001"], "wontfix_adr": []})
         self.assertTrue(any("守恆" in m for _, m in events.parse_events(rv + "\n")[1]))
 
+    def test_review_probe_shape_and_conservation(self):
+        """ADR-00021：probe 鍵集固定、四值守恆、negative 同形；壞形逐案紅指名。"""
+        good = dict(questions=25, found=12, detour=13, not_found=0, wrong=0, avg_min_hops=2.0,
+                    negative=dict(questions=7, found=6, detour=1, not_found=0, wrong=0, avg_min_hops=2.14))
+        rv = lambda p: ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/x.md",
+                          findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}, probe=p)
+        self.assertEqual(events.parse_events(rv(good) + "\n")[1], [])
+        for bad, needle in ((dict(good, found=11), "不守恆"), ({k: v for k, v in good.items() if k != "wrong"}, "鍵集"),
+                            (dict(good, extra=1), "鍵集"), (dict(good, avg_min_hops=-1), "avg_min_hops"),
+                            (dict(good, questions=0, found=0, detour=0, not_found=0, wrong=0), "questions ≥1"),
+                            (dict(good, negative=dict(good["negative"], wrong=2)), "probe.negative 四值不守恆"), ("x", "須為物件")):
+            msgs = [m for _, m in events.parse_events(rv(bad) + "\n")[1]]
+            self.assertTrue(any(needle in m for m in msgs), (needle, msgs))
+
 
 class TestMetrics(unittest.TestCase):
     def test_na_without_feature_close(self):
@@ -109,6 +123,19 @@ class TestMetrics(unittest.TestCase):
                            pins={"web": "b" * 40, "api": "c" * 40}, adrs=[], arch_impact="none",
                            backlog_add=["BL-00001"], backlog_done=[], window=1))
         self.assertEqual(events.metrics([fc], lessons=[], min_window=3)["backlog_net"], "n/a")
+
+    def test_probe_retrieval_latest_review_and_na(self):
+        """ADR-00021：無帶 probe 之 review＝n/a；多筆取最近一筆；比例自計數現算；negative 缺席＝「—」。"""
+        rv = lambda scope, p: json.loads(ev(type="review", date="2026-09-03", scope=scope, report="docs/reviews/x.md",
+                                           findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}, **({"probe": p} if p else {})))
+        self.assertEqual(events.metrics([json.loads(MISC), rv("a", None)], lessons=[])["probe_retrieval"], "n/a")
+        old = dict(questions=10, found=5, detour=3, not_found=1, wrong=1, avg_min_hops=3.0,
+                   negative=dict(questions=4, found=3, detour=0, not_found=0, wrong=1, avg_min_hops=2.0))
+        new = dict(questions=8, found=6, detour=2, not_found=0, wrong=0, avg_min_hops=1.5)
+        pr = events.metrics([rv("r1", old), json.loads(MISC), rv("r2", new)], lessons=[])["probe_retrieval"]
+        self.assertEqual(pr, {"scope": "r2", "le3_ratio": 0.75, "hit_ratio": 1.0, "not_found": 0, "wrong": 0, "negative_wrong": "—"})
+        pr1 = events.metrics([rv("r1", old)], lessons=[])["probe_retrieval"]
+        self.assertEqual((pr1["le3_ratio"], pr1["hit_ratio"], pr1["wrong"], pr1["negative_wrong"]), (0.5, 0.8, 1, 1))
 
 
 class TestGt02(unittest.TestCase):
@@ -146,6 +173,15 @@ class TestGt02(unittest.TestCase):
         err2 = ev(type="erratum", date="2026-09-03", target_line=9, field="merge", corrected=self.sha1, reason="r")
         write(self.root, "docs/ops/events.jsonl", bad + "\n" + err2 + "\n")
         self.assertTrue(any("target_line" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+
+    def test_erratum_probe_backfills_review_only(self):
+        """ADR-00021：probe 型 erratum 補 review 事件缺席之 probe 欄（000-r1 回填形）＝綠；指向 misc＝紅指名。"""
+        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+        p = dict(questions=3, found=2, detour=1, not_found=0, wrong=0, avg_min_hops=2.0)
+        write(self.root, "docs/ops/events.jsonl", rv + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="回填") + "\n")
+        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        write(self.root, "docs/ops/events.jsonl", MISC + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="錯型") + "\n")
+        self.assertTrue(any("probe" in f[3] for f in events.gt_02(common.Ctx(self.root))))
 
     def test_pin_drift_red(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
@@ -246,6 +282,16 @@ class TestErrataViewAndMiscAdrs(unittest.TestCase):
         view, errs = self._view(self.MISC, err)
         self.assertEqual(errs, [])
         self.assertEqual(view[0]["adrs"], ["ADR-00011"])
+
+    def test_probe_erratum_adds_absent_key_in_view_and_bad_shape_is_loud(self):
+        """ADR-00021：視圖面 probe 回填（目標列原無該欄）＋corrected 壞形於 schema 面紅。"""
+        rv = ev(type="review", date="2026-09-05", scope="s", report="docs/reviews/x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+        p = dict(questions=3, found=2, detour=1, not_found=0, wrong=0, avg_min_hops=2.0)
+        view, errs = self._view(rv, ev(type="erratum", date="2026-09-05", target_line=1, field="probe", corrected=p, reason="回填"))
+        self.assertEqual(errs, [])
+        self.assertEqual(view[0]["probe"], p)
+        bad = json.loads(ev(type="erratum", date="2026-09-05", target_line=1, field="probe", corrected=dict(p, found=9), reason="r"))
+        self.assertTrue(any("不守恆" in x for x in events._check_event(bad)))
 
     def test_bad_target_and_bad_field_are_loud(self):
         for err, needle in ((('{"type":"erratum","date":"2026-09-05","target_line":9,"field":"merge",'
