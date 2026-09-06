@@ -6,7 +6,7 @@
 
 ## 1. 快速啟動（新機五步）
 
-1. `bash tools/bootstrap.sh` —— 源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數＋secrets 體檢（幂等、可重跑；remote 未設只 ⚠）
+1. `bash tools/bootstrap.sh` —— 源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋例外①自證＋docsync 三段＋閘數＋secrets 體檢（幂等、可重跑；remote 未設只 ⚠）
 2. `python3 deploy/generate-secrets.py` —— 十三機密缺則補（`alert_webhook_url` 為佔位值、見 §4）
 3. `python3 deploy/preflight-secrets.py` —— up 前預檢（缺檔／CR·LF／composite drift 一律非零退出）
 4. `bash deploy/generate-dev-cert.sh` —— dev TLS 憑證（front-nginx 恆 bind-mount 兩支 pem，缺檔＝Docker 代建空目錄佔位→nginx 起不來）
@@ -88,6 +88,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/docsync lint` | GT-01～GT-12 全數（GT-01 與 check 同源；pre-commit 第二道；Day-1 豁免逐筆具名 SKIP） | 否 |
 | `python3 tools/docsync rules emit --scope <implementer\|review\|fix\|主線\|人> [--format js]` | 規則塊＋`RULES-VERSION`（Workflow script 必帶、PreToolUse hook 對賬） | 否 |
 | `python3 tools/docsync errata <詞>` | 全 repo（含兩子庫 pin 樹）同語意枚舉 | 否 |
+| `python3 tools/docsync vendored-check [--rev5 <路徑>]` | 憲法 §I.5 例外① 自證：`rust-api/sea-orm-adapter` 全部 tracked 檔去整行註解後 diff rev5 凍結樹、差異須逐對在 `tools/docsync/vendored.py` 具名 ALLOWLIST（附理由）；bootstrap 3c 步呼叫；rev5 樹缺席 rc 2、差異 rc 1 | 否 |
 | `python3 tools/docsync test` | 治理工具自測（語料面 tests/） | 否 |
 | `python3 tools/docsync refresh` | 自實庫撈 schema／accounts 兩快照（`docs/ops/reference-src/{schema,accounts}-snapshot.json`；六撈全成功才原子落檔；Day-1 三步之①、§10） | 是 |
 | `python3 tools/schema-gate.py check｜test｜doccheck` | check＝三閘全跑（gate1 結構／gate2 欄序＋seed／audit archetype；三閘左源與判準＝ADR-00010；入口先自證 self-test；不進 pre-commit、手動／review 輪跑；一次性 pristine 加 `--container <容器名>`）／test＝離線自測（含 negative 五類）／doccheck＝data-model §2／§6／§9 vs 凍結 fixtures 離線對賬（★不入 pre-commit 常跑鏈、護雙錨）；rc 0 全等／1 差異／2 環境或結構異常／64 用法錯 | check 是；test／doccheck 否 |

@@ -163,6 +163,16 @@ else
   warn "rev5 對照樹不在本機（${REV5_ROOT}）——凍結斷言跳過；對照 stack（埠 2xxxx）需 rev5 樹"
 fi
 
+# ── 3c. 憲法 §I.5 例外① 自證（BL-00025、maint-backlog-25 口徑①）：rust-api/sea-orm-adapter 全部 tracked 檔去整行註解後 diff rev5 凍結樹、
+#   差異須逐對在 tools/docsync/vendored.py 之具名 ALLOWLIST（附理由）；多一行／少一行／對不上／allowlist 漂移皆 die。非治理閘、不入 GATES 名冊。──
+if [ -d "$REV5_ROOT/rust-api/sea-orm-adapter" ]; then
+  vend_out="$(python3 "$ROOT/tools/docsync" vendored-check --rev5 "$REV5_ROOT" 2>&1)" \
+    || { echo "$vend_out" >&2; die "例外①自證未過——sea-orm-adapter 與 rev5 凍結樹差異不在具名 allowlist（改 adapter 須同批改 tools/docsync/vendored.py ALLOWLIST 並附理由）"; }
+  ok "例外①自證過（$(echo "$vend_out" | tail -1)）"
+else
+  warn "rev5 對照樹缺 rust-api/sea-orm-adapter——例外①自證跳過"
+fi
+
 # ── 4. pin 一致性（分歧只警告；判讀＝先判方向、兩向處置相反，承 rev5:CLAUDE.md §3）──
 check_pin() { # $1=目錄名
   local pin head
@@ -266,4 +276,4 @@ else
 fi
 
 # ── 摘要 ─────────────────────────────────────────────────────────────
-echo "[bootstrap] ── 完成：掃描防線／源倉×2／worktree×2／基線 ${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}／rev5 凍結斷言／docsync 三段＋閘數／隨遷工具自測；警告 $WARNS 項$([ "$WARNS" -gt 0 ] && echo '（見上方 ⚠）' || echo '')"
+echo "[bootstrap] ── 完成：掃描防線／源倉×2／worktree×2／基線 ${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}／rev5 凍結斷言＋例外①自證／docsync 三段＋閘數／隨遷工具自測；警告 $WARNS 項$([ "$WARNS" -gt 0 ] && echo '（見上方 ⚠）' || echo '')"
