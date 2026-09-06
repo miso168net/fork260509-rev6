@@ -27,6 +27,10 @@ GATES_MD = "docs/generated/GATES.md"
 PRECOMMIT = ".githooks/pre-commit"
 RUNBOOK = "docs/ops/RUNBOOK.md"
 README = "README.md"
+# 編排骨架子名冊（ADR-00020）：檔表資料列首欄＝反引號檔名（不含路徑）；README.md 自身不列、子目錄檔不計。
+ORCH_DIR = "tools/orchestration/"
+ORCH_README = ORCH_DIR + "README.md"
+RE_ORCH_ROW = re.compile(r"^\| `([^`/|]+)` \|", re.M)
 SETTINGS = ".claude/settings.json"
 HOOKS_DIR = ".claude/hooks"
 ROSTER_PREFIXES = ("tools/", "deploy/", ".githooks/", ".claude/")
@@ -251,8 +255,8 @@ def gt_09(ctx):
       id=GT-09
       rule=RL-0057
       source=rev5:L-061
-      drift=接線與實檔集
-      face=README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED
+      drift=接線與實檔集（含編排骨架子名冊）
+      face=README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED、tools/orchestration/README.md 檔表（⇔ tools/orchestration/ tracked 檔集；ADR-00020）
       trigger=pre-commit
       rc=1
       breaks-if-removed=hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉
@@ -284,6 +288,22 @@ def gt_09(ctx):
                 out.append(finding(ERROR, "GT-09", README, f"README generated 成員行列 {x} 但不在 GENERATED_FILES 名冊"))
             for x in sorted(actual_gen - declared_gen):
                 out.append(finding(ERROR, "GT-09", README, f"GENERATED_FILES 有 {x} 但 README generated 成員行未列（名冊變動須同刀改齊）"))
+    # 編排骨架子名冊腿（ADR-00020；maint-backlog-6）：tools/orchestration/ 頂層 tracked 檔集（README.md 除外）⇔ tools/orchestration/README.md 檔表首欄
+    #   反引號集、雙向差集即紅——根 README 樹只以葉目錄粒度覆蓋該目錄、新增檔漏列不紅（000-r1 R1-065 人工補四支）；零 orchestration 檔＝腿不跑；
+    #   表缺席／零列＝掃描面空集合即紅（RL-0051）。
+    orch_files = {r[len(ORCH_DIR):] for r in tracked if r.startswith(ORCH_DIR) and "/" not in r[len(ORCH_DIR):]} - {"README.md"}
+    if orch_files:
+        orch_readme = ctx.text(ORCH_README)
+        if orch_readme is None:
+            out.append(finding(ERROR, "GT-09", ORCH_README, "編排骨架檔表缺席（掃描面空集合；ADR-00020：tools/orchestration/ 有 tracked 檔即須有檔表）"))
+        else:
+            listed = set(RE_ORCH_ROW.findall(orch_readme))
+            if not listed:
+                out.append(finding(ERROR, "GT-09", ORCH_README, "編排骨架檔表零列（掃描面空集合；表形＝資料列首欄反引號檔名）"))
+            for x in sorted(listed - orch_files):
+                out.append(finding(ERROR, "GT-09", ORCH_README, f"檔表列 {x} 但 tools/orchestration/ 無此 tracked 檔（幽靈列；改名／移除須同批改表）"))
+            for x in sorted(orch_files - listed):
+                out.append(finding(ERROR, "GT-09", ORCH_DIR + x, "tracked 檔未列於 tools/orchestration/README.md 檔表（增檔須同批入表；ADR-00020）"))
     hooks_absent = not ctx.exists(PRECOMMIT)
     if hooks_absent:
         out.append(finding(SKIP, "GT-09", ".githooks", "GT-09.hooks-absent：.githooks 尚未落地（Day-1；波 1 Task 11 即解除）——其餘 EXEC_REQUIRED 照驗"))

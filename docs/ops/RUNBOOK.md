@@ -98,7 +98,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
 | `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>` | Workflow script 組裝器（單元定義→成品；unitdef `MODE` 決定 tdd／review 拼接序；三道自檢＝RULES-VERSION 對賬／node --check／harness，任一紅不留產物） | 否 |
-| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | TDD 形編排骨架 harness 自測（十二案、逐項斷言、rc 1 即紅） | 否 |
+| `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | TDD 形編排骨架 harness 自測（十五案＝十二正例＋三反例、逐項斷言、rc 1 即紅） | 否 |
 | `node tools/orchestration/harness-review.mjs <組裝好的 script.mjs>` | review 形編排骨架 harness 自測（九案＝六正例＋三反例、逐項斷言、rc 1 即紅） | 否 |
 | `tools/orchestration/cdp.mjs`（非命令：供 import 的 CDP driver 模組，export `connect(wsUrl)`／`sleep(ms)`） | CDP 對照走查 driver：走查腳本自 tmp/ 起、import 本模組接 host 瀏覽器除錯埠 127.0.0.1:9229（CLAUDE.md §7） | 是（host 瀏覽器） |
 | `python3 deploy/generate-secrets.py [--force\|--compose-only]` | 十三機密缺則補／全重生／只重組 composite | 否（需 docker） |

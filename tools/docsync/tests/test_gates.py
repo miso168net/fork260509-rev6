@@ -136,6 +136,37 @@ class TestGt09(unittest.TestCase):
         self.assertTrue(any(f[0] == "SKIP" and "GT-09.readme-absent" in f[3] for f in fs2))
 
 
+class TestGt09OrchestrationRoster(unittest.TestCase):
+    """GT-09 之編排骨架子名冊腿（ADR-00020）：tools/orchestration/ 頂層 tracked 檔集（README.md 除外）⇔ tools/orchestration/README.md
+    檔表首欄反引號集、雙向差集即紅；零 orchestration 檔＝腿不跑；表缺席／零列＝掃描面空集合即紅（RL-0051）。"""
+    README = "# R\n\n```text\n├── tools/\n│   └── orchestration/\n└── .claude/\n```\n"
+    TABLE = "# orch\n\n| 檔 | 內容 |\n|---|---|\n| `_sk_head.js` | 首段 |\n| `assemble.py` | 組裝器 |\n"
+
+    def _msgs(self, files):
+        return [f for f in errs(gates.gt_09(common.Ctx(make_repo(files)))) if "檔表" in f[3]]
+
+    def test_green_two_way(self):
+        files = {"README.md": self.README, "tools/orchestration/README.md": self.TABLE,
+                 "tools/orchestration/_sk_head.js": "1\n", "tools/orchestration/assemble.py": "1\n"}
+        self.assertEqual(self._msgs(files), [])
+
+    def test_missing_and_ghost_rows_red(self):
+        table = self.TABLE.replace("| `assemble.py` | 組裝器 |\n", "| `ghost.mjs` | 幽靈 |\n")
+        files = {"README.md": self.README, "tools/orchestration/README.md": table,
+                 "tools/orchestration/_sk_head.js": "1\n", "tools/orchestration/assemble.py": "1\n"}
+        msgs = " ".join(f[3] + " " + f[2] for f in self._msgs(files))
+        self.assertIn("ghost.mjs", msgs)
+        self.assertIn("幽靈列", msgs)
+        self.assertIn("tools/orchestration/assemble.py", msgs)
+
+    def test_table_absent_or_empty_red_and_no_files_silent(self):
+        absent = {"README.md": self.README, "tools/orchestration/_sk_head.js": "1\n"}
+        self.assertTrue(any("缺席" in f[3] for f in self._msgs(absent)))
+        empty = {"README.md": self.README, "tools/orchestration/README.md": "# orch\n只有散文\n", "tools/orchestration/_sk_head.js": "1\n"}
+        self.assertTrue(any("零列" in f[3] for f in self._msgs(empty)))
+        self.assertEqual(self._msgs({"README.md": self.README, "tools/x.py": "1\n"}), [])
+
+
 class TestGt09GeneratedMembers(unittest.TestCase):
     """GT-09 之 docs/generated 成員行對賬腿（BL-00009）：ROSTER_PREFIXES 不含 docs/，
     名冊 12→14 時該行歷來只能人工同刀改齊——001 刀 U3 連兩支審查 run 被此類漏改打回（LL-00002）。"""

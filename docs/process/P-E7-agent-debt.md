@@ -63,7 +63,7 @@ rad_ai_map:
 | resume 誤用 | 把續跑當「某支重跑」 | rev5:L-027 | 續跑 | 需重跑某階段時 | 新開只跑該階段的 workflow | RL-0010 | 已守 | 同上 |
 | 冒煙 token 蒸發 | 派生 script 時 token 隨 prompt 段消失 | rev5:L-057 | 冒煙 | 派生 script 時 | token 置於共用段、渲染斷言 | RL-0018 | 已守 | 同上 |
 | 現成工件不用 | 自拼射程更窄的 grep／helper | rev5:L-085、rev5:L-087 | 工具面 | 寫驅動件前 | 先 `ls -R tmp/`、errata 優先 | RL-0032 | 已守 | 同上 |
-| 骨架多變體 | 骨架收斂為單一 `_sk_head.js`（共用首段）＋`_sk_cycle.js`／`_sk_main.js`（TDD 形）＋`_sk_review.js`（review 形）；變動段（`_vars`／`_allowed`／`_context`／`_prompts`；review 形＝`_vars`／`_plan`／`_context`）逐單元另寫、組裝成品自帶複本屬必然 | rev6 現況 | 編排骨架 | 每次組裝 | 已收斂；成品由 `assemble.py` 組裝器產出、`harness-test.mjs` 十二案與 `harness-review.mjs` 九案守控制流 | 名冊可見（`docs/generated/reference/agents.md`）＋harness 退出碼 | 已守 | 次個編排刀收刀 |
+| 骨架多變體 | 骨架收斂為單一 `_sk_head.js`（共用首段）＋`_sk_cycle.js`／`_sk_main.js`（TDD 形）＋`_sk_review.js`（review 形）；變動段（`_vars`／`_allowed`／`_context`／`_prompts`；review 形＝`_vars`／`_plan`／`_context`）逐單元另寫、組裝成品自帶複本屬必然 | rev6 現況 | 編排骨架 | 每次組裝 | 已收斂；成品由 `assemble.py` 組裝器產出、`harness-test.mjs` 十五案與 `harness-review.mjs` 九案守控制流（各含三反例） | 名冊可見（`docs/generated/reference/agents.md`）＋harness 退出碼 | 已守 | 次個編排刀收刀 |
 
 ### 設定債
 
