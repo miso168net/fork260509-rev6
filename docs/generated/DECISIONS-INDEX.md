@@ -15,10 +15,10 @@
 | ADR-00010 | accepted | 2026-09-04 | schema 基線＝rev5 終態逐位元承襲＋受管演進帳閘契約（凍結面／演進面／全等語意／archetype 歸屬／雙源互證） | 001-schema-baseline | — | — |
 | ADR-00011 | accepted | 2026-09-04 | 數量預算改為只警告不擋——BACKLOG 開放取消上限（觀測值）、閘數與 RULES per-scope 保留上限但一律 WARN | 輕量軌｜2026-09-04 | ADR-00004 | — |
 | ADR-00012 | accepted | 2026-09-05 | schema 定稿權威自 001 spec 目錄抽出至 reference-src——凍結存證與跨刀活體二分 | 輕量軌｜2026-09-05 | — | — |
-| ADR-00013 | accepted | 2026-09-05 | fix 清單外零改動升級不終止 run——該段收斂帶升級項、碼品質段照跑、已升級項重報過濾 | 輕量軌 | — | — |
-| ADR-00014 | accepted | 2026-09-05 | 授權拒絕語意定死為 5003＋HTTP 403＋純 i18n key，並預留空 no-escalation 掛點簽章 | 輕量軌 | — | — |
-| ADR-00015 | accepted | 2026-09-05 | 部分更新請求之 envelope 級三態約定——欄位缺席＝不動、JSON null＝顯式清空、有值＝設值 | 輕量軌 | — | — |
-| ADR-00016 | accepted | 2026-09-05 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表，由 GT-12 新腿對賬 tools/ 頂層工具檔集 | 輕量軌 | — | — |
-| ADR-00017 | accepted | 2026-09-05 | msg key 跨端契約延至首個接 i18n 的前端刀，002 只閉後端側 msg key 名冊 | 輕量軌 | — | — |
-| ADR-00018 | accepted | 2026-09-05 | pre-commit entity-drift 段之 schema 快照缺席由 Day-1 具名跳過改為 rc 2 擋下並提示照相 | 輕量軌 | — | — |
-| ADR-00019 | accepted | 2026-09-05 | 容器依賴型碼面閘之環境缺席語意——docker 或對應容器不在＝具名跳過 rc 0、容器在而工具缺或重抽失敗＝fail-loud | 輕量軌 | — | — |
+| ADR-00013 | accepted | 2026-09-05 | fix 清單外零改動升級不終止 run——該段收斂帶升級項、碼品質段照跑、已升級項重報過濾 | 002-system-settings | — | — |
+| ADR-00014 | accepted | 2026-09-05 | 授權拒絕語意定死為 5003＋HTTP 403＋純 i18n key，並預留空 no-escalation 掛點簽章 | 002-system-settings | — | — |
+| ADR-00015 | accepted | 2026-09-05 | 部分更新請求之 envelope 級三態約定——欄位缺席＝不動、JSON null＝顯式清空、有值＝設值 | 002-system-settings | — | — |
+| ADR-00016 | accepted | 2026-09-05 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表，由 GT-12 新腿對賬 tools/ 頂層工具檔集 | 002-system-settings | — | — |
+| ADR-00017 | accepted | 2026-09-05 | msg key 跨端契約延至首個接 i18n 的前端刀，002 只閉後端側 msg key 名冊 | 002-system-settings | — | — |
+| ADR-00018 | accepted | 2026-09-05 | pre-commit entity-drift 段之 schema 快照缺席由 Day-1 具名跳過改為 rc 2 擋下並提示照相 | 002-system-settings | — | — |
+| ADR-00019 | accepted | 2026-09-05 | 容器依賴型碼面閘之環境缺席語意——docker 或對應容器不在＝具名跳過 rc 0、容器在而工具缺或重抽失敗＝fail-loud | 002-system-settings | — | — |

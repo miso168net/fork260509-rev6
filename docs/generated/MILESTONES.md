@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-06 | feature_close | 002-system-settings | 002 system-settings 收單（server crate 進場首刀）：rust-api server crate 從零（router／auth／handler／validation／facade／error 13 碼矩陣）＋契約機器化（wire-schema 快照裁判、contract 雙向覆蓋閘、msg 名冊後端閉環）＋endpoint_tests 32＋1 案；base-web 兩支新增型新檔；三支碼面閘＋RUNBOOK §12 碼面閘表＋GT-12 腿；零 migration、憲法零 Amendment；ADR-00013～00019；活書 05／08 as-built。 | ecea8ee | ADR-00013、ADR-00014、ADR-00015、ADR-00016、ADR-00017、ADR-00018、ADR-00019 | §5、§8 |
 | 2026-09-05 | misc | governance | 002 開分支前 BACKLOG 清償：A＋B 十二條一批收掉（BACKLOG 20→8）——RULES 三條、活書一條、docsync 四條、schema-gate 兩條、生成器補全群與 schema 定稿抽出；RULES-VERSION bump、rev6 首筆 erratum、ADR-00012 accepted。 | 2c35da6 | ADR-00012 | — |
 | 2026-09-05 | erratum | 行 19 | 該筆收單漏記 adrs（misc 當時無此欄）——DECISIONS-INDEX 之 feature 欄因而對 ADR-00011 印裸「輕量軌」；BL-00004 補欄後以本筆更正 | ['ADR-0 | — | — |
 | 2026-09-04 | misc | governance | 001 刀規格對照審查（獨立輪 spec-compliance-001）修單收單：schema-gate 自帶測試 103→118 案補回歸保護（audit 變體驗則面、gate1 索引與約束兩節、seed_add 欄集）、D 變體補 archived_by、pre-commit 加 schema-frozen 條件段、contracts/gates.md §4 negative 義務五類擴為六類。 | 39232de | — | — |
