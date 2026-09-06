@@ -71,12 +71,12 @@ self-test 案 `…read_only_check_form` 逐字比對實際下達的 argv，拿�
   ④`README.md` 目錄樹（GT-09 對賬）、`docs/ops/RUNBOOK.md` §12 工具鏈速查表＋碼面閘表
     （GT-12 碼面閘表腿對賬：tools/ 頂層工具檔集＝表列集；碼面閘不計入治理閘預算）。
 
-  ★**①那段接線本身無機器守衛**：②③④三處對賬的都是「名冊成員資格」（`for t in` 名冊／
+  ★**①那段接線由 `tools/docsync/tests/test_hook_wiring.py` 機器守（BL-00023 已收）**：②③④三處對賬的都是「名冊成員資格」（`for t in` 名冊／
     bootstrap `run_tool_test`／README 樹＋RUNBOOK 碼面閘表×GT-12 腿）——它們回答「本檔在不在冊」，
     **不**回答「①那段 hook 條件判斷還在不在」；pre-commit 的每一段碼面閘接線（含 entity-drift 之
     「快照缺席即紅」）同屬此曝險面。守衛落點不在本檔 self-test——self-test 只在本檔自身 staged 時
     才由 `for t in` 迴圈觸發，而「只改 hook」的 commit 不 stage 本檔。追蹤與候選修法＝
-    `docs/ops/BACKLOG.md` BL-00023（單一承載處；本檔不開第二個家）。
+    `tools/docsync/tests/test_hook_wiring.py` 之 `SEGMENTS` 名冊（單一承載處；本檔不開第二個家）。
 
 ★輸出紀律（同 tools/wf-watchdog.py）：一切輸出走 `_say()`（`print(..., flush=True)`）——
 pre-commit 把 hook 輸出接管道時 python 預設塊緩衝，不 flush 的行會與後續閘的輸出錯序。

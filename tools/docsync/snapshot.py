@@ -172,7 +172,7 @@ def _cell(v):
 
 def gen_reference_schema(ctx):
     """reference/schema ← schema 快照＋archetype-map：逐表分節（表名序）、欄表（ordinal 序）、索引／約束清單（名稱序）。
-    快照有表而 map 無歸屬或缺 label＝fail-loud 指名（先補 data-model §1 再登記 map）。"""
+    快照有表而 map 無歸屬或缺 label＝fail-loud 指名（先補 docs/ops/reference-src/schema-definition.md §1 再登記 map；ADR-00012）。"""
     refresh_hint = f"先跑 {REFRESH_HINT}（需 dev stack postgres 在跑）"
     snap = _load_json(ctx, SCHEMA_SNAPSHOT, refresh_hint)
     amap = _load_json(ctx, ARCHETYPE_MAP, "人寫歸屬檔、隨 schema 刀維護（初始內容＝data-model §1 轉錄）")
@@ -180,7 +180,7 @@ def gen_reference_schema(ctx):
     tables = sorted({r["table"] for key in ("columns", "indexes", "constraints") for r in snap.get(key, [])})
     missing = [t for t in tables if t not in archetypes]
     if missing:
-        raise SnapshotError("archetype-map 缺表歸屬：" + "、".join(missing) + f"——先補 data-model §1 再登記 {ARCHETYPE_MAP}")
+        raise SnapshotError("archetype-map 缺表歸屬：" + "、".join(missing) + f"——先補 docs/ops/reference-src/schema-definition.md §1（ADR-00012）再登記 {ARCHETYPE_MAP}")
     unlabeled = [t for t in tables if not archetypes[t].get("label")]
     if unlabeled:
         raise SnapshotError("archetype-map 條目缺 label：" + "、".join(unlabeled) + f"——補齊 {ARCHETYPE_MAP} 該表的 label 欄")

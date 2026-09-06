@@ -201,8 +201,8 @@ ok "docsync check 零漂移"
 docsync_out="$(python3 "$ROOT/tools/docsync" lint 2>&1)" || { echo "$docsync_out" >&2; die "docsync lint 有 ERROR——見上方明細"; }
 ok "docsync lint 零 ERROR（$(echo "$docsync_out" | tail -1)）"
 GATE_COUNT="$(cd "$ROOT/tools" && python3 -c 'from docsync import gates; print(len(gates.derive_anchor_codes("\n".join(gates.package_sources().values()))))' 2>/dev/null || echo 0)"
-[ "$GATE_COUNT" = "12" ] || die "閘數推導得 ${GATE_COUNT} ≠ 12——掃源錨形與 ROSTER 不同步（GT-12 應已紅；恰 12、一進一出）"
-ok "閘數斷言過（掃源推導 12＝GT-01～GT-12）"
+[ "$GATE_COUNT" = "12" ] || warn "閘數推導得 ${GATE_COUNT} ≠ 12——掃源錨形與 ROSTER 不同步（GT-12 應已紅；預算超限一律只警告不擋＝ADR-00011 決定 2）"
+[ "$GATE_COUNT" = "12" ] && ok "閘數斷言過（掃源推導 12＝GT-01～GT-12）"
 run_tool_test tools/wf-watchdog.py
 run_tool_test tools/schema-gate.py
 run_tool_test tools/entity-drift-gate.py

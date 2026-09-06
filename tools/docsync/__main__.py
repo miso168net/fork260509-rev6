@@ -1,4 +1,4 @@
-"""守 RL-0049／RL-0053：generate／check／lint／refresh／rules／errata／test 七子命令單一入口。
+"""守 RL-0049／RL-0053：generate／check／lint／refresh／rules／errata／vendored-check／test 八子命令單一入口。
 
 用法：python3 tools/docsync <子命令> …（以目錄執行；sys.path 先補 tools/ 使 `docsync` 可 import）。
 """
