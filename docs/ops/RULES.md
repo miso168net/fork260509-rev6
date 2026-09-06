@@ -22,7 +22,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0012 | agent status 分 `blocked`（整件做不下去、主線立刻接手）與 `done_with_escalation`（交付已完成、只有清單外待辦、附 escalations）兩值；只有前者觸發 script 立即 return、後者照常進審查。 | implementer,fix | prompt | rev5:L-035 |
 | RL-0013 | 棄案論證寫完必回頭對所選方案跑同一反例；寫「結構性保證」前先找一條讓它不成立的輸入；雙上限設計必寫「只滿足其一時會怎樣」。 | 人,主線 | checklist | rev5:L-037 |
 | RL-0014 | 允許檔清單答「碰得到什麼」而非 task 寫了什麼：對實碼查值域／建構點／下游消費者，另納會因本單元改動而連動的釘值測所在檔、寧可多列。 | 主線 | checklist | rev5:L-042 |
-| RL-0015 | 預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由」當同義集掃。 | implementer,review | lint | rev5:L-043 |
+| RL-0015 | 預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由／隨…刀進場／尚無…」當同義集掃；落地某能力的單元必以其名掃「隨…進場」形改現在式。 | implementer,review | lint | rev5:L-043 |
 | RL-0016 | Workflow launch 被擋即 TaskStop 已 armed 的看門狗，重發後帶明確 runId 重掛；ARMED 行冒煙命中 0 或 run id 不對＝鎖錯標的。 | 主線 | checklist | rev5:L-049 |
 | RL-0017 | 完成通知一到立即 TaskStop 該看門狗（run 後 journal 永不再動＝必誤報 stall）；stall 閾值語意＝agent 邊界間隔上限。 | 主線 | checklist | rev5:L-051 |
 | RL-0018 | 冒煙 token 置於所有 agent prompt 共用段，與「zh-TW」字面同列渲染斷言一併檢查，不得只烤在 implementer prompt。 | 主線 | checklist | rev5:L-057 |
@@ -32,7 +32,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
 | RL-0023 | 枚舉同語意命中逐行剝 token 再判、不 `grep -v` 過濾整行（同行雙 token 會漏）；枚舉筆數要有第二來源對賬。 | implementer,fix | prompt | rev5:L-076 |
 | RL-0024 | 對賬 schema 真源腳本化：真源與文件各拉 {欄名:可空性} 比對；可空性以 migration／entity 為準；同檔同型欄寫法不一致即失真訊號。 | implementer | prompt | rev5:L-077 |
-| RL-0025 | fix 對 `done_with_escalation`＋零改動當場 return 升級主線、置於零改動偵測之前；零改動偵測只服務 status ok 的真空轉。 | 主線 | prompt | rev5:L-078 |
+| RL-0025 | fix 對 `done_with_escalation`＋零改動＝該批未駁回 blocker 成立但落允許清單外、記為已升級主線：零駁回即判該段收斂帶升級項進下一段（碼品質段照跑、不終止 run）、有駁回續下一輪 review 核駁回；已升級 blocker 於後續輪次過濾不計入收斂比較；此分支置於零改動偵測之前、零改動偵測只服務 status ok 的真空轉；升級項以 fix 回傳之結構化 `escalatedFindings`（file×summary）記入、不論改動數，零改動分支為兜底（LL-00010）。 | 主線 | prompt | ADR-00013 |
 | RL-0026 | 驗「呼叫處恰 N 處」取 `name(`／`(name)`／`::name` 三形聯集，或改名讓編譯器列出真實使用點；處數型驗收由測試釘、不由人 grep。 | implementer,review | prompt | rev5:L-079 |
 | RL-0027 | 連動面盤點數字釘與手抄名冊釘並行（新增一個檔本身就是集合改變）；新增檔的單元把全量測試排在實作早期。 | implementer,主線 | prompt | rev5:L-080 |
 | RL-0028 | agent prompt 的事實接地每條附出處（檔:行／指令）、不憑印象寫；同段明令「與碼衝突以碼為準並回報」。 | 主線 | checklist | rev5:L-081 |
@@ -93,3 +93,4 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 - **系統層**＝arc42 E 子節、docs/c4、docs/compliance 所述之 rev6 系統本體；**流程層**＝docs/process 所述之開發流程 AI 代理（啟動書 D16）；**例外註冊**＝住 docs/generated/ 之外但入 GENERATED_FILES 名冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`）。
 - **獨立輪**＝RL-0073 的不定期 review 輪（非刀、非波）；分支與 misc 事件 workflow 欄用 `000-rN-<scope>`（N＝輪序號、`000-` 家族免裸刀名閘）、報告住 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件。
 - **隨遷工具**＝啟動書 D10／§4.5 授權自 rev5 整檔搬運的 tools/、deploy/、.githooks／.githooks-submodule、.claude/hooks 與編排骨架：逐字承襲允許、憲法 §I.5 的重打字紀律不及於此；但其註解與字串字面的四型失效引用（章節號指到 rev6 不存在的節、無前綴前代編號、rev5 語境事實、repo 外權威）須 rev6 化（憲法 §I.5 例外②之資料形狀契約三件〔基線結構 migration／基線 seed migration／entity 欄宣告〕依 ADR-00009 後果段適用同一四型判準；加 `rev5:`／`rev4:` 前綴、或改指 rev6 去處）。
+- **碼面閘**＝`tools/` 頂層對子庫碼或跨端契約做 check 的系統面機器閘（隨刀進場、不計入 GT-12 治理閘預算、名冊＝RUNBOOK §12 碼面閘表；環境缺席＝具名跳過、工具缺席＝fail-loud）；**治理閘**＝GT-NN（名冊＝GATES.md）。

@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑）→ schema-frozen（凍結 fixtures／data-model staged 時條件實跑）。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -60,21 +60,43 @@ staged=$(git diff --cached --name-only)
 if echo "$staged" | grep -q '^tools/docsync/'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
-for t in tools/wf-watchdog.py tools/schema-gate.py tools/entity-drift-gate.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
+for t in tools/wf-watchdog.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
   if echo "$staged" | grep -qxF "$t"; then
     pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
   fi
 done
+# ── 三支碼面閘（002 刀 U0 隨遷自 rev5:.githooks/pre-commit 同段形；名冊＝RUNBOOK §12 碼面閘表、GT-12 腿對賬；皆入上方 for 自測迴圈）──
+# rust 格式閘（承 rev5:B-112／rev5:ADR 0057 決定 3）：rust-api gitlink 變動（pin bump）或本工具本體 staged 時，於 rust-api 容器內跑
+# `cargo fmt --all --check`（唯讀、設定＝rust-api/rustfmt.toml）。★本段刻意零條件判斷：跳過邏輯住工具內——docker 不在 PATH／
+# compose 兩檔缺／rust-api 容器未在跑＝工具具名跳過 rc 0（「stack 沒起時 pre-commit MUST 可用」紀律不變）；容器在跑而 cargo-fmt 缺
+# ＝rc 2 fail-loud、刻意不設豁免；未格式化＝rc 1 擋。跳過分支使離線 commit 仍可能帶入未格式化碼——下一次 stack 在跑的 pin bump 擋下、
+# 屬延遲一站而非漏網。self-test 不隨 check 連帶跑、故本體走 for 迴圈形。
+if echo "$staged" | grep -qxF -e 'rust-api' -e 'tools/rust-fmt-gate.py'; then
+  pc_run "rust-fmt" python3 "$HOOK_DIR/../tools/rust-fmt-gate.py" check
+fi
+# wire 契約閘（承 rev4:B-128）：base-web gitlink 變動（pin bump）時重抽 typings 與快照 rust-api/server/tests/fixtures/wire-schema.json
+# byte 比對——sh 只做粗判（gitlink staged 與否）、staged 區間零 typings 變動之細判在 python 內（--staged-gate 收窄、省 npx 秒數）；
+# docker 缺／base-web 容器未起＝具名跳過 rc 0；容器可用但重抽失敗、快照缺席或不一致＝rc 2 擋（補救見工具輸出）。
+if echo "$staged" | grep -qxF 'base-web'; then
+  pc_run "wire-schema" python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate
+fi
+# fork-delta 標記閘（憲法 §III）：base-web gitlink 變動（pin bump）時機器比對 base-web vs 源倉 example 基線——修改型缺 `原行:`／
+# 新增型缺圈界／軌道授權外即擋 rc 1；工具本體 staged 時亦直跑一次（無引數＝self-test＋全掃）。★第三個觸發源＝憲法：`load_roster()`
+# 讀 §III.1／§III.2 兩表當授權名冊（含空 ★表哨兵句斷言），純 §V.2 Amendment commit 也當場紅、不等下一次 pin bump 才誤歸因。
+# ★源倉缺席或未切在 example＝工具首步斷言 die rc 2（fail-loud）；本段不設跳過分支——bootstrap 已斷言源倉在場且在 example。
+if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/fork-delta-lint.py' -e '.specify/memory/constitution.md'; then
+  pc_run "fork-delta" python3 "$HOOK_DIR/../tools/fork-delta-lint.py"
+fi
 # entity 漂移閘（碼面閘、不入 GATES 名冊；承 rev5:.githooks/pre-commit 同段形、rev4:B-110 階段 0）：rust-api gitlink 變動
 # （pin bump）或 schema 快照本身 staged 時，比對 rust-api/entity/src vs 工作樹快照（＝待提交態）docs/ops/reference-src/schema-snapshot.json
 # ——零 docker、秒級；casbin_rule 雙向豁免（rev4:ADR 0015）；有漂移＝rc 1、entity 目錄缺席等結構異常＝rc 2、皆擋（補救見工具輸出）。
-# ★快照缺席＝Day-1 具名跳過（schema 基線刀 refresh 前的創世期 pin 首記；快照就位後本段自動轉實跑、無需改 hook）；
-#   快照在場而漂移＝照擋（真故障面不受跳過分支影響）。
+# ★快照缺席＝rc 2 擋下＋提示照相（002 刀 U0；rev5 與 001 刀為 Day-1 具名跳過——快照成 tracked 檔後該分支恆為死支且 fail-open：
+#   快照被誤刪／checkout 掉＝靜默放行）；快照在場而漂移＝照擋。
 if echo "$staged" | grep -qxF -e 'rust-api' -e 'docs/ops/reference-src/schema-snapshot.json'; then
   if [ -f "$HOOK_DIR/../docs/ops/reference-src/schema-snapshot.json" ]; then
     pc_run "entity-drift" python3 "$HOOK_DIR/../tools/entity-drift-gate.py" check
   else
-    echo "[pre-commit] ⤳ entity-drift 跳過：schema 快照缺席（就位後自動實跑）"
+    pc_run "entity-drift" sh -c 'echo "[pre-commit] ✗ entity-drift：schema 快照 docs/ops/reference-src/schema-snapshot.json 缺席——跑 python3 tools/docsync refresh 照相（需 dev stack）、git add 快照後重試" >&2; exit 2'
   fi
 fi
 # 凍結面守門（碼面閘、不入 GATES 名冊；規格對照審查修單 I-3）：`specs/001-schema-baseline/fixtures/` 或

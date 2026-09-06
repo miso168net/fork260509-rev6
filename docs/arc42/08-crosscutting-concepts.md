@@ -7,8 +7,8 @@ rev5_blueprint:
   §8 橫切概念: 承襲（四子節形制）
   fork-delta 接線現況（base-web）: 承襲（指針形：規則面承 rev5 FORK-DELTA-WIRING、接線 as-built 隨 base-web 各刀重生）
   資料慣例: 承襲（archetype 四變體與成對條款在憲法 §I.6；三閘／演進帳／歸屬帳＝ADR-00010；memo 欄與 ORM 紀律見 §8.1）
-  API 慣例: 隨刀：wire 地基刀（信封、碼表、i64 守衛已入憲法 §I.3；部分更新三態承 rev5:ADR 0023 隨刀重審）
-  授權慣例: 隨刀：授權治理刀（憲法 §I.7 島 G／I；判定單點與 DB-fresh 已入憲法 §I.2、本波留指針）
+  API 慣例: 承襲（信封／碼表／i64 守衛＝憲法 §I.3；契約機器化與部分更新三態＝§8.2、ADR-00015；msg 名冊後端側閉環＝ADR-00017）
+  授權慣例: 承襲（判定單點／DB-fresh＝憲法 §I.2；拒絕語意與 no-escalation 掛點＝§8.3、ADR-00014；no-escalation 本體與三維授權治理＝憲法 §I.7 島 G／I 承襲指針）
 ---
 # §8 橫切概念
 
@@ -18,19 +18,25 @@ rev5_blueprint:
 
 memo 欄家族（`user_memo`／`role_memo`／`menu_memo`／`wbip_memo` 與 `role_desc` 的分工）語意權威＝`docs/ops/reference-src/schema-definition.md` §5、UI 兌現隨對應 UI 刀。
 
-ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯關聯不建 Relation、需要即手寫 join）、`ActiveModelBehavior` 恆空（審計欄由 model/facade 顯式成對寫、憲法 §I.6 成對條款）——`rust-api/entity/` 已依此宣告，機器錨承 `rev5:server/tests/entity_behavior_lint.rs` 形、隨 server crate 進場（BL-00008）。
+ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯關聯不建 Relation、需要即手寫 join）、`ActiveModelBehavior` 恆空（審計欄由 model/facade 顯式成對寫、憲法 §I.6 成對條款）——`rust-api/entity/` 已依此宣告，機器錨＝`rust-api/server/tests/entity_behavior_lint.rs`（承 rev5 同名形；等式形站點數＝帶 DeriveEntityModel 檔數、空體判定、合成正例必紅）。
 
 ## 8.2 API 慣例
 
-紀律上位＝憲法 §I.3（`Res` 三欄信封、13 碼矩陣整組凍結、id 序列化逐欄位忠實 typings、2^53 fail-loud 守衛）。契約機器化（typings 抽 JSON Schema、coverage gate、碼表 table-driven case）與部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值；承 rev5:ADR 0023）隨 wire 地基刀進場、隨刀重審。
+紀律上位＝憲法 §I.3（`Res` 三欄信封、13 碼矩陣整組凍結、id 序列化逐欄位忠實 typings、2^53 fail-loud 守衛）。契約機器化四件：①base-web typings（抽取面＝`tools/wire-schema.py` 之 `TYPINGS_GLOB`，涵蓋 `src/typings/api/` 與 `src/typings/common.d.ts`）＝wire 權威，`tools/wire-schema.py extract` 抽 draft-07 JSON Schema 快照至 `rust-api/server/tests/fixtures/wire-schema.json`（`check` 重抽 byte 比對＝碼面閘、名冊＝RUNBOOK §12 碼面閘表）；②`rust-api/server/tests/wire_schema.rs` 以快照裁判後端 DTO 序列化輸出與三態反序列化落點；③`rust-api/server/tests/contract.rs`＝case registry×`ROUTES` 雙向覆蓋閘（缺 case 指名 route、殭屍 case 指名 case_key）＋fallback 兩案（未註冊路徑／方法不符皆 HTTP 404＋4040、標頭鍵集全等零存在性洩漏）；④route 真表 `docs/generated/reference/routes.md` 由 generate 自 `ROUTES` 重算。
+
+13 碼矩陣整組凍結的機器承載住 `rust-api/server/src/error.rs`——`code` 常量 mod 與同檔 `#[cfg(test)]` 之 table-driven 矩陣逐列同序同值斷言（碼×msg key×HTTP 對映、表長恰 13）；保留碼零發出另有雙錨＝`AppError` 無對應變體之全變體窮舉見證（cargo 型別層）＋同一矩陣斷言，`tests/contract.rs` 不重寫第三份。
+
+部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00015，後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
+
+msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一常數陣列＋contract 雙向斷言（實發 ⊆ 名冊、名冊每鍵 ≥1 發出點）；跨端閘（名冊 ⊆ 前端 i18n 字典）不在本面、去處＝ADR-00017（延首個接 i18n 的前端刀、觸發由 BACKLOG 承載）。
 
 ## 8.3 授權慣例
 
-紀律上位＝憲法 §I.2（menu 權限 casbin enforce、DB-first 寫入、寫後全量重載）。判定單點與每請求 DB-fresh、拒絕語意（無權＝5003＋HTTP 403、msg 純 i18n key、不揭露政策明細）、no-escalation 包含規則、三維授權治理與回收桶，隨憲法 §I.7 島 G／I 的進場刀重生（承 rev5:ADR 0022、rev5:ADR 0053～0056、rev5:ADR 0063 的形）。
+紀律上位＝憲法 §I.2（menu 權限 casbin enforce、DB-first 寫入、寫後全量重載）。判定單點＝`rust-api/server/src/auth/enforce.rs` 之 `enforce_role_path_method`（全服務唯一判定進入點；每次判定記 `casbin_enforce_total{decision}`、取值恰三 allow／deny／error）；每請求 DB-fresh＝`require_policy` 經 facade `roles_of_user` 現查角色（兩道濾網＝未軟刪且 `status = 1`；不快取、不採信 token 帶的角色）；驗證器 `enforce_mw`＝debug 建置走 dev-only 查表（`auth/dev_identity.rs`、`#[cfg(debug_assertions)]` 圈界）、release 建置一切請求 8888 fail-closed。拒絕語意四條＝ADR-00014：無權＝5003＋HTTP 403＋msg 純 key `system.forbidden`；未認證＝8888（HTTP 200 信封、`auth.session.reLogin`）；政策求值失敗＝5000（先落 log、不偽裝成無權）；不揭露政策明細與角色集。no-escalation 掛點＝`no_escalation_check`（空掛點；簽章預留 async 與 DB 句柄、`enforce_role_path_method` 為唯一呼叫點；ADR-00014）；no-escalation 本體、三維授權治理與回收桶＝憲法 §I.7 島 G／I 承襲指針。
 
 ## 8.4 fork-delta 軌道
 
-紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守 fork-delta-lint（檔頭判準、生成檔紀律）隨子庫刀進場。程式碼 fork-delta 目前為零；fork patch set 只有檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。
+紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守＝`tools/fork-delta-lint.py`（修改型原行／新增型圈界含新檔檔頭標記、軌道授權判定、生成檔紀律；碼面閘、名冊＝RUNBOOK §12 碼面閘表、pre-commit fork-delta 段實跑）。程式碼 fork-delta as-built＝base-web 兩支新增型新檔：`src/typings/api/rev6-settings.d.ts`（§III.1 BASE-WEB-ADAPT 軌道）與 `src/service/api/rev6-settings.ts`（§III.1 BASE-WEB-WRAPPER 軌道、不入 barrel）；零 inline 修改型；fork patch set 另含檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。新檔檔頭標記定形＝`[rev6-inline <軌道名>+ <刀名>]`（軌道名後緊接 `+` 尾綴＝新增型），由 `tools/fork-delta-lint.py` 兩道判定強制（`+` 尾綴定形×所稱軌道與檔路徑相符）。
 
 ## 8.5 E4 負責任 AI 概念
 

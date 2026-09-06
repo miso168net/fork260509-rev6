@@ -10,7 +10,7 @@ rad_ai_map:
 ---
 # P-C4-E3 材質邊界（流程層）
 
-本檔以 RAD-AI C4-E3 的形制記載三材質即非確定性邊界：Claude 執筆／機器生成／user 拍板；信心＝lint 與 review、降級＝blocked／escalation、測試＝harness 十案；系統層對應＝`docs/c4/C4-E3-non-determinism-boundary.md`。每個子節首句標明類比張力（哪裡對得上、哪裡是硬套）。
+本檔以 RAD-AI C4-E3 的形制記載三材質即非確定性邊界：Claude 執筆／機器生成／user 拍板；信心＝lint 與 review、降級＝blocked／escalation、測試＝harness 十二案；系統層對應＝`docs/c4/C4-E3-non-determinism-boundary.md`。每個子節首句標明類比張力（哪裡對得上、哪裡是硬套）。
 
 ### 邊界總覽
 
@@ -29,7 +29,7 @@ flowchart LR
 | Claude 執筆 | 非確定性 | 只經 pre-commit（機器閘）＋人審 |
 | 機器生成 | 確定性（真源重算、GT-01） | generate 寫檔；禁手改 |
 | user 拍板 | 人在迴圈 | AskUserQuestion 一題一問；merge 當次同意 |
-| pre-commit | 機器閘 | betterleaks→check＋lint→工具自測→entity-drift／schema-frozen（條件實跑） |
+| pre-commit | 機器閘 | betterleaks→check＋lint→工具自測→rust-fmt／wire-schema／fork-delta→entity-drift（快照缺席即紅）／schema-frozen（皆條件實跑） |
 | repo | 確定性區域 | default branch `rev6-admin-root` |
 
 ### 邊界介面

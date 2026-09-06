@@ -21,7 +21,7 @@ skip-list＝casbin_rule（rev4:ADR 0015：該表委派 casbin adapter 建基底�
 明確不驗三項（各有去處）：欄序（rev4:ADR 0021 歸 schema-gate gate2）、default（entity 面
 無此資訊）、index/constraint（schema-gate gate1 轄區）。
 
-check 入口無條件合成 self-test（照 rev5:tools/wire-schema.py check_self_test 模式；rev6 尚無該工具）：合成
+check 入口無條件合成 self-test（同 tools/wire-schema.py check_self_test 模式）：合成
 健康 snapshot×entity 對必綠＋注入假漂移（欄缺席／型別不符／可空性三型）必紅；
 self-test 失敗＝rc 2 指名比對邏輯壞、不讀任何真檔。未知型別絕不靜默跳過＝rc 2
 fail-loud（原型的靜默跳過是已知缺陷、不承襲）。
@@ -157,7 +157,7 @@ def compare(snapshot_columns, entities):
 
 
 def check_self_test():
-    """check 入口無條件合成 self-test（照 rev5:tools/wire-schema.py check_self_test 模式；rev6 尚無該工具）：
+    """check 入口無條件合成 self-test（同 tools/wire-schema.py check_self_test 模式）：
     健康對必綠＋注入欄缺席／型別不符／可空性三型假漂移必紅——失敗即比對邏輯壞、
     不讀任何真檔（防恆綠）。"""
     snap = [

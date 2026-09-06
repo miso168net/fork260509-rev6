@@ -11,4 +11,4 @@ LL-00002｜fix 升級後的續跑：骨架不支援只跑審查段、主線落�
 
 **處置**：骨架加 IMPLEMENTERS=0 續跑形（`_sk_head.js` 斷言改 ≥0、`_sk_main.js` 零 impl 直入審查、`harness-test.mjs` 案 7 於 N=0 改驗零 implementer、`tools/orchestration/README.md` 兩列）；續跑單元定義承原單元、CONTEXT 加「已完成結論與勿重報清單」段、允許清單只縮不擴；第二次落地前先全掃（generated 名冊數／reference-src 提及／pre-commit 鏈列舉）再發射，續跑 run 2 一輪收斂。
 
-**再犯面與守法**：凡 fix 以 `done_with_escalation` 零改動升級（rev5:L-078 分支）→ 主線落地時先問「本單元改變了哪個集合」、以 `grep -rn` 對該集合每個成員名掃全 repo 現在式面、逐處改對，再組續跑 script（IMPLEMENTERS=0、勿重報清單）發射；機器面待 BL-00009 補 GT-09 腿後收口。
+**再犯面與守法**：凡 fix 以 `done_with_escalation` 零改動升級（rev5:L-078 分支）→ 主線落地時先問「本單元改變了哪個集合」、以 `grep -rn` 對該集合每個成員名掃全 repo 現在式面、逐處改對，再組續跑 script（IMPLEMENTERS=0、勿重報清單）發射（★ADR-00013 起：零改動升級不再終止 run、碼品質段照跑，續跑形只用於故障續跑或主線判需重審）；機器面待 BL-00009 補 GT-09 腿後收口。

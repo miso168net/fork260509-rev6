@@ -2,7 +2,7 @@
 
 gates.py：ROSTER（恰 12 閘）、parse_gate_blocks／derive_anchor_codes（兩層真源）、DAY1_EXEMPTIONS（四欄制）、
 gt_01（generated 零漂移）、gt_07（機密樣式＋值比對）、gt_09（README 樹／EXEC_REQUIRED／settings.json 接線）、
-gt_12（名冊同源三處＋數量預算＋波標記）、run_lint、gen_gates_md。
+gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記）、run_lint、gen_gates_md。
 """
 import importlib.util
 import json
@@ -323,6 +323,33 @@ def gt_09(ctx):
 # ---------------------------------------------------------------------------
 # GT-12
 # ---------------------------------------------------------------------------
+# 碼面閘表腿（002 刀 U0）：tools/ 頂層 *.py 除下列非閘工具外皆為碼面閘、MUST 列於 RUNBOOK §12 碼面閘表（名冊唯一權威；
+# GATES.md 依 ADR-00010 不收碼面閘）。新增非閘工具＝改此常數同刀；碼面閘進場＝入表同刀。
+NON_GATE_TOOLS = ("tools/wf-watchdog.py",)
+RE_CODEGATE_HEADER = re.compile(r"^\|\s*工具檔\s*\|")
+RE_CODEGATE_PATH = re.compile(r"^`(tools/[^`/]+\.py)`$")
+
+
+def runbook_codegate_tools(text):
+    """RUNBOOK 碼面閘表（表頭首欄「工具檔」）→ 首欄反引號 `tools/….py` 路徑集；首欄非路徑者＝註記列、不計。
+    表缺席回 None（與「表在但零路徑列」區分——後者是空集合、RL-0051 即紅）。"""
+    lines = (text or "").split("\n")
+    start = next((i for i, ln in enumerate(lines) if RE_CODEGATE_HEADER.match(ln)), None)
+    if start is None:
+        return None
+    paths = set()
+    for ln in lines[start + 1:]:
+        if not ln.startswith("|"):
+            break
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if not cells or re.fullmatch(r":?-+:?", cells[0]):
+            continue
+        m = RE_CODEGATE_PATH.match(cells[0])
+        if m:
+            paths.add(m.group(1))
+    return paths
+
+
 def _gt_ids_in(text):
     ids = set(f"GT-{n}" for n in RE_GT_ID.findall(text or ""))
     for a, b in RE_GT_RANGE.findall(text or ""):
@@ -336,7 +363,7 @@ def gt_12(ctx, extra_sources=None):
       rule=RL-0052
       source=rev5:ADR 0024
       drift=名冊同源與數量預算
-      face=tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、NOTES 波標記
+      face=tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記
       trigger=pre-commit
       rc=1
       breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有
@@ -374,8 +401,21 @@ def gt_12(ctx, extra_sources=None):
     rb = ctx.text(RUNBOOK)
     if rb is None:
         out.append(finding(SKIP, "GT-12", RUNBOOK, "GT-12.runbook-absent：RUNBOOK 尚未建（Day-1；波 2 即解除）"))
-    elif _gt_ids_in(rb) != roster_ids:
-        out.append(finding(ERROR, "GT-12", RUNBOOK, f"RUNBOOK 工具表閘集合 {sorted(_gt_ids_in(rb))} ≠ ROSTER"))
+    else:
+        if _gt_ids_in(rb) != roster_ids:
+            out.append(finding(ERROR, "GT-12", RUNBOOK, f"RUNBOOK 工具表閘集合 {sorted(_gt_ids_in(rb))} ≠ ROSTER"))
+        # 碼面閘表腿（002 刀 U0）：S_tools（tools/ 頂層 tracked *.py − NON_GATE_TOOLS）⇔ S_table（表首欄反引號路徑集）雙向對賬
+        s_tools = {p for p in ctx.tracked if p.startswith("tools/") and p.count("/") == 1 and p.endswith(".py")} - set(NON_GATE_TOOLS)
+        s_table = runbook_codegate_tools(rb)
+        if s_table is None:
+            out.append(finding(ERROR, "GT-12", RUNBOOK, "RUNBOOK 碼面閘表缺席（§12 表頭首欄「工具檔」）——碼面閘名冊唯一權威、GATES.md 不收"))
+        elif not s_table:
+            out.append(finding(ERROR, "GT-12", RUNBOOK, "RUNBOOK 碼面閘表零路徑列（掃描面空集合即紅、RL-0051）——首欄須為反引號 tools/….py"))
+        else:
+            for x in sorted(s_table - s_tools):
+                out.append(finding(ERROR, "GT-12", RUNBOOK, f"RUNBOOK 碼面閘表列 {x} 但 tools/ 頂層無此 tracked 檔（幽靈列；改名／移除須同刀改表）"))
+            for x in sorted(s_tools - s_table):
+                out.append(finding(ERROR, "GT-12", x, f"tools/ 頂層 {x} 未列於 RUNBOOK 碼面閘表（碼面閘進場須同刀入表；非閘工具改 NON_GATE_TOOLS）"))
     wave = book_mod.current_wave(ctx)
     if wave is None:
         out.append(finding(ERROR, "GT-12", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->"))
