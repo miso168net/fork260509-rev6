@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | misc | governance｜maint-backlog-7 | 輕量軌 maint-backlog-7 收單：BL-00007 檢索性第四指標——ADR-00021：review 事件 optional probe 欄（冷啟動探針＋否定對照題四值計數、grader 最短 hops 平均）為資料源、GT-02 形檢、erratum 欄集加 probe、STATE 治理指標表第四列比例現算（目標＝找不到＋答錯＝0、≤3 跳比例輪間不降）；000-r1 以 erratum 回填為基準。 | b6e62e3 | ADR-00021 | — |
 | 2026-09-07 | erratum | 行 13 | ADR-00021 回填：000-r1 探針結果自報告 §3 逐題表回算（冷啟動 25 題＋否定對照 7 題、grader 最短 hops 平均）——當時 review 事件無 probe 欄、只落 notes 自由文 | {'quest | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-21 | 輕量軌 maint-backlog-21 收單：BL-00021 憲法 §I.5 例外②邊界定性——RUNBOOK §10 補一句「migration／entity 兩 crate 之 main.rs／lib.rs／Cargo.toml 五檔為承形自寫之自然收斂（去註解後只差改名級差異）、不屬例外②射程亦非未登記拷貝、稽核以 ADR-00009 之 17 檔為準」；ADR-00009／憲法不動。 | 3b42b40 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-25 | 輕量軌 maint-backlog-25 收單：BL-00025 憲法 §I.5 例外① 自證腿——docsync vendored-check（rust-api/sea-orm-adapter 全部 tracked 檔去整行註解後 diff rev5 凍結樹、差異須逐對在 tools/docsync/vendored.py 具名 ALLOWLIST 附理由、rev5 側存雜湊）＋bootstrap 3c 步每台機器體檢；ADR-00009 不動；LL-00012。 | c705ab2 | — | — |
@@ -26,6 +27,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜misc｜governance｜maint-backlog-7
+
+user 拍板 2026-09-07 口徑①（三選一：①現在立 ADR 定欄、r1 回填基準、r2 起結構化入帳／②等 000-r2 跑完再立 ADR／③降級 DEFERRED）；順序理由＝欄位若在 000-r2 之後才定、r2 探針數據又只能落 notes 再靠 erratum 補。欄形＝{questions, found, detour, not_found, wrong, avg_min_hops[, negative 同形]}、只存計數不存比例（RL-0049）；算式＝≤3 跳比例 found/questions、答對率 (found＋detour)/questions；窗口＝最近一筆帶 probe 的 review 事件（更正視圖）。000-r1 基準（報告 §3 逐題表回算）：冷啟動 25 題找得到 12／繞路 13／找不到 0／答錯 0、hops 2.0（≤3 跳 0.48、答對 1.0）；否定對照 7 題 6／1／0／0、hops 2.14。erratum 對 review 型容許目標列原無該欄（同 adrs 型 BL-00004 先例）。語料面四案（test 174→178）、不加閘不加生成檔、閘數 12 不動。000-r2 起收單自 review 骨架 probes[].grade.grades 計數寫欄（tools/orchestration/README.md 一句）。
 
 ### 2026-09-07｜misc｜governance｜maint-backlog-21
 
