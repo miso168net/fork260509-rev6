@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | misc | governance｜maint-backlog-25 | 輕量軌 maint-backlog-25 收單：BL-00025 憲法 §I.5 例外① 自證腿——docsync vendored-check（rust-api/sea-orm-adapter 全部 tracked 檔去整行註解後 diff rev5 凍結樹、差異須逐對在 tools/docsync/vendored.py 具名 ALLOWLIST 附理由、rev5 側存雜湊）＋bootstrap 3c 步每台機器體檢；ADR-00009 不動；LL-00012。 | c705ab2 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-23 | 輕量軌 maint-backlog-23 收單：BL-00023 pre-commit 接線機器守衛——tools/docsync/tests/test_hook_wiring.py 純函式對賬固定鏈、七條件段觸發／命令字面、for 自測名冊 ⊇ 碼面閘表∪NON_GATE_TOOLS、未登記段即紅（一正六反）；hook 新段 orchestration（tools/orchestration 之 js|mjs|py staged→三支入庫範例組裝＋harness）；hook 本體 staged 亦跑 docsync test。 | 24d4e2a | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-6 | 輕量軌 maint-backlog-6 收單：BL-00006 review 骨架入庫——_sk_review.js（lens／兩鏡三態／grader／critic）與 TDD 形共用 _sk_head.js、assemble.py 雙模式組裝器、harness-test 十五案／harness-review 九案、三支單元定義範例、agents.md 七角色入冊；dogfood 自審一輪三分流；ADR-00020 GT-09 子名冊腿；BL-00032～34 當批收掉、BL-00034 併 BL-00023。 | eda591d | ADR-00020 | — |
 | 2026-09-06 | feature_close | 002-system-settings | 002 system-settings 收單（server crate 進場首刀）：rust-api server crate 從零（router／auth／handler／validation／facade／error 13 碼矩陣）＋契約機器化（wire-schema 快照裁判、contract 雙向覆蓋閘、msg 名冊後端閉環）＋endpoint_tests 32＋1 案；base-web 兩支新增型新檔；三支碼面閘＋RUNBOOK §12 碼面閘表＋GT-12 腿；零 migration、憲法零 Amendment；ADR-00013～00019；活書 05／08 as-built。 | ecea8ee | ADR-00013、ADR-00014、ADR-00015、ADR-00016、ADR-00017、ADR-00018、ADR-00019 | §5、§8 |
@@ -23,6 +24,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜misc｜governance｜maint-backlog-25
+
+user 拍板 2026-09-07 口徑①（三選一：①去註解 diff＋具名例外 allowlist、ADR-00009 不動／②新 ADR supersede ADR-00009 改條件①措辭／③維持人工）。實核更正：BL-00025 原述「5 支整檔拷貝」失準——src 四支去註解後全等、adapter.rs 差三對非註解行（兩個 #[ignore] 字串換 rev6 座標、一行 mysql 連線字面改 format! 執行期串接＝RL-0054）、Cargo.toml 只差 # 檔頭註解、examples 四檔全等；ADR-00009 條件①（去註解逐位元）只鎖例外②故不動，例外①口徑住 vendored.py docstring＋本事件。腿＝差異只准逐行替換且逐對消費 ALLOWLIST（多一行／少一行／對不上／同形多於登記／allowlist 漂移／rev5 缺檔／掃描面空集合皆紅）；真 repo 10 檔、3 對消費；bootstrap 體檢 rc 0 含 3c；非治理閘、GATES.md 不動。兩坑：allowlist 落 rev5 連線字面被 betterleaks 擋→rev5 側改 sha256[:12]（RL-0054）；hook 內 git -C rust-api ls-files 讀外層 index 回空→子行程剝 GIT_*（LL-00012）。
 
 ### 2026-09-07｜misc｜governance｜maint-backlog-23
 
