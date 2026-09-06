@@ -142,7 +142,7 @@ R3 十五筆差異點與 rev5 research R3 十三筆已翻案行為皆不得帶�
 ### Implementation for User Story 5
 
 - [x] T039 [US5] ★主線任務：`docs/arc42/decisions/ADR-00015-partial-update-tristate-envelope-convention.md`（ADR ①：data-model §8 條文轉錄；射程＝部分更新 body；provenance 引 rev5:ADR 0023；翻案觸發器＝create 語意要鎖時新 ADR）→ accepted＋generate 同 commit；data-model §8 加「權威＝該 ADR」指針句
-- [ ] T040 [US5] 三態 deserialize 純函式測（缺席／null／值三形×兩欄）＋integration 五案：description 缺席不動／null 落 NULL／`""` 落空字串／設值生效、settingValue null→2222（SC-005、US5 場景 1～4）；容器內 cargo test 綠；worktree commit＋pin bump
+- [x] T040 [US5] 三態 deserialize 純函式測（缺席／null／值三形×兩欄）＋integration 五案：description 缺席不動／null 落 NULL／`""` 落空字串／設值生效、settingValue null→2222（SC-005、US5 場景 1～4）；容器內 cargo test 綠；worktree commit＋pin bump
 
 ---
 

@@ -40,9 +40,10 @@ eval curl -s $U $H -d "'{\"settingKey\":\"password_min_length\",\"settingValue\"
 eval curl -s $U $H -d "'{\"settingKey\":\"password_min_length\",\"settingValue\":\"999\"}'"          # 2222 invalidValue（上界 128）
 eval curl -s $U $H -d "'{\"settingKey\":\"single_session_default\",\"settingValue\":\"ON\"}'"         # 2222（大小寫敏感）
 eval curl -s $U $H -d "'{\"settingKey\":\"no_such_key\",\"settingValue\":\"1\"}'"                    # 2222 notFound
+curl -s -o /dev/null -w "%{http_code}\n" $U -H "Authorization: $SUPER"                     # GET 打 POST 路徑→404（信封 4040）
 eval curl -s $U $H -d "'{\"settingKey\":\"password_min_length\",\"settingValue\":\"8\",\"description\":null}'"  # 0000；description 落 NULL
 eval curl -s $U $H -d "'{\"settingKey\":\"password_min_length\",\"settingValue\":\"8\",\"description\":\"\"}'"  # 0000；description 落 ""
-curl -s -o /dev/null -w "%{http_code}\n" $U -H "Authorization: $SUPER"                     # GET 打 POST 路徑→404（信封 4040）
+eval curl -s $U $H -d "'{\"settingKey\":\"password_min_length\",\"settingValue\":null,\"description\":\"x\"}'"  # 2222 invalidValue（NOT NULL 欄顯式 null＝拒收；隨行 description 亦不落庫）
 ```
 
 每步後以讀端回讀驗證落庫效果（非法案＝原值保留；成功案回包 `data:null`）。
