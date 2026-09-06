@@ -16,7 +16,7 @@
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：8｜滯後：0
 - LESSONS：12 筆
-- events：40 筆（erratum 2、feature_close 2、misc 15、perf 18、review 3）
+- events：41 筆（erratum 2、feature_close 2、misc 15、perf 19、review 3）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3075 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-07｜perf｜close_bookkeeping｜close_bookkeeping 12.57 秒 rc=0
 - 2026-09-07｜misc｜governance｜maint-backlog-7｜輕量軌 maint-backlog-7 收單：BL-00007 檢索性第四指標——ADR-00021：review 事件 optional probe 欄（冷啟
 - 2026-09-07｜erratum｜行 13｜ADR-00021 回填：000-r1 探針結果自報告 §3 逐題表回算（冷啟動 25 題＋否定對照 7 題、grader 最短 hops 平均）——當時 re
-- 2026-09-07｜perf｜close_bookkeeping｜close_bookkeeping 12.37 秒 rc=0
