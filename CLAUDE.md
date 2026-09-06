@@ -95,7 +95,7 @@
   在 **worktree 內**顯式前進：`git -C <子庫> fetch origin <長名>` → `git -C <子庫> merge --ff-only <pin>`；★此時回外層 bump pin＝把 pin 倒回舊值。
   機判：`git -C <子庫> merge-base --is-ancestor <worktree HEAD> <pin>` 成立＝②、反向成立＝①、兩者皆不成立＝真分叉、停手問 user；pin object 不在本地＝先 fetch 再判。
   ★兩向皆**永不 `submodule update`**（會 reset worktree）。
-- **初始化／新機器**：clone 外層後跑 **`bash tools/bootstrap.sh`**（一鍵幂等：源倉 clone＋worktree 重建＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋
+- **初始化／新機器**：clone 外層後跑 **`bash tools/bootstrap.sh`**（一鍵幂等：源倉 clone＋worktree 重建＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋例外①自證＋
   docsync test／check／lint＋閘數＋secrets 體檢；舊機重跑＝純體檢）。`git submodule update --init` 僅限唯讀快速看碼捷徑——該模式無源倉＝無基線、不可做 base-web 開發。
 - **upstream rebase**（base-web）：fetch 前 `git remote -v` 確認 upstream push URL 已設 no_push；rebase＋force-with-lease push 後**立即**回外層 bump pin；
   基線前進＝拍板級（D14；先立 ADR 再改 bootstrap 的基線 SHA），`原行:` 註解同步更新為 upstream 現行版（憲法 §III rebase 同步紀律）。

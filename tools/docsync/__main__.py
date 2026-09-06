@@ -94,6 +94,22 @@ def _cmd_errata(args):
     return rc
 
 
+def _cmd_vendored_check(args):
+    from docsync import vendored
+    rev5 = args.rev5 or vendored.default_rev5_root(ROOT)
+    if not os.path.isdir(os.path.join(rev5, vendored.VENDORED_SUB, vendored.VENDORED_DIR)):
+        print(f"✗ rev5 對照樹缺 {vendored.VENDORED_SUB}/{vendored.VENDORED_DIR}（{rev5}）——例外①自證無從取證（bootstrap 3b 亦會警告）", file=sys.stderr)
+        return 2
+    fs, stats = vendored.run(ROOT, rev5)
+    for f in fs:
+        print(f"ERROR｜例外①｜{f}")
+    if fs:
+        print(f"✗ 例外①自證：{len(fs)} 處差異不在具名 allowlist——改 rust-api/sea-orm-adapter 須同批改 tools/docsync/vendored.py ALLOWLIST（附理由）")
+        return 1
+    print(f"✓ 例外①自證：{stats['files']} 檔去註解後與 rev5 凍結樹全等（具名例外 {stats['allow_consumed']} 對全數消費）")
+    return 0
+
+
 def _cmd_test(_args):
     tests_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests")
     suite = unittest.defaultTestLoader.discover(tests_dir, top_level_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -117,6 +133,9 @@ def build_parser():
     errata = sub.add_parser("errata", help="跨檔假述枚舉")
     errata.add_argument("term")
     errata.set_defaults(fn=_cmd_errata)
+    vend = sub.add_parser("vendored-check", help="憲法 §I.5 例外① 自證：sea-orm-adapter 去註解 diff rev5 凍結樹、差異須逐對在具名 allowlist（bootstrap 3c 呼叫）")
+    vend.add_argument("--rev5", default=None, help="rev5 對照樹根（預設 ../fork260509-rev5；bootstrap 以 REV5_ROOT 傳入）")
+    vend.set_defaults(fn=_cmd_vendored_check)
     sub.add_parser("test", help="跑 tools/docsync/tests").set_defaults(fn=_cmd_test)
     return p
 
