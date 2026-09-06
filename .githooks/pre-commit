@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -55,9 +55,9 @@ fi
 # 值比對層（機密現值 × tracked 文字檔）住 docsync lint 的 GT-07（樣式四組自測＋SECRETS_DIR 實值）——與 check／lint 並行跑。
 pc_run "docsync-check" python3 "$HOOK_DIR/../tools/docsync" check
 pc_run "docsync-lint" python3 "$HOOK_DIR/../tools/docsync" lint
-# 守門工具自測條件觸發：staged 含某工具本體才跑該支、平時零開銷（名冊與 GT-09／bootstrap 對賬）。
+# 守門工具自測條件觸發：staged 含某工具本體才跑該支、平時零開銷（名冊與 GT-09／bootstrap 對賬）。★hook 本體 staged 亦跑 docsync test（接線守衛 test_hook_wiring 隨之；BL-00023）。
 staged=$(git diff --cached --name-only)
-if echo "$staged" | grep -q '^tools/docsync/'; then
+if echo "$staged" | grep -q '^tools/docsync/\|^\.githooks/pre-commit$'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
 for t in tools/wf-watchdog.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
@@ -106,6 +106,12 @@ fi
 #   原「不設閘」取捨的成本前提（離線閘昂貴）經量測不成立（doccheck 0.17 秒），故補此條件觸發。
 if echo "$staged" | grep -qE '^(specs/001-schema-baseline/(fixtures/|data-model\.md$)|docs/ops/reference-src/schema-definition\.md$)'; then
   pc_run "schema-frozen" python3 "$HOOK_DIR/../tools/schema-gate.py" test
+fi
+# 編排骨架段（BL-00023 併入項）：暫存區含 tools/orchestration/ 之 *.js|*.mjs|*.py（含生成物 _sk_rules.js＝RULES 改動亦重驗）時，以三支入庫範例組裝到
+# 暫存目錄並跑對應 harness（assemble.py 三道自檢＝RULES-VERSION 對賬／node --check／harness-test spec＋quality 或 harness-review）；產物只落 ${PC_TMP}、trap 清除。
+# 改壞骨架或範例的 commit 在此被擋（此前只在人手動組裝時才會現形）；node 為硬相依、秒級。
+if echo "$staged" | grep -qE '^tools/orchestration/.*\.(js|mjs|py)$'; then
+  pc_run "orchestration" sh -c 'for u in EXAMPLE-tdd-unitdef EXAMPLE-review-unitdef EXAMPLE-review-verify-unitdef; do python3 "$1/../tools/orchestration/assemble.py" "$1/../tools/orchestration/$u.py" "$2/$u.mjs" || exit 1; done' _ "$HOOK_DIR" "$PC_TMP"
 fi
 pc_join || exit 1
 # ── 全鏈耗時評估（僅在全部閘通過後執行）──────────────────────────────────────
