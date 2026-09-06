@@ -12,7 +12,7 @@ rad_ai_map:
 
 ### 模型清冊表
 
-類比張力：對得上——名冊分兩家：角色×刻板型×產物閘是人的判斷（本表），模型與 effort 是 script 常數（生成表＝`docs/generated/reference/agents.md`、本表不重抄）。
+類比張力：對得上——名冊分兩家：角色×刻板型×產物閘是人的判斷（本表），模型與 effort 是 script 常數（生成表＝`docs/generated/reference/agents.md`、本表不重抄）。角色→OPTS 常數之實際綁定見 `tools/orchestration/_sk_review.js`／`_sk_cycle.js` 派發處；★探針（冷啟動）復用 `LENS_OPTS`、refuter 復用 `MIRROR_OPTS`，無獨立常數。
 
 | 角色 | 刻板型（C4-E1） | 產物 | 進哪道閘 |
 |---|---|---|---|

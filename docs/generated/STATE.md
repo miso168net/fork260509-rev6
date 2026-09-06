@@ -14,7 +14,7 @@
 ## 帳面統計
 - ADR：19（proposed 0、accepted 18、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
-- BACKLOG 開放：13｜滯後：0
+- BACKLOG 開放：16｜滯後：0
 - LESSONS：11 筆
 - events：30 筆（erratum 1、feature_close 2、misc 10、perf 14、review 3）
 - CLAUDE.md 行數：160（只報表、不擋）

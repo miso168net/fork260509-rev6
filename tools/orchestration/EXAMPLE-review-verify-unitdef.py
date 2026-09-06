@@ -1,7 +1,7 @@
 """tools/orchestration/EXAMPLE-review-verify-unitdef.py — review 形單元定義範例（BL-00006；verify 階段＝主線合併去重後的批次兩鏡三態＋探針 grader→refuter＋完整性 critic）。
 組裝：python3 tools/orchestration/assemble.py tools/orchestration/EXAMPLE-review-verify-unitdef.py tmp/<out>.mjs
 真跑時 BATCHES.text／PROBES.answers／CRITIC.prior 由主線自探索 run 的 journal 結果渲染（每筆 finding 首行「■ <id>｜<severity>｜<category>」、其餘欄縮排兩格）；
-本檔的兩批四筆與一份作答為形制樣本（harness-review 六案據此乾跑），發射前照抄到 tmp/ 換成真資料並改 SMOKE。"""
+本檔的兩批四筆與一份作答為形制樣本（harness-review 九案據此乾跑），發射前照抄到 tmp/ 換成真資料並改 SMOKE。"""
 MODE = 'review'
 SMOKE = 'r-orch-verify-9e3d'
 

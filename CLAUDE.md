@@ -45,9 +45,9 @@
 　★單元定義→成品一律 `python3 tools/orchestration/assemble.py <uN.py> <uN.mjs>`（tdd／review 雙模式、三道自檢＝RULES-VERSION 對賬／node --check／harness；review 形骨架＝獨立輪與 final holistic review 用的 lens／兩鏡三態／grader／critic，範本＝`tools/orchestration/EXAMPLE-review-*-unitdef.py`）。
 　★fix 後次輪 review prompt 必附前輪已駁回 findings 清單（RL-0071）；code-quality review 烤進可見性放寬審查面（RL-0070）。
 ★workflow script 防呆六件套（缺一不發射；RL-0058～RL-0062、RL-0004／RL-0012／RL-0025）：
-　①agent prompt 全數烤進 script 本體模板字串；args 只傳短純量、script 首段逐欄斷言（型別＋非空），不符→零派發即 throw。
+　①agent prompt 全數烤進 script 本體模板字串；script 一律不接受 args（非 undefined／null 即零派發 throw），一切邊界與清單寫死 script 常數、`_vars`／`_plan` 段常數由首段逐欄斷言（型別＋非空），不符→零派發即 throw。
 　②派發前斷言渲染後 prompt 非空、長度合理、開頭不含字面 "undefined"／"null"、必含 "zh-TW" 字面與冒煙 token。
-　③一切邊界寫死在 script 常數、絕不取自 args：fix 迴圈 for 上限 ≤3 輪；單元 agent 總數保險絲 ≤20 支，超限 throw；
+　③一切邊界寫死在 script 常數、絕不取自 args：fix 迴圈 for 上限 ≤3 輪；TDD 執行單元 agent 總數保險絲 ≤20 支、review 形每 run ≤24 支（＝wf-watchdog 進行中 run 25 支 runaway 底線減 1），超限 throw；
 　　保險絲值 MUST ≥ 結構最壞值、由同檔 script 常數推導＋自我斷言、不得手挑（rev5:L-068）。
 　④implementer／fix 一律 schema 回傳 {status, report}；status≠ok→立即 return 升級主線、不進 review。
 　　★review agent 不得共用該 status 欄（agent 受阻 vs 審查有 blocker 是兩件事；rev5:L-011 變形①）。

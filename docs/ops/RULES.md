@@ -65,9 +65,9 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0055 | 事件帳一行一 JSON 事件、逐型 schema、SHA 逐列向 git 實證；feature_close 帶序號 window；不記「已 push／未 push」揮發狀態、只記 SHA。 | 主線 | lint | rev5:ADR 0012 |
 | RL-0056 | bash 內 `$VAR` 後不得緊接非 ASCII（bash 3.2 會黏進變數名）；shebang 只用白名單形。 | implementer,fix | lint | rev5:L-001 |
 | RL-0057 | README 目錄樹、hook 註冊、exec bit 名冊與實檔集機器對賬；名冊改動同刀改齊；子庫任一 pnpm install 後重跑 bootstrap 驗 hooks 指紋。 | implementer,主線 | lint | rev5:L-061 |
-| RL-0058 | Workflow script 的 agent prompt 全數烤進 script 本體；args 只傳短純量、首段逐欄斷言型別與非空、不符零派發即 throw。 | 主線 | prompt | ADR-00004 |
+| RL-0058 | Workflow script 的 agent prompt 全數烤進 script 本體；script 一律不接受 args（非 undefined／null 即零派發 throw）、一切邊界與清單寫死 script 常數，`_vars`／`_plan` 段常數由首段逐欄斷言型別與非空、不符零派發即 throw。 | 主線 | prompt | ADR-00004 |
 | RL-0059 | 派發前斷言渲染後 prompt 非空、長度合理、開頭無「undefined」／「null」字面、必含「zh-TW」字面與冒煙 token。 | 主線 | prompt | ADR-00004 |
-| RL-0060 | 一切邊界寫死 script 常數不取自 args：fix 迴圈上限 ≤3、單元 agent 保險絲 ≤20；fix agent 允許檔清單寫死常數、次輪只縮不擴。 | 主線 | prompt | ADR-00004 |
+| RL-0060 | 一切邊界寫死 script 常數不取自 args：fix 迴圈上限 ≤3、TDD 執行單元 agent 保險絲 ≤20、review 形每 run ≤24（wf-watchdog runaway 底線 25 減 1）；fix agent 允許檔清單寫死常數、次輪只縮不擴。 | 主線 | prompt | ADR-00004 |
 | RL-0061 | Workflow launch 與 Monitor 看門狗同一回合原子成對發射、兩 call 間零其他動作；完成通知＋Monitor 雙訊號全覆蓋、毋需輪詢。 | 主線 | checklist | ADR-00004 |
 | RL-0062 | 保險絲值由同檔 script 常數推導並自我斷言，MUST ≥ 結構最壞值、不得手挑；runaway 判準數不重複 agent key、非 journal 行數。 | 主線 | prompt | rev5:L-068 |
 | RL-0063 | agent 絕不 push／merge／git commit／git checkout；只改工作樹，git 操作由主線負責。 | implementer,fix,review | prompt | ADR-00004 |

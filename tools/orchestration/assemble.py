@@ -11,7 +11,8 @@ unitdef.py＝python 模組，以字串常數給各變動段的 JS 原文：
 拼完三道（任一紅＝非零退出、不留產物）：
   ①RULES-VERSION 對賬（script 內每個版本串＝rules emit 現算；同 .claude/hooks/pre-workflow-gate.py 判準）＋zh-TW 字面＋RESIDUE 殘留
   ②node --check（包 async fn、export const meta→const meta）
-  ③harness：tdd＝harness-test.mjs spec＋quality 雙模式；review＝harness-review.mjs（六案）
+  ③harness：tdd＝harness-test.mjs spec＋quality 雙模式；review＝harness-review.mjs（九案）
+  另對賬 unitdef 模組層 SMOKE 與 VARS 內 const SMOKE 同值（兩處不同＝prompt 烤舊 token、看門狗盯錯 token）
 """
 import importlib.util
 import os
@@ -62,6 +63,9 @@ def main():
     mode = getattr(u, 'MODE', 'tdd')
     if mode not in ('tdd', 'review'):
         print(f'✗ MODE 須為 tdd 或 review（現值 {mode!r}）')
+        return 1
+    if hasattr(u, 'SMOKE') and f"const SMOKE = '{u.SMOKE}'" not in getattr(u, 'VARS', ''):
+        print(f"✗ unitdef 模組層 SMOKE={u.SMOKE!r} 與 VARS 內 `const SMOKE = '…'` 不同值——兩處須同值（組裝器只吃 VARS、模組層供人讀與看門狗命令）")
         return 1
     script = '\n\n'.join(s.rstrip('\n') for s in segments(u, mode)) + '\n'
     # ① RULES-VERSION 對賬（同 .claude/hooks/pre-workflow-gate.py 判準）＋zh-TW＋殘留字樣

@@ -1,4 +1,4 @@
-<!-- next: BL-00032 -->
+<!-- next: BL-00035 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -17,3 +17,6 @@
 - BL-00029｜product｜寫端 `update_system_setting` 為「不對已消失的列寫入」多查一次（handler 查 setting_type 供一致性守衛、facade `update_by_key` 內再查在場）——16 鍵低頻治理端點划算（research R11 last-write-wins、不驗併發）；高頻化時改 existing 下傳＋`UPDATE … WHERE deleted_at IS NULL` 以 rows_affected 判在場、省第二次 SELECT｜觸發＝該端點轉高頻或出現併發寫入需求時
 - BL-00030｜governance｜msg key 跨端閘：後端 `MSG_KEYS` 名冊 ⊆ 前端 i18n 字典（承 rev5:Lint24 形、ADR-00017 決定 3）——002 刀只閉後端側名冊（contract 雙向斷言）、跨端半邊零機器守、RUNBOOK §12 碼面閘表以註記列承載｜觸發＝首個接 i18n 的前端刀進場（該刀同批立閘、註記列轉工具檔列）
 - BL-00031｜product｜settings registry 跨鍵不變式零守：`password_min_length ≤ password_max_length`、`login_throttle_captcha_after ≤ login_throttle_max_fails`、`ip_captcha_after ≤ ip_max_fails` 等成對鍵各自獨立驗證、可寫成互斥值（002 刀 validation 只驗單鍵型別與界）｜觸發＝004 ip-trust-anchor／007 user-password-admin 之消費側進場（消費側決定不變式方向與拒因）
+- BL-00032｜governance｜`tools/orchestration/README.md` 檔表與 `git ls-files tools/orchestration` 實檔集零機器對賬（GT-09 以葉目錄粒度概括覆蓋、新增檔漏列不紅；000-r1 R1-065 曾人工補四支；maint-backlog-6 dogfood L1-5 兩鏡確認）：候選＝docsync tests 語料面案或 GT-12 加一腿——`*.js`／`*.mjs`／`*.py` 集 ⇔ 檔表首欄反引號集、雙向差集即紅（新腿走 ADR-00004 一進一出）｜觸發：下一次 tools/orchestration 增檔的維護批
+- BL-00033｜governance｜`harness-test.mjs` 對 args 拒絕／guard 六腿／保險絲觸發三條 throw 路徑零常設反例案（落地時的一次性變異紅證只住 commit 訊息；harness-review 已於 maint-backlog-6 補三反例；dogfood L2-3 兩鏡確認）：補案會動「十二案」字面（README／RUNBOOK／P-E7／orchestration README；ADR-00013 body 之案數為史料不改）｜觸發：下次動 `_sk_head.js` guard 或保險絲推導時
+- BL-00034｜governance｜編排骨架 `tools/orchestration/*.js|*.mjs` 改動無 pre-commit 機器閘（harness 只在 assemble.py 組裝時跑；改壞骨架的 commit 可全綠落地；dogfood L2-5 兩鏡確認、嚴重度 minor）：候選＝pre-commit 加段「暫存區含 tools/orchestration/*.js|*.mjs→以三支 EXAMPLE 組裝並跑兩支 harness」（秒級、node 已是硬相依；與 BL-00023 同族可併批）｜觸發：下一次動編排骨架的維護批

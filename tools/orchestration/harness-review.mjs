@@ -1,4 +1,4 @@
-// review 形骨架 harness（六案；BL-00006 入庫）：以樁 agent 乾跑組裝好的 review script——驗派發數／label 唯一／三態聚合／零 findings 跳過／
+// review 形骨架 harness（九案＝六正例＋三反例；BL-00006 入庫）：以樁 agent 乾跑組裝好的 review script——驗派發數／label 唯一／三態聚合／零 findings 跳過／
 //   null 與 agentStatus=failed 留帳不殺 run／保險絲與 guard（每支渲染後 prompt 的長度、zh-TW、冒煙 token、RULES-VERSION 在真 guard 下被驗）。
 // 用法：node tools/orchestration/harness-review.mjs <組裝好的 script.mjs>
 // 期望值不寫死：自 script 的 `const REVIEW_STAGE`／`const INLINE_VERIFY`／`const CRITIC = null`／`const SMOKE` 行與回傳結構（lenses／probes／batches 長度）推導；
@@ -183,5 +183,25 @@ await run('案6 回傳形（status／stage／smoke／nulls／failed／summary／
   if (STAGE === 'verify') expect((o.r.critic !== null) === HAS_CRITIC, 'critic ' + (HAS_CRITIC ? '有' : '無') + '（與 script 常數一致）', o.r.critic)
 })
 
-console.log('\n' + (failed ? '✗ harness-review：' + failed + ' 項斷言不符' : '✓ harness-review：六案全過') + '（stage=' + STAGE + (INLINE ? '、inline 兩鏡' : '') + (HAS_CRITIC ? '、critic' : '') + '）')
+// 案7～9：反例（RL-0051 一正一反、變異打在判準上）——以讀進來的 src 就地變異或改 args 驅動，斷言 throw 訊息含對應防呆號且零派發。
+async function runNegative(name, mutatedSrc, argsValue, fragment) {
+  const calls = []
+  const agent = async (p, o) => { calls.push(o.label); return null }
+  const parallel = async (thunks) => Promise.all(thunks.map((t) => t()))
+  const pipeline = async (items, ...stages) => Promise.all(items.map(async (it, i) => { let v = it; for (const s of stages) v = await s(v, it, i); return v }))
+  let err = null
+  try { await new AsyncFn('phase', 'log', 'parallel', 'pipeline', 'agent', 'args', mutatedSrc)(() => {}, () => {}, parallel, pipeline, agent, argsValue) } catch (e) { err = e.message }
+  console.log('\n【' + name + '】')
+  console.log('  throw: ' + (err === null ? '（無）' : err.slice(0, 120)))
+  expect(err !== null && err.includes(fragment), 'throw 含「' + fragment + '」', err)
+  expect(calls.length === 0, '零派發', calls.length)
+}
+await runNegative('案7 反例：args 非空 → 防呆① 零派發即 throw', src, { x: 1 }, '防呆①')
+await runNegative('案8 反例：SMOKE 取字面 test（看門狗會當自測子命令）→ 防呆② 零派發即 throw', src.replace("const SMOKE = '" + SMOKE + "'", "const SMOKE = 'test'"), undefined, '防呆②')
+const FLOOD = STAGE === 'explore'
+  ? 'const LENSES = [' + Array.from({ length: 30 }, (_, i) => "{ key: 'X" + i + "', task: 'x' }, ").join('')
+  : 'const BATCHES = [' + Array.from({ length: 30 }, (_, i) => "{ batch: 'X" + i + "', ids: ['X" + i + "-1'], text: '■ X" + i + "-1｜minor｜其他' }, ").join('')
+await runNegative('案9 反例：_plan 段灌到超過每 run 上限 → 防呆③ 保險絲 throw', src.replace(STAGE === 'explore' ? 'const LENSES = [' : 'const BATCHES = [', FLOOD), undefined, '超過每 run 上限')
+
+console.log('\n' + (failed ? '✗ harness-review：' + failed + ' 項斷言不符' : '✓ harness-review：九案全過') + '（stage=' + STAGE + (INLINE ? '、inline 兩鏡' : '') + (HAS_CRITIC ? '、critic' : '') + '）')
 process.exit(failed ? 1 : 0)
