@@ -1064,7 +1064,7 @@ def compare_dump_owner(dump_text, expected):
     """實庫 dump 的 Owner 值一致性（rev5:B-011；配 [`normalize_seed_dump`] 第 ④ 類）。
 
     normalize 把 `; Owner: X` 的值抹成佔位字面後，seed 逐列 diff 對「DB 身分變更」
-    從此無感——而那正是 rev5:ADR 0008 那次逼 rev5 001 凍結 fixtures 重產一次的事實。本檢查把該
+    從此無感——而那正是 rev5:ADR 0008 那次逼 rev5:001 凍結 fixtures 重產一次的事實。本檢查把該
     偵測換成一筆具名 finding：噪音消除、守門強度不減。
 
     ★零 Owner 行必須紅，不得靜默判綠：pg_dump 形變或 dump 為空時比對面即空集合，

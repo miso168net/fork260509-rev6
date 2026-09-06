@@ -98,7 +98,7 @@ if [ "$cur" != "$BASELINE_BRANCH" ]; then
 fi
 bw_head="$(git -C "$BASEWEB_SRC" rev-parse HEAD)"
 is_ancestor_or_same "$BASEWEB_SRC" "$BASEWEB_BASE_SHA" "$bw_head" \
-  || die "base-web 源倉 $BASELINE_BRANCH HEAD（${bw_head:0:7}）≠ D14 基線 ${BASEWEB_BASE_SHA}——rev6 沿用 rev5 基線、不前進 upstream；要前進須先立 ADR 再改本值；回退：git -C $BASEWEB_SRC checkout -B $BASELINE_BRANCH $BASEWEB_BASE_SHA"
+  || die "base-web 源倉 $BASELINE_BRANCH HEAD（${bw_head:0:7}）≠ D14 基線 ${BASEWEB_BASE_SHA}——rev6 沿用 rev5 基線、不前進 upstream；要前進須先立 ADR＋走憲法 §V.2 Amendment 改 §I.1／§III 之基線 SHA，再改本值；回退：git -C $BASEWEB_SRC checkout -B $BASELINE_BRANCH $BASEWEB_BASE_SHA"
 ok "最原始源基線＝${BASELINE_BRANCH}@${BASEWEB_BASE_SHA}（D14）"
 if ! git -C "$BASEWEB_SRC" remote get-url upstream >/dev/null 2>&1; then
   git -C "$BASEWEB_SRC" remote add upstream "$UPSTREAM_URL"
@@ -153,7 +153,7 @@ if [ -d "$REV5_ROOT/.git" ]; then
     [ -e "$dir/.git" ] || die "rev5 對照樹缺 ${sub}（${dir}）——凍結面不完整；rev5 為唯讀對照基準（D17）"
     head="$(git -C "$dir" rev-parse HEAD)"
     [ "${head:0:7}" = "$sha" ] \
-      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 ${sha}——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先於啟動書 D17／ADR-00002 改凍結值並立 ADR，再改本檔 REV5_FROZEN"
+      || die "rev5 凍結破壞：$sub HEAD（${head:0:7}）≠ 凍結 ${sha}——rev5 自 2026-09-03 起唯讀（D17）；若確為有意變更，先立新 ADR supersede ADR-00002（accepted body 不可改）＋走憲法 §V.2 Amendment 改 §I.5 兩處 SHA，再改本檔 REV5_FROZEN（啟動書 D17＝史料、不改）；並立 ADR，再改本檔 REV5_FROZEN"
   done
   ok "rev5 凍結 SHA 斷言過（外層 7eab28a／base-web 9833308／rust-api 92919b9）"
   dirty="$(git -C "$REV5_ROOT" status --porcelain --untracked-files=no 2>/dev/null || true)"

@@ -2,7 +2,7 @@
 
 本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
 本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
-創世期章節現況：§1／§7 抬頭／§10／§12／§14 為已補實文章、§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。
+創世期章節現況：§1／§4／§7 抬頭／§10／§12／§12b／§14 為已補實文章、§9c／§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
 
 ## 1. 快速啟動（新機五步）
 
@@ -61,7 +61,7 @@ DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compo
 
 migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 `rev5:m001`→`m0001` 改名）。基線＝`m0001_baseline_schema`（結構）＋`m0002_baseline_seeds`（seed、完全決定性），程式內容逐位元承襲 rev5 終態（憲法 §I.5 例外②、ADR-00009／ADR-00010）；第一支 delta 自 `m0003` 起編。★例外②邊界稽核以 ADR-00009 之 17 檔為準：migration／entity 兩 crate 之 `main.rs`／`lib.rs`／`Cargo.toml` 五檔為承形自寫（env 橋接與 manifest 座標）、去註解後與 rev5 凍結樹只差改名級差異（模組名 `rev5:m001`→`m0001`、變數 `file_path`→`path`、其餘零差異）＝自然收斂，不屬例外②射程、亦非未登記拷貝（001 刀收單 `be69543` 訊息載 main.rs 一項）。重放＝`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm migrate`（＝migration up、容器內；已 applied 即回「No pending migrations」）；`seaql_migrations` 記錄名＝四碼新名。
 
-★**Day-1 登記紀律（隨刀常設）**：每支帶 migration 的刀**收刀前必跑**下列三步（契約＝`specs/001-schema-baseline/contracts/gates.md` §5；`rev4:` 紅燈裸奔兩刀教訓、`rev5:K1-39`）：
+★**Day-1 登記紀律（隨刀常設）**（與 `docs/generated/GATES.md`／RL-0051 之「Day-1 豁免」為同名不同物——本項是隨刀常設的 migration 登記三步、與閘的掃描面缺席豁免無關）：每支帶 migration 的刀**收刀前必跑**下列三步（契約＝`specs/001-schema-baseline/contracts/gates.md` §5；`rev4:` 紅燈裸奔兩刀教訓、`rev5:K1-39`）：
 
 1. `python3 tools/docsync refresh` —— 照相（schema／accounts 兩快照前進、六撈全成功才原子落檔；需運行中 stack）
 2. 登記 `docs/ops/reference-src/schema-evolution.json` —— 該刀**全部**結構／seed 變更逐筆入帳；形（kind 枚舉、每筆必備鍵、來源刀編號）與壞形斷言＝`specs/001-schema-baseline/contracts/schema-evolution.md` §2。
@@ -71,7 +71,7 @@ migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 
    - 一次性 pristine 場景加 `--container <容器名>`（預設＝compose dev stack）。
    - 判讀提示：同庫反覆 DROP→ADD COLUMN（含 down→up）後 gate1 會因 PG attnum 空洞報 ordinal 差——補救＝pristine 重放、勿誤判真漂移（承 `rev5:RUNBOOK` §10 實證）。
 
-新業務表另備兩件：先補 `docs/ops/reference-src/schema-definition.md` §1 archetype 歸屬、再登記 `docs/ops/reference-src/archetype-map.json`——否則 audit 表清單守門攔。
+新業務表另備兩件（★跨刀活體一律指 `docs/ops/reference-src/schema-definition.md`；`specs/001-schema-baseline/data-model.md` 為凍結存證、不再前進＝ADR-00012）：先補 `docs/ops/reference-src/schema-definition.md` §1 archetype 歸屬、再登記 `docs/ops/reference-src/archetype-map.json`——否則 audit 表清單守門攔。
 
 ## 11. 觀測層維運
 
@@ -89,14 +89,16 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/docsync rules emit --scope <implementer\|review\|fix\|主線\|人> [--format js]` | 規則塊＋`RULES-VERSION`（Workflow script 必帶、PreToolUse hook 對賬） | 否 |
 | `python3 tools/docsync errata <詞>` | 全 repo（含兩子庫 pin 樹）同語意枚舉 | 否 |
 | `python3 tools/docsync vendored-check [--rev5 <路徑>]` | 憲法 §I.5 例外① 自證：`rust-api/sea-orm-adapter` 全部 tracked 檔去整行註解後 diff rev5 凍結樹、差異須逐對在 `tools/docsync/vendored.py` 具名 ALLOWLIST（附理由）；bootstrap 3c 步呼叫；rev5 樹缺席 rc 2、差異 rc 1 | 否 |
+
+★例外①自證射程＝`rust-api/sea-orm-adapter`；憲法 §I.5 例外①另列名之 `xdb` 在 rev6 與 rev5 凍結樹**皆無實例**（rev5 dev 尾巴、001 spec 明列不入刀），日後若進場須同批擴 `tools/docsync/vendored.py` 之 `VENDORED_DIR` 射程。
 | `python3 tools/docsync test` | 治理工具自測（語料面 tests/） | 否 |
 | `python3 tools/docsync refresh` | 自實庫撈 schema／accounts 兩快照（`docs/ops/reference-src/{schema,accounts}-snapshot.json`；六撈全成功才原子落檔；Day-1 三步之①、§10） | 是 |
-| `python3 tools/schema-gate.py check｜test｜doccheck` | check＝三閘全跑（gate1 結構／gate2 欄序＋seed／audit archetype；三閘左源與判準＝ADR-00010；入口先自證 self-test；不進 pre-commit、手動／review 輪跑；一次性 pristine 加 `--container <容器名>`）／test＝離線自測（含 negative 五類）／doccheck＝data-model §2／§6／§9 vs 凍結 fixtures 離線對賬（★不入 pre-commit 常跑鏈、護雙錨）；rc 0 全等／1 差異／2 環境或結構異常／64 用法錯 | check 是；test／doccheck 否 |
+| `python3 tools/schema-gate.py check｜test｜doccheck` | check＝三閘全跑（gate1 結構／gate2 欄序＋seed／audit archetype；三閘左源與判準＝ADR-00010；入口先自證 self-test；不進 pre-commit、手動／review 輪跑；一次性 pristine 加 `--container <容器名>`）／test＝離線自測（含 negative 五類）／doccheck＝活體定稿 `docs/ops/reference-src/schema-definition.md` §2／§6／§9 vs 凍結 fixtures 離線對賬（左源座標＝ADR-00012）（★不入 pre-commit 常跑鏈、護雙錨）；rc 0 全等／1 差異／2 環境或結構異常／64 用法錯 | check 是；test／doccheck 否 |
 | `python3 tools/entity-drift-gate.py check｜test` | check＝`rust-api/entity/src` vs schema 快照雙向比對（表／欄完整性＋型別＋可空性；欄序歸 gate2、index／constraint 歸 gate1）——pre-commit entity-drift 段於 rust-api pin bump 或快照 staged 時實跑、★快照缺席即紅（hook 段 rc 2＋提示 `python3 tools/docsync refresh` 照相）／test＝自測；rc 同上 | 否 |
 | `python3 tools/rust-fmt-gate.py check｜test` | check（預設）＝rust-api 容器內 `cargo fmt --all --check` 唯讀比對（設定＝`rust-api/rustfmt.toml`）；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0、未格式化 rc 1（逐段計數＋補救命令）、容器在而 cargo-fmt 缺 rc 2／test＝離線自測（subprocess 全樁）；rc 64 用法錯 | check 是（未起＝具名跳過）；test 否 |
 | `python3 tools/wire-schema.py extract｜check [--staged-gate]｜test` | extract＝base-web 容器內 typings→draft-07 JSON Schema 快照、原子寫 `rust-api/server/tests/fixtures/wire-schema.json`／check＝重抽至暫存與工作樹快照 byte 比對、絕不覆寫（`--staged-gate`＝staged base-web 區間零 typings 變動即跳過）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0、重抽失敗或快照缺席或不一致＝rc 2／test＝離線自測；rc 64 用法錯 | extract 是；check 未起＝具名跳過；test 否 |
 | `python3 tools/fork-delta-lint.py [test] [--constitution <path>]` | 無引數＝self-test＋全掃 base-web vs 源倉 `example` 基線（修改型缺 `原行:`／新增型缺圈界〔含新檔檔頭一行＋軌道×路徑〕／授權判定；rc 0 綠／1 違規／2 結構斷言敗或源倉未在 example）／test＝離線只跑 self-test（bootstrap 名冊）／`--constitution`＝只供自身變異驗證、日常一律預設憲法路徑；rc 64 用法錯 | 否（前置＝源倉在 example、bootstrap 斷言） |
-| `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對） | 否 |
+| `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]｜test` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對）；`test`＝離線自測，由 pre-commit 自測迴圈與 bootstrap 名冊呼叫——亦即冒煙 token 不可取字面 `test`（會被當自測子命令、CLAUDE.md §2） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
 | `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>` | Workflow script 組裝器（單元定義→成品；unitdef `MODE` 決定 tdd／review 拼接序；三道自檢＝RULES-VERSION 對賬／node --check／harness，任一紅不留產物） | 否 |
 | `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | TDD 形編排骨架 harness 自測（十五案＝十二正例＋三反例、逐項斷言、rc 1 即紅） | 否 |
@@ -111,7 +113,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
-**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數，現＝`tools/wf-watchdog.py`）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）。
+**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數，現＝`tools/wf-watchdog.py`）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。
 
 | 工具檔 | 守什麼 | 觸發時機（含環境缺席語意） | 根據 ADR |
 |---|---|---|---|
@@ -120,7 +122,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `tools/rust-fmt-gate.py` | rust 格式：容器內 `cargo fmt --all --check`（唯讀、絕不寫檔） | pre-commit rust-fmt 段＝`rust-api` pin bump 或本體 staged 時 `check`；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0；容器在而 cargo-fmt 缺＝rc 2 fail-loud；未格式化＝rc 1；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud；承 rev5:ADR 0057 決定 3） |
 | `tools/wire-schema.py` | wire 契約：base-web typings → JSON Schema 快照 byte 比對（快照＝`rust-api/server/tests/fixtures/wire-schema.json`；唯讀鐵則、前端 porcelain 前後皆空） | pre-commit wire-schema 段＝`base-web` pin bump 時 `check --staged-gate`（staged 區間零 typings 變動即跳過）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0；容器在而重抽失敗、快照缺席或不一致＝rc 2；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意） |
 | `tools/fork-delta-lint.py` | base-web fork-delta 標記：修改型缺 `原行:`／新增型缺圈界（含我方新檔之檔頭一行標記＋所稱軌道×檔路徑相符）／授權判定（憲法 §III.1 檔面收窄＋§III.2 三元組）＋名冊結構斷言（空 ★表以哨兵句守；§III.1 範圍欄反引號 token 集對賬本工具常數、次序不計，不符即 rc 2＝Amendment 須同批重導新增面判定） | pre-commit fork-delta 段＝`base-web` pin bump、本體或憲法 staged 時全掃（源倉在 `example`＝bootstrap 斷言；源倉缺席＝rc 2 fail-loud、hook 不設跳過分支）；`test`＝離線自測、入 bootstrap 名冊 | 憲法 §III（標記字面 `rev6-inline`＋★軌道授權）；哨兵句改形＝002 刀 research R10 |
-| msg key 跨端閘 | 後端錯誤 msg key 名冊 ⇔ 前端 i18n 字典（非 `tools/` 工具檔形、GT-12 腿不計） | 延前端 i18n 刀進場（觸發由 BACKLOG 條目承載）；002 刀只閉後端側名冊（註記列） | ADR-00017（msg key 跨端契約延前端 i18n 刀、002 後端側閉環；承 rev5:Lint24） |
+| msg key 跨端閘 | 後端錯誤 msg key 名冊 ⊆ 前端 i18n 字典（單向包含＝ADR-00017 決定 3；前端字典含大量與後端 msg 無關的 UI 鍵，雙向必恆紅）（非 `tools/` 工具檔形、GT-12 腿不計） | 延前端 i18n 刀進場（觸發由 BACKLOG 條目承載）；002 刀只閉後端側名冊（註記列） | ADR-00017（msg key 跨端契約延前端 i18n 刀、002 後端側閉環；承 rev5:Lint24） |
 
 ## 12b. 收刀簿記牆鐘量法（perf 事件 `close_bookkeeping` 的唯一命令形）
 
@@ -136,6 +138,16 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 `wall_s` 取兩位小數、`rc` 同記；事件另帶 `commit`（該簿記顆的 40 位 hex）與 `notes`（該顆 staged 面、哪些條件段未觸發）。append 後隨**下一顆** commit 入帳（該顆需同批 `generate` 重算 `reference/perf.md` 與 `STATE.md`）。
 
 同法適用 `precommit_chain`（量的是帶 gitlink 或工具本體的單元 commit，用以對雙錨 45／90 秒）。
+
+
+## 12c. 事件寫錯了怎麼辦（erratum 更正機制）
+
+`docs/ops/events.jsonl` 是 **append 型單一事實源：既有列永不改**。寫錯不回頭編輯，改為 append 一筆 `erratum` 事件；人讀面（MILESTONES／STATE／DECISIONS-INDEX／perf）吃的是套用更正後的視圖。
+
+- **可更正欄**（`ERRATUM_FIELDS`）：`merge`／`pins.web`／`pins.api`／`commit`／`adrs`／`probe`。前四者之 `corrected` 須為 40 位 hex SHA；`adrs` 須為 `ADR-NNNNN` 字串 list；`probe` 須為完整欄物件（形檢同 GT-02）。
+- **不可更正欄**：`summary`／`reason`／`notes` 等自由文字——寫錯只能在後續事件的 notes 說明，故落帳前務必看過一遍。
+- **形**：`{"type":"erratum","date":"YYYY-MM-DD","target_line":<events.jsonl 行號>,"field":"<欄>","corrected":<新值>,"reason":"<單行理由>"}`；`target_line` 指向被更正那一列的行號。
+- ★與 `python3 tools/docsync errata <詞>` **不是同一件事**：後者是跨檔假述枚舉工具（RL-0001），用於改字面後掃全 repo 殘留；本節講的是事件帳的更正機制。檢索「勘誤」二字時請先分辨要的是哪一個。
 
 ## 13. 故障排除速查
 

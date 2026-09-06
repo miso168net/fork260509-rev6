@@ -17,7 +17,7 @@ fork260509-rev6/
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES、reference/perf、STATE（帳面統計與治理指標）、DECISIONS-INDEX（feature 欄）
 ├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   待辦兩卷 BL-NNNNN（開放／滯後；配號只在主檔；完成即刪、git 即史）
 ├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN（`LESSONS/` 首條 LL 落地時出現）
-├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；已補實文 §1／§7 抬頭／§10／§12／§14、§15 為指針、§9 部分補實、其餘隨刀補實
+├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；章節現況以本檔檔頭句為準（唯一人寫的家）
 ├── docs/ops/reference-src/         人寫／照相真源：`schema-snapshot.json`／`accounts-snapshot.json`（`python3 tools/docsync refresh` 照相）＋`archetype-map.json`＋`schema-evolution.json`（演進帳）＋`schema-definition.md`（欄語意權威、ADR-00012）
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）

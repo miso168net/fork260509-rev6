@@ -335,7 +335,7 @@ def gen_reference_agents(ctx):
             for m in RE_OPTS.finditer(ctx.text(rel) or ""):
                 rows.append(f"| {os.path.basename(rel)} | {m.group(1)} | {m.group(2)} | {m.group(3)} |")
     lines = [GENERATED_HEADER, "# reference/agents — 編排 script 的模型與 effort 名冊", "",
-             "來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面（generate 重算）；"
+             "來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面；★`EXAMPLE-*.mjs` 列＝組裝當時的成品快照，換模真源恆為 `_sk_head.js`（generate 重算）；"
              "角色×刻板型×產物進哪道閘＝`docs/process/P-E2-agent-registry.md`（人寫）；換模史＝git。", "",
              "| script | 常數 | model | effort |", "|---|---|---|---|"] + (rows or ["| — | — | — | — |"])
     return "\n".join(lines) + "\n"

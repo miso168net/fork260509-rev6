@@ -1,7 +1,7 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
 # reference/agents — 編排 script 的模型與 effort 名冊
 
-來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面（generate 重算）；角色×刻板型×產物進哪道閘＝`docs/process/P-E2-agent-registry.md`（人寫）；換模史＝git。
+來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面；★`EXAMPLE-*.mjs` 列＝組裝當時的成品快照，換模真源恆為 `_sk_head.js`（generate 重算）；角色×刻板型×產物進哪道閘＝`docs/process/P-E2-agent-registry.md`（人寫）；換模史＝git。
 
 | script | 常數 | model | effort |
 |---|---|---|---|

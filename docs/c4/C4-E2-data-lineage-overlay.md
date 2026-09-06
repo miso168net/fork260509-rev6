@@ -15,7 +15,7 @@ rad_ai_map:
 
 ### 資料源清冊
 
-目前無 AI 資料源；系統資料源＝postgres（主庫）、redis（快取／會話）、compose 設定檔（`deploy/`），皆列於 `C4-L2-container.md` 表。清冊欄定義（AI 資料源進場時同批填）：
+目前無 AI 資料源；系統資料源＝postgres（主庫）與 redis（快取／會話），兩者皆列於 `C4-L2-container.md` 表；`deploy/` 之 compose 設定檔為以 bind mount 掛進表列服務的設定真源、本身非 C4-L2 節點。清冊欄定義（AI 資料源進場時同批填）：
 
 | 欄 | 內容 |
 |---|---|

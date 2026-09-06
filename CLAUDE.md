@@ -98,7 +98,7 @@
 - **初始化／新機器**：clone 外層後跑 **`bash tools/bootstrap.sh`**（一鍵幂等：源倉 clone＋worktree 重建＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋例外①自證＋
   docsync test／check／lint＋閘數＋secrets 體檢；舊機重跑＝純體檢）。`git submodule update --init` 僅限唯讀快速看碼捷徑，且只適用**尚無 worktree 的全新 clone**（已有 worktree 者永不 update、見本節上一條）——該模式無源倉＝無基線、不可做 base-web 開發。
 - **upstream rebase**（base-web）：fetch 前 `git remote -v` 確認 upstream push URL 已設 no_push；rebase＋force-with-lease push 後**立即**回外層 bump pin；
-  基線前進＝拍板級（D14；先立 ADR 再改 bootstrap 的基線 SHA），`原行:` 註解同步更新為 upstream 現行版（憲法 §III rebase 同步紀律）。
+  基線前進＝拍板級（D14；先立 ADR＋走憲法 §V.2 Amendment 改 §I.1／§III 基線 SHA，再改 bootstrap 的 BASEWEB_BASE_SHA），`原行:` 註解同步更新為 upstream 現行版（憲法 §III rebase 同步紀律）。
 - 子庫 push 一律顯式 `git -C <子庫>` 形＋長名；push／merge 回 default 需 user 當次明確同意（憲法 §I.8、RL-0044）。
 - exec bit 在 drvfs 上以 `git update-index --chmod=+x` 落 index（GT-09 名冊斷言 100755）。
 - 故障排除→`docs/ops/LESSONS.md`（rev6 自零起）；前代候選＝rev5 `docs/ops/LESSONS.md`（唯讀、引用帶 `rev5:`）。

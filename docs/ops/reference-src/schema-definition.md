@@ -1,7 +1,7 @@
 # schema-definition — rev6 schema 定稿權威（人寫左源；跨刀活體）
 
 > **身分**：本檔＝rev6 現行 schema 定稿的唯一人寫權威（**左源**）；右源＝`docs/ops/reference-src/schema-snapshot.json`（實庫照相）；兩者差額由 `docs/ops/reference-src/schema-evolution.json`（演進帳）逐筆解釋。歸屬面另居 `archetype-map.json`。
-> **與凍結存證的分工**（BL-00022、ADR 待立）：本檔內容抽自 `specs/001-schema-baseline/data-model.md`（001 刀收刀凍結態），該檔留為 001 當下史料、**不再前進**；本檔隨每支帶 migration 的刀前進（RUNBOOK §10 Day-1 登記紀律）。形同 `specs/001-schema-baseline/fixtures/`（凍結面）與 `schema-snapshot.json`（活體面）的既有二分。
+> **與凍結存證的分工**（ADR-00012；起因 BL-00022 已收）：本檔內容抽自 `specs/001-schema-baseline/data-model.md`（001 刀收刀凍結態），該檔留為 001 當下史料、**不再前進**；本檔隨每支帶 migration 的刀前進（RUNBOOK §10 Day-1 登記紀律）。形同 `specs/001-schema-baseline/fixtures/`（凍結面）與 `schema-snapshot.json`（活體面）的既有二分。
 > **節號**：保留與凍結存證相同的十節編號（`tools/schema-gate.py` 的 §2／§6／§9 解析靠 `## N. … ## N+1.` 節邊界定位）。§3／§4／§10 屬 001 及更早的史述、不隨刀前進，本檔只留指針。
 
 ## 1. archetype 歸屬（15 表；憲法 §I.6 四變體）
