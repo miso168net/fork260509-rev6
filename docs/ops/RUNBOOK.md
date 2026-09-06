@@ -147,6 +147,7 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 - **可更正欄**（`ERRATUM_FIELDS`）：`merge`／`pins.web`／`pins.api`／`commit`／`adrs`／`probe`。前四者之 `corrected` 須為 40 位 hex SHA；`adrs` 須為 `ADR-NNNNN` 字串 list；`probe` 須為完整欄物件（形檢同 GT-02）。
 - **不可更正欄**：`summary`／`reason`／`notes` 等自由文字——寫錯只能在後續事件的 notes 說明，故落帳前務必看過一遍。
 - **形**：`{"type":"erratum","date":"YYYY-MM-DD","target_line":<events.jsonl 行號>,"field":"<欄>","corrected":<新值>,"reason":"<單行理由>"}`；`target_line` 指向被更正那一列的行號。
+- **ID 家族的家不同**：ADR 的家是 `docs/arc42/decisions/` 檔案本身（accepted 後不可變、永久留存），故**不設**「誕生必帶事件」的反向不變式（ADR-00025）；BL 反之——完成即刪列（RL-0050），離了事件就無處可查，故其誕生必帶某筆事件的 `backlog_add`（GT-03 反向腿）。
 - ★與 `python3 tools/docsync errata <詞>` **不是同一件事**：後者是跨檔假述枚舉工具（RL-0001），用於改字面後掃全 repo 殘留；本節講的是事件帳的更正機制。檢索「勘誤」二字時請先分辨要的是哪一個。
 
 ## 13. 故障排除速查
