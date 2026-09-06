@@ -59,7 +59,7 @@ DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compo
 
 ## 10. migration 操作
 
-migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 `rev5:m001`→`m0001` 改名）。基線＝`m0001_baseline_schema`（結構）＋`m0002_baseline_seeds`（seed、完全決定性），程式內容逐位元承襲 rev5 終態（憲法 §I.5 例外②、ADR-00009／ADR-00010）；第一支 delta 自 `m0003` 起編。重放＝`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm migrate`（＝migration up、容器內；已 applied 即回「No pending migrations」）；`seaql_migrations` 記錄名＝四碼新名。
+migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 `rev5:m001`→`m0001` 改名）。基線＝`m0001_baseline_schema`（結構）＋`m0002_baseline_seeds`（seed、完全決定性），程式內容逐位元承襲 rev5 終態（憲法 §I.5 例外②、ADR-00009／ADR-00010）；第一支 delta 自 `m0003` 起編。★例外②邊界稽核以 ADR-00009 之 17 檔為準：migration／entity 兩 crate 之 `main.rs`／`lib.rs`／`Cargo.toml` 五檔為承形自寫（env 橋接與 manifest 座標）、去註解後與 rev5 凍結樹只差改名級差異（模組名 `rev5:m001`→`m0001`、變數 `file_path`→`path`、其餘零差異）＝自然收斂，不屬例外②射程、亦非未登記拷貝（001 刀收單 `be69543` 訊息載 main.rs 一項）。重放＝`docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm migrate`（＝migration up、容器內；已 applied 即回「No pending migrations」）；`seaql_migrations` 記錄名＝四碼新名。
 
 ★**Day-1 登記紀律（隨刀常設）**：每支帶 migration 的刀**收刀前必跑**下列三步（契約＝`specs/001-schema-baseline/contracts/gates.md` §5；`rev4:` 紅燈裸奔兩刀教訓、`rev5:K1-39`）：
 
