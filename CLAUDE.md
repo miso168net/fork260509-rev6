@@ -42,6 +42,7 @@
 　implementer(TDD) → spec-compliance review → fix 迴圈 → code-quality review → fix 迴圈。
 　★每個 agent prompt 烤進不可違反項＝`python3 tools/docsync rules emit --scope <implementer|review|fix>` 產出塊
 　（整塊烤入、含末行 RULES-VERSION；PreToolUse hook 對賬、不符即擋；規則本體住 docs/ops/RULES.md、不在此重抄）。
+　★單元定義→成品一律 `python3 tools/orchestration/assemble.py <uN.py> <uN.mjs>`（tdd／review 雙模式、三道自檢＝RULES-VERSION 對賬／node --check／harness；review 形骨架＝獨立輪與 final holistic review 用的 lens／兩鏡三態／grader／critic，範本＝`tools/orchestration/EXAMPLE-review-*-unitdef.py`）。
 　★fix 後次輪 review prompt 必附前輪已駁回 findings 清單（RL-0071）；code-quality review 烤進可見性放寬審查面（RL-0070）。
 ★workflow script 防呆六件套（缺一不發射；RL-0058～RL-0062、RL-0004／RL-0012／RL-0025）：
 　①agent prompt 全數烤進 script 本體模板字串；args 只傳短純量、script 首段逐欄斷言（型別＋非空），不符→零派發即 throw。

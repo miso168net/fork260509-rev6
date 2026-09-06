@@ -11,3 +11,7 @@
 | _sk_head.js | IMPL_OPTS | fable[1m] | xhigh |
 | _sk_head.js | REVIEW_OPTS | opus[1m] | xhigh |
 | _sk_head.js | FIX_OPTS | opus[1m] | xhigh |
+| _sk_head.js | LENS_OPTS | opus[1m] | xhigh |
+| _sk_head.js | MIRROR_OPTS | opus[1m] | xhigh |
+| _sk_head.js | GRADER_OPTS | opus[1m] | xhigh |
+| _sk_head.js | CRITIC_OPTS | opus[1m] | xhigh |
