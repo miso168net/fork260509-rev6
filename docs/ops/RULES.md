@@ -4,7 +4,7 @@
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
 上限（D8；ADR-00011；數值續自其所翻案之 ADR-00004 表）：總 92｜implementer 48｜review 18｜fix 19｜主線 52｜人 12。scope 可多值、逗號分隔。
 carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --scope <s>` 產出）／lint（GT 閘機器守）／checklist（主線或人的單元邊界檢核）；source ∈ LL-NNNNN／ADR-NNNNN／rev5:L-NNN／rev5:ADR 00NN。
-改動本表走輕量軌（不走 Amendment）；配號取檔頭 next 後 bump、號碼不回收；每列規則句為命令句、不帶刀名。
+改動本表走輕量軌（不走 Amendment）；配號取檔頭 next 後 bump、號碼不回收；每列規則句為命令句、不帶刀名、≤2 行（GT-08 機器強制三項）。
 
 | id | 規則 | scope | carrier | source |
 |---|---|---|---|---|
@@ -18,7 +18,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0008 | 派發前對每個 task 問「它 import／呼叫／宣告的東西現在存在嗎」，不存在就往前追是誰該建（沒有任何 task 建＝派工單缺口）；agent 回 blocked 先判允許清單有無缺口、撞到就回頭修 tasks。 | 主線 | checklist | rev5:L-022 |
 | RL-0009 | resume 續跑時看門狗 ARMED 行的冒煙位元組是前一輪殘留；續跑冒煙改看最新 agent 檔（mtime＋本輪新字串）。 | 主線 | checklist | rev5:L-023 |
 | RL-0010 | resume 只用於故障續跑、不是讓某支 agent 重跑的手段；需某階段重跑＝新開一支只跑該階段的 workflow（新 runId），CONTEXT 寫清已完成結論與勿重報清單。 | 主線 | checklist | rev5:L-027 |
-| RL-0011 | 凡改變某數字／集合／方向／名稱／單一權威＝`grep -rn` 枚舉全 repo 同語意命中逐處回報；允許清單內自改、清單外依 status 分值升級；史述保留、現在式改對。 | implementer,fix,review | prompt | rev5:L-032 |
+| RL-0011 | 凡改變某數字／集合／方向／名稱／單一權威＝`grep -rn` 枚舉全 repo 同語意命中逐處回報；★掃描種子四形皆須跑：①該物之名 ②其未來式短語（「隨…刀進場」「尚無…」）③承載它的活書枚舉表 ④舊數量詞字面；允許清單內自改、清單外依 status 分值升級；史述保留、現在式改對。 | 主線,implementer,fix,review | prompt | rev5:L-032 |
 | RL-0012 | agent status 分 `blocked`（整件做不下去、主線立刻接手）與 `done_with_escalation`（交付已完成、只有清單外待辦、附 escalations）兩值；只有前者觸發 script 立即 return、後者照常進審查。 | implementer,fix | prompt | rev5:L-035 |
 | RL-0013 | 棄案論證寫完必回頭對所選方案跑同一反例；寫「結構性保證」前先找一條讓它不成立的輸入；雙上限設計必寫「只滿足其一時會怎樣」。 | 人,主線 | checklist | rev5:L-037 |
 | RL-0014 | 允許檔清單答「碰得到什麼」而非 task 寫了什麼：對實碼查值域／建構點／下游消費者，另納會因本單元改動而連動的釘值測所在檔、寧可多列。 | 主線 | checklist | rev5:L-042 |
@@ -49,7 +49,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0039 | 記錄跨元件相依與連鎖漂移路徑；不孤立描述單一元件。 | implementer | checklist | ADR-00004 |
 | RL-0040 | 文件深度依風險分級；低風險元件只做可見性層、不過度文件化。 | 人 | checklist | ADR-00004 |
 | RL-0041 | 活書 frontmatter 帶 `rad_ai_map` 對照鍵；正文子節名一律中文改寫、RAD-AI 文字不逐字複製（只在 README 一句參考來源）；對照總表由 generate 產、不手維護。 | implementer | lint | ADR-00004 |
-| RL-0042 | 一切書面產物（report／blocker／程式碼註解／文件／commit 訊息）一律 zh-TW；識別字、程式碼、路徑保留原形；每支 agent prompt 必含「zh-TW」字面。 | 主線,implementer,review,fix | prompt | ADR-00004 |
+| RL-0042 | 一切書面產物（report／blocker／程式碼註解／文件／commit 訊息）一律 zh-TW；識別字、程式碼、路徑保留原形；每支 agent prompt 必含「zh-TW」字面。具名例外二項（皆屬 ADR-00003 之 spec-kit「第三方面」）：①spec-kit git extension 自動 commit 之 `[Spec Kit]` 英文固定訊息 ②`/speckit-specify` 自產 `specs/*/checklists/requirements.md` 之內建檢核項文字。 | 主線,implementer,review,fix | prompt | ADR-00004 |
 | RL-0043 | review agent 只讀不寫 repo 檔；findings 只放回傳訊息。 | review | prompt | ADR-00003 |
 | RL-0044 | push／merge 回 default branch 需 user 當次明確同意；絕不在 finishing 之前 push／merge；tasks 清單不得排入 push／merge。 | 主線,人 | prompt | ADR-00003 |
 | RL-0045 | rust build／test 一律容器內、全程 serial（`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T rust-api cargo test --workspace -- --test-threads=1`）；rust 碼完工前容器內 `cargo fmt --all`。 | implementer,fix | prompt | rev5:ADR 0057 |
@@ -80,7 +80,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0070 | 可見性放寬（私有→pub）前先 grep 函式體內有無被 token 掃描閘守著的呼叫；有則以 finding 要求同批補消費者名冊閘、由 fix 輪落地。 | review,fix | prompt | rev5:L-069 |
 | RL-0071 | fix 後次輪 review prompt 必附前輪已駁回 findings 清單（file×summary＋駁回理由）、明令勿沿用被駁論據重報；同一 finding 再報須附新證據，否則計入收斂判定。 | 主線,review | prompt | ADR-00004 |
 | RL-0072 | rust 單元收尾除容器內 rc 綠外另跑 `python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事（碼面閘只看靜態形）。 | 主線 | checklist | rev5:L-064 |
-| RL-0073 | review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處二分：不定期獨立輪落 `docs/reviews/` 報告＋review 事件，feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。 | 主線,review | checklist | rev5:ADR 0075 |
+| RL-0073 | review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處三類：①不定期獨立輪落 `docs/reviews/` 報告＋review 事件 ②附屬某刀而由 user 臨時發起的對照輪同樣落報告＋review 事件、以其 `feature` 欄標所屬刀 ③feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。 | 主線,review | checklist | rev5:ADR 0075 |
 | RL-0074 | ADR 一決策一檔 `docs/arc42/decisions/ADR-NNNNN-<slug>.md`；accepted 後 body 不可變、翻案＝新檔帶 `supersedes: [舊號]`、`superseded_by` 由 generate 回填；ADR 檔永不刪除、編號永不重用；won't-fix／by-design 亦立 ADR。 | 主線,人 | lint | ADR-00003 |
 
 ## 名詞
@@ -91,6 +91,6 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 - **活書家族**＝docs/arc42（不含 decisions/）、docs/c4、docs/compliance、docs/process；**現在式面**＝活書家族＋docs/arc42/decisions/（ADR 面：受裸編號與連結掃描、不受活書時態與形制腿）、docs/ops、docs/generated、README.md、CLAUDE.md、constitution、tools/、deploy/、.githooks/ 與 .githooks-submodule/、.claude/hooks 與 settings.json；**其他面**＝repo 根設定檔（compose 三檔、.gitmodules、.gitignore、.gitattributes、.gitleaks.toml、.sops.yaml、.env.example、.dockerignore）與兩 gitlink，不入現在式面、只受 GT-07 機密掃描（bash 面另受 GT-11）；**史料面**＝docs/brainstorms、specs、docs/reviews；**第三方面**＝.claude/skills、.specify（constitution 除外）；**語料面**＝tools/docsync/tests。後三面不受裸編號、時態、形制掃描。
 - **提及**＝反引號或「」內的引用、不算使用（裸編號閘不判）；**人審**＝merge 回 default 前 user 的當次明確同意＋拍板級親決（憲法 §I.8）。
 - **系統層**＝arc42 E 子節、docs/c4、docs/compliance 所述之 rev6 系統本體；**流程層**＝docs/process 所述之開發流程 AI 代理（啟動書 D16）；**例外註冊**＝住 docs/generated/ 之外但入 GENERATED_FILES 名冊的生成物（`docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`）。
-- **獨立輪**＝RL-0073 的不定期 review 輪（非刀、非波）；分支與 misc 事件 workflow 欄用 `000-rN-<scope>`（N＝輪序號、`000-` 家族免裸刀名閘）、報告住 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件。
+- **獨立輪**＝RL-0073 承載處①之不定期 review 輪（非刀、非波）；分支與 misc 事件 workflow 欄用 `000-rN-<scope>`（N＝輪序號、`000-` 家族免裸刀名閘）、報告住 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件。★附屬某刀之臨時對照輪（RL-0073 承載處②）不套 `000-rN` 分支形，其 review 事件以既有 optional `feature` 欄標所屬刀、misc 事件 workflow 欄可缺（實例＝`spec-compliance-001`）。
 - **隨遷工具**＝啟動書 D10／§4.5 授權自 rev5 整檔搬運的 tools/、deploy/、.githooks／.githooks-submodule、.claude/hooks 與編排骨架：逐字承襲允許、憲法 §I.5 的重打字紀律不及於此；但其註解與字串字面的四型失效引用（章節號指到 rev6 不存在的節、無前綴前代編號、rev5 語境事實、repo 外權威）須 rev6 化（憲法 §I.5 例外②之資料形狀契約三件〔基線結構 migration／基線 seed migration／entity 欄宣告〕依 ADR-00009 後果段適用同一四型判準；加 `rev5:`／`rev4:` 前綴、或改指 rev6 去處）。
 - **碼面閘**＝`tools/` 頂層對子庫碼或跨端契約做 check 的系統面機器閘（隨刀進場、不計入 GT-12 治理閘預算、名冊＝RUNBOOK §12 碼面閘表；環境缺席＝具名跳過、工具缺席＝fail-loud）；**治理閘**＝GT-NN（名冊＝GATES.md）。

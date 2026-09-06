@@ -13,7 +13,7 @@
 
 ## 帳面統計
 - ADR：25（proposed 0、accepted 24、superseded 1）
-- RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
+- RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 43/52、人 10/12）
 - BACKLOG 開放：8｜滯後：0
 - LESSONS：12 筆
 - events：41 筆（erratum 2、feature_close 2、misc 15、perf 19、review 3）
@@ -35,7 +35,7 @@
 | RULES implementer | 38 | 48 | 內 |
 | RULES review | 14 | 18 | 內 |
 | RULES fix | 15 | 19 | 內 |
-| RULES 主線 | 42 | 52 | 內 |
+| RULES 主線 | 43 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
 | docsync 行數 | 3075 | 4000 | 內 |
 
