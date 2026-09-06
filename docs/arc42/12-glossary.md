@@ -19,7 +19,7 @@ rev5_blueprint:
 | 軌道 | 憲法 §III 授權的 base-web 改動邊界類別（預設可動／★需顯式授權） | 憲法 §III |
 | `rev6-inline` 標記 | fork 改動的統一 token：修改型帶 `原行:`、新增型圈界；全 repo grep 即得 patch set | 憲法 §III |
 | 島 | 具狀態機性質的行為子系統（如 token rotation）；其不變式隨所屬域的刀 brainstorm 拍板後以 MINOR Amendment 入憲法 §I.7（進場規則）——「島 X 進場刀」即指該刀 | 憲法 §I.7 |
-| 事件源 | `docs/ops/events.jsonl`：五型事件（feature_close 收刀／misc 收單／review／erratum 勘誤／perf 效能資料點）的 append 型單一事實源；人讀 MILESTONES 與 reference/perf | CLAUDE.md §4 |
+| 事件源 | `docs/ops/events.jsonl`：五型事件（feature_close 收刀／misc 收單／review／erratum 勘誤／perf 效能資料點）的 append 型單一事實源；人讀面＝`docs/generated/` 之 MILESTONES／reference/perf／STATE／DECISIONS-INDEX | CLAUDE.md §4 |
 | 對照 stack | rev5 於 `../fork260509-rev5/` 起的 dev stack（埠 2xxxx）；UI 對照基準、唯讀 | CLAUDE.md §7 |
 
 停用／軟刪、踢除／撤銷、鎖定、重設／修改密碼四組域詞，隨憲法 §I.7 島 A～I 的進場刀入本表（rev5 活書 §12 為藍本）。

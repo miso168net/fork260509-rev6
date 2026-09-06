@@ -12,12 +12,13 @@ fork260509-rev6/
 ├── README.md                        本檔：人類入口導覽；下列樹之 tools/、deploy/、.githooks/、.claude/ 與實檔集由 GT-09 雙向對賬；docs/ 列項為地圖、出現時機標於括號
 ├── CLAUDE.md                        操作規則書：拓樸／工作流／git 手冊／文件規則／決策紀律／硬禁令／rev5 對照
 ├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.1.0＝ADR-00009；創世 1.0.0＝ADR-00003）
-├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00004；名詞段住此
+├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00011（數值續自其翻案之 ADR-00004 表）；名詞段住此
 ├── docs/ops/NOTES.md                當前意圖；首行 <!-- wave: N --> 為「現在波」唯一真源
-├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES 與 reference/perf
+├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES、reference/perf、STATE（帳面統計與治理指標）、DECISIONS-INDEX（feature 欄）
 ├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   待辦兩卷 BL-NNNNN（開放／滯後；配號只在主檔；完成即刪、git 即史）
 ├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN（`LESSONS/` 首條 LL 落地時出現）
 ├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；已補實文 §1／§7 抬頭／§10／§12／§14、§15 為指針、§9 部分補實、其餘隨刀補實
+├── docs/ops/reference-src/         人寫／照相真源：`schema-snapshot.json`／`accounts-snapshot.json`（`python3 tools/docsync refresh` 照相）＋`archetype-map.json`＋`schema-evolution.json`（演進帳）＋`schema-definition.md`（欄語意權威、ADR-00012）
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
 ├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents,schema,accounts,routes}
@@ -82,10 +83,12 @@ fork260509-rev6/
 4. `docs/generated/STATE.md`（現況帳：pins／現在波／帳面統計／治理指標／預算對賬）→ `docs/ops/NOTES.md`（下一步）。
 5. 啟動書 `docs/brainstorms/000-doc-architecture.md`（設計依據；史料面）。
 
+★動工前掃 `docs/ops/BACKLOG.md` 的觸發欄——指名「本刀會踩到」的條目要當輸入。
+
 ## 操作快速入口
 
 - 新機重建／體檢：`bash tools/bootstrap.sh`（幂等；掃描防線 die 級、remote 未設只 ⚠）。
-- 治理工具：`python3 tools/docsync generate`｜`check`｜`lint`｜`refresh`（需 dev stack postgres）｜`rules emit --scope implementer [--format js]`｜`errata <詞>`｜`test`。
+- 治理工具：`python3 tools/docsync generate`｜`check`｜`lint`｜`refresh`（需 dev stack postgres）｜`rules emit --scope implementer [--format js]`｜`errata <詞>`｜`vendored-check`（憲法 §I.5 例外① 自證＝bootstrap 3c 步）｜`test`。
 - 機密：`deploy/secrets/README.md`（產鑰→生成→加密→解密；離線復原鑰＝rev5:RUNBOOK §15.5 義務）。
 - dev stack：`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait`（埠表＝`docs/generated/reference/ports.md`）。
 
@@ -98,6 +101,9 @@ fork260509-rev6/
 | 我要開新刀（從哪起手） | `docs/ops/NOTES.md` 下一步 → `CLAUDE.md` §2 階段 0 → `docs/brainstorms/<NNN>-<feature-name>.md` |
 | feature 分支與 specs 目錄怎麼來 | `CLAUDE.md` §2 SDD 段（分支＝before_specify hook 建、目錄＝`/speckit-specify` 自建並寫 `.specify/feature.json`；序號設定＝`.specify/extensions/git/git-config.yml`、`.specify/init-options.json`） |
 | 哪些規則、誰守 | `docs/ops/RULES.md`、`docs/generated/GATES.md` |
+| 哪些碼面閘在守子庫碼與跨端契約 | `docs/ops/RUNBOOK.md` §12 碼面閘表（名冊唯一權威、ADR-00016；治理閘另見 `docs/generated/GATES.md`） |
+| 踩過什麼坑、怎麼避 | `docs/ops/LESSONS.md`（索引、機器生成；全文＝`docs/ops/LESSONS/` 一坑一檔） |
+| 還欠什麼、下一批做什麼 | `docs/ops/BACKLOG.md`、`docs/ops/BACKLOG-DEFERRED.md`（條目帶觸發欄） |
 | git／submodule 怎麼操作（兩段式 commit、pin 判方向） | `CLAUDE.md` §3 |
 | 怎麼操作（起停、機密、工具） | `docs/ops/RUNBOOK.md` |
 | 系統長怎樣（活書索引） | `docs/arc42/ARCHITECTURE.md`（機器生成；節檔住 `docs/arc42/`） |
