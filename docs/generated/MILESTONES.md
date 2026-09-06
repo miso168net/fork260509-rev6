@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | misc | governance｜maint-backlog-21 | 輕量軌 maint-backlog-21 收單：BL-00021 憲法 §I.5 例外②邊界定性——RUNBOOK §10 補一句「migration／entity 兩 crate 之 main.rs／lib.rs／Cargo.toml 五檔為承形自寫之自然收斂（去註解後只差改名級差異）、不屬例外②射程亦非未登記拷貝、稽核以 ADR-00009 之 17 檔為準」；ADR-00009／憲法不動。 | 3b42b40 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-25 | 輕量軌 maint-backlog-25 收單：BL-00025 憲法 §I.5 例外① 自證腿——docsync vendored-check（rust-api/sea-orm-adapter 全部 tracked 檔去整行註解後 diff rev5 凍結樹、差異須逐對在 tools/docsync/vendored.py 具名 ALLOWLIST 附理由、rev5 側存雜湊）＋bootstrap 3c 步每台機器體檢；ADR-00009 不動；LL-00012。 | c705ab2 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-23 | 輕量軌 maint-backlog-23 收單：BL-00023 pre-commit 接線機器守衛——tools/docsync/tests/test_hook_wiring.py 純函式對賬固定鏈、七條件段觸發／命令字面、for 自測名冊 ⊇ 碼面閘表∪NON_GATE_TOOLS、未登記段即紅（一正六反）；hook 新段 orchestration（tools/orchestration 之 js|mjs|py staged→三支入庫範例組裝＋harness）；hook 本體 staged 亦跑 docsync test。 | 24d4e2a | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-6 | 輕量軌 maint-backlog-6 收單：BL-00006 review 骨架入庫——_sk_review.js（lens／兩鏡三態／grader／critic）與 TDD 形共用 _sk_head.js、assemble.py 雙模式組裝器、harness-test 十五案／harness-review 九案、三支單元定義範例、agents.md 七角色入冊；dogfood 自審一輪三分流；ADR-00020 GT-09 子名冊腿；BL-00032～34 當批收掉、BL-00034 併 BL-00023。 | eda591d | ADR-00020 | — |
@@ -24,6 +25,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜misc｜governance｜maint-backlog-21
+
+user 拍板 2026-09-07 口徑①（三選一：①RUNBOOK §10 一句＋本事件 notes、不動憲法／ADR／②新 ADR＋憲法 Amendment 記此定性／③won't-fix ADR）。實核（五檔去整行註解、去行尾空白、去空行後 diff rev5 凍結樹 rust-api 92919b9）：migration/src/main.rs 6 行＝變數 file_path→path；migration/src/lib.rs 6 行＝模組名 rev5:m001→m0001、rev5:m002→m0002；entity/src/lib.rs、migration/Cargo.toml、entity/Cargo.toml 各 0 行——與條目原述一致（001 刀收單 be69543 訊息載 main.rs 一項）。定性＝40 行 env 橋接與 manifest 座標「承形自寫」之自然收斂、非例外射程擴張；ADR-00009「日後任何第 18 檔要拷＝新 Amendment」尾句仍成立、五檔不計入。純文件變更、無測試面；驗證＝docsync check 零漂移／lint 0/0/0／pre-commit 全綠。
 
 ### 2026-09-07｜misc｜governance｜maint-backlog-25
 
