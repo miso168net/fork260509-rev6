@@ -22,3 +22,4 @@
 | ADR-00017 | accepted | 2026-09-05 | msg key 跨端契約延至首個接 i18n 的前端刀，002 只閉後端側 msg key 名冊 | 002-system-settings | — | — |
 | ADR-00018 | accepted | 2026-09-05 | pre-commit entity-drift 段之 schema 快照缺席由 Day-1 具名跳過改為 rc 2 擋下並提示照相 | 002-system-settings | — | — |
 | ADR-00019 | accepted | 2026-09-05 | 容器依賴型碼面閘之環境缺席語意——docker 或對應容器不在＝具名跳過 rc 0、容器在而工具缺或重抽失敗＝fail-loud | 002-system-settings | — | — |
+| ADR-00020 | accepted | 2026-09-07 | 編排骨架子名冊＝tools/orchestration/README.md 檔表，由 GT-09 新腿對賬 tools/orchestration/ 實檔集 | 輕量軌 | — | — |

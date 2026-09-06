@@ -12,7 +12,7 @@ rad_ai_map:
 
 ### 模型清冊表
 
-類比張力：對得上——名冊分兩家：角色×刻板型×產物閘是人的判斷（本表），模型與 effort 是 script 常數（生成表＝`docs/generated/reference/agents.md`、本表不重抄）。
+類比張力：對得上——名冊分兩家：角色×刻板型×產物閘是人的判斷（本表），模型與 effort 是 script 常數（生成表＝`docs/generated/reference/agents.md`、本表不重抄）。角色→OPTS 常數之實際綁定見 `tools/orchestration/_sk_review.js`／`_sk_cycle.js` 派發處；★探針（冷啟動）復用 `LENS_OPTS`、refuter 復用 `MIRROR_OPTS`，無獨立常數。
 
 | 角色 | 刻板型（C4-E1） | 產物 | 進哪道閘 |
 |---|---|---|---|
@@ -20,6 +20,11 @@ rad_ai_map:
 | implementer | ML 模型 | 工作樹改動＋回傳 | review 輪；主線復核 |
 | review | ML 模型（只讀） | findings | 三分流（RL-0073） |
 | fix | ML 模型 | 允許清單內改動 | 次輪 review（RL-0071） |
+| lens（review 形探索） | ML 模型（只讀） | findings＋coverage | 兩鏡三態（`_sk_review.js`） |
+| 探針（冷啟動） | ML 模型（只讀、不帶脈絡） | 作答紀錄 | grader 評分（檢索性指標候選＝BL-00007） |
+| mirror（R-real／R-decided 兩鏡） | ML 模型（只讀） | 三態 verdicts | 主線三分流（RL-0073） |
+| grader（探針評分） | ML 模型（只讀） | grades＋衍生 findings | refuter 單鏡→三分流 |
+| critic（完整性） | ML 模型（只讀） | gaps／unverified | 補漏 run 或 BACKLOG |
 | CDP 代理 | ML 模型 | 走查回報 | 驗證審查（RL-0033） |
 | 看門狗 | 監測 | stall／runaway 告警 | 與 Workflow 原子成對（RL-0061） |
 | user | 人在迴圈 | 拍板、merge 同意 | 憲法 §I.8 |

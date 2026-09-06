@@ -1,4 +1,4 @@
-<!-- next: BL-00032 -->
+<!-- next: BL-00035 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -9,7 +9,7 @@
 - BL-00006｜governance｜review 骨架入庫：000-r1 三支 script（探索／驗證／補漏）與組裝器住 tmp（★報告 §0 實記四支 run 的 runId 與 agent 數、非 sha256——條目原述失準，2026-09-05 實查更正）；可重用骨架（lens／兩鏡三態／grader／critic）入 `tools/orchestration/`、agents.md 自動入冊；單元 script 組裝器（`001-schema-baseline` 之 session 工作檔 `tmp/001-assemble.py`：八段拼接＋三道自檢）同批入庫｜觸發：第二次獨立 review 輪開分支時
 - BL-00007｜governance｜檢索性第四指標候選：冷啟動探針（命中率／平均 hops／≤3 跳比例）與否定對照題（答錯數）入 STATE 需新 generated 欄＋資料源（ADR）｜觸發：第二次獨立 review 輪
 - BL-00021｜governance｜憲法 §I.5 例外②射程鎖 17 檔，但五個宣告「自寫」的檔去註解後與 rev5 程式面等價（`migration/src/main.rs` 僅差變數改名 `file_path`→`path`、`migration/src/lib.rs` 僅差 `m001`→`m0001` 模組名、`entity/src/lib.rs` 與兩支 member `Cargo.toml` 零差異）：屬 40 行 env 橋接與 manifest「承形自寫」的自然收斂、非例外射程擴張（001 收單 commit be69543 訊息已記 main.rs 一項），但機器面分不出「重打字收斂」與「拷貝」，日後做例外邊界稽核會撞見沒人記過的近全等——在下一次動 §I.5 相關文件時補一句定性｜觸發：下一次動憲法 §I.5 或 ADR-00009 射程的刀
-- BL-00023｜governance｜pre-commit 碼面閘接線（rust-fmt／wire-schema／fork-delta／entity-drift／schema-frozen 五段＋`for` 自測迴圈名冊）零機器守衛——002 刀 U0 變異實測：刪三段後 `python3 tools/docsync lint` 仍 0 錯、三支 self-test 仍綠；rev5 曾以 `rev5:tools/docs-sync.py` TestGateWiring 乾跑案釘住、隨遷未帶進 rev6。候選＝`tools/docsync/tests/` 加語料面案讀真 `.githooks/pre-commit` 斷言各段觸發條件與命令字面、或 GT-12 加腿（一進一出）｜觸發：下一支碼面閘進場的刀、或任一 hook 段被誤刪實例出現時
+- BL-00023｜governance｜pre-commit 碼面閘接線（rust-fmt／wire-schema／fork-delta／entity-drift／schema-frozen 五段＋`for` 自測迴圈名冊）零機器守衛——002 刀 U0 變異實測：刪三段後 `python3 tools/docsync lint` 仍 0 錯、三支 self-test 仍綠；rev5 曾以 `rev5:tools/docs-sync.py` TestGateWiring 乾跑案釘住、隨遷未帶進 rev6。候選＝`tools/docsync/tests/` 加語料面案讀真 `.githooks/pre-commit` 斷言各段觸發條件與命令字面、或 GT-12 加腿（一進一出）；★同族併入（maint-backlog-6 dogfood L2-5 兩鏡確認）：編排骨架 `tools/orchestration/*.js|*.mjs` 改動亦無 pre-commit 段（harness 只在 `assemble.py` 組裝時跑、改壞骨架的 commit 可全綠落地），同一語料面案／hook 段一併涵蓋——暫存區含該面即以三支 EXAMPLE 組裝並跑兩支 harness（秒級、node 已是硬相依）｜觸發：下一支碼面閘進場的刀、任一 hook 段被誤刪實例出現時、或下一次動編排骨架的維護批
 - BL-00025｜governance｜憲法 §I.5 例外①（`sea-orm-adapter/` 5 支整檔拷貝自 rev5@92919b9）零機器自證面——ADR-00009 條件①逐位元自證只鎖例外② 17 檔、entity-drift 閘只比 entity×快照、rust-fmt 閘紅時只能靠 `EXEMPT_WARN` 告誡停手；候選＝bootstrap 或 schema-gate 加對 rev5 凍結樹 `sea-orm-adapter/` 之 `diff -r` 自證腿（002 刀 U0 審查觀察）｜觸發：下一次動 rust-api 承襲面或 ADR-00009 射程的刀（與 BL-00021 同批）
 - BL-00026｜product｜server boot 沿 sea-orm 預設 `sqlx_logging`（INFO 級逐句印 SQL、compose `RUST_LOG=info` 下 boot log 首行即 sqlx notice）——rev5 以 `ConnectOptions::sqlx_logging_level(log::LevelFilter::Debug)` 降級（rev5:B-045、需具名 `log` crate），002 刀 research R1 判 `log` 為域外未進；候選＝進 `log`（lock 已有 0.4.33、零新套件）並降至 Debug、或 `sqlx_logging(false)`｜觸發：首次觀測層維護批、或 003 auth 刀 boot 鏈再動時
 - BL-00027｜product｜讀端 wire 集合≠registry 鍵集：`check_type_consistency` 第③臂讓宣告集外之列（setting_type 在認識集）照常上 wire——沿 rev5 讀端只驗認識集、spec FR-009 射程外（`rust-api/server/src/validation.rs` 已自陳）；若要求「registry 集合＝wire 集合」須另立拍板｜觸發＝設定頁 view 刀進場、或 registry 鍵集首次變動時

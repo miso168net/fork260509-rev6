@@ -13,7 +13,7 @@
 | GT-06 | RL-0048 | 引用斷鏈、時態混入 | rev5:ADR 0012 | tracked *.md；活書家族 | pre-commit | 1 | — | 死連結與未來式靜默入書 |
 | GT-07 | RL-0054 | 機密入版控 | rev5:ADR 0003 | tracked 文字檔＋SECRETS_DIR 實值 | pre-commit | 1 | — | 機密實值或樣式進 git 歷史、不可逆 |
 | GT-08 | RL-0049 | RULES↔LESSONS 對賬 | rev5:ADR 0024 | docs/ops/RULES.md；docs/ops/LESSONS/*.md | pre-commit | 1 | — | 規則層可無來源、教訓可不指向規則 |
-| GT-09 | RL-0057 | 接線與實檔集 | rev5:L-061 | README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED | pre-commit | 1 | — | hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉 |
+| GT-09 | RL-0057 | 接線與實檔集（含編排骨架子名冊） | rev5:L-061 | README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED、tools/orchestration/README.md 檔表（⇔ tools/orchestration/ tracked 檔集；ADR-00020） | pre-commit | 1 | — | hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉 |
 | GT-10 | RL-0035 | 佔位與樣板文、子項名冊（鍵集＋值↔標題）、圖表對賬 | ADR-00004 | BOOK_FACE（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process） | pre-commit | 1 | — | RAD-AI 表可空殼交卷（22/22 假滿分重演） |
 | GT-11 | RL-0056 | bash 黏字與 shebang | rev5:L-001 | 外層 tracked bash 面（*.sh ∪ sh shebang；含 deploy/、.githooks/） | pre-commit | 1 | — | macOS bash 3.2 unbound variable 炸在 preflight |
 | GT-12 | RL-0052 | 名冊同源與數量預算 | rev5:ADR 0024 | tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記 | pre-commit | 1 | — | 閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有 |

@@ -33,7 +33,7 @@ fork260509-rev6/
 │   ├── wire-schema.py               wire 契約閘：extract（typings→JSON Schema 快照、需 stack）／check [--staged-gate]（重抽 byte 比對、絕不覆寫；pre-commit wire-schema 段＝base-web pin bump 時、容器未起＝具名跳過 rc 0）／test（隨遷自 rev5）
 │   ├── fork-delta-lint.py           base-web fork-delta 標記閘：修改型缺原行／新增型缺圈界（含新檔檔頭一行＋所稱軌道×檔路徑）／授權判定（§III.1 檔面收窄＋§III.2 三元組）、空 ★表以哨兵句守（隨遷自 rev5；pre-commit fork-delta 段＝base-web pin bump、本檔或憲法 staged 時全掃；test＝離線自測；--constitution 只供自身變異驗證）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／refresh（快照照相、需 dev stack）／rules emit／errata／test；tests/ 為語料面
-│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架；_sk_rules.js＝generate 產物）、harness-test 十二案（斷言＋退出碼）、cdp.mjs、EXAMPLE 組裝成品
+│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架、TDD／review 兩種主流程共用首段；_sk_rules.js＝generate 產物）、assemble.py 組裝器（三道自檢）、harness-test 十五案／harness-review 九案（各含三反例；斷言＋退出碼）、cdp.mjs、EXAMPLE 成品與 TDD／review 單元定義範本
 ├── deploy/                          營運面：dev stack 部署資產＋機密管線（管「跑起來的系統」）
 │   ├── secrets_common.py            機密落點三級解析共用庫（消費者＝下列 CLI＋docsync GT-07）
 │   ├── preflight-secrets.py         機密上機前把關（缺檔／CR·LF／composite drift）
@@ -105,6 +105,7 @@ fork260509-rev6/
 | 埠、效能資料點 | `docs/generated/reference/ports.md`、`docs/generated/reference/perf.md` |
 | rev5 活書哪節去了哪 | `docs/generated/reference/rev5-blueprint-map.md`（真源＝arc42 節檔 frontmatter `rev5_blueprint`；ADR-00006） |
 | 編排 agent 用哪個模型 | `docs/generated/reference/agents.md`（真源＝`tools/orchestration/` 的 `*_OPTS` 常數） |
+| 怎麼組一支 Workflow script（TDD／review 兩形）、怎麼自測 | `tools/orchestration/README.md`（組裝器 `assemble.py`＋harness 兩支；發射與看門狗＝`CLAUDE.md` §2） |
 | 全量正典 schema 長怎樣（表×archetype、欄／索引／約束） | `docs/generated/reference/schema.md`（真源＝`docs/ops/reference-src/` 快照＋archetype-map；`python3 tools/docsync refresh` 照相） |
 | dev 三帳與角色綁定 | `docs/generated/reference/accounts.md`（真源＝`docs/ops/reference-src/accounts-snapshot.json`） |
 | 後端路由真表（path×method×protection×case_key×信封例外） | `docs/generated/reference/routes.md`（真源＝`rust-api/server/src/router.rs` 的 ROUTES const；generate 重算） |

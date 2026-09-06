@@ -12,12 +12,12 @@
 - 版本：1.1.0
 
 ## 帳面統計
-- ADR：19（proposed 0、accepted 18、superseded 1）
+- ADR：20（proposed 0、accepted 19、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：13｜滯後：0
 - LESSONS：11 筆
-- events：29 筆（erratum 1、feature_close 2、misc 10、perf 13、review 3）
-- CLAUDE.md 行數：159（只報表、不擋）
+- events：30 筆（erratum 1、feature_close 2、misc 10、perf 14、review 3）
+- CLAUDE.md 行數：160（只報表、不擋）
 
 ## 三指標（啟動書 §4.3）
 | 指標 | 值 | 目標 |
@@ -36,9 +36,9 @@
 | RULES fix | 15 | 19 | 內 |
 | RULES 主線 | 42 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 2871 | 4000 | 內 |
+| docsync 行數 | 2891 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-06｜perf｜close_bookkeeping｜close_bookkeeping 13.76 秒 rc=0
 - 2026-09-06｜feature_close｜002-system-settings｜002 system-settings 收單（server crate 進場首刀）：rust-api server crate 從零（router／auth／h
 - 2026-09-06｜perf｜precommit_chain｜precommit_chain 15.94 秒 rc=0
-- 2026-09-05｜perf｜precommit_chain｜precommit_chain 20.8 秒 rc=0
