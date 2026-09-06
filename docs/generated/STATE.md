@@ -15,7 +15,7 @@
 - ADR：20（proposed 0、accepted 19、superseded 1）
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 42/52、人 10/12）
 - BACKLOG 開放：11｜滯後：0
-- LESSONS：11 筆
+- LESSONS：12 筆
 - events：34 筆（erratum 1、feature_close 2、misc 12、perf 16、review 3）
 - CLAUDE.md 行數：160（只報表、不擋）
 
@@ -23,7 +23,7 @@
 | 指標 | 值 | 目標 |
 |---|---|---|
 | 治理批對 feature 比 | 6.0 | ≤1 |
-| LESSONS 重複率 | 0.27 | 0 |
+| LESSONS 重複率 | 0.25 | 0 |
 | BACKLOG 淨流量（rolling 3 刀） | n/a | ≤0 |
 
 ## 數量預算對賬（D8；ADR-00011：超限只警告、不擋）
