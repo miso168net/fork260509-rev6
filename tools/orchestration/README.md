@@ -57,7 +57,7 @@ fix `blocked` 立即 return／最壞路徑支數 < `AGENT_FUSE`／**fix `done_wi
 派發數＝結構（lens＋probe／2×批＋2×探針＋critic）且 label 唯一、每支 opus＋schema／**三態聚合**（兩鏡皆確認→confirmed、任一駁回→refuted、缺答或不確定→uncertain；探針單鏡）／
 **零 findings 跳過**（lens 零 findings 不派兩鏡、grader 零 findings 不派 refuter）／**null 回傳不殺 run**（`nulls` 留帳、status `partial`、其餘照跑、缺鏡之鍵依規則落 uncertain 或 refuted）／
 **`agentStatus=failed` 不殺 run**（`failed` 留帳、該 lens 不派兩鏡）／回傳形齊全（`status`／`stage`／`smoke`／`nulls`／`failed`／`summary`／`agentsSpawned`）；三反例（RL-0051 一正一反、以讀進來的 src 就地變異驅動、皆須零派發）：args 非空→防呆① throw／`SMOKE` 取字面 `test`→防呆② throw／`_plan` 段灌到超過每 run 上限→防呆③保險絲 throw。
-兩鏡三態與 grader／critic 的存活規則同 000-r1 報告 §0（`docs/reviews/20260904-doc-governance.md`）；主線拿回傳的結構化 `verdicts` 做三分流（RL-0073），不靠自由文字。
+兩鏡三態與 grader／critic 的存活規則同 000-r1 報告 §0（`docs/reviews/20260904-doc-governance.md`）；主線拿回傳的結構化 `verdicts` 做三分流（RL-0073），不靠自由文字；探針面另拿 `probes[].grade.grades` 依 verdict 四值計數＋`min_hops` 平均、落 review 事件 `probe` 欄（冷啟動一組、否定對照題 `negative` 一組；ADR-00021），STATE 檢索性列由 generate 現算。
 
 ## 已知踩點（寫 script 時會遇到）
 

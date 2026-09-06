@@ -1,6 +1,6 @@
 """守 RL-0049／RL-0052：generated 只由真源重算、零漂移（GT-01 本體）；數量預算對賬入 STATE。
 
-references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_reference_perf、gen_milestones、gen_state（git／波／憲法／帳面／三指標／預算／尾 3 事件）、
+references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_reference_perf、gen_milestones、gen_state（git／波／憲法／帳面／四指標／預算／尾 3 事件）、
 gen_lessons_index（例外註冊；next＝檔集最大號＋1、ADR-00005）、gen_architecture_index（例外註冊；arc42 節檔 frontmatter）、gen_rad_ai_map（兩層填實計數）、
 gen_rev5_blueprint_map（rev5 藍本對照表；frontmatter rev5_blueprint 對 20 列名冊、缺列可見不斷言、ADR-00006）、gen_reference_agents（編排 script 的 *_OPTS 名冊）、
 parse_router_routes／gen_reference_routes（rust-api/server/src/router.rs 之 ROUTES const 全量表；窄假設行級解析、偏離即 raise、列序＝宣告序；002 刀 U1）、
@@ -467,6 +467,15 @@ def _budget_rows(ctx, counts, caps):
     return lines
 
 
+def _probe_row(pr):
+    """ADR-00021 檢索性列：最近一筆帶 probe 之 review 事件、比例現算；目標＝找不到＋答錯＝0、≤3 跳比例輪間不降。"""
+    goal = "找不到＋答錯＝0；≤3 跳比例輪間不降"
+    if pr == "n/a":
+        return f"| 檢索性（最近獨立輪探針） | n/a | {goal} |"
+    return (f"| 檢索性（最近獨立輪 {pr['scope']}） | ≤3 跳 {pr['le3_ratio']}／答對 {pr['hit_ratio']}／找不到 {pr['not_found']}／答錯 {pr['wrong']}"
+            f"（否定對照答錯 {pr['negative_wrong']}） | {goal} |")
+
+
 def gen_state(ctx):
     events, _ = ev_mod.events_view(ctx.text(EVENTS))   # 人讀面吃更正視圖（BL-00004）
     adrs = adr_mod.load_adrs(ctx)
@@ -497,9 +506,9 @@ def gen_state(ctx):
              f"- LESSONS：{len(lessons)} 筆" + ("" if lessons else "（未建）"),
              f"- events：{len(events)} 筆（" + "、".join(f"{t} {n}" for t, n in sorted(ev_counts.items())) + "）",
              f"- CLAUDE.md 行數：{len(claude.split(chr(10))) - (1 if claude.endswith(chr(10)) else 0) if claude else 0}（只報表、不擋）", "",
-             "## 三指標（啟動書 §4.3）", "| 指標 | 值 | 目標 |", "|---|---|---|",
+             "## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）", "| 指標 | 值 | 目標 |", "|---|---|---|",
              f"| 治理批對 feature 比 | {m['gov_ratio']} | ≤1 |", f"| LESSONS 重複率 | {m['lessons_dup_rate']} | 0 |",
-             f"| BACKLOG 淨流量（rolling 3 刀） | {m['backlog_net']} | ≤0 |", "",
+             f"| BACKLOG 淨流量（rolling 3 刀） | {m['backlog_net']} | ≤0 |", _probe_row(m["probe_retrieval"]), "",
              "## 數量預算對賬（D8；ADR-00011：超限只警告、不擋）"] + _budget_rows(ctx, counts, caps) + ["", "## 最近事件（尾 3 筆、新在前）"]
     for e in list(reversed(events))[:3]:
         lines.append(f"- {e['date']}｜{e['type']}｜{_target(e)}｜{_event_summary(e)[:80]}")
