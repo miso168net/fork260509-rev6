@@ -29,3 +29,5 @@
 | ADR-00024 | accepted | 2026-09-07 | 憲法 §III 生成檔紀律去除對空表的死引用——判準改為「路由外掛重算產出之檔同族」、具體檔集隨相關 ★ 軌道 Amendment 落表 | 輕量軌｜000-r2-doc-governance | — | — |
 | ADR-00025 | accepted | 2026-09-07 | won't-fix——ADR 方向不設「誕生必帶事件」反向不變式；ADR 的家是檔案本身，BL／ADR 兩個 ID 家族刻意兩制 | 輕量軌｜000-r2-doc-governance | — | — |
 | ADR-00026 | accepted | 2026-09-08 | 憲法 Amendment 1.2.0→1.3.0——§III.2 首批四條 ★ 軌道八用途授權＋§I.7 首批五座行為島 A～E 入憲 | — | — | — |
+| ADR-00027 | accepted | 2026-09-08 | AppState 恰兩欄封條翻案→五欄——加 jwt／cache／captcha_secret；ip_rules／trust_model／mailer 續留域外 | — | — | — |
+| ADR-00028 | accepted | 2026-09-08 | root Cargo.toml「不引 argon2」翻案——引入 auth 依賴八支（六支 auth＋log＋getrandom）、全域版本紀律雙源核對 D1～D6 | — | — | — |
