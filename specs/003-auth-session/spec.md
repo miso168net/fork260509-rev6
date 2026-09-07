@@ -208,7 +208,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   `/route/getConstantRoutes`（GET／Public）、`/route/getUserRoutes`（GET／Authed）、`/route/isRouteExist`（GET／Authed）。三個 Public（refreshToken／logout／getConstantRoutes）
   各有非做不可理由（過期不能換／壞了不能撤／登入前需取常量路由）。contract case 登記表 MUST 每條 route ≥1 case（coverage gate 雙向：缺 case／殭屍 case 皆紅）；
   docsync routes 真表由 generate 重算。
-- **FR-002**: 零新 casbin 政策列——16 條 route 無一為 `Protection::Policy`；163 列 seed 政策一列不動、維持零 migration。seed 已含後續刀政策列（kickUser／getSessionEvent／user:kick 等），
+- **FR-002**: 零新 casbin 政策列——12 條新 route 無一為 `Protection::Policy`（既有兩條 systemManage 路由為 002 既定 Policy、不動）；163 列 seed 政策一列不動、維持零 migration。seed 已含後續刀政策列（kickUser／getSessionEvent／user:kick 等），
   本刀 MUST NOT 消費（防 review 質疑「政策設得進、端點不存在」）；plan 期複核此判（Q2）。
 - **FR-003**: `/auth/loginCaptcha` MUST 帶 `?userName=` query（challenge 綁帳號的前提；對任意 userName 一律發題＝零存在性洩漏）；userName 超限走與登入端點**同形**的 `1000` 閘
   （零新碼零新 key）；產圖／簽章內部失敗→`5000`。
@@ -297,7 +297,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
 - **FR-025**: msg key MUST：固定變體鍵 `auth.login.failed`（1000）／`auth.token.expired`（3333）／`auth.session.kicked`（7777）；既有 `auth.session.reLogin`（8888）不動、★勿漏列；
   Biz 構造點鍵 `biz.auth.{notSupported,captchaRequired,locked}`（前端 captcha 軟區判斷式拿 msg 字面比對區分兩態、須用此名）。三個 Biz 鍵 MUST 以 `Cow::Borrowed("字面")` 構造——非字面即跨端閘 fail-loud（防恆綠洞）；
   contract 雙向斷言（每條 route 每個錯誤路徑實發 msg ∈ 名冊、名冊每鍵 ≥1 發出點）於全部發出點就位的單元成立。本刀後端實發名冊＝002 既有 7＋本刀 6＝**13 鍵**。
-- **FR-026**: i18n 前端轉譯（★`BASE-WEB-I18N-WIRING` 三用途）MUST：(i) request 層 modal content＋showErrorMsg 鏈改走 `translateBackendMsg`（``$t(`backend.${msg}`, msg)`` 原文 fallback、detail 值連帶轉譯）
+- **FR-026**: i18n 前端轉譯（★`BASE-WEB-I18N-WIRING` 三用途）MUST：(i) request 層 modal content＋showErrorMsg 鏈改走單一 helper `translateBackendMsg`（``$t(`backend.${msg}`, msg)`` 原文 fallback；錯誤信封 `data` 恆 null、無明細通道、不建 detail 轉譯）
   ／(ii) `en-us.ts`＋`zh-cn.ts` 各插獨佔一行 `  backend: {` 起的 backend 樹 **13 鍵**（修改型、runtime 生效；簡中譯文以 rev5 為藍本重打字消化）＋新建 `zh-tw.ts` 裸 object 錨點檔 13 鍵
   （不接 runtime、不擴 `LangType`、不註冊 zh-TW 語系＝Q3；繁中譯文之家、跨端閘右源之一；檔頭圈界標記自稱 `BASE-WEB-I18N-WIRING+`、新增型不入名冊＝clarify 候選③）
   ／(iii) `app.d.ts` 只補 `backend` 必填型節（zh-cn 結構同步由必填型節＋`pnpm typecheck` 免費守）。三語譯文字面於 plan 之 contracts 定稿、繁中以 `zh-tw.ts` 為權威。
@@ -333,14 +333,14 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   （rev5 lockfile 值 vs 官方最新穩定；同值採、分歧問 user）、plan research 記表（候選⑥）；root `Cargo.toml`「不引 argon2」舊拍板 MUST 立 ADR 翻案並改寫註解、`server/Cargo.toml` 依賴清單註解同批改寫。
 - **FR-033**: `auth/dev_identity.rs` MUST 整檔汰換、release profile 首次可跑；enforce 之 cfg 分支收斂為真驗章（debug／release 同一驗證器）、`Bearer dev-*` 測試面全清、contract 通則 case（未認證 8888）改以真 token 形；
   單一判定進入點守恆與 002 授權矩陣測試不變。
-- **FR-034**: BL-00026 與 BL-00041 MUST 刀內收：①boot 鏈 `ConnectOptions` 帶 `sqlx_logging_level(Debug)`、`log` 釘 0.4.33（lock 現值、零新套件）、同批刪同檔「屬 BACKLOG 候選、002 刀不引 log crate」自陳註解
+- **FR-034**: BL-00026 與 BL-00041 MUST 刀內收：①boot 鏈 `ConnectOptions` 帶 `sqlx_logging_level(Debug)`、`log` 釘版依 plan research R1 雙源核對定案（2026-09-08 拍板 0.4.34；零新 crate、lock 版本推進一次）、同批刪同檔「屬 BACKLOG 候選、002 刀不引 log crate」自陳註解
   （errata 枚舉）；②`test_kit.rs`／`system_settings.rs` 兩處裸前代刀號改 RL-0046 冒號前綴形，**同批**把 GT-05 裸三碼刀號腿的子庫 pin 樹側（`SUB_SCAN` 精判）接上、`tools/docsync/book.py` 該處註解改寫、
   GT-05 自測補子庫腿一正一反。收刀 `backlog_done`。
 
 **觀測面**
 
-- **FR-035**: 本刀的靜默降級與安全事件 MUST 雙軌可觀測——①結構化 tracing warn（帶 target＋欄位）②Prometheus 計數器三支：`throttle_degraded_total`（label `source`：settings_default／settings_invalid／
-  db_write／captcha_mark／redis_down 等實有源集）／`denylist_hit_total`（label `redis`｜`pg`）／`throttle_soft_zone_total`（無 label；`captcha_forced` 不計入）；三支 MUST 依 `obs.rs` 既有紀律
+- **FR-035**: 本刀的靜默降級與安全事件 MUST 雙軌可觀測——①結構化 tracing warn（帶 target＋欄位）②Prometheus 計數器三支：`throttle_degraded_total`（label `source` 值集＝plan research R5 七值逐字：settings_default／settings_invalid／
+  redis_lock／redis_lock_set／redis_captcha／db_count／db_write）／`denylist_hit_total`（label `redis`｜`pg`）／`throttle_soft_zone_total`（無 label；`captcha_forced` 不計入）；三支 MUST 依 `obs.rs` 既有紀律
   **啟動即顯式註冊 0**（label 值集與發射點同步）；守門走計數器 render 文本比對；rev5 之 HLL 廣度兩支不做。
 
 **治理與工具（RUNBOOK §9c、BL-00037）**
@@ -356,8 +356,8 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
 - **FR-038**: ADR MUST 於刀內落地 accepted、一決策一檔、皆帶 rev5 provenance：①主 Amendment（★軌道四條八用途＋島 A～E；draft 於 plan 期）②`AppState` 恰兩欄封條翻案 ③root `Cargo.toml` 不引 argon2 翻案
   ④快速登入鈕已知態（Q4 拍板紀錄；帳由 BL-00049 承載）⑤跨端閘形制＝逐檔雙向全等（clarify 定案；記與 ADR-00017 之射程關係）；收刀 `feature_close` 事件 `adrs` 列全。憲法版本恰 bump 一次（1.3.0）。
 - **FR-039**: 帳本時點 MUST 兌現：收刀 `backlog_done`＝BL-00026／BL-00030／BL-00037／BL-00041；BL-00031 條文刪去 003 那一段、只留 004 ip-trust-anchor／007 user-password-admin 兩對（工程判斷 4）；`backlog_add` MUST 列 BL-00043～BL-00049 七條
-  （開刀前承載體檢六條＋滯後卷 BL-00049：配號已發、事件未載，七筆 GT-03 在途 WARN 由此消；移卷不需事件、但新配號仍需 backlog_add）＋新記一條 `/auth/error` demo 端點排程錨（承 `rev5:B-053`；觸發＝首個動 demo 頁的前端刀）；NOTES「下一步」specify 起手後改 003 進行中、
-  收刀改 004 ip-trust-anchor；活書 MUST 同刀更新（arc42 §5 server 管線 as-built／§6 會話狀態機與登入失敗節流兩情境／§8 API 慣例三分碼與 fork-delta 接線現況／§12 auth 域詞＋「降級（基礎設施）」術語條與既有「降級輪廓」消歧；
+  （開刀前承載體檢六條＋滯後卷 BL-00049：配號已發、事件未載，七筆 GT-03 在途 WARN 由此消；移卷不需事件、但新配號仍需 backlog_add）＋新記兩條：`/auth/error` demo 端點排程錨（承 `rev5:B-053`；觸發＝首個動 demo 頁的前端刀）與 `sys_user_role` facade 之 `roles_of_user` 次段 DbErr 機器守（承 `rev5:B-050`、rev5 003 順手收而本刀不納射程；觸發＝下次動該 facade 或補 DbErr 覆蓋時）；NOTES「下一步」specify 起手後改 003 進行中、
+  收刀改 004 ip-trust-anchor；活書 MUST 同刀更新（arc42 §5 server 管線 as-built／§6 會話狀態機與登入失敗節流兩情境／§8 API 慣例三分碼與 fork-delta 接線現況／§10.2 品質情境（島 A～E 各一、刪「目前零情境」句）／§12 auth 域詞＋「降級（基礎設施）」術語條與既有「降級輪廓」消歧；
   現在式、feature branch 內改；C4-L2 拓樸不變零改）。
 - **FR-040**: 收刀 DoD MUST 全綠：`cargo test --workspace -- --test-threads=1`（容器內、全程 serial；redis 測試鍵 uniq 前綴隔離、X-Real-IP 顯式注入）＋contract 16 case（per route＋三分碼矩陣＋msg 名冊雙向＋四 stub 區別手法）
   ＋`pnpm typecheck`＋`fork-delta-lint`（名冊斷言對四軌道生效）＋`wire-schema check`（本刀新增 typings ⇒ base-web 側首次真正觸發、快照重抽）＋跨端閘＋`schema-gate check`（gate2 逐列綠——走查後經還原）
@@ -382,7 +382,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
 | `.../login/modules/reset-pwd.vue`（2 處） | `BASE-WEB-AUTH-WIRING(b)` | 修改型 | 同上 | 0／2 | 中 |
 | `src/hooks/business/captcha.ts`（約 4 處） | `BASE-WEB-AUTH-WIRING(c)` | 修改型 | 改打 `/auth/sendCaptcha` stub、移除假延遲與假成功 | 0／1 | 中 |
 | `.../global-header/components/user-avatar.vue`（約 3 處） | `BASE-WEB-LOGOUT-UX-WIRING(i)` | 修改型 | `onPositiveClick` 改 async＋登出前 best-effort 呼 logout wrapper | 0／0 | 中 |
-| `src/service/request/index.ts`（2 處＋1 塊） | `BASE-WEB-I18N-WIRING(i)` | 修改型＋新增型 | modal `content` 與 `showErrorMsg` 鏈改走轉譯（修改型）＋`translateBackendMsg`／`translateDetailValue`（新增型圈界） | 0／3 | 中 |
+| `src/service/request/index.ts`（2 處＋1 塊） | `BASE-WEB-I18N-WIRING(i)` | 修改型＋新增型 | modal `content` 與 `showErrorMsg` 鏈改走轉譯（修改型）＋單一 helper `translateBackendMsg`（新增型圈界；不建 `translateDetailValue`） | 0／3 | 中 |
 | `src/typings/app.d.ts`（1 處） | `BASE-WEB-I18N-WIRING(iii)` | 修改型 | `App.I18n.Schema` 補 `backend` 必填型節 | **13／32** | **高** |
 | `src/locales/langs/en-us.ts`（1 塊） | `BASE-WEB-I18N-WIRING(ii)` | 新增型 | 插 backend 樹 13 鍵 | **14／37** | **高** |
 | `src/locales/langs/zh-cn.ts`（1 塊） | `BASE-WEB-I18N-WIRING(ii)` | 新增型 | 插 backend 樹 13 鍵（簡中） | **15／38** | **高** |
@@ -434,7 +434,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   三類各至少一案觸發後訊號遞增可被斷言，降級記錄帶可機器判讀的欄位。
 - **SC-011**: DoD 鏈全綠（FR-040）——`cargo test` 容器內 serial 全綠、`pnpm typecheck` 綠、fork-delta-lint／wire-schema／跨端閘／schema 三閘／entity 漂移閘／lint 全量零紅、release profile 起得動、
   手動端到端走查（入口 `http://127.0.0.1:32080`）七項通過、走查後 diff rc 0。
-- **SC-012**: 治理帳本結清——ADR 全數 accepted 且 `feature_close.adrs` 列全；`backlog_done` 四條、`backlog_add` 七加一條、BL-00031 條文已改；七筆 GT-03 在途 WARN 歸零；RULES 零改動（RULES-VERSION 不變）；
+- **SC-012**: 治理帳本結清——ADR 全數 accepted 且 `feature_close.adrs` 列全；`backlog_done` 四條、`backlog_add` 七加二條、BL-00031 條文已改；七筆 GT-03 在途 WARN 歸零；RULES 零改動（RULES-VERSION 不變）；
   治理閘數維持 12；NOTES 下一步指 004 ip-trust-anchor；活書四節現在式更新且「降級（基礎設施）」術語條在案。
 
 ## Assumptions

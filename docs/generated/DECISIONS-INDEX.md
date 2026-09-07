@@ -28,3 +28,4 @@
 | ADR-00023 | accepted | 2026-09-07 | 憲法 §I.3 四保留碼「從不發出」之機器承載點改記為型別層全變體窮舉＋error.rs 矩陣斷言雙錨（as-built 對齊，非行為變更） | 輕量軌｜000-r2-doc-governance | — | — |
 | ADR-00024 | accepted | 2026-09-07 | 憲法 §III 生成檔紀律去除對空表的死引用——判準改為「路由外掛重算產出之檔同族」、具體檔集隨相關 ★ 軌道 Amendment 落表 | 輕量軌｜000-r2-doc-governance | — | — |
 | ADR-00025 | accepted | 2026-09-07 | won't-fix——ADR 方向不設「誕生必帶事件」反向不變式；ADR 的家是檔案本身，BL／ADR 兩個 ID 家族刻意兩制 | 輕量軌｜000-r2-doc-governance | — | — |
+| ADR-00026 | proposed | 2026-09-08 | 憲法 Amendment 1.2.0→1.3.0——§III.2 首批四條 ★ 軌道八用途授權＋§I.7 首批五座行為島 A～E 入憲 | — | — | — |
