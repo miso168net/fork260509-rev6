@@ -126,7 +126,7 @@ docs/arc42/{05,06,08,10,12}-*.md(as-built、U11；§10.2 島 A～E 各一品質�
 docs/ops/BACKLOG.md(收刀：done 4／BL-00031 條文改／add 8)；docs/ops/NOTES.md(收刀→004)
 ```
 
-**Structure Decision**：server crate 目錄形逐一對應 rev5 003 終態（R2 清單）以最小化參照摩擦；handler 依端點群拆檔＋facade 一表一檔，使每個執行單元的允許檔案清單有圈界力（防呆六件套⑥）；`router.rs`＋`contract.rs` 收斂為獨佔單元（U7）避免反覆撞牆。執行單元＝research R15（U0 主線 Amendment 凍結→U1～U7 後端→U8～U9 前端與 i18n／跨端閘→U10 走查工具與 BL-00041→U11 收攏）；每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、每 run 不重複 agent ≤20；發射前 `IMPL_OPTS`→`opus[1m]`。
+**Structure Decision**：server crate 目錄形逐一對應 rev5 003 終態（R2 清單）以最小化參照摩擦；handler 依端點群拆檔＋facade 一表一檔，使每個執行單元的允許檔案清單有圈界力（防呆六件套⑥）；`router.rs`＋`contract.rs`＋`tools/docsync/tests/test_references.py` 為 U5～U9 序列共用檔（逐 US 加列並 bump 同一 `ROUTES_COUNT` 與真 repo 釘值列、不可並發；承 rev5 003 analyze 修正與 002 T029／T033 形、不設尾端獨佔單元）。執行單元＝research R15（U0 主線 Amendment 凍結→U1～U4 後端基座→U5～U9 依 US 交付面→U10 治理→U11 收攏）；每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、每 run 不重複 agent ≤20；發射前 `IMPL_OPTS`→`opus[1m]`。
 
 ## Complexity Tracking
 
