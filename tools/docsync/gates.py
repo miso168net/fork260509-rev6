@@ -19,7 +19,10 @@ from . import rules as rules_mod
 from . import references as ref_mod
 
 GATE_KEYS = ("id", "rule", "source", "drift", "face", "trigger", "rc", "breaks-if-removed")
-RE_GATE_BLOCK = re.compile(r"GATE:\n((?:[ \t]+[a-z-]+=[^\n]*\n)+)")
+# ★kv 行的行首空白量必須從寬（`*` 而非 `+`）：同一個 regex 吃兩種輸入——原始碼文字（區塊縮排在）
+# 與 `fn.__doc__`（Python ≥3.13 於編譯期剝掉 docstring 共同縮排、gh-81283）。收緊成 `+` 會讓
+# gate_id() 在 3.13+ 全回 None：GATES.md 算成空表、GT-05 判滿地「真源查無」（LL-00013）。
+RE_GATE_BLOCK = re.compile(r"GATE:\n((?:[ \t]*[a-z-]+=[^\n]*\n)+)")
 RE_ANCHOR = re.compile(r'finding\(\s*(?:ERROR|WARN|SKIP)\s*,\s*"(GT-\d{2})"')
 RE_GT_ID = re.compile(r"GT-(\d{2})")
 RE_GT_RANGE = re.compile(r"GT-(\d{2})\s*[～~]\s*GT-(\d{2})")

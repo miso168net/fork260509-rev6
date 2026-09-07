@@ -57,6 +57,15 @@ class TestRoster(unittest.TestCase):
         self.assertEqual(len(gates.ROSTER), 12)
         self.assertEqual({gates.gate_id(g) for g in gates.ROSTER}, set(blocks))
 
+    def test_gate_id_survives_docstring_dedent(self):
+        """區塊 regex 對「行首零空白」也須成立：Python ≥3.13 編譯期剝掉 docstring 共同縮排，
+        上一個測案在 3.12 上恆綠、抓不到這面；本案以合成 __doc__ 釘死行為、與跑測的 python 版本無關。"""
+        def g(ctx):
+            pass
+        g.__doc__ = "GATE:\nid=GT-42\nrule=RL-0000\n"
+        self.assertEqual(gates.gate_id(g), "GT-42")
+        self.assertEqual(sorted(gates.parse_gate_blocks("GATE:\n  id=GT-43\n")), ["GT-43"])
+
     def test_foreign_anchor_is_red(self):
         extra = "def x(ctx):\n    return [" + "finding(" + 'ERROR, "GT-' + '13", "w", "m")]\n'
         fs = gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}), extra_sources={"x.py": extra})
