@@ -24,7 +24,7 @@
 | ADR-00019 | accepted | 2026-09-05 | 容器依賴型碼面閘之環境缺席語意——docker 或對應容器不在＝具名跳過 rc 0、容器在而工具缺或重抽失敗＝fail-loud | 002-system-settings | — | — |
 | ADR-00020 | accepted | 2026-09-07 | 編排骨架子名冊＝tools/orchestration/README.md 檔表，由 GT-09 新腿對賬 tools/orchestration/ 實檔集 | 輕量軌｜maint-backlog-6 | — | — |
 | ADR-00021 | accepted | 2026-09-07 | 檢索性第四指標——review 事件 `probe` 欄（冷啟動探針＋否定對照題計數）為資料源，STATE 治理指標表加一列、比例由 generate 現算；000-r1 以 erratum 回填為基準 | 輕量軌｜maint-backlog-7 | — | — |
-| ADR-00022 | accepted | 2026-09-07 | 憲法 §I.5 例外① 射程含註解——整檔拷貝之工具性 crate 豁免「註解一律重寫」第 3 款；vendored-check 之去註解口徑就此有凍結權威背書 | 獨立輪｜doc-governance | — | — |
-| ADR-00023 | accepted | 2026-09-07 | 憲法 §I.3 四保留碼「從不發出」之機器承載點改記為型別層全變體窮舉＋error.rs 矩陣斷言雙錨（as-built 對齊，非行為變更） | 獨立輪｜doc-governance | — | — |
-| ADR-00024 | accepted | 2026-09-07 | 憲法 §III 生成檔紀律去除對空表的死引用——判準改為「路由外掛重算產出之檔同族」、具體檔集隨相關 ★ 軌道 Amendment 落表 | 獨立輪｜doc-governance | — | — |
-| ADR-00025 | accepted | 2026-09-07 | won't-fix——ADR 方向不設「誕生必帶事件」反向不變式；ADR 的家是檔案本身，BL／ADR 兩個 ID 家族刻意兩制 | 獨立輪｜doc-governance | — | — |
+| ADR-00022 | accepted | 2026-09-07 | 憲法 §I.5 例外① 射程含註解——整檔拷貝之工具性 crate 豁免「註解一律重寫」第 3 款；vendored-check 之去註解口徑就此有凍結權威背書 | 輕量軌｜000-r2-doc-governance | — | — |
+| ADR-00023 | accepted | 2026-09-07 | 憲法 §I.3 四保留碼「從不發出」之機器承載點改記為型別層全變體窮舉＋error.rs 矩陣斷言雙錨（as-built 對齊，非行為變更） | 輕量軌｜000-r2-doc-governance | — | — |
+| ADR-00024 | accepted | 2026-09-07 | 憲法 §III 生成檔紀律去除對空表的死引用——判準改為「路由外掛重算產出之檔同族」、具體檔集隨相關 ★ 軌道 Amendment 落表 | 輕量軌｜000-r2-doc-governance | — | — |
+| ADR-00025 | accepted | 2026-09-07 | won't-fix——ADR 方向不設「誕生必帶事件」反向不變式；ADR 的家是檔案本身，BL／ADR 兩個 ID 家族刻意兩制 | 輕量軌｜000-r2-doc-governance | — | — |

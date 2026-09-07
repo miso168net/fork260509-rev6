@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | misc | governance｜000-r2-doc-governance | 獨立輪 000-r2 文件治理架構第二輪體檢收單：五支 Workflow 85 支 agent、findings 102（confirmed 88）、修 69／BL 8 條／ADR 4 支；BL-00003 閘補腿群三腿全落地（GT-03 BL 存在性腿／SKIP 分類＋ENV_SKIPS＋GT-12 登記腿／主張閘兩腿，閘數維持 12）；憲法 1.1.0→1.2.0；檢索性第四指標 0.48→0.76。 | acc11a7 | ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — |
 | 2026-09-07 | review | doc-governance | findings 81（修 69／BL 8／ADR 4）；BL-00035、BL-00036、BL-00037、BL-00038、BL-00039、BL-00040、BL-00041、BL-00042、ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-7 | 輕量軌 maint-backlog-7 收單：BL-00007 檢索性第四指標——ADR-00021：review 事件 optional probe 欄（冷啟動探針＋否定對照題四值計數、grader 最短 hops 平均）為資料源、GT-02 形檢、erratum 欄集加 probe、STATE 治理指標表第四列比例現算（目標＝找不到＋答錯＝0、≤3 跳比例輪間不降）；000-r1 以 erratum 回填為基準。 | b6e62e3 | ADR-00021 | — |
 | 2026-09-07 | erratum | 行 13 | ADR-00021 回填：000-r1 探針結果自報告 §3 逐題表回算（冷啟動 25 題＋否定對照 7 題、grader 最短 hops 平均）——當時 review 事件無 probe 欄、只落 notes 自由文 | — | — | — |
@@ -28,6 +29,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜misc｜governance｜000-r2-doc-governance
+
+報告＝docs/reviews/20260907-doc-governance.md（248 行）；計畫＝docs/brainstorms/000-r2-doc-governance.md（v0.3、§11 十題＋grilling 兩輪 Q11～Q19 全裁定）。對象＝分支 @ 7b734e1（開出點 rev6-admin-root @ c097c48）。五支 run：A 探索 wf_57ff815d-4c9（18）／B1 wf_2ed23344-8e1（22）／B2 wf_415d9f87-8d7（22）／C 補漏 wf_4bb5c3e8-cfc（9）／D 修單 wf_f3bbe7d9-c4a（14）；四處 porcelain 全程零寫入。停點① user 逐題親決六題：主張閘①補既有閘腿不占閘數／L2-06①例外①含註解＋憲法 Amendment／L11-03①保留碼承載點改字面／C3-3②won't-fix ADR／L9b-01①§III 判準句併入 Amendment／L10-04①RL-0042 第二具名例外。停點② user 同意 merge --no-ff。final holistic review 零新 finding（八項對賬全綠、逐項列於 merge commit 訊息＝RL-0073 承載處③）。★方法論兩處自我揭露：①題文可比性——附錄 C 五題原誤回退 r1 計畫 §5 簡寫版而非 r1 實問版，主線逐字比對三源後更正、報告 §3.5 揭露並同列「全 25 題」與「可比子集 20 題」兩口徑（0.48→0.76 與 0.45→0.70、同向）②探針隔離——否定對照題庫連同真相答案欄住 tracked 計畫檔、冷啟動前提無保護（轉 BL-00040，r3 起真相改烤 grader prompt）。★GT-03 之 BL 存在性腿採在途兩態（號 ≤ max(誕生集)＝憑空／回收號 ERROR、> max＝配號已發而收單未落帳之在途窗口 WARN）：偏離計畫 §4.7 條文 A 之單態設計、由 implementer 升級、主線裁定接受——理由是條文 A 與 RL-0053（簿記排在 merge 之後）在同一輪內互斥，單態會把本輪自身的收尾 commit 擋死；殘留破口（落在 max(誕生集) 與帳本 next-id 之間的打錯號只 WARN）已載於程式 docstring，該區間之外由 GT-05 next 單調腿接手。docsync test 178→249；RULES-VERSION 741ae996dc61→89ec0586d6a9；BACKLOG 8→16→15（淨 +7）。
 
 ### 2026-09-07｜review｜doc-governance
 
