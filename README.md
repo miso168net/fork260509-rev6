@@ -11,7 +11,7 @@ admin 後台系統第六代重跑版：前端 fork 自 soybean-admin（Vue3＋na
 fork260509-rev6/
 ├── README.md                        本檔：人類入口導覽；下列樹之 tools/、deploy/、.githooks/、.claude/ 與實檔集由 GT-09 雙向對賬；docs/ 列項為地圖、出現時機標於括號
 ├── CLAUDE.md                        操作規則書：拓樸／工作流／git 手冊／文件規則／決策紀律／硬禁令／rev5 對照
-├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.2.0＝ADR-00022／ADR-00023／ADR-00024 三筆同批；前版 1.1.0＝ADR-00009、創世 1.0.0＝ADR-00003）
+├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.3.0＝ADR-00026；前版 1.2.0＝ADR-00022／ADR-00023／ADR-00024 三筆同批、1.1.0＝ADR-00009、創世 1.0.0＝ADR-00003）
 ├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00011（數值續自其翻案之 ADR-00004 表）；名詞段住此
 ├── docs/ops/NOTES.md                當前意圖；首行 <!-- wave: N --> 為「現在波」唯一真源
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES、reference/perf、STATE（帳面統計與治理指標）、DECISIONS-INDEX（feature 欄）

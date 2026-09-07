@@ -2,7 +2,7 @@
 id: "ADR-00026"
 title: 憲法 Amendment 1.2.0→1.3.0——§III.2 首批四條 ★ 軌道八用途授權＋§I.7 首批五座行為島 A～E 入憲
 date: 2026-09-08
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "003-auth-session 之 spec FR-029～FR-031（brainstorm Q1／Q5／Q9、clarify 2026-09-08 Q3／Q4）；形制輸入＝research R8（`tools/fork-delta-lint.py` load_roster 六條硬規則）；★軌道範圍欄素材＝spec「★ 軌道逐處登記」16 列表（量測日 2026-09-08、量測面 base-web worktree＝upstream example tip 8be6f9ba）；島條文以 rev5 憲法 v1.3.0 §I.7 島 A～E 逐字為底（rev5:ADR 0028、rev5 凍結 SHA 7eab28a）並依 rev6 拍板增四處；憲法 §V.2 Amendment 流程、§V.3 MINOR 判準；draft 於 plan 期落 feature branch（brainstorm Q5）、user 親決於 tasks 首個主線任務"
