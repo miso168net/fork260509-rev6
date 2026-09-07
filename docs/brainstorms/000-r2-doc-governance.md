@@ -71,7 +71,7 @@
 
 ### 4.2 共同烤入塊
 
-同 r1 §4.2 六項；差異：①規則塊由 `assemble.py` 自 `tools/orchestration/_sk_rules.js` 原樣併入（含末行 RULES-VERSION；T5 若改 RULES 字面須 `generate` 重算再重組，否則 `.claude/hooks/pre-workflow-gate.py` 擋）；②唯讀邊界／取證／回傳段由 `_sk_review.js` 供、本輪 unitdef 只寫 `CONTEXT`（對象、範圍、冒煙 token）與 `DECISIONS_BLOCK`（拍板紀錄清單：憲法 1.1.0、ADR-00001～21、RULES 名詞段、BL 現行 8 條之拍板句、events 收單 notes、Day-1 現況；verify 另加 P4 應查無題判準段＋§5.2 真相表＝Q12）；③探針 task 刻意不烤 `CONTEXT`（只有「新 session 看得到的」：SessionStart 三段＋README＋CLAUDE.md 全文＝r1 Q7）。
+同 r1 §4.2 六項；差異：①規則塊由 `assemble.py` 自 `tools/orchestration/_sk_rules.js` 原樣併入（含末行 RULES-VERSION；T5 若改 RULES 字面須 `generate` 重算再重組，否則 `.claude/hooks/pre-workflow-gate.py` 擋）；②唯讀邊界／取證／回傳段由 `_sk_review.js` 供、本輪 unitdef 只寫 `CONTEXT`（對象、範圍、冒煙 token）與 `DECISIONS_BLOCK`（拍板紀錄清單：憲法 1.1.0、ADR-00001～21、RULES 名詞段、BL 現行 8 條之拍板句、events 收單 notes、Day-1 現況；verify 另加 P4 應查無題判準段＋§5.2 真相（當時住該節第四欄、已依 BL-00040 刪去，見該節哨兵句）＝Q12）；③探針 task 刻意不烤 `CONTEXT`（只有「新 session 看得到的」：SessionStart 三段＋README＋CLAUDE.md 全文＝r1 Q7）。
 
 ### 4.3 Workflow A：lens 表（r1 §4.3 為底；「同 r1」＝對賬動作與判準原樣、只縮輸入面）
 
@@ -113,17 +113,21 @@ r1 §4.7／§4.8 全部由骨架承載（`_sk_head.js` guard／保險絲同源�
 
 ### 5.2 否定對照 7 題（每輪重選；5 應查無＋2 對照可答；量「自信地答錯」）
 
-| # | 題 | 型 | 真相（grader 用） |
-|---|---|---|---|
-| N1 | 003 auth-session 的 spec 與範圍拍板在哪？ | 應查無 | 尚無 brainstorm；只有 NOTES 下一步一句＋001 brainstorm 刀序表 |
-| N2 | base-web 的 zh-tw i18n 字典檔在哪？ | 應查無 | 只有 en-us／zh-cn；BL-00030 記首個 i18n 刀 |
-| N3 | sys_token 會話狀態機在 rev6 哪個 crate、哪個檔實作？ | 應查無 | 未進場；blueprint-map「隨刀：島 A～D」 |
-| N4 | 憲法 §I.5 例外③是什麼？ | 應查無 | 只有①②；ADR-00009 尾句「第 18 檔＝新 Amendment」 |
-| N5 | `m0003` delta migration 改了什麼？ | 應查無 | 尚無；ADR-00008 自 m0003 起編、RUNBOOK §10 |
-| N6 | 002 刀的範圍拍板在哪、「零 migration」是真的嗎？ | 對照可答 | `specs/002-system-settings/spec.md`＋feature_close 事件＋ADR-00013～19 |
-| N7 | 憲法 §I.5 例外① 的自證怎麼跑、允許哪幾對差異？ | 對照可答 | `python3 tools/docsync vendored-check`、`tools/docsync/vendored.py` ALLOWLIST 三筆、bootstrap 3c、RUNBOOK §12 列 |
+| # | 題 | 型 |
+|---|---|---|
+| N1 | 003 auth-session 的 spec 與範圍拍板在哪？ | 應查無 |
+| N2 | base-web 的 zh-tw i18n 字典檔在哪？ | 應查無 |
+| N3 | sys_token 會話狀態機在 rev6 哪個 crate、哪個檔實作？ | 應查無 |
+| N4 | 憲法 §I.5 例外③是什麼？ | 應查無 |
+| N5 | `m0003` delta migration 改了什麼？ | 應查無 |
+| N6 | 002 刀的範圍拍板在哪、「零 migration」是真的嗎？ | 對照可答 |
+| N7 | 憲法 §I.5 例外① 的自證怎麼跑、允許哪幾對差異？ | 對照可答 |
 
-備選（r1 Q3 續用）：`alert_webhook_url` 收件端＝仍應查無。
+備選（r1 Q3 續用）：`alert_webhook_url` 收件端。
+
+★★**本表刻意只留「題／型」兩欄**（BL-00040 處置；原第四欄「真相（grader 用）」已於本條收單時刪去）：真相＝grader 判分依據，自 000-r3 起一律由主線於發射前烤進 grader prompt、草稿住 scratchpad、**不落 tracked**——否則冷啟動探針以題目關鍵詞常規 grep 即連答案一併命中，ADR-00021 的冷啟動前提失去隔離保護（000-r2 之 P5-P2）。
+★殘留破口（窄但真實、刻意不另設閘）：「型」欄本身即透露該題應查無與否；留欄係 r3 主線按「5 應查無＋2 對照可答」配比重選題目所需，代價揭露於此。核心 25 題（§5.1）題文逐字入庫係 ADR-00021 可比性所需、**不在本禁令射程**。
+★r2 各題判分結果＝報告 `docs/reviews/20260907-doc-governance.md` §3.2（彙總形、不含逐題真相），本表刪欄不損該輪可重算性。
 
 ### 5.3 新面題 P5（8 題；只入報告 §3、不入 `probe` 欄）
 
@@ -210,7 +214,7 @@ Q3 修射程（文件修 ≲30 行、不動閘語意）／Q5 四型失效引用�
 | 題 | 裁定 |
 |---|---|
 | Q11 P6 對照組 | **①**：撤 P6（CLAUDE.md 由 harness 注入每支 agent、禁讀不可執行）；L9 矩陣加一欄「CLAUDE.md 以外的家」、無＝獨家，獨家清單入報告供停點①主張閘拍板。Q4 裁定改為此形；A run 17／18、B 21／22 |
-| Q12 P4 判準 | **①**：零骨架改動——verify unitdef 之 `DECISIONS_BLOCK` 加「P4 應查無題判準：找得到＝探針 ≤3 跳證明查無且指出最近相關真源；答出不存在之物＝答錯」＋§5.2 真相表（探針 prompt 不烤 DECISIONS_BLOCK、看不到） |
+| Q12 P4 判準 | **①**：零骨架改動——verify unitdef 之 `DECISIONS_BLOCK` 加「P4 應查無題判準：找得到＝探針 ≤3 跳證明查無且指出最近相關真源；答出不存在之物＝答錯」＋§5.2 真相（當時住該節第四欄、已依 BL-00040 刪去，見該節哨兵句；探針 prompt 不烤 DECISIONS_BLOCK、看不到） |
 | Q13 SKIP 分類 | **①**：Day-1 型八處改 ERROR（各配一反例：刪面即紅）；環境型三處（GT-02／GT-05 submodule-absent、GT-07 secrets-absent）改 ADR-00019 形具名跳過（不再自稱 Day-1、印「⤳ 跳過：原因」、命中謂詞具名）；登記處見 round 2 |
 | Q14 BL 存在性 | **①**：events-only——不變式「BL 只經事件 `backlog_add` 誕生」：backlog_done／review.to_backlog／現行 BACKLOG 與 DEFERRED 列之任一 BL 號不在曾 add 集＝紅；不讀 git 史 |
 | Q15 P4「首刀」 | **①**：改一詞「首刀」→「下一刀（003 auth-session）」，需知項與題數不變；報告 §0 記為題文 diff r1 §3 表之唯一差異（非改形、不觸 ADR-00021 翻案） |

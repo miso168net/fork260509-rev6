@@ -1,4 +1,5 @@
-// 編排骨架 harness（控制流十五案＝十二正例＋三反例；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置、反例＝BL-00033 於 maint-backlog-6 收掉）。
+// 編排骨架 harness（控制流十八案＝十二正例＋六反例；BL-00001 起帶斷言與退出碼＝000-r1 R1-082 處置、反例＝BL-00033 於 maint-backlog-6 收掉、
+//   _vars／_context／_allowed 三反例＝BL-00039① 於 maint-backlog-40-39-37 補）。
 // 用法：node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec|quality]
 //   spec（預設）＝樁把 blocker 打在規格對照段；quality＝打在碼品質段（原 quality-only 變體併入、以第二參數切換）。
 // 期望值自 script 的 `const IMPLEMENTERS = <n>` 行推導（樁對每支 implementer 回同一形；n=0＝續跑形、案7 改驗零 implementer 直入審查）；任一斷言不符→逐項列出、exit 1；用法錯 exit 2。
@@ -192,7 +193,9 @@ await run('案12 fix 部分改動＋結構化升級一項 → 次輪重報被過
   expect(p2.includes('前輪已升級主線之 findings 清單') && p2.includes('a.ts') && p2.includes('清單外真缺陷'), '次輪 review prompt 渲染結構化升級項（LL-00010）', p2.length)
 })
 
-// 案13～15：反例（RL-0051 一正一反、變異打在 head 判準上、皆須零派發）——以讀進來的 src 就地變異或改 args 驅動。
+// 案13～18：反例（RL-0051 一正一反、變異打在防呆判準上、皆須零派發）——以讀進來的 src 就地變異或改 args 驅動。
+// ★案16～18＝BL-00039①：_vars 三常數（head 段）與 _context／_allowed 兩常數（main 段）之型別＋非空腿；
+//   變異取「值被清空」而非「常數名打錯」——後者在頂層引用處即 ReferenceError（已 fail-loud），前者才是過得了 guard 的靜默洞。
 async function runNegative(name, mutatedSrc, argsValue, fragment) {
   const calls = []
   const agent = async (p, o) => { calls.push(o.label); return CLEAN }
@@ -200,6 +203,7 @@ async function runNegative(name, mutatedSrc, argsValue, fragment) {
   try { await new AsyncFn('phase', 'log', 'parallel', 'agent', 'args', mutatedSrc)(() => {}, () => {}, async (t) => Promise.all(t.map(f => f())), agent, argsValue) } catch (e) { err = e.message }
   console.log('\n【' + name + '】')
   console.log('  throw: ' + (err === null ? '（無）' : err.slice(0, 120)))
+  expect(mutatedSrc !== src || argsValue !== undefined, '變異已套用（非原 src）', '變異正則未命中、案退化為正例')
   expect(err !== null && err.includes(fragment), 'throw 含「' + fragment + '」', err)
   expect(calls.length === 0, '零派發', calls.length)
 }
@@ -207,6 +211,10 @@ await runNegative('案13 反例：args 非空 → 防呆① 零派發即 throw',
 const mSmoke = src.match(/^const SMOKE = '([^']+)'\s*$/m)
 await runNegative('案14 反例：SMOKE 取字面 test（看門狗會當自測子命令）→ 防呆② 零派發即 throw', mSmoke ? src.replace(mSmoke[0], "const SMOKE = 'test'") : src, undefined, '防呆②')
 await runNegative('案15 反例：IMPLEMENTERS 灌到結構最壞值逾保險絲上限 20 → 防呆③ 零派發即 throw', src.replace(mImpl[0], 'const IMPLEMENTERS = 9'), undefined, '防呆③')
+const mUnit = src.match(/^const UNIT = '[^']*'\s*$/m)
+await runNegative('案16 反例：UNIT 清成空字串（_vars 段；身分句失真仍過 guard）→ 防呆② 零派發即 throw', mUnit ? src.replace(mUnit[0], "const UNIT = ''") : src, undefined, '防呆②')
+await runNegative('案17 反例：CONTEXT 清成空字串（_context 段；接地整段消失仍過 guard）→ 防呆② 零派發即 throw', src.replace(/const CONTEXT = \[[\s\S]*?\]\.join\('\\n'\)/, "const CONTEXT = ''"), undefined, '防呆②')
+await runNegative('案18 反例：ALLOWED_BLOCK 清成空字串（_allowed 段；六件套⑥ 空間邊界靜默失效）→ 防呆② 零派發即 throw', src.replace(/const ALLOWED_BLOCK = \[[\s\S]*?\]\.join\('\\n'\)/, "const ALLOWED_BLOCK = ''"), undefined, '防呆②')
 
-console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十五案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')
+console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十八案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')
 process.exit(failed ? 1 : 0)

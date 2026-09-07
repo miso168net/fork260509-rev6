@@ -150,8 +150,10 @@ def cmd_extract():
 # check 子命令（rev4:B-128 快照 drift 閘）
 # ---------------------------------------------------------------------------
 
-# --staged-gate 收窄的 typings 抽取面（＝TYPINGS_GLOB 對應 pathspec）。
+# --staged-gate 收窄的兩側 pathspec：typings 側住 base-web（＝TYPINGS_GLOB 對應）、
+# 快照側住 rust-api worktree（＝OUTPUT_PATH 去掉子庫名；BL-00037③）。
 TYPINGS_PATHSPECS = ["src/typings/common.d.ts", "src/typings/api"]
+SNAPSHOT_PATHSPECS = ["server/tests/fixtures/wire-schema.json"]
 
 
 def snapshots_match(fresh_bytes, snapshot_bytes):
@@ -179,8 +181,8 @@ def _clean_git_env(environ):
     return {k: v for k, v in environ.items() if not k.startswith("GIT_")}
 
 
-def _run_git_baseweb(argv):
-    """對 base-web 跑 git（清 GIT_* env、cwd＝REPO_ROOT、-C 由 argv 自帶）。"""
+def _run_git_sub(argv):
+    """對子庫跑 git（清 GIT_* env、cwd＝REPO_ROOT、-C 由 argv 自帶）——base-web 與 rust-api 兩側共用。"""
     return subprocess.run(argv, capture_output=True, text=True, cwd=REPO_ROOT,
                           env=_clean_git_env(os.environ))
 
@@ -194,12 +196,12 @@ def probe_base_web(run=_run_capture):
     return proc.returncode == 0
 
 
-def staged_typings_verdict(run_outer=_run_capture, run_baseweb=_run_git_baseweb):
-    """--staged-gate 收窄判定（判定放 python、sh 只做粗判）。
+def _pin_range_verdict(sub, pathspecs, run_outer, run_sub):
+    """單側 pin 區間收窄判定（判定放 python、sh 只做粗判；兩側共用）。
 
-    回傳四值：not-staged＝gitlink 未 staged（無事可查）；no-typings＝staged 區間零
-    typings 變動；typings-changed＝有變動；unknown＝無法判定（保守走完整比對）。"""
-    proc = run_outer(["git", "diff", "--cached", "--raw", "--no-abbrev", "--", "base-web"])
+    回四值：not-staged＝該子庫 gitlink 未 staged（無事可查）；no-change＝staged 區間零
+    pathspecs 變動；changed＝有變動；unknown＝無法判定（保守走完整比對）。"""
+    proc = run_outer(["git", "diff", "--cached", "--raw", "--no-abbrev", "--", sub])
     if proc.returncode != 0:
         return "unknown"
     line = (proc.stdout or "").strip()
@@ -211,15 +213,32 @@ def staged_typings_verdict(run_outer=_run_capture, run_baseweb=_run_git_baseweb)
     old, new = parts[2], parts[3]
     if set(old) == {"0"} or set(new) == {"0"}:
         return "unknown"  # gitlink 新增／刪除——無區間可縮、走完整比對
-    diff = run_baseweb(["git", "-C", "base-web", "diff", "--name-only", old, new, "--"]
-                       + TYPINGS_PATHSPECS)
+    diff = run_sub(["git", "-C", sub, "diff", "--name-only", old, new, "--"] + pathspecs)
     if diff.returncode != 0:
         return "unknown"
-    return "typings-changed" if (diff.stdout or "").strip() else "no-typings"
+    return "changed" if (diff.stdout or "").strip() else "no-change"
+
+
+def staged_typings_verdict(run_outer=_run_capture, run_baseweb=_run_git_sub):
+    """typings 側（base-web pin 區間 × TYPINGS_PATHSPECS）收窄判定。
+
+    回傳四值沿用歷史命名：not-staged／no-typings／typings-changed／unknown。"""
+    v = _pin_range_verdict("base-web", TYPINGS_PATHSPECS, run_outer, run_baseweb)
+    return {"no-change": "no-typings", "changed": "typings-changed"}.get(v, v)
+
+
+def staged_snapshot_verdict(run_outer=_run_capture, run_rustapi=_run_git_sub):
+    """快照側（rust-api pin 區間 × SNAPSHOT_PATHSPECS）收窄判定（BL-00037③）。
+
+    ★快照住 rust-api worktree 內，外層 staged 面永遠只看得到 `rust-api` gitlink——
+    故快照側的觸發訊號是 pin bump，區間細判在此（對稱於 entity-drift 的雙側觸發）。
+    回四值：not-staged／no-change／changed／unknown。"""
+    return _pin_range_verdict("rust-api", SNAPSHOT_PATHSPECS, run_outer, run_rustapi)
 
 
 def cmd_check(staged_gate=False, run=_run_capture, run_outer=_run_capture,
-              run_baseweb=_run_git_baseweb, output_path=OUTPUT_PATH):
+              run_baseweb=_run_git_sub, run_rustapi=_run_git_sub,
+              output_path=OUTPUT_PATH):
     """check 子命令：重抽 typings 至暫存路徑、與工作樹快照 byte 比對（rev4:B-128 drift 閘）。
 
     絕不覆寫 OUTPUT_PATH；比對工作樹檔、勿讀 git blob（快照剛改未 commit 的中間態會誤紅）。
@@ -231,17 +250,18 @@ def cmd_check(staged_gate=False, run=_run_capture, run_outer=_run_capture,
     except AssertionError as ex:
         print(f"[check] ✗ self-test 失敗（check 比對邏輯壞）：{ex}", file=sys.stderr)
         return 2
-    # ② hook 專用收窄：staged base-web gitlink 區間零 typings 變動＝跳過（省 npx 秒數）。
+    # ② hook 專用收窄：**兩側** pin 區間皆零變動才跳過（省 npx 秒數）。
+    # ★BL-00037③：原只判 base-web 側，rust-api pin bump 帶進的快照改動零觸發——sh 段補了
+    #   `-e 'rust-api'` 觸發字面卻在此被 not-staged 一路跳過，等於假腿；快照側須自判區間。
     if staged_gate:
-        verdict = staged_typings_verdict(run_outer=run_outer, run_baseweb=run_baseweb)
-        if verdict == "not-staged":
-            print("[check] base-web gitlink 未 staged——無事可查、跳過")
+        typ = staged_typings_verdict(run_outer=run_outer, run_baseweb=run_baseweb)
+        snap = staged_snapshot_verdict(run_outer=run_outer, run_rustapi=run_rustapi)
+        if typ in ("not-staged", "no-typings") and snap in ("not-staged", "no-change"):
+            print(f"[check] staged 兩側 pin 區間零變動（typings 側 {typ}"
+                  f"〔src/typings/common.d.ts＋src/typings/api/〕／快照側 {snap}"
+                  f"〔{SNAPSHOT_PATHSPECS[0]}〕）——跳過重抽比對")
             return 0
-        if verdict == "no-typings":
-            print("[check] staged base-web 區間零 typings 變動"
-                  "（src/typings/common.d.ts＋src/typings/api/）——跳過重抽比對")
-            return 0
-        # typings-changed／unknown → 續跑完整比對。
+        # 任一側 changed／unknown → 續跑完整比對。
     # ③ 容器探測：不可用＝警告＋放行（dev stack 未起不該擋無關 commit）。
     if not probe_base_web(run=run):
         print(f"[check] ⚠ base-web 容器不可用（stack 未起）——wire-schema check 跳過、放行；"
@@ -530,10 +550,12 @@ class TestCheckCompare(unittest.TestCase):
 
 
 _RAW_GITLINK = ":160000 160000 " + "a" * 40 + " " + "b" * 40 + " M\tbase-web\n"
+_RAW_GITLINK_RA = ":160000 160000 " + "c" * 40 + " " + "d" * 40 + " M\trust-api\n"
 
 
 class TestCheckStagedGate(unittest.TestCase):
-    """--staged-gate 收窄（hook 專用）：未 staged／零 typings 變動＝跳過 rc 0、不觸容器。"""
+    """--staged-gate 收窄（hook 專用）：**兩側** pin 區間皆零變動＝跳過 rc 0、不觸容器；
+    任一側（typings 側 base-web／快照側 rust-api）有變動＝走完整比對（BL-00037③ 雙側觸發）。"""
 
     @staticmethod
     def _boom_run(argv):
@@ -543,6 +565,15 @@ class TestCheckStagedGate(unittest.TestCase):
     def _fixed(stdout, returncode=0):
         def fake(argv):
             return subprocess.CompletedProcess(argv, returncode, stdout, "")
+        return fake
+
+    @staticmethod
+    def _by_sub(baseweb="", rustapi=""):
+        """外層 `git diff --cached --raw … -- <sub>` 的 fake：依 argv 末項（子庫名）分回——
+        兩側收窄各查各的 gitlink，同一 seam 回同一串會讓另一側誤判。"""
+        def fake(argv):
+            return subprocess.CompletedProcess(
+                argv, 0, rustapi if argv[-1] == "rust-api" else baseweb, "")
         return fake
 
     def test_gitlink_not_staged_skips_rc0(self):
@@ -557,8 +588,8 @@ class TestCheckStagedGate(unittest.TestCase):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             rc = cmd_check(staged_gate=True, run=self._boom_run,
-                           run_outer=self._fixed(_RAW_GITLINK),
-                           run_baseweb=self._fixed(""))
+                           run_outer=self._by_sub(baseweb=_RAW_GITLINK),
+                           run_baseweb=self._fixed(""), run_rustapi=self._boom_run)
         self.assertEqual(rc, 0)
         self.assertIn("跳過", out.getvalue())
 
@@ -578,15 +609,77 @@ class TestCheckStagedGate(unittest.TestCase):
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 rc = cmd_check(staged_gate=True, run=spy_run,
-                               run_outer=self._fixed(_RAW_GITLINK),
+                               run_outer=self._by_sub(baseweb=_RAW_GITLINK),
                                run_baseweb=self._fixed("src/typings/api/system.d.ts\n"),
-                               output_path=snap)
+                               run_rustapi=self._boom_run, output_path=snap)
         self.assertEqual(rc, 0)
         # ★可辨識斷言（跳過路徑 rc 同為 0、只驗 rc 釘不住正向面）：容器 seam 確被呼叫
         # （探測＋重抽共 2 次）、stdout 是完整比對的一致訊息而非跳過訊息。
         self.assertEqual(len(container_calls), 2)
         self.assertIn("byte 一致", out.getvalue())
         self.assertNotIn("跳過", out.getvalue())
+
+    def test_snapshot_pathspec_matches_output_path(self):
+        """★快照側 pathspec 打錯＝區間 diff 恆空＝恆判 no-change＝假腿；此案把它釘在 OUTPUT_PATH 上。"""
+        self.assertEqual(os.path.join("rust-api", *SNAPSHOT_PATHSPECS[0].split("/")),
+                         OUTPUT_PATH)
+
+    def test_snapshot_changed_runs_full_compare(self):
+        """快照側正例（BL-00037③）：base-web 未 staged、rust-api pin 區間動到快照 → 走完整比對。"""
+        payload = '{"definitions":{"A":{}}}'
+        container_calls = []
+        sub_argvs = []
+
+        def spy_run(argv):
+            container_calls.append(argv)
+            if argv[-1] == "true":
+                return subprocess.CompletedProcess(argv, 0, "", "")
+            return subprocess.CompletedProcess(argv, 0, payload, "")
+
+        def spy_rustapi(argv):
+            sub_argvs.append(argv)
+            return subprocess.CompletedProcess(argv, 0, SNAPSHOT_PATHSPECS[0] + "\n", "")
+
+        with tempfile.TemporaryDirectory() as root:
+            snap = os.path.join(root, "wire-schema.json")
+            atomic_write(snap, payload)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc = cmd_check(staged_gate=True, run=spy_run,
+                               run_outer=self._by_sub(rustapi=_RAW_GITLINK_RA),
+                               run_baseweb=self._boom_run, run_rustapi=spy_rustapi,
+                               output_path=snap)
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(container_calls), 2)   # 探測＋重抽＝確實沒被收窄跳過
+        self.assertIn("byte 一致", out.getvalue())
+        self.assertNotIn("跳過", out.getvalue())
+        self.assertIn(SNAPSHOT_PATHSPECS[0], sub_argvs[0])   # 區間 diff 帶了快照 pathspec
+
+    def test_both_sides_staged_zero_change_skips_rc0(self):
+        """快照側反例：兩側皆 pin bump 但各自區間零變動 → 仍跳過 rc 0、不觸容器。"""
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = cmd_check(staged_gate=True, run=self._boom_run,
+                           run_outer=self._by_sub(baseweb=_RAW_GITLINK,
+                                                  rustapi=_RAW_GITLINK_RA),
+                           run_baseweb=self._fixed(""), run_rustapi=self._fixed(""))
+        self.assertEqual(rc, 0)
+        self.assertIn("跳過", out.getvalue())
+
+    def test_snapshot_verdict_values(self):
+        self.assertEqual(
+            staged_snapshot_verdict(run_outer=self._fixed(""),
+                                    run_rustapi=self._boom_run), "not-staged")
+        self.assertEqual(
+            staged_snapshot_verdict(run_outer=self._fixed(_RAW_GITLINK_RA),
+                                    run_rustapi=self._fixed("")), "no-change")
+        self.assertEqual(
+            staged_snapshot_verdict(run_outer=self._fixed(_RAW_GITLINK_RA),
+                                    run_rustapi=self._fixed(SNAPSHOT_PATHSPECS[0])),
+            "changed")
+        self.assertEqual(
+            staged_snapshot_verdict(run_outer=self._fixed(_RAW_GITLINK_RA),
+                                    run_rustapi=self._fixed("", returncode=1)), "unknown")
 
     def test_zero_old_sha_verdict_unknown(self):
         raw = ":000000 160000 " + "0" * 40 + " " + "b" * 40 + " A\tbase-web\n"

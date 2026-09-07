@@ -10,7 +10,7 @@
 | `_sk_main.js` | TDD 形主流程（serial）：依 `IMPL_STAGES` 逐支派 implementer（前支 report 原文轉交後支）→ SpecReview cycle → CodeQualityReview cycle；起手自我斷言 `IMPL_STAGES.length === IMPLEMENTERS`（保險絲推導同源）；0～N 支 implementer 同一支 main——**0 支＝續跑形**（RL-0010：某階段需重跑＝新開一支只跑審查段的 workflow、新 runId；`IMPL_STAGES=[]`、已完成結論與勿重報清單寫進 `CONTEXT`） |
 | `_sk_review.js` | **review 形主流程**（BL-00006；承 000-r1 四支 run 的可重用件）：`explore`＝lens∥冷啟動探針（唯讀）、可選 `INLINE_VERIFY`＝每支 lens 的 findings 即刻進 R-real／R-decided 兩鏡、探針進 grader→refuter；`verify`＝主線合併去重後的批次×兩鏡＋探針 grader→refuter＋可選完整性 critic。三態存活規則在 script 內結構化聚合（兩鏡皆確認→confirmed；任一駁回→refuted；其餘→uncertain 主線親裁），★null／`agentStatus=failed` 不殺 run（記入 `nulls`／`failed`、status 回 `partial`）。共用烤入塊（唯讀邊界／取證紀律／報前必查拍板／各角色回傳指令）與五套 schema 皆住本檔、只放「怎麼審」；刀事實住 `CONTEXT`／`DECISIONS_BLOCK`、任務句住 `_plan` |
 | `assemble.py` | **組裝器**（自 tmp/001-assemble.py 入庫）：`python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>`——unitdef 的 `MODE` 決定拼接序（tdd＝vars+head+allowed+rules+context+prompts+cycle+main；review＝vars+plan+head+rules+context+review）；拼完三道自檢（①RULES-VERSION 對賬＋`zh-TW`＋`RESIDUE` 殘留 ②`node --check` ③harness：tdd 走 harness-test spec＋quality、review 走 harness-review），任一紅＝非零退出、不留產物；另對賬 unitdef 模組層 `SMOKE` 與 `VARS` 內 `const SMOKE` 同值 |
-| `harness-test.mjs` | TDD 形 **控制流十五案（十二正例＋三反例）＋逐項斷言＋退出碼**：`node harness-test.mjs <script.mjs> [spec\|quality]`（quality＝樁把 blocker 打在碼品質段）；期望值自 script 的 `const IMPLEMENTERS = <n>` 推導（n=0 續跑形：案7 改驗零 implementer 直入審查）；樁走真 `spawn`／`guard`、只替換 `agent()`；秒級 |
+| `harness-test.mjs` | TDD 形 **控制流十八案（十二正例＋六反例）＋逐項斷言＋退出碼**：`node harness-test.mjs <script.mjs> [spec\|quality]`（quality＝樁把 blocker 打在碼品質段）；期望值自 script 的 `const IMPLEMENTERS = <n>` 推導（n=0 續跑形：案7 改驗零 implementer 直入審查）；樁走真 `spawn`／`guard`、只替換 `agent()`；秒級 |
 | `harness-review.mjs` | review 形 **九案（六正例＋三反例）＋逐項斷言＋退出碼**：`node harness-review.mjs <script.mjs>`；期望值自 `REVIEW_STAGE`／`INLINE_VERIFY`／`CRITIC`／`SMOKE` 行與回傳結構推導；樁只替換 `agent()`／`parallel()`／`pipeline()`；秒級 |
 | `EXAMPLE-tdd-unitdef.py` | TDD 形單元定義範例（單 implementer→兩段審查；尖括號佔位換刀事實；`IMPLEMENTERS=0` 即續跑形） |
 | `EXAMPLE-review-unitdef.py` | review 形單元定義範例（explore＋inline 兩鏡＋一支冷啟動探針；lens 任務＝編排骨架名冊與規則承載一致性——可原樣當骨架改動後的冒煙 review）；發射前照抄到 tmp/ 改 `UNIT`／`FEATURE`／`SMOKE`／`CONTEXT` |
@@ -44,13 +44,13 @@ vars + plan + head + rules + context + review      （★plan 先於 head＝保�
 
 組裝一律 `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>`，它替你跑三道：①RULES-VERSION 對賬＋`zh-TW`＋前單元字樣殘留（`RESIDUE`＝`U2 執行單元`／`u2-…` 冒煙 token 等）②`node --check`（包進 async fn、`export const meta`→`const meta`）③對應 harness 全綠；任一紅即不留產物。發射＝`Workflow scriptPath=<out.mjs>` 與 `python3 tools/wf-watchdog.py <冒煙token>` 同回合原子成對（CLAUDE.md §2）。★pre-commit 於 `tools/orchestration/` 之 `*.js|*.mjs|*.py` staged 時自動以三支入庫範例組裝到暫存目錄並跑對應 harness（BL-00023；改壞骨架或範例的 commit 當場紅），接線字面由 `tools/docsync/tests/test_hook_wiring.py` 機器守。
 
-## 十五案（TDD 形）在守什麼
+## 十八案（TDD 形）在守什麼
 
 跑滿 fix→確認輪清空判收斂（rev5:L-011 變形②）／連兩輪同 blocker 攔／fix 連兩輪零改動攔／
 review `agentStatus=failed` 立即 return／**review 有 blocker 時 fix 必須真的跑**（rev5:L-011 變形①）／
 **implementer `done_with_escalation` 照常跑完審查**（rev5:L-035）／implementer `blocked` 立即 return 零審查／
 fix `blocked` 立即 return／最壞路徑支數 < `AGENT_FUSE`／**fix `done_with_escalation`＋零改動＝該段收斂帶升級項、進下一段**（RL-0025／ADR-00013；案 10）／**零改動升級＋駁回項續審、已升級項重報被過濾**（案 11）／**部分改動＋結構化 `escalatedFindings` 升級→次輪重報被過濾、第 2 輪收斂**（案 12；LL-00010）。
-每案對派發支數、status、stage、reason 逐項斷言，任一不符 rc 1（000-r1 R1-082）；guard 在樁下照跑＝每支渲染後 prompt 的長度、`zh-TW`、冒煙 token、`RULES-VERSION` 同時被驗；案 11／12 另斷言次輪 review prompt 真的渲染了已駁回清單（RL-0071）與已升級清單（ADR-00013）。三反例（案 13～15、皆須零派發）：args 非空→防呆①／`SMOKE` 取字面 `test`→防呆②／`IMPLEMENTERS` 灌到結構最壞值逾 20→防呆③。
+每案對派發支數、status、stage、reason 逐項斷言，任一不符 rc 1（000-r1 R1-082）；guard 在樁下照跑＝每支渲染後 prompt 的長度、`zh-TW`、冒煙 token、`RULES-VERSION` 同時被驗；案 11／12 另斷言次輪 review prompt 真的渲染了已駁回清單（RL-0071）與已升級清單（ADR-00013）。六反例（案 13～18、皆須零派發）：args 非空→防呆①／`SMOKE` 取字面 `test`→防呆②／`IMPLEMENTERS` 灌到結構最壞值逾 20→防呆③／**`UNIT` 清成空字串→防呆②**（`_vars` 段、head 判準）／**`CONTEXT` 清成空字串→防呆②**／**`ALLOWED_BLOCK` 清成空字串→防呆②**（後二者＝`_context`／`_allowed` 段、`_sk_main.js` 判準；BL-00039①——這三者空值都過得了 guard，`ALLOWED_BLOCK` 空更使 fix agent 拿到沒有允許清單的 prompt、六件套⑥ 空間邊界靜默失效）。
 
 ## 九案（review 形）在守什麼
 

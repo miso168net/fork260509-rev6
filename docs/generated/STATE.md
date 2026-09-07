@@ -16,7 +16,7 @@
 - RULES：74 條／上限 92（implementer 38/48、review 14/18、fix 15/19、主線 43/52、人 10/12）
 - BACKLOG 開放：15｜滯後：0
 - LESSONS：12 筆
-- events：43 筆（erratum 2、feature_close 2、misc 16、perf 19、review 4）
+- events：44 筆（erratum 2、feature_close 2、misc 16、perf 20、review 4）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3539 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-07｜perf｜close_bookkeeping｜close_bookkeeping 14.84 秒 rc=0
 - 2026-09-07｜misc｜governance｜000-r2-doc-governance｜獨立輪 000-r2 文件治理架構第二輪體檢收單：五支 Workflow 85 支 agent、findings 102（confirmed 88）、修 69…
 - 2026-09-07｜review｜doc-governance｜findings 81（修 69／BL 8／ADR 4）；BL-00035、BL-00036、BL-00037、BL-00038、BL-00039、BL-00…
-- 2026-09-07｜perf｜close_bookkeeping｜close_bookkeeping 12.57 秒 rc=0

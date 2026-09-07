@@ -8,9 +8,7 @@
 //   _context：CONTEXT（身分／對象 SHA／範圍／日期；★含冒煙 token 與 zh-TW）；DECISIONS_BLOCK（拍板紀錄清單、R-decided 鏡與 lens 報前必查；可為空字串）
 // 三態存活規則（000-r1 計畫 §4.5、報告 §0）：兩鏡皆「確認」→confirmed；任一「駁回」→refuted；其餘（含不確定／缺答／null）→uncertain、主線親裁。
 //   ★null／agentStatus=failed 不殺 run（同 ADR-00013 精神）：記入 nulls／failed、其餘照跑，status 回 partial 由主線判。
-if (typeof UNIT !== 'string' || typeof FEATURE !== 'string' || typeof START_LOG !== 'string') {
-  throw new Error('防呆②：UNIT／FEATURE／START_LOG 須由 _vars 段定義（字串）')
-}
+// ★UNIT／FEATURE／START_LOG 之型別＋非空斷言已上提 `_sk_head.js`（兩形共用；BL-00039① 同批）——此處不再重複。
 if (typeof CONTEXT !== 'string' || CONTEXT.length < 80 || !CONTEXT.includes(SMOKE) || !CONTEXT.includes('zh-TW')) {
   throw new Error('防呆②：CONTEXT 須為 ≥80 字元字串且含冒煙 token 與 zh-TW 字面（RL-0018）')
 }
