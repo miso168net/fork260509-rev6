@@ -7,7 +7,7 @@ import os
 import re
 
 from . import RULES, ADR_DIR, LESSONS_DIR
-from .common import ERROR, SKIP, finding
+from .common import ERROR, finding
 
 RE_NEXT = re.compile(r"<!--\s*next:\s*RL-(\d{4})\s*-->")
 RE_CAPS = re.compile(r"上限[^：]*：([^\n]+)")
@@ -135,7 +135,7 @@ def _lessons_side(ctx, rule_ids):
     from .common import parse_front_matter
     names = _lesson_files(ctx)
     if not names and not ctx.exists(LESSONS_DIR):
-        return [finding(SKIP, "GT-08", LESSONS_DIR, "GT-08.lessons-absent：LESSONS/ 目錄尚未建（Day-1；首條 LL 落地即解除）")]
+        return [finding(ERROR, "GT-08", LESSONS_DIR, "LESSONS/ 目錄缺席（現在式面必在；RL-0051 掃描面空集合即紅）")]
     out = []
     ll_ids = {RE_LL_FILE.match(n).group(1) for n in names if RE_LL_FILE.match(n)}
     for n in names:

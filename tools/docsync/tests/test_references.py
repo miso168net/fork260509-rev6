@@ -3,7 +3,9 @@ import json
 import os
 import subprocess
 import tempfile
+import re
 import unittest
+import unittest.mock
 
 from docsync import references, common, book, events as ev_mod, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR, LESSONS_DIR
 from docsync.tests.test_book_ids import stub, RULES_TEXT
@@ -44,14 +46,14 @@ class TestStateAndCheck(unittest.TestCase):
         self.assertTrue(any("缺" in f[3] for f in references.check_generated(stub({}), computed)))
         self.assertTrue(any("漂移" in f[3] for f in references.check_generated(stub({"docs/generated/STATE.md": "T\n"}), computed)))
         self.assertTrue(any("名冊外" in f[3] for f in references.check_generated(stub({"docs/generated/STATE.md": "S\n", "docs/generated/extra.md": "e\n"}), computed)))
-        self.assertEqual(references.check_generated(stub({"docs/generated/STATE.md": "S\n"}), computed), [])
+        self.assertEqual([f for f in references.check_generated(stub({"docs/generated/STATE.md": "S\n"}), computed) if f[0] == "ERROR"], [])
 
 
 class TestMilestonesAndStateRendering(unittest.TestCase):
     def test_same_day_events_render_newest_first_and_review_summary_is_zh(self):
         ev = [{"type": "misc", "date": "2026-09-03", "summary": "第一筆", "category": "governance", "backlog_add": []},
               {"type": "misc", "date": "2026-09-03", "summary": "第二筆", "category": "governance", "backlog_add": []},
-              {"type": "review", "date": "2026-09-03", "scope": "s", "report": "docs/reviews/x.md",
+              {"type": "review", "date": "2026-09-03", "scope": "s", "report": "docs/reviews/20260903-x.md",
                "findings": {"total": 3, "fixed": 1, "to_backlog": ["BL-00009"], "wontfix_adr": ["ADR-00009"]}}]
         out = references.gen_milestones(ev)
         rows = [ln for ln in out.split("\n") if ln.startswith("| 2026")]
@@ -62,7 +64,7 @@ class TestMilestonesAndStateRendering(unittest.TestCase):
     def test_state_recent_events_render_perf_and_review(self):
         misc = json.dumps({"type": "misc", "date": "2026-09-03", "summary": "s", "category": "governance", "backlog_add": []})
         perf = json.dumps({"type": "perf", "date": "2026-09-03", "kind": "close_bookkeeping", "wall_s": 6.5, "rc": 0, "notes": "n"})
-        rev = json.dumps({"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/x.md",
+        rev = json.dumps({"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/20260903-x.md",
                           "findings": {"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}})
         files = {RULES: RULES_TEXT, EVENTS: misc + "\n" + rev + "\n" + perf + "\n", NOTES: "<!-- wave: 1 -->\n", CONSTITUTION: "**Version**: 1.0.0 |\n", "CLAUDE.md": "a\n"}
         out = references.gen_state(stub(files))
@@ -93,6 +95,7 @@ class TestGenerateIdempotent(unittest.TestCase):
         for rel, text in test_snapshot.src_files().items():   # reference-src 三檔＝reference/schema.md／accounts.md 的存在前提（缺席 fail-loud、不設 stub）
             w(rel, text)
         w(references.ROUTER_SOURCE, TestRoutes.ROUTES_TEXT)   # router.rs＝reference/routes.md 的存在前提（同樣缺席 fail-loud）：合成 repo 補樁、與 TestRoutes 共用同一份語料
+        w("tools/orchestration/EXAMPLE-x.mjs", "const IMPL_OPTS = { model: 'm', effort: 'e' }\n")   # *_OPTS 掃描面非空（000-r2 L4-08：空集合＝GT-01 警示）
         subprocess.run(["git", "-C", root, "add", "-A"], check=True)
         written = references.cmd_generate(common.Ctx(root))
         self.assertIn(f"{ADR_DIR}/ADR-00001-a.md", written)  # 對稱回填
@@ -141,7 +144,7 @@ class TestMilestonesEventFieldRendering(unittest.TestCase):
     def test_notes_appendix_lists_non_perf_events_with_notes_only(self):
         ev = [{"type": "misc", "date": "2026-09-03", "summary": "s", "category": "governance", "backlog_add": [], "notes": "第一行\n第二行全文"},
               {"type": "perf", "date": "2026-09-03", "kind": "close_bookkeeping", "wall_s": 1.0, "rc": 0, "notes": "perf 備註不入"},
-              {"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/x.md",
+              {"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/20260903-x.md",
                "findings": {"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}}]
         out = references.gen_milestones(ev)
         self.assertIn("| s | — | — | — |\n\n## 備註（notes）\n\n### 2026-09-03｜misc｜governance\n\n第一行\n第二行全文\n", out)
@@ -175,6 +178,130 @@ class TestMilestonesEventFieldRendering(unittest.TestCase):
         self.assertEqual(sum("｜review｜" in h for h in heads), sum(e["type"] == "review" for e in expected))
         self.assertIn("| misc | governance｜000-r1-doc-governance |", out)
         self.assertIn("| misc | governance｜000-w1-governance-tooling |", out)
+
+
+class TestMilestonesCellHygiene(unittest.TestCase):
+    """000-r2 L1-01／L1-02：①merge 欄只在該列真有 SHA 時渲染（erratum 之 adrs／probe 曾直接 str()[:7] 印出 Python 字面碎片）
+    ②cell 內未逸脫的半形直槓把列撐成多欄。★附錄節維持原樣不轉義（BL-00005 拍板：保留換行、不截斷、不轉義）。"""
+
+    SHA = "a" * 40
+
+    def _rows(self, evs):
+        return [ln for ln in references.gen_milestones(evs).split("\n") if ln.startswith("| 2026")]
+
+    def test_non_sha_erratum_renders_dash_in_merge_column(self):
+        adrs = {"type": "erratum", "date": "2026-09-05", "target_line": 1, "field": "adrs",
+                "corrected": ["ADR-00011"], "reason": "補漏記"}
+        probe = {"type": "erratum", "date": "2026-09-05", "target_line": 1, "field": "probe",
+                 "corrected": {"questions": 1, "found": 1, "detour": 0, "not_found": 0, "wrong": 0, "avg_min_hops": 1.0}, "reason": "回填"}
+        out = references.gen_milestones([adrs, probe])
+        self.assertNotIn("{'quest", out)
+        self.assertNotIn("['ADR-0", out)
+        for r in self._rows([adrs, probe]):
+            self.assertEqual(re.split(r"(?<!\\)\|", r)[5].strip(), "—", r)
+
+    def test_sha_erratum_and_merge_bearing_types_still_render(self):
+        err = {"type": "erratum", "date": "2026-09-05", "target_line": 1, "field": "merge", "corrected": self.SHA, "reason": "打錯"}
+        misc = {"type": "misc", "date": "2026-09-05", "summary": "s", "category": "governance", "backlog_add": [], "merge": self.SHA}
+        for r in self._rows([err, misc]):
+            self.assertEqual(re.split(r"(?<!\\)\|", r)[5].strip(), self.SHA[:7], r)
+
+    def test_pipe_in_cell_is_escaped_and_column_count_stable(self):
+        misc = {"type": "misc", "date": "2026-09-05", "summary": "掃 js|mjs|py 三型", "category": "governance", "backlog_add": []}
+        row = self._rows([misc])[0]
+        self.assertIn("js\\|mjs\\|py", row)
+        self.assertEqual(len(re.split(r"(?<!\\)\|", row)), 9)   # 前後空欄＋七欄（逸脫過的直槓不算欄界）
+
+    def test_perf_table_cells_escaped_too(self):
+        perf = {"type": "perf", "date": "2026-09-05", "kind": "close_bookkeeping", "wall_s": 1.0, "notes": "a|b"}
+        row = [ln for ln in references.gen_reference_perf([perf]).split("\n") if ln.startswith("| 2026")][0]
+        self.assertIn("a\\|b", row)
+        self.assertEqual(len(re.split(r"(?<!\\)\|", row)), 8)
+
+    def test_notes_appendix_is_not_escaped(self):
+        misc = {"type": "misc", "date": "2026-09-05", "summary": "s", "category": "governance", "backlog_add": [], "notes": "含 a|b 與\n換行"}
+        out = references.gen_milestones([misc])
+        self.assertIn("含 a|b 與\n換行", out)
+
+
+class TestStateTruncationAndMetricStatus(unittest.TestCase):
+    """000-r2 L1-11（尾 3 事件硬截斷無省略記號）／L1-10（治理指標表無狀態欄、超標與達標渲染相同）。"""
+
+    def _state(self, **over):
+        misc = json.dumps({"type": "misc", "date": "2026-09-03", "summary": "字" * 200, "category": "governance", "backlog_add": []})
+        files = {RULES: RULES_TEXT, EVENTS: misc + "\n", NOTES: "<!-- wave: 1 -->\n",
+                 CONSTITUTION: "**Version**: 1.0.0 |\n", "CLAUDE.md": "a\n"}
+        files.update(over)
+        return references.gen_state(stub(files))
+
+    def test_truncated_recent_event_gets_ellipsis(self):
+        line = [ln for ln in self._state().split("\n") if ln.startswith("- 2026")][0]
+        self.assertTrue(line.endswith("…"), line)
+        self.assertEqual(references._ellipsize("短句", 80), "短句")
+        self.assertEqual(references._ellipsize("abcdef", 4), "abc…")
+
+    def test_metric_table_has_status_column(self):
+        out = self._state()
+        self.assertIn("| 指標 | 值 | 目標 | 狀態 |", out)
+        rows = [ln for ln in out.split("\n") if ln.startswith("| 治理批對") or ln.startswith("| LESSONS 重複率") or ln.startswith("| BACKLOG 淨流量")]
+        self.assertEqual(len(rows), 3)
+        for r in rows:
+            self.assertIn(r.split("|")[4].strip(), ("達標", "超標", "—"), r)
+        self.assertEqual(references._metric_status(7.5, lambda v: v <= 1), "超標")
+        self.assertEqual(references._metric_status(0.5, lambda v: v <= 1), "達標")
+        self.assertEqual(references._metric_status("n/a", lambda v: v <= 1), "—")
+        self.assertIn("檢索性", out)
+
+    def test_probe_row_status_half_judged(self):
+        row = references._probe_row({"scope": "s", "le3_ratio": 0.5, "hit_ratio": 1.0, "not_found": 0, "wrong": 0,
+                                     "negative_wrong": 0, "avg_min_hops": 2.0})
+        self.assertIn("平均最短 hops 2.0", row)
+        self.assertIn("達標", row)
+        self.assertIn("需前輪值", row)
+        bad = references._probe_row({"scope": "s", "le3_ratio": 0.5, "hit_ratio": 0.8, "not_found": 1, "wrong": 1,
+                                     "negative_wrong": 0, "avg_min_hops": 2.0})
+        self.assertIn("超標", bad)
+        self.assertIn("| n/a |", references._probe_row("n/a"))
+
+
+class TestComputeGeneratedFailLoud(unittest.TestCase):
+    """000-r2 L3-10：compute_generated 曾以 `except ImportError: pass` 吞掉 gates 匯入失敗——
+    GATES.md 靜默退出計算面而 check 仍報零漂移。改為 fail-loud＋名冊 ⇔ 計算面對賬。"""
+
+    def test_real_repo_covers_whole_roster(self):
+        out = references.compute_generated(common.Ctx(ROOT))
+        self.assertEqual(set(out), set(references.GENERATED_FILES))
+
+    def test_missing_member_raises(self):
+        ghost = references.GENERATED_FILES + ("docs/generated/ghost.md",)
+        with unittest.mock.patch.object(references, "GENERATED_FILES", ghost):
+            with self.assertRaises(RuntimeError) as cm:
+                references.compute_generated(common.Ctx(ROOT))
+        self.assertIn("ghost.md", str(cm.exception))
+
+    def test_docstring_does_not_still_claim_the_removed_silent_skip(self):
+        """自述 ⇄ 行為：舊 docstring 的「gates 模組缺席時暫不入計算面」正是本腿要消滅的假述
+        （自陳允許 GATES.md 靜默退出計算面），與函式內「★不吞 ImportError」正面衝突（000-r2 修-CQ2）。"""
+        doc = references.compute_generated.__doc__
+        self.assertNotIn("暫不入計算面", doc)
+        self.assertIn("fail-loud", doc)
+        self.assertIn("raise", doc)
+
+
+class TestAgentsEmptyFace(unittest.TestCase):
+    """000-r2 L4-08：零命中曾輸出全破折號佔位列（看起來像「有表、只是空」），且 *_OPTS 字面形一改即靜默縮小掃描面。"""
+
+    def test_empty_face_prints_sentence_and_warns(self):
+        out = references.gen_reference_agents(stub({}))
+        self.assertIn("目前無", out)
+        self.assertNotIn("| — | — | — | — |", out)
+        fs = references.check_generated(stub({}), {})
+        self.assertTrue(any(f[0] == "WARN" and "agents" in f[2] and "空集合" in f[3] for f in fs), fs)
+
+    def test_real_repo_face_not_empty(self):
+        ctx = common.Ctx(ROOT)
+        self.assertTrue(references._agents_rows(ctx))
+        self.assertEqual([f for f in references.check_generated(ctx, {}) if f[0] == "WARN"], [])
 
 
 if __name__ == "__main__":
@@ -253,7 +380,7 @@ class TestBlueprintMap(unittest.TestCase):
 
 
 class TestAgentsTable(unittest.TestCase):
-    """reference/agents：tracked 編排 script 的 *_OPTS 字面→表；名冊內生成物 _sk_rules.js 不入掃描面；零命中＝一列「—」。"""
+    """reference/agents：tracked 編排 script 的 *_OPTS 字面→表；名冊內生成物 _sk_rules.js 不入掃描面；零命中＝明說「目前無」＋GT-01 一筆警示（000-r2 L4-08）。"""
 
     def test_agents_rows_from_opts_and_skip_generated(self):
         files = {"tools/orchestration/EXAMPLE-x.mjs": "const IMPL_OPTS = { model: 'fable[1m]', effort: 'xhigh' }\nconst REVIEW_OPTS = { model: 'opus[1m]', effort: 'high' }\n",
@@ -263,7 +390,7 @@ class TestAgentsTable(unittest.TestCase):
         self.assertIn("| EXAMPLE-x.mjs | IMPL_OPTS | fable[1m] | xhigh |", out)
         self.assertIn("| EXAMPLE-x.mjs | REVIEW_OPTS | opus[1m] | high |", out)
         self.assertNotIn("FAKE_OPTS", out)
-        self.assertIn("| — | — | — | — |", references.gen_reference_agents(stub({})))
+        self.assertIn("目前無", references.gen_reference_agents(stub({})))
 
 
 class TestRoutes(unittest.TestCase):

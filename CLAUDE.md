@@ -27,9 +27,9 @@
   期間拍板→ADR draft。rev5 承襲候選——啟動書 §5 波次表、憲法 §I.7／§III.2 承襲指針、BACKLOG 帶 `rev5:` 標註項——是 brainstorm 的直接輸入：
   沿用項照已驗證結論施工、翻案項用新設計。★系統重寫刀序由首刀 brainstorm 決定（D13）。
 - **SDD 5 步**：`/speckit-specify`（input＝brainstorm 檔）→ `/speckit-clarify` → `/speckit-plan`（對照憲法 §IV 九題）→ `/speckit-tasks` → `/speckit-analyze`；
-  每步後 commit（spec-kit git extension auto-commit、ADR-00003；其 `[Spec Kit]` 英文固定訊息＝RL-0042 zh-TW 之具名例外）。plan 之 research 必列「rev5 對應碼清單＋rev6 拍板差異點」（承 rev5:ADR 0019）。
-  棄案論證寫完 MUST 回頭對所選方案跑同一反例（RL-0013）。specify 必以 `/speckit-specify` 顯式起手（其 Pre-Execution Checks 才會跑 before_specify hook 建分支）、不排進 brainstorm 流程內自動觸發。
-  ★分支名≠feature 身分真源：分支由 hook 之 speckit.git.feature 建（序號＝既有 `NNN-` 分支與 `specs/` 目錄最大號＋1；設定住 `.specify/extensions/git/git-config.yml`、`.specify/init-options.json`）、
+  每步後 commit（spec-kit git extension auto-commit、ADR-00003；其 `[Spec Kit]` 英文固定訊息與 specify 自產 `checklists/requirements.md` 之檢核項文字＝RL-0042 兩項具名例外、授權住 RULES）。plan 之 research 必列「rev5 對應碼清單＋rev6 拍板差異點」（承 rev5:ADR 0019）。
+  棄案論證寫完 MUST 回頭對所選方案跑同一反例（RL-0013）。specify 必以 `/speckit-specify` 顯式起手（其 Pre-Execution Checks 才會跑 before_specify hook 建分支）、不排進 brainstorm 流程內自動觸發；其內建 NEEDS CLARIFICATION 一次呈三題之形不採用，一律改走 §5 一題一問。
+  ★分支名≠feature 身分真源：分支由 hook 之 speckit.git.feature 建（序號＝腳本先 `git fetch --all --prune`、再取 `git branch -a`〔含遠端追蹤分支〕之 `NNN-` 與 `specs/` 目錄兩者最大號＋1——起手會連帶觸發一次全 remote fetch，屬預期、非越權；設定住 `.specify/extensions/git/git-config.yml`、`.specify/init-options.json`）、
   `specs/<NNN>-<slug>/` 由 specify 自建並寫入 gitignored 的 `.specify/feature.json`（per-checkout；換機／切回舊分支先 `export SPECIFY_FEATURE_DIRECTORY=specs/<本刀目錄>`）——
   specify 收工後主線必核 `git branch --show-current` 與 feature.json 的目錄名相等、不等即當場擇一改名對齊（否則 §2 範本「<NNN>-<feature-name> 即分支名」與 events `feature` 欄同時失準）。
 - **TDD 實作**：以 superpowers:executing-plans 讀 tasks 起手、批判審查分執行單元；**從不使用 spec-kit 的 implement 指令**。編排驅動提示詞範本：
@@ -42,7 +42,7 @@
 　implementer(TDD) → spec-compliance review → fix 迴圈 → code-quality review → fix 迴圈。
 　★每個 agent prompt 烤進不可違反項＝`python3 tools/docsync rules emit --scope <implementer|review|fix>` 產出塊
 　（整塊烤入、含末行 RULES-VERSION；PreToolUse hook 對賬、不符即擋；規則本體住 docs/ops/RULES.md、不在此重抄）。
-　★單元定義→成品一律 `python3 tools/orchestration/assemble.py <uN.py> <uN.mjs>`（tdd／review 雙模式、三道自檢＝RULES-VERSION 對賬／node --check／harness；review 形骨架＝獨立輪與 final holistic review 用的 lens／兩鏡三態／grader／critic，範本＝`tools/orchestration/EXAMPLE-review-*-unitdef.py`）。
+　★單元定義→成品一律 `python3 tools/orchestration/assemble.py <uN.py> <uN.mjs>`（tdd／review 雙模式、三道自檢＝RULES-VERSION 對賬／node --check／harness；review 形骨架＝獨立輪與 final holistic review 用的 lens／兩鏡三態／grader／critic，範本＝`tools/orchestration/EXAMPLE-review-unitdef.py`（explore）與 `EXAMPLE-review-verify-unitdef.py`（verify））。
 　★fix 後次輪 review prompt 必附前輪已駁回 findings 清單（RL-0071）；code-quality review 烤進可見性放寬審查面（RL-0070）。
 ★workflow script 防呆六件套（缺一不發射；RL-0058～RL-0062、RL-0004／RL-0012／RL-0025）：
 　①agent prompt 全數烤進 script 本體模板字串；script 一律不接受 args（非 undefined／null 即零派發 throw），一切邊界與清單寫死 script 常數、`_vars`／`_plan` 段常數由首段逐欄斷言（型別＋非空），不符→零派發即 throw。
@@ -66,7 +66,7 @@
 　①復核 agent 回報（逐項自 grep 驗證、不採信；凡本單元改變的字面→`python3 tools/docsync errata <詞>` 跨檔假述枚舉、改完復掃）
 　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事）
 　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
-　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md`（後兩件＝例外註冊生成物、同在 GENERATED_FILES）
+　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`（後三件＝`docs/generated/` 之外的 GENERATED_FILES 成員；`_sk_rules.js` 於 RULES 改動時才變）
 　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」，rev5:L-022、RL-0008）。
 　★③必須早於⑤：STATE.md 帳面統計與 pins 由 generate 現讀，反序即產出舊值且無 diff 可察（rev5:L-018）。
 ★單元一支接一支連續跑完、**不停下來等 user 首肯**；唯三種情形停：①拍板級問題（判準＝RULES 名詞段「拍板級」）②到了需要 push/merge 的時點③觸及 §6 硬禁令。
@@ -79,7 +79,7 @@
   一次性遷移（改名／搬移／基線前進／拓樸調整）之 brainstorm 或 spec 附 Risk／Guard／Rollback 三欄表。
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
   程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。
-- **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES 改下一步 ③`python3 tools/docsync generate`＋`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md`
+- **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES 改下一步 ③`python3 tools/docsync generate`＋`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`
   → 一筆簿記 commit、lint 全綠放行。簿記一律排在 merge 之後。④簿記 commit 落地後量該顆牆鐘、append 一筆 `close_bookkeeping` perf 事件（隨下一顆 commit 入帳）。
 - **review 輪**：findings 一律三分流（修／轉 BL-NNNNN／won't-fix ADR）；承載處二分——不定期獨立輪落報告 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件；
   feature／維護批收刀之 final holistic review 不落報告不落事件、以收單 commit 訊息逐項列處置（RL-0073、承 rev5:ADR 0075）。
@@ -96,16 +96,16 @@
   機判：`git -C <子庫> merge-base --is-ancestor <worktree HEAD> <pin>` 成立＝②、反向成立＝①、兩者皆不成立＝真分叉、停手問 user；pin object 不在本地＝先 fetch 再判。
   ★兩向皆**永不 `submodule update`**（會 reset worktree）。
 - **初始化／新機器**：clone 外層後跑 **`bash tools/bootstrap.sh`**（一鍵幂等：源倉 clone＋worktree 重建＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋例外①自證＋
-  docsync test／check／lint＋閘數＋secrets 體檢；舊機重跑＝純體檢）。`git submodule update --init` 僅限唯讀快速看碼捷徑——該模式無源倉＝無基線、不可做 base-web 開發。
+  docsync test／check／lint＋閘數＋secrets 體檢；舊機重跑＝純體檢）。`git submodule update --init` 僅限唯讀快速看碼捷徑，且只適用**尚無 worktree 的全新 clone**（已有 worktree 者永不 update、見本節上一條）——該模式無源倉＝無基線、不可做 base-web 開發。
 - **upstream rebase**（base-web）：fetch 前 `git remote -v` 確認 upstream push URL 已設 no_push；rebase＋force-with-lease push 後**立即**回外層 bump pin；
-  基線前進＝拍板級（D14；先立 ADR 再改 bootstrap 的基線 SHA），`原行:` 註解同步更新為 upstream 現行版（憲法 §III rebase 同步紀律）。
+  基線前進＝拍板級（D14；先立 ADR＋走憲法 §V.2 Amendment 改 §I.1／§III 基線 SHA，再改 bootstrap 的 BASEWEB_BASE_SHA），`原行:` 註解同步更新為 upstream 現行版（憲法 §III rebase 同步紀律）。
 - 子庫 push 一律顯式 `git -C <子庫>` 形＋長名；push／merge 回 default 需 user 當次明確同意（憲法 §I.8、RL-0044）。
 - exec bit 在 drvfs 上以 `git update-index --chmod=+x` 落 index（GT-09 名冊斷言 100755）。
 - 故障排除→`docs/ops/LESSONS.md`（rev6 自零起）；前代候選＝rev5 `docs/ops/LESSONS.md`（唯讀、引用帶 `rev5:`）。
 
 ## 4. 文件系統規則
 
-細則全在 `docs/ops/RULES.md`（RL-0047～RL-0055）；本節只列指針：
+細則全在 `docs/ops/RULES.md`；本節只列指針（各條逐處標明所引 RL 號）：
 
 - **三材質**：人寫／事件源（`docs/ops/events.jsonl`）／機器生成（`docs/generated/**`＋`tools/orchestration/_sk_rules.js`＋例外註冊 `docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`；名冊＝GENERATED_FILES、嚴禁手改）。
   每個事實只有一個人寫的家；鏡像不是機器生成、就是不存在（RL-0049；GT-01 零漂移）。
@@ -113,7 +113,7 @@
 - **時態分離**：活書家族永遠現在式；未來式住 ops/；過去式住 git＋events（RL-0048；GT-06）。完成即刪、git 即史；刪列前先掃現在式引用（RL-0050）。
 - **ADR**：一決策一檔 `docs/arc42/decisions/ADR-NNNNN-<slug>.md`；accepted 後 body 不可變、翻案＝新檔 `supersedes: [舊號]`、`superseded_by` 由 generate 回填（GT-04）；
   won't-fix／by-design 也立 ADR；as-built 不回灌 ADR（拍板歸 ADR、實作結果歸收刀事件）。
-- **ID 配號**：BL／LL／RL 取檔頭 `<!-- next: -->` 後 bump、永不回收；ADR 編號＝檔名、永不重用（GT-05）。ops 帳本寫「本刀 U2」形、不寫裸刀號（RL-0020）。
+- **ID 配號**：BL／LL／RL 取檔頭 `<!-- next: -->` 後 bump、永不回收；ADR 編號＝檔名、永不重用（GT-05）。ops 帳本之跨刀存活面（BACKLOG／LESSONS）寫刀名形「001 刀 U2」；「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；一律不寫裸刀號（RL-0020）。
 - **前代編號**：一律 `rev5:`／`rev4:` 前綴；提及形（反引號或「」內）不算使用（RL-0046；GT-05）。
 - **勘誤**：`python3 tools/docsync errata <詞>` 機器枚舉全 repo（含兩子庫 pin 樹）逐處處置後才 commit（RL-0001）。
 - **lint 運作模式**：pre-commit 一次跑完、秒級（雙錨門檻＝`.githooks/pre-commit` 檔頭常數）；被擋的是 Claude、同回合修復（錯誤訊息附去處）；user 僅介入 lint 抓到真決策或調規拍板。
@@ -127,13 +127,13 @@
 - 拍板級才問：動 schema／加 migration、feature scope 邊界、破紀律例外、user 可見行為變更（RULES 名詞段）。
 - 拍板級條目動工前先查拍板紀錄（ADR／events／NOTES）、查無紀錄＝先問；承諾過目的事項單獨兌現、不以概括指示自行豁免（RL-0001）。
 - 問法：一題一問、每題 2～3 選項、第一個為建議；大白話、每選項串回 user 核心目標；trade-off 主張先 grep 實證；行為類拍板附前後對照範例；正交維度拆開問。
-- 不採信 agent 或自己的回報：一律 grep／實跑取證（本波兩次靠實跑抓到問題）。
+- 不採信 agent 或自己的回報：一律 grep／實跑取證。
 
 ## 6. 不要做的事（精選硬禁令）
 
 - ★絕不在 finishing 收尾階段之前 push/merge；push 前需 user 明確同意；tasks 清單不得排入 push/merge。
 - ★絕不在掃描防線就位前落任何 commit（含子庫與新機器；`bash tools/bootstrap.sh` 驗證通過＝就位）。
-- 絕不 `git submodule update`（會 reset worktree）；絕不 `git submodule add`（與 worktree 衝突；submodule 設定手寫 `.gitmodules`）。
+- 絕不 `git submodule update`（會 reset worktree；唯一例外＝全新 clone 且尚無 worktree 時的 `--init` 唯讀看碼捷徑，見 §3——該模式無源倉、不可開發）；絕不 `git submodule add`（與 worktree 衝突；submodule 設定手寫 `.gitmodules`）。
 - 絕不直接編輯 fork 源倉；前後端改動一律走 `base-web/`、`rust-api/` worktree。
 - 絕不寫入 `../fork260509-rev5/`（含其子庫與兩份源倉）——唯讀對照基準（凍結 SHA：外層 `7eab28a`／base-web `9833308`／rust-api `92919b9`，由 bootstrap 斷言、ADR-00002）；
   亦絕不對 rev5 stack（埠 2xxxx）做 schema／seed／設定變更或 `down -v`；rev6 stack 走 3xxxx（ADR-00001）。

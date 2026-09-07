@@ -62,8 +62,8 @@
 
 | run | 形 | 內容 | WORST／FUSE |
 |---|---|---|---|
-| A 探索 | review／explore、`INLINE_VERIFY=false` | lens 12（§4.3；L9 拆 a／b）＋探針 5（P1～P5）；全平行 | 17／18 |
-| B 驗證 | review／verify | findings 批 ≤5 × 兩鏡＋探針 5 ×（grader→refuter）＋critic 1 | 21／22；批 >5 → 主線依 24 上限切成 N 支批 run（末支帶 critic）、探針獨立一支、`log()` 拆點 |
+| A 探索 | review／explore、`INLINE_VERIFY=false` | lens 12（§4.3；L9 拆 a／b）＋探針 6（核心 4 支 P1～P4〔含 r1 P4 自由探索〕＋否定對照 1＋新面 1；T0 更正：v0.3 漏算 P4 自由探索）；全平行 | 18／19 |
+| B 驗證 | review／verify | findings 批 ≤5 × 兩鏡＋探針 6 ×（grader→refuter）＋critic 1 | 23／24；批 >5 → 主線依 24 上限切成 N 支批 run（末支帶 critic）、探針獨立一支、`log()` 拆點 |
 | C 補漏（有界、可跳過） | review／explore、`INLINE_VERIFY=true` | critic 缺口 lens ≤4、就地兩鏡 | 12／13；只跑一輪 |
 | D 修單 | tdd（`_sk_main.js`） | U-r2-gates：implementer→spec review→fix 迴圈→code-quality review→fix 迴圈；`IMPLEMENTERS=1、CYCLES=2、MAX_FIX_ROUNDS=3` | 15／16（≤20） |
 
@@ -89,7 +89,7 @@
 | L10 未讀面補掃（新） | r1 critic 缺口 | `.claude/skills` 15 支 vs CLAUDE.md §2／§6 對 spec-kit 五支＋自動 hook 的敘述；`.specify/scripts`＋`templates` vs 分支序號／feature.json 敘述；「檔→事件」反向：`docs/reviews/*`、`docs/arc42/decisions/*` 每檔 ↔ 事件（review.report／feature_close.adrs／misc.adrs）存在 | 敘述與實檔不符、反向缺席 | 六支不主動叫用之 skill 內容本身不審（只審「不叫用」敘述是否成立）；創世 ADR-00001～7 之反向缺席引 `already_decided_by`（adrs 欄晚於它們、BL-00004） |
 | L11 碼面治理（Q2 A） | 治理面、非業務邏輯 | RUNBOOK §12 碼面閘表 ↔ `tools/` 三支與其 `test` 子命令；`entity_access_lint`／`wire_schema` 等契約測試面之自述 vs 憲法 §II 島條文；rust-api 三 crate 檔頭「守哪條」句 vs RULES | 名冊漂移、自述與條文相反 | 已由 GT-12／GT-09 腿機器對賬者不報 |
 
-探針：P1～P3 核心題（§5.1）、P4 否定對照（§5.2）、P5 新面題（§5.3、只入報告）；P6 對照組已撤（Q11、§5.4）。
+探針（unitdef key）：P1～P3 核心題、P4 核心自由探索（§5.1）、P5 否定對照（§5.2）、P6 新面題（§5.3、只入報告）；對照組已撤（Q11、§5.4）。★T0 發現 r1 報告 §3 表題文有五題截於 45 字（#7／#8／#9／#14／#15），r1 prompt script 已清；題文採「報告表完整者照用、截斷者回退 r1 計畫 §5 原文」，完整 25 題文落本檔附錄 C＝r3 起題文真源，報告 §0 記此偏差。
 
 ### 4.4～4.6 dedup／分批、對抗驗證、補漏
 
@@ -109,7 +109,7 @@ r1 §4.7／§4.8 全部由骨架承載（`_sk_head.js` guard／保險絲同源�
 
 ### 5.1 核心 25 題（ADR-00021 可比性：題文逐字沿用、不增不刪）
 
-題文與分配＝r1 報告 `docs/reviews/20260904-doc-governance.md` §3 表（P1 6 題〔含 #15〕／P2 5 題／P3 6 題／P4 8 題；共同題 #1 三支都答）；起點同 r1 Q7。唯一差異＝P4 任務文「首刀」→「下一刀（003 auth-session）」（Q15；需知項與題數不變、非改形）；報告 §3 記「題文 diff r1 §3 表＝僅此一詞」。答案會隨 repo 變（如 #5 首刀已定），但題目仍是有效檢索任務；改形（題數、加權、逐題入帳）＝ADR-00021 翻案觸發器、另立 ADR。
+題文與分配＝r1 報告 `docs/reviews/20260904-doc-governance.md` §3 表（P1 6 題〔含 #15〕／P2 5 題／P3 6 題／P4 8 題；共同題 #1 三支都答）；起點同 r1 Q7。唯一差異＝P4 任務文「首刀」→「下一刀（003 auth-session）」（Q15；需知項與題數不變、非改形）；報告 §3 記「題文 diff r1 §3 表＝僅此一詞＋五題截斷回退 §5 原文（附錄 C）」。答案會隨 repo 變（如 #5 首刀已定），但題目仍是有效檢索任務；改形（題數、加權、逐題入帳）＝ADR-00021 翻案觸發器、另立 ADR。
 
 ### 5.2 否定對照 7 題（每輪重選；5 應查無＋2 對照可答；量「自信地答錯」）
 
@@ -156,7 +156,7 @@ CLAUDE.md 由 harness 注入每支 agent 的 context，「不得開 CLAUDE.md」
 
 | T | 步 | verify |
 |---|---|---|
-| T0 | §11 裁定回寫本檔→（Q6＝A）一顆 commit 於 default；自該 commit 開分支 `000-r2-doc-governance`；§6 pre-scan 存 scratchpad；題庫定稿（§5.1 diff r1 §3＝僅「下一刀」一詞）；擷取 SessionStart 三段現值（健檢／NOTES／STATE）烤入 P1～P3；三支 unitdef 住 `tmp/000-r2-{explore,verify,gap}.py`（verify 待 A 結果生成）＋D 之 `tmp/000-r2-fix.py`；`assemble.py` 組 A | 三道自檢綠；`pre-workflow-gate.py` rc 0；四處 porcelain 快照 |
+| T0 | §11 裁定回寫本檔→（Q6＝A）一顆 commit 於 default（c097c48）；自該 commit 開分支 `000-r2-doc-governance`（對象 SHA＝c097c48）；§6 pre-scan 存 scratchpad；題庫定稿（§5.1 diff r1 §3＝僅「下一刀」一詞）；擷取 SessionStart 三段現值（健檢／NOTES／STATE）烤入 P1～P3；三支 unitdef 住 `tmp/000-r2-{explore,verify,gap}.py`（verify 待 A 結果生成）＋D 之 `tmp/000-r2-fix.py`；`assemble.py` 組 A | 三道自檢綠；`pre-workflow-gate.py` rc 0；四處 porcelain 快照 |
 | T1 | `ToolSearch select:Monitor,TaskStop`；**同一回合** `Workflow({scriptPath})`＋`Monitor(wf-watchdog SMOKE)`；完成→`TaskStop`；復核 journal 逐 agent `agentStatus`、lens null／failed 重派 ≤1 次、探針 ≤2 次（新小 run、非 resume；Q17） | ARMED 冒煙 >0；四處 porcelain＝快照 |
 | T2 | dedup／分批（≤5 批或依 24 上限切 N 支）；生成 verify unitdef（findings 烤成 BATCHES、探針作答烤成 PROBES、critic prior＝files_read 聯集）；組裝；launch B＋Monitor；復核 | 存活集合＋被駁回集合＝輸入集合 |
 | T3 | critic 缺口→C（≤4 lens、inline 兩鏡）或跳過；launch＋Monitor；復核 | 同上 |
@@ -257,6 +257,33 @@ probe 欄（主線 T4；自 B run journal 之 `probes[].grade.grades`）：
 avg_min_hops＝round(mean(min_hops), 2)；核心 25 題→頂層、否定對照 7 題→negative；
 斷言 found＋detour＋not_found＋wrong＝questions（GT-02 同式）；缺答依 Q17（重派 ≤2、仍缺→本輪不寫欄）；寫入 review 事件；generate 後對 STATE 第四列。
 ```
+
+## 附錄 C：題文真源（自 r2 起；核心 25 題＋否定對照 7＋新面 8）
+
+核心（探針 P1＝#1、#2、#3、#4、#5、#15；P2＝#1、#6、#7、#8、#9；P3＝#1、#10、#11、#12、#13、#14；P4＝自由探索任務文）：
+
+```text
+1. 現在是波幾？唯一真源是哪個檔的哪一行？
+2. 兩子庫 pin 與 worktree HEAD 分歧時，怎麼判方向、各自怎麼處置？
+3. rev6 對照 rev5 的 UI 兩個埠各是多少？埠的真表在哪個檔？
+4. 要新增一條 RL 規則：改哪個檔、怎麼配號、上限是多少、哪個閘檢查？
+5. 首刀是哪把、刀序由什麼決定？若尚未決定，哪份文件說明由誰、在哪一步決定、產出放哪？
+6. 在容器內跑 rust test 的標準命令與「全程 serial」紀律寫在哪？
+7. 踩到一個坑要落 LESSONS：檔名形、frontmatter 必填欄、索引由誰產？   （r1 實問版；r2 誤用 §5 簡寫版、見報告 §3.5）
+8. RULES-VERSION 是什麼、由哪個命令產、哪個 hook 對賬、不符會怎樣？   （r1 實問版；同上）
+9. rev5 活書「會話狀態機（sys_token）」節在 rev6 對應到哪一節或哪個檔？（r1 實問版；同上）
+10. base-web 的基線 SHA 是多少、為什麼是它、拍板紀錄在哪？
+11. 收刀簿記的第四步是什麼、事件型別與 kind 叫什麼、量法為何？
+12. 目前 Day-1 豁免有哪些、解除謂詞是什麼？
+13. 哪些檔嚴禁手改？名冊的真源在哪個程式檔？
+14. 上一次 review 報告在哪、findings 幾筆、review 事件長什麼樣？      （r1 實問版；同上）
+15. `alert_webhook_url` 未決事項的處理步驟寫在哪一節？該節是實文嗎？  （r1 實問版；★r2 誤用少一子問之簡寫版＝嚴格較易，見報告 §3.5）
+P4：「你要開始下一刀（003 auth-session）：先階段 0 brainstorm、再手動 `/speckit-specify`。列出事先需知的一切（brainstorm 產出位置與命名、rev5 承襲候選來源、下一刀前必先消化事項、分支建立規則與序號來源、憲法自查九題、rev5 對照唯讀紀律、閘與 hook、分支建立後第一步），逐項標明找到的檔與 hops；找不到的列缺口」（r1 §4.3 任務原文、「首刀」→「下一刀（003 auth-session）」＝Q15）
+```
+
+★上表為 **r3 起的題文真源**：五題（#7／#8／#9／#14／#15）已更正為 r1 **實問版**（r1 報告 §3 表之完整文，該表在 r1 落筆時截於 45 字，r2 誤回退到 r1 計畫 §5 的簡寫版；主線逐字比對三源後更正、見 000-r2 報告 §3.5）。000-r2 實際問出去的是簡寫版，故其 `probe` 欄值與 r1 的可比性以「可比子集 20 題」為準、報告同列兩口徑。
+
+否定對照 N1～N7＝§5.2 表題文（探針 key P5）；新面 F1～F8＝§5.3 條列（探針 key P6）。探針起點＝SessionStart 三段現值＋CLAUDE.md 全文（r1 Q7）。
 
 ## 附錄 B：接地用勘查命令（可重跑）
 

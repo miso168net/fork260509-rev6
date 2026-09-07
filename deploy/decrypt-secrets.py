@@ -175,7 +175,7 @@ def restore_value(raw):
     ★這裡就是「刪非裸量純量斷言」之所以成立的地方：JSON 的字串已是**還原後的原值**，
     引號形（值含「冒號空白」／井號／前後空白／引號字元）與區塊純量形（值含換行）在此
     一律逐位元組正確——舊 bash 版逐行拆 key 拿到的是「含引號字元的原樣 token」、無法還原，
-    才只能把首字元落 `" ' | >` 四者判成 FAIL（舊檔 :195-220）。
+    才只能把首字元落 `" ' | >` 四者判成 FAIL（承 rev5 bash 版之同名判準）。
     ★非字串純量（sops 於密文內記型別、解密即還原）以 JSON 字面回填，與 bash 版逐字寫入
     `true`／`123`／`null` 的結果相同；容器／陣列＝結構性非預期，指名失敗不代猜。
     """
@@ -858,7 +858,7 @@ class TestRosterPinned(unittest.TestCase):
         self.assertNotIn("get" + "cwd", src, msg="落點錨定改吃 CWD＝呼叫端一漂落點就變")
 
     def test_non_plain_scalar_assertion_is_gone(self):
-        """★rev5:ADR 0010 轉換批①核心：非裸量純量斷言整段刪除（舊檔 :195-220）。字面殘留＝
+        """★rev5:ADR 0010 轉換批①核心：非裸量純量斷言整段刪除（承 rev5 bash 版之同段）。字面殘留＝
         改法沒真的落地（真 JSON 解析後該斷言只會誤殺人工填值機密）。
         ★刪的是「YAML token 首字元判形」那道；另立的 CR／LF 窄護欄（newline_hits）判準
         不同、放行面不同，見 TestNewlineGuard。"""

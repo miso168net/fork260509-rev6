@@ -44,7 +44,8 @@ class TestGt06(unittest.TestCase):
 
     def test_book_absent_skip(self):
         fs = book.gt_06(stub({"docs/ops/a.md": "a\n"}))
-        self.assertTrue(any(f[0] == "SKIP" and "GT-06.book-absent" in f[3] for f in fs))
+        self.assertTrue(any(f[0] == "ERROR" and "活書家族" in f[3] and "缺席" in f[3] and "空集合" in f[3] for f in fs), fs)
+        self.assertFalse(any(f[0] == "SKIP" for f in fs))
         self.assertTrue(any("不存在" in f[3] for f in errs(book.gt_06(stub({"docs/ops/a.md": "[c](c.md)\n"})))))
 
 

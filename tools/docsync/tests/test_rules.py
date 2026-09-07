@@ -43,17 +43,28 @@ class TestParse(unittest.TestCase):
         self.assertEqual(js.count("RULES-VERSION: " + rules.rules_version(GOOD)), 3)
 
 
+LESSON = '---\nid: "LL-00001"\nrule_id: RL-0001\npromotion_surface: rules\n---\n\nLL-00001｜坑名\n\n本文。\n'
+
+
 class TestGt08RulesSide(unittest.TestCase):
-    def _ctx(self, text):
+    def _ctx(self, text, lessons=True):
         c = common.Ctx.__new__(common.Ctx)
         c.root = "/nonexistent"
-        c.tracked = ["docs/ops/RULES.md"]
+        c.tracked = ["docs/ops/RULES.md"] + (["docs/ops/LESSONS/LL-00001-x.md"] if lessons else [])
         c._cache = {"docs/ops/RULES.md": text}
-        c.exists = lambda rel: rel in ("docs/ops/RULES.md", "docs/arc42/decisions/ADR-00003-x.md")
+        if lessons:
+            c._cache["docs/ops/LESSONS/LL-00001-x.md"] = LESSON
+        c.exists = lambda rel: rel in ("docs/ops/RULES.md", "docs/arc42/decisions/ADR-00003-x.md") or (lessons and rel == "docs/ops/LESSONS")
         return c
 
     def test_green(self):
         self.assertEqual([f for f in rules.gt_08(self._ctx(GOOD)) if f[0] == "ERROR"], [])
+
+    def test_lessons_dir_absent_is_red_not_skip(self):
+        """000-r2 修單：GT-08.lessons-absent 這支自稱 Day-1 的 SKIP 退場為 ERROR（首條 LL 早於 2026-09-04 落地、分支已死）。"""
+        fs = rules.gt_08(self._ctx(GOOD, lessons=False))
+        self.assertTrue(any(f[0] == "ERROR" and "LESSONS" in f[3] and "空集合" in f[3] for f in fs), fs)
+        self.assertFalse(any(f[0] == "SKIP" for f in fs))
 
     def test_bad_source_and_budget_counts(self):
         bad = GOOD.replace("rev5:L-003", "L-003")

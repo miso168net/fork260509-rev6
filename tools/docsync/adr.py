@@ -1,6 +1,6 @@
 """守 RL-0047／RL-0050：ADR accepted 後不可變、翻案走 supersede 對稱；編號永不重用、禁刪除。
 
-adr.py：load_adrs（工作樹或 HEAD）、gt_04（形制／不可變／對稱／禁刪除／撞號）、gen_decisions_index、backfill_superseded_by。
+adr.py：load_adrs（工作樹或 HEAD）、gt_04（形制／不可變／對稱／禁刪除／撞號）、gen_decisions_index（三輪出身反查）、backfill_superseded_by。
 """
 import os
 import re
@@ -168,8 +168,9 @@ def gt_04(ctx):
 
 
 def gen_decisions_index(adrs, events):
-    """DECISIONS-INDEX.md 本文：feature 欄自 events 的 `adrs` 欄反查——feature_close 印刀名、
-    misc（輕量軌收單即立 ADR）印「輕量軌｜<workflow 或日期>」、查無才印裸「輕量軌」（BL-00004）。
+    """DECISIONS-INDEX.md 本文：feature 欄自 events 反查——feature_close 印刀名、misc（輕量軌收單即立 ADR）
+    印「輕量軌｜<workflow 或日期>」、review 之 `findings.wontfix_adr`（won't-fix 立 ADR＝RL-0073）印「獨立輪｜<scope>」；
+    三輪皆查無＝中性「—」（000-r2 L1-03／L1-04：舊版缺 review 輪、且查無時硬編「輕量軌」＝生成面憑空斷言）。
     ★events 須為 `events_view` 的更正後視圖（erratum 補欄才看得見）。"""
     feat = {}
     for e in events:
@@ -181,11 +182,16 @@ def gen_decisions_index(adrs, events):
             tag = f"輕量軌｜{e.get('workflow') or e.get('date')}"
             for a in e.get("adrs", []) or []:
                 feat.setdefault(a, tag)
+    for e in events:                                   # 第三輪：獨立 review 輪之 won't-fix 出身
+        if e.get("type") == "review":
+            tag = f"獨立輪｜{e.get('scope') or e.get('date')}"
+            for a in (e.get("findings") or {}).get("wontfix_adr") or []:
+                feat.setdefault(a, tag)
     lines = [GENERATED_HEADER, "# DECISIONS-INDEX — ADR 索引", "",
              "| id | status | date | title | feature | supersedes | superseded_by |", "|---|---|---|---|---|---|---|"]
     for key in sorted(adrs):
         a = adrs[key]
-        lines.append(f"| {a.id} | {a.status} | {a.date} | {a.title} | {feat.get(a.id, '輕量軌')} | "
+        lines.append(f"| {a.id} | {a.status} | {a.date} | {a.title} | {feat.get(a.id, '—')} | "
                      f"{'、'.join(a.supersedes) or '—'} | {'、'.join(a.superseded_by) or '—'} |")
     return "\n".join(lines) + "\n"
 

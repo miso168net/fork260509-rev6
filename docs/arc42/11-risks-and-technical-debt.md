@@ -26,7 +26,8 @@ rev5_blueprint:
 
 | 債 | 現況 | 去處 |
 |---|---|---|
-| Day-1 豁免（GT-12 到期即紅） | 目前零筆（GT-08.lessons-absent 隨 LL-00001 落地移除） | 新豁免逐筆具名帶解除謂詞、到期同 commit 自 `DAY1_EXEMPTIONS` 移除 |
+| Day-1 豁免（GT-12 到期即紅） | 目前零筆（GT-08.lessons-absent 隨 LL-00001 落地移除；面缺席型 SKIP 已於 000-r2 全數改 ERROR） | 新豁免逐筆具名帶解除謂詞、到期同 commit 自 `DAY1_EXEMPTIONS` 移除 |
+| 環境型具名跳過（不到期、rc 0） | 3 筆：`GT-02`／`GT-05` submodule-absent、`GT-07` secrets-absent（ADR-00019 語意；觸發＝唯讀看碼模式或新機未佈機密） | 登記＝`tools/docsync/gates.py` 之 `ENV_SKIPS`；渲染面＝`docs/generated/GATES.md`「環境型跳過登記」表；GT-12 腿斷言原始碼 SKIP 鍵集 ⊆ 兩登記聯集 |
 | 編排範本的版本字面耦合 | 組裝成品 script（`EXAMPLE-<unit>.mjs`／單元 script）烤入 RULES-VERSION 字面，規則列一改即過期、hook 擋發射 | 改規則列時同批重烤（`python3 tools/docsync rules emit`） |
 
 ## ※11.3 E7 AI 債務登記

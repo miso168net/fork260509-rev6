@@ -60,7 +60,7 @@ CONTEXT = r"""const CONTEXT = [
   '冒煙 token＝' + SMOKE + '。一切書面產物（findings、verdicts、notes、任何解釋）一律 zh-TW；識別字、路徑、命令、程式碼保留原形。',
 ].join('\n')
 const DECISIONS_BLOCK = [
-  '拍板紀錄去處：.specify/memory/constitution.md；docs/arc42/decisions/（ADR-00004 六件套、ADR-00013 fix 清單外升級不終止 run）；docs/ops/RULES.md（表＋名詞段）；docs/ops/BACKLOG.md（BL-00007 檢索性第四指標；review 骨架入庫已收＝ADR-00020＋tools/orchestration/README.md）；docs/generated/GATES.md。',
+  '拍板紀錄去處：.specify/memory/constitution.md；docs/arc42/decisions/（ADR-00004 六件套、ADR-00013 fix 清單外升級不終止 run）；docs/ops/RULES.md（表＋名詞段）；docs/ops/BACKLOG.md（ADR-00021 檢索性第四指標；review 骨架入庫已收＝ADR-00020＋tools/orchestration/README.md）；docs/generated/GATES.md。',
 ].join('\n')"""
 
 RESIDUE = ['U0 執行單元', 'u0-govgate-7c2e']

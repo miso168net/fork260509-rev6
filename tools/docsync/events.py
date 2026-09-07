@@ -1,14 +1,14 @@
-"""守 RL-0055／RL-0053：事件帳逐型 schema 與 SHA 實證；收刀與 review 事件完整性。
+"""守 RL-0055：事件帳逐型 schema 與 SHA 實證；收刀與 review 事件完整性、BL 引用存在性。
 
 events.py：parse_events（jsonl、行界只認 \\n）、EVENT_SCHEMAS（rev6 欄位：五碼 ID、feature_close.window、misc.category）、
-gt_02（schema／SHA 實證／pin 互證／window 序號）、gt_03（specs／ADR／report 存在）、metrics（§4.3 三指標＋ADR-00021 檢索性第四指標）。
+gt_02（schema／SHA 實證／pin 互證／window 序號）、gt_03（specs／ADR／report 存在＋BL 引用存在性）、metrics（§4.3 三指標＋ADR-00021 檢索性第四指標）。
 """
 import json
 import os
 import re
 
-from . import EVENTS, ADR_DIR
-from .common import ERROR, SKIP, finding, GitError
+from . import EVENTS, ADR_DIR, BACKLOG, BACKLOG_DEFERRED
+from .common import ERROR, WARN, SKIP, finding, GitError
 
 RE_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RE_FEATURE = re.compile(r"^\d{3}-[a-z0-9][a-z0-9-]*$")
@@ -16,13 +16,14 @@ RE_SHA = re.compile(r"^[0-9a-f]{40}$")
 RE_SECTION = re.compile(r"^§\d{1,2}$")
 RE_ADR = re.compile(r"^ADR-\d{5}$")
 RE_BID = re.compile(r"^BL-\d{5}$")
-RE_LID = re.compile(r"^LL-\d{5}$")
 SUMMARY_CHAR_LIMIT = 300
 PIN_KEYS = (("web", "base-web"), ("api", "rust-api"))
 PERF_KINDS = ("close_bookkeeping", "precommit_chain")
 ERRATUM_FIELDS = ("merge", "pins.web", "pins.api", "commit", "adrs", "probe")
 ERRATUM_SHA_FIELDS = ("merge", "pins.web", "pins.api", "commit")   # 其餘欄之 corrected 依欄別分型
 CATEGORIES = ("product", "governance")
+# review.report 形（RL-0073 承載處①②）：舊形只驗 endswith(".md")、訊息卻宣稱完整路徑形（000-r2 L3-09）
+RE_REPORT = re.compile(r"^docs/reviews/\d{8}-[a-z0-9][a-z0-9-]*\.md$")
 PROBE_KEYS = ("questions", "found", "detour", "not_found", "wrong", "avg_min_hops")   # ADR-00021：review 事件 probe 欄（冷啟動探針一組；negative＝否定對照題同形、可缺席）
 
 EVENT_SCHEMAS = {
@@ -167,8 +168,8 @@ def _check_event(e):
     elif etype == "review":
         if not (isinstance(e["scope"], str) and e["scope"].strip()):
             errs.append("scope 須為非空字串")
-        if not (isinstance(e["report"], str) and e["report"].endswith(".md")):
-            errs.append("report 須為 .md 路徑（docs/reviews/YYYYMMDD-<scope>.md）")
+        if not (isinstance(e["report"], str) and RE_REPORT.fullmatch(e["report"])):
+            errs.append(f"report 須為 docs/reviews/YYYYMMDD-<scope>.md：{e['report']!r}")
         if "feature" in e and not RE_FEATURE.fullmatch(str(e["feature"])):
             errs.append(f"feature 格式須為 NNN-slug：{e['feature']!r}")
         fd = e["findings"]
@@ -353,7 +354,8 @@ def gt_02(ctx):
                 if key not in pins:
                     continue
                 if not sub_present[sub]:
-                    out.append(finding(SKIP, "GT-02", where, f"GT-02.submodule-absent：{sub} 不在工作樹、pins.{key} 未實證"))
+                    out.append(finding(SKIP, "GT-02", where, f"⤳ 跳過：{sub} 不在工作樹（命中謂詞＝{sub}/.git 不存在；GT-02.submodule-absent）"
+                                                       f"——pins.{key} 未實證；ADR-00019 環境缺席具名跳過 rc 0"))
                     continue
                 if not _sha_exists(ctx, pins[key], cwd=os.path.join(ctx.root, sub)):
                     out.append(finding(ERROR, "GT-02", where, f"pins.{key} {pins[key][:12]} 於 {sub} 實證失敗（無此 commit）"))
@@ -385,22 +387,94 @@ def _adr_exists(ctx, adr_id):
     return os.path.isdir(d) and any(n.startswith(adr_id + "-") for n in os.listdir(d))
 
 
+BL_LEDGERS = (BACKLOG, BACKLOG_DEFERRED)
+_BL_UNBORN = ("{bid} 未經事件 backlog_add 誕生（來源：{src}）——BL 只經事件誕生"
+              "（啟動書 §4.3 淨流量前提；ADR-00025 記 ADR 方向刻意不同形）")
+_BL_INFLIGHT = ("{bid} 已在帳本但事件尚無 backlog_add（來源：{src}）——在途落帳窗口："
+                "配號已發、收單事件補上 backlog_add 即消（簿記排在 merge 之後＝RL-0053）")
+
+
+def _bl_num(bid):
+    return int(bid.rsplit("-", 1)[1])
+
+
+def _bl_born(events):
+    """S＝全部事件 backlog_add 之 BL 號聯集（誕生集）。"""
+    born = set()
+    for e in events:
+        for b in e.get("backlog_add") or []:
+            born.add(b)
+    return born
+
+
+def _bl_existence(ctx, evs):
+    """BL-00003①：事件側（backlog_done、review.findings.to_backlog）與帳本兩卷之每個 BL 號皆須 ∈ 誕生集。
+    ★帳本側與 review.findings.to_backlog 側分兩態：號 ≤ max(誕生集)＝憑空號或回收號、ERROR；號 > max(誕生集)＝配號已發而收單尚未落帳的
+    在途窗口、WARN（一輪之內帳本先 append、事件於收單才寫，兩者恆有時間差；把在途也判 ERROR 會讓該輪
+    自身的收尾 commit 全被 pre-commit 擋死）。ADR 方向刻意不設同型反向不變式＝ADR-00025。
+
+    ★★此兩態＝**偏離 000-r2 §4.7 條文 A**（該條文只寫「帳本列號 ∉ S 即 ERROR」、且期望「現帳零 finding」）。
+    偏離理由與殘留破口已於本輪 fix 第 1 輪升級主線、待裁定（改條文／立 ADR／改回單態三擇一）：
+      · 理由：條文 A 與 RL-0053（簿記排在 merge 之後）在同一輪內互斥——本輪自身的 BL-00035～00042 由
+        BACKLOG append 先落地、其 backlog_add 要到收單事件才寫，單態 ERROR 會讓本輪收尾 commit 全被擋死。
+      · 殘留破口（窄但真實）：落在 (max(誕生集), 帳本 next-id) 半開區間的憑空號／打錯號只出 WARN、不擋
+        commit；該區間**之外**由 GT-05 的 next 單調腿接手（號 ≥ next 即 ERROR）。條文 A 明令「不讀 git 史」，
+        故在該區間內「在途」與「打錯」在機器面不可分——破口不可再收窄，只能靠改條文或放行讀史消除。"""
+    born = _bl_born(evs)
+    top = max((_bl_num(b) for b in born), default=0)
+    out = []
+    for e in evs:
+        where = f"{EVENTS}｜{e.get('date')}｜{e.get('type')}"
+        for b in e.get("backlog_done") or []:
+            if b not in born:
+                out.append(finding(ERROR, "GT-03", where, "GT-03：" + _BL_UNBORN.format(bid=b, src="backlog_done")))
+        if e.get("type") == "review":
+            rw = f"{EVENTS}｜review {e.get('date')} {e.get('scope')}"
+            for b in (e.get("findings") or {}).get("to_backlog") or []:
+                if b in born:
+                    continue
+                # to_backlog＝該輪的分流結果，其誕生事件（收單 misc 之 backlog_add）依 RL-0053 排在 merge 之後、
+                # 與 review 事件同輪但更晚；故與帳本側同判兩態，不然 review 事件一 append 就把自己的收尾擋死。
+                # backlog_done 不適用（收掉一個從未誕生的號恆為錯），維持單態 ERROR。
+                if _bl_num(b) <= top:
+                    out.append(finding(ERROR, "GT-03", rw, "GT-03：" + _BL_UNBORN.format(bid=b, src="findings.to_backlog")))
+                else:
+                    out.append(finding(WARN, "GT-03", rw, "GT-03：" + _BL_INFLIGHT.format(bid=b, src="findings.to_backlog")))
+    from . import book as book_mod   # 帳本列形＝家族真源（判準單一家、不另抄一份正則）
+    for rel in BL_LEDGERS:
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        for i, line in enumerate(text.split("\n"), 1):
+            m = book_mod.RE_ENTRY["BL"].match(line)
+            if m is None or m.group(1) in born:
+                continue
+            bid, src = m.group(1), f"{rel}:{i}"
+            if _bl_num(bid) <= top:
+                out.append(finding(ERROR, "GT-03", src, "GT-03：" + _BL_UNBORN.format(bid=bid, src=rel)))
+            else:
+                out.append(finding(WARN, "GT-03", src, "GT-03：" + _BL_INFLIGHT.format(bid=bid, src=rel)))
+    return out
+
+
 def gt_03(ctx):
     """GATE:
       id=GT-03
-      rule=RL-0053
+      rule=RL-0055
       source=rev5:ADR 0075
-      drift=收刀與 review 事件完整性
-      face=docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews
+      drift=收刀與 review 事件完整性、BL 引用存在性
+      face=docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews；docs/ops/BACKLOG.md；docs/ops/BACKLOG-DEFERRED.md
       trigger=pre-commit
       rc=1
-      breaks-if-removed=收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈
+      breaks-if-removed=收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現
     """
     out = []
     evs, _ = parse_events(ctx.text(EVENTS))
+    out += _bl_existence(ctx, evs)
     closes = [e for e in evs if e["type"] in ("feature_close", "review")]
     if not closes:
-        return [finding(ERROR, "GT-03", EVENTS, "掃描面空集合：零 feature_close／review 事件——文件創世驗收 review 事件必須存在")]
+        out.append(finding(ERROR, "GT-03", EVENTS, "掃描面空集合：零 feature_close／review 事件——文件創世驗收 review 事件必須存在"))
+        return out
     for e in closes:
         if e["type"] == "feature_close":
             where = f"{EVENTS}｜{e['feature']}"
@@ -422,13 +496,14 @@ def gt_03(ctx):
 
 def _probe_retrieval(events):
     """ADR-00021：最近一筆帶 probe 的 review 事件→{scope, le3_ratio（found/questions＝≤3 跳且答對）, hit_ratio（(found＋detour)/questions）, not_found, wrong,
-    negative_wrong（否定對照題答錯；缺席＝"—"）}；無＝"n/a"。"""
+    avg_min_hops（grader 最短 hops 平均；000-r2 L1-05 前該鍵受形檢卻無渲染面）, negative_wrong（否定對照題答錯；缺席＝"—"）}；無＝"n/a"。"""
     for e in reversed(events):
         p = e.get("probe") if e.get("type") == "review" else None
         if isinstance(p, dict) and not _check_probe(p):
             q, neg = p["questions"], p.get("negative")
             return {"scope": e["scope"], "le3_ratio": round(p["found"] / q, 2), "hit_ratio": round((p["found"] + p["detour"]) / q, 2),
-                    "not_found": p["not_found"], "wrong": p["wrong"], "negative_wrong": neg["wrong"] if neg else "—"}
+                    "not_found": p["not_found"], "wrong": p["wrong"], "avg_min_hops": p["avg_min_hops"],
+                    "negative_wrong": neg["wrong"] if neg else "—"}
     return "n/a"
 
 

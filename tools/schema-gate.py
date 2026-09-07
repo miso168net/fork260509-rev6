@@ -11,7 +11,7 @@
         `--container` 指向一次性 pristine 容器（fixtures 產製／演進帳往返驗證場景）。
   test  跑自帶測試（unittest、離線、零 docker）——含 SC-003 五類 negative 注入
         （結構／欄序／seed 值／sequence 落值／假 delta 登記合成）與登記檔壞形自測。
-  doccheck  data-model.md 文件面（§2 欄五元組＋§6 索引約束＋§9 sequences 落值）vs 凍結
+  doccheck  活體定稿 docs/ops/reference-src/schema-definition.md 文件面（§2 欄五元組＋§6 索引約束＋§9 sequences 落值；左源座標＝ADR-00012）vs 凍結
         fixtures 機器對賬（承 rev5:B-010；離線零 docker、不讀庫；★不入 pre-commit 常跑鏈——
         手動／review 輪跑）。
 
@@ -26,7 +26,7 @@
         （凍結面）⊕ 演進帳合成期望；右源＝實庫照相三節（與 python3 tools/docsync refresh
         同構三查詢、排除 seaql_migrations、確定性排序）；三節逐列全等，未登記差異＝紅
         （指名 section／table／名稱／左右值）、登記超前（登記了實庫沒有）同紅。
-  gate2 欄序——左源＝data-model.md §2 逐表欄序（解析「| # | 欄 |」表體）＋演進帳
+  gate2 欄序——左源＝schema-definition.md §2 逐表欄序（解析「| # | 欄 |」表體；ADR-00012）＋演進帳
         add_column 接末位；右源＝實庫 ordinal；14 親排表逐位全等、casbin_rule 豁免。
   gate2 seed——左源＝fixtures/seed.sql ⊕ seed_* 演進合成；右源＝實庫 pg_dump --data-only；
         兩側同一 normalize（COPY 段整列排序＋setval 原位＋剝除 \\restrict／\\unrestrict
@@ -47,7 +47,7 @@
 退出碼：0 全綠／1 漂移（逐項指名）／2 環境或結構異常（fixtures 缺、登記檔壞形、庫不可達、
 比對面為空、self-test 敗——附補救提示）／64 用法錯誤（usage 走 stderr）。
 只跑唯讀查詢與 pg_dump、絕不寫庫；pg_dump 帶 PGTZ=UTC（閘不依賴 session timezone、
-data-model §4 UTC+0 拍板）；輸出不含 deploy 機密值（seed 定稿值〔含 PHC 常數〕本在
+schema-definition.md §4 UTC+0 拍板）；輸出不含 deploy 機密值（seed 定稿值〔含 PHC 常數〕本在
 版控、gate2 seed diff 可回顯——非洩密面）。
 
 雙源互證（rev6 pristine 萃取之 fixtures vs rev5 同名檔逐位元全等；contracts/gates.md §2）＝
@@ -1064,7 +1064,7 @@ def compare_dump_owner(dump_text, expected):
     """實庫 dump 的 Owner 值一致性（rev5:B-011；配 [`normalize_seed_dump`] 第 ④ 類）。
 
     normalize 把 `; Owner: X` 的值抹成佔位字面後，seed 逐列 diff 對「DB 身分變更」
-    從此無感——而那正是 rev5:ADR 0008 那次逼 rev5 001 凍結 fixtures 重產一次的事實。本檢查把該
+    從此無感——而那正是 rev5:ADR 0008 那次逼 rev5:001 凍結 fixtures 重產一次的事實。本檢查把該
     偵測換成一筆具名 finding：噪音消除、守門強度不減。
 
     ★零 Owner 行必須紅，不得靜默判綠：pg_dump 形變或 dump 為空時比對面即空集合，

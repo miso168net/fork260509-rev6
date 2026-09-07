@@ -101,10 +101,11 @@ class TestDiagrams(unittest.TestCase):
 
 
 class TestFaceAbsent(unittest.TestCase):
-    def test_skip_named(self):
+    def test_book_face_absent_is_red(self):
+        """000-r2 修單：活書家族全缺原為自稱 Day-1 的 SKIP、其面今日全在＝分支已死；改 ERROR（RL-0051 掃描面空集合即紅）。"""
         fs = book.gt_10(stub({NOTES: NOTES1, "docs/ops/x.md": "x\n"}))
-        self.assertTrue(any(f[0] == "SKIP" and "GT-10.doc-skeleton-absent" in f[3] for f in fs))
-        self.assertEqual(errs(fs), [])
+        self.assertTrue(any(f[0] == "ERROR" and "活書家族" in f[3] and "缺席" in f[3] and "空集合" in f[3] for f in fs), fs)
+        self.assertFalse(any(f[0] == "SKIP" for f in fs))
 
 
 if __name__ == "__main__":

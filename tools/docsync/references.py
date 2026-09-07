@@ -4,14 +4,15 @@ references.py：parse_ports／gen_reference_ports（compose 三檔）、gen_refe
 gen_lessons_index（例外註冊；next＝檔集最大號＋1、ADR-00005）、gen_architecture_index（例外註冊；arc42 節檔 frontmatter）、gen_rad_ai_map（兩層填實計數）、
 gen_rev5_blueprint_map（rev5 藍本對照表；frontmatter rev5_blueprint 對 20 列名冊、缺列可見不斷言、ADR-00006）、gen_reference_agents（編排 script 的 *_OPTS 名冊）、
 parse_router_routes／gen_reference_routes（rust-api/server/src/router.rs 之 ROUTES const 全量表；窄假設行級解析、偏離即 raise、列序＝宣告序；002 刀 U1）、
-compute_generated（名冊→內容；reference/schema.md／accounts.md 兩鍵委給 snapshot.gen_reference_*）、check_generated（缺／漂移／名冊外）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
+compute_generated（名冊→內容；reference/schema.md／accounts.md 兩鍵委給 snapshot.gen_reference_*；名冊 ⇔ 計算面對賬、缺鍵即 raise）、
+check_generated（缺／漂移／名冊外／*_OPTS 掃描面空集合警示）、cmd_generate（先回填 ADR 對稱、冪等寫檔）。
 """
 import os
 import re
 
 from . import (EVENTS, RULES, BACKLOG, BACKLOG_DEFERRED, LESSONS_DIR, GENERATED_DIR, CONSTITUTION, DEFAULT_BRANCH,
                SUBMODULES, COMPOSE_FILES, NOTES)
-from .common import ERROR, GENERATED_HEADER, GitError, finding, parse_front_matter
+from .common import ERROR, WARN, GENERATED_HEADER, GitError, finding, parse_front_matter
 from . import events as ev_mod
 from . import adr as adr_mod
 from . import rules as rules_mod
@@ -92,6 +93,23 @@ def gen_reference_ports(ctx):
     return "\n".join(lines) + "\n"
 
 
+def _cell(v):
+    """表格 cell 逸脫（000-r2 L1-02）：半形直槓會把列撐成多欄，殘留換行同理——兩者一律處理。
+    ★只服務表列；附錄節（notes 全文）維持原樣不轉義＝BL-00005 拍板（保留換行、不截斷、不轉義）。"""
+    return str(v).replace("|", "\\|").replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+
+
+def _merge_cell(e):
+    """merge 欄（000-r2 L1-01）：只在該列真有 SHA 時渲染——feature_close／misc 的 merge、
+    或 erratum 且欄別 ∈ ERRATUM_SHA_FIELDS 之 corrected；其餘（adrs／probe 型 erratum）印「—」，
+    否則會把 Python 字面（`['ADR-0`、`{'quest`）切成七字印進表。"""
+    if e.get("type") in ("feature_close", "misc") and e.get("merge"):
+        return str(e["merge"])[:7]
+    if e.get("type") == "erratum" and e.get("field") in ev_mod.ERRATUM_SHA_FIELDS and e.get("corrected"):
+        return str(e["corrected"])[:7]
+    return "—"
+
+
 def gen_reference_perf(events):
     lines = [GENERATED_HEADER, "# reference/perf — 收刀簿記與 pre-commit 效能資料點", "",
              "來源＝docs/ops/events.jsonl 的 perf 事件（generate 重算；kind＝close_bookkeeping／precommit_chain、量測法＝RUNBOOK §12b）。", "",
@@ -100,7 +118,8 @@ def gen_reference_perf(events):
         if e.get("type") != "perf":
             continue
         notes = (e.get("notes") or "").split("\n", 1)[0]
-        lines.append(f"| {e['date']} | {e['kind']} | {e['wall_s']} | {e.get('rc', '—')} | {str(e.get('commit', '—'))[:7]} | {notes} |")
+        lines.append("| " + " | ".join(_cell(x) for x in (e["date"], e["kind"], e["wall_s"], e.get("rc", "—"),
+                                                          str(e.get("commit", "—"))[:7], notes)) + " |")
     return "\n".join(lines) + "\n"
 
 
@@ -152,10 +171,10 @@ def gen_milestones(events):
     rows = [e for e in events if e.get("type") != "perf"]
     ordered = [e for _, e in sorted(enumerate(rows), key=lambda t: (t[1]["date"], t[0]), reverse=True)]   # 同日依檔內序、新（後 append）在前
     for e in ordered:
-        summary = _event_summary(e)
-        merge = str(e.get("merge") or e.get("corrected") or "")[:7] or "—"
-        lines.append(f"| {e['date']} | {_type_cell(e)} | {_target(e)} | {summary} | {merge} | {'、'.join(e.get('adrs', []) or []) or '—'} | "
-                     f"{'、'.join(e['arch_impact']) if isinstance(e.get('arch_impact'), list) else e.get('arch_impact', '—')} |")
+        arch = "、".join(e["arch_impact"]) if isinstance(e.get("arch_impact"), list) else e.get("arch_impact", "—")
+        cells = (e["date"], _type_cell(e), _target(e), _event_summary(e), _merge_cell(e),
+                 "、".join(e.get("adrs", []) or []) or "—", arch)
+        lines.append("| " + " | ".join(_cell(x) for x in cells) + " |")
     return "\n".join(lines + _notes_appendix(ordered)) + "\n"
 
 
@@ -327,17 +346,29 @@ def gen_rev5_blueprint_map(ctx):
     return "\n".join(lines) + "\n"
 
 
-def gen_reference_agents(ctx):
-    """編排 script 的模型與 effort 名冊（啟動書 §3.2 P-E2）：tracked tools/orchestration/*.js|*.mjs 的 `const X_OPTS = { model, effort }` 字面；名冊內生成物不入掃描面。"""
+AGENTS_MD = "docs/generated/reference/agents.md"
+AGENTS_EMPTY = "**目前無**：tracked `tools/orchestration/*.js`／`*.mjs` 中零 `*_OPTS` 字面——掃描面空集合（RL-0051；check 同時回一筆警示）。"
+
+
+def _agents_rows(ctx):
+    """*_OPTS 名冊列（000-r2 L4-08：字面形一改即靜默縮小掃描面，故零命中須明說並警示）。"""
     rows = []
     for rel in sorted(set(ctx.tracked)):
         if rel.startswith("tools/orchestration/") and rel.endswith((".js", ".mjs")) and rel not in GENERATED_FILES:
             for m in RE_OPTS.finditer(ctx.text(rel) or ""):
                 rows.append(f"| {os.path.basename(rel)} | {m.group(1)} | {m.group(2)} | {m.group(3)} |")
+    return rows
+
+
+def gen_reference_agents(ctx):
+    """編排 script 的模型與 effort 名冊（啟動書 §3.2 P-E2）：tracked tools/orchestration/*.js|*.mjs 的 `const X_OPTS = { model, effort }` 字面；名冊內生成物不入掃描面。"""
+    rows = _agents_rows(ctx)
     lines = [GENERATED_HEADER, "# reference/agents — 編排 script 的模型與 effort 名冊", "",
-             "來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面（generate 重算）；"
+             "來源＝tracked `tools/orchestration/*.js`／`*.mjs`（名冊內生成物 `_sk_rules.js` 除外）的 `const <NAME>_OPTS = { model, effort }` 字面；★`EXAMPLE-*.mjs` 列＝組裝當時的成品快照，換模真源恆為 `_sk_head.js`（generate 重算）；"
              "角色×刻板型×產物進哪道閘＝`docs/process/P-E2-agent-registry.md`（人寫）；換模史＝git。", "",
-             "| script | 常數 | model | effort |", "|---|---|---|---|"] + (rows or ["| — | — | — | — |"])
+             "| script | 常數 | model | effort |", "|---|---|---|---|"] + rows
+    if not rows:
+        lines += ["", AGENTS_EMPTY]
     return "\n".join(lines) + "\n"
 
 
@@ -467,13 +498,41 @@ def _budget_rows(ctx, counts, caps):
     return lines
 
 
+def _ellipsize(s, n):
+    """截斷補「…」（000-r2 L1-11）：舊形 `[:80]` 無記號、句子中斷且括號不成對。
+    ★Python str 以碼位索引、不可能切在多位元組字元中間（byte 級切割才會）。"""
+    s = str(s)
+    return s if len(s) <= n else s[:n - 1] + "…"
+
+
+# 治理指標的目標與達標判準（000-r2 L1-10：舊表只有值與自由文字目標，7.5 對 ≤1 與達標列渲染完全相同）
+METRIC_GOALS = (
+    ("治理批對 feature 比", "gov_ratio", "≤1", lambda v: v <= 1),
+    ("LESSONS 重複率", "lessons_dup_rate", "0", lambda v: v == 0),
+    ("BACKLOG 淨流量（rolling 3 刀）", "backlog_net", "≤0", lambda v: v <= 0),
+)
+
+
+def _metric_status(v, ok):
+    """達標／超標；n/a 等無值者印「—」（無值可判、不等於達標）。"""
+    if not isinstance(v, (int, float)) or isinstance(v, bool):
+        return "—"
+    return "達標" if ok(v) else "超標"
+
+
+def _metric_rows(m):
+    return [f"| {label} | {m[key]} | {goal} | {_metric_status(m[key], ok)} |" for label, key, goal, ok in METRIC_GOALS]
+
+
 def _probe_row(pr):
-    """ADR-00021 檢索性列：最近一筆帶 probe 之 review 事件、比例現算；目標＝找不到＋答錯＝0、≤3 跳比例輪間不降。"""
+    """ADR-00021 檢索性列：最近一筆帶 probe 之 review 事件、比例現算；目標＝找不到＋答錯＝0、≤3 跳比例輪間不降。
+    ★狀態欄只判得動前半（找不到＋答錯＝0）；「輪間不降」需前一筆 probe 才可判、本列以「—（需前輪值）」明示。"""
     goal = "找不到＋答錯＝0；≤3 跳比例輪間不降"
     if pr == "n/a":
-        return f"| 檢索性（最近獨立輪探針） | n/a | {goal} |"
+        return f"| 檢索性（最近獨立輪探針） | n/a | {goal} | — |"
+    status = _metric_status(pr["not_found"] + pr["wrong"], lambda v: v == 0) + "；輪間不降 —（需前輪值）"
     return (f"| 檢索性（最近獨立輪 {pr['scope']}） | ≤3 跳 {pr['le3_ratio']}／答對 {pr['hit_ratio']}／找不到 {pr['not_found']}／答錯 {pr['wrong']}"
-            f"（否定對照答錯 {pr['negative_wrong']}） | {goal} |")
+            f"（否定對照答錯 {pr['negative_wrong']}）；平均最短 hops {pr['avg_min_hops']} | {goal} | {status} |")
 
 
 def gen_state(ctx):
@@ -506,17 +565,17 @@ def gen_state(ctx):
              f"- LESSONS：{len(lessons)} 筆" + ("" if lessons else "（未建）"),
              f"- events：{len(events)} 筆（" + "、".join(f"{t} {n}" for t, n in sorted(ev_counts.items())) + "）",
              f"- CLAUDE.md 行數：{len(claude.split(chr(10))) - (1 if claude.endswith(chr(10)) else 0) if claude else 0}（只報表、不擋）", "",
-             "## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）", "| 指標 | 值 | 目標 |", "|---|---|---|",
-             f"| 治理批對 feature 比 | {m['gov_ratio']} | ≤1 |", f"| LESSONS 重複率 | {m['lessons_dup_rate']} | 0 |",
-             f"| BACKLOG 淨流量（rolling 3 刀） | {m['backlog_net']} | ≤0 |", _probe_row(m["probe_retrieval"]), "",
+             "## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）", "| 指標 | 值 | 目標 | 狀態 |", "|---|---|---|---|",
+             ] + _metric_rows(m) + [_probe_row(m["probe_retrieval"]), "",
              "## 數量預算對賬（D8；ADR-00011：超限只警告、不擋）"] + _budget_rows(ctx, counts, caps) + ["", "## 最近事件（尾 3 筆、新在前）"]
     for e in list(reversed(events))[:3]:
-        lines.append(f"- {e['date']}｜{e['type']}｜{_target(e)}｜{_event_summary(e)[:80]}")
+        lines.append(f"- {e['date']}｜{e['type']}｜{_target(e)}｜{_ellipsize(_event_summary(e), 80)}")
     return "\n".join(lines) + "\n"
 
 
 def compute_generated(ctx):
-    """名冊→內容。GATES.md 由 gates.gen_gates_md 產（gates 模組缺席時暫不入計算面）。"""
+    """名冊→內容；GATES.md 由 gates.gen_gates_md 產（遲載避循環、匯入失敗不吞＝fail-loud）。
+    回傳前對賬 GENERATED_FILES 名冊 ⇔ 計算面，缺任一鍵即 raise（000-r2 L3-10：靜默退出計算面會讓 check 仍報零漂移）。"""
     events, _ = ev_mod.events_view(ctx.text(EVENTS))   # 人讀面吃更正視圖（BL-00004）
     out = {
         "docs/generated/STATE.md": gen_state(ctx),
@@ -534,11 +593,11 @@ def compute_generated(ctx):
         "docs/generated/reference/accounts.md": snapshot_mod.gen_reference_accounts(ctx),
         "docs/generated/reference/routes.md": gen_reference_routes(ctx),
     }
-    try:
-        from . import gates
-        out["docs/generated/GATES.md"] = gates.gen_gates_md(ctx)
-    except ImportError:
-        pass
+    from . import gates   # 遲載避循環；★不吞 ImportError（000-r2 L3-10）：GATES.md 靜默退出計算面會讓 check 仍報零漂移
+    out["docs/generated/GATES.md"] = gates.gen_gates_md(ctx)
+    missing = [rel for rel in GENERATED_FILES if rel not in out]
+    if missing:
+        raise RuntimeError(f"compute_generated 計算面缺 {missing}——GT-01「零漂移」會對這些檔靜默失真（名冊 ⇔ 計算面須同批改齊）")
     return out
 
 
@@ -554,6 +613,8 @@ def check_generated(ctx, computed):
     for rel in ctx.tracked:
         if rel.startswith(GENERATED_DIR + "/") and rel not in GENERATED_FILES:
             out.append(finding(ERROR, "GT-01", rel, "名冊外生成檔——docs/generated/** 只可含 GENERATED_FILES 名冊所列"))
+    if not _agents_rows(ctx):   # 000-r2 L4-08：真源掃描面空集合＝警示，不是一張看起來正常的空表
+        out.append(finding(WARN, "GT-01", AGENTS_MD, "掃描面空集合：tools/orchestration 之 *_OPTS 字面零命中（字面形改動會靜默縮小掃描面；RL-0051）"))
     return out
 
 

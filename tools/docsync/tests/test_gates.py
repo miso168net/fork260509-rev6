@@ -8,7 +8,7 @@ import tempfile
 import unittest
 import unittest.mock
 
-from docsync import gates, common, ROOT, RULES, NOTES
+from docsync import gates, common, ROOT, RULES, NOTES, CONSTITUTION
 from docsync.tests.test_book_ids import stub, errs, RULES_TEXT
 
 
@@ -30,6 +30,19 @@ def make_repo(files, exec_paths=()):
         _git(root, "update-index", "--chmod=+x", rel)
     _git(root, "commit", "-qm", "x")
     return root
+
+
+_REAL_LINT = []
+
+
+def real_lint():
+    """真 repo `run_lint` 結果在模組層算一次、多個**純讀**案共用（各自對同一份 findings 下斷言、強度不變）。
+    ★會改 `DAY1_EXEMPTIONS` 的案不得共用（那是另一組輸入、必須自己跑），故本函式只給不改模組狀態者。
+    理由＝docsync 自測是 pre-commit 最長路徑（`.githooks/pre-commit` 檔頭 45 s WARN／90 s FAIL 錨、門檻調整走 ADR）；
+    同一趟真 repo lint 跑三遍純屬重複。"""
+    if not _REAL_LINT:
+        _REAL_LINT.append(gates.run_lint(common.Ctx(ROOT)))
+    return _REAL_LINT[0]
 
 
 class TestRoster(unittest.TestCase):
@@ -105,7 +118,9 @@ class TestGt07(unittest.TestCase):
                 del os.environ["SECRETS_DIR"]
             else:
                 os.environ["SECRETS_DIR"] = old
-        self.assertTrue(any(f[0] == "SKIP" and "GT-07.secrets-absent" in f[3] for f in fs))
+        skips = [f for f in fs if f[0] == "SKIP"]
+        self.assertTrue(skips and all(f[3].startswith("⤳ 跳過：") for f in skips), skips)
+        self.assertTrue(any("GT-07.secrets-absent" in f[3] and "Day-1" not in f[3] for f in skips), skips)
 
 
 class TestGt09(unittest.TestCase):
@@ -123,17 +138,20 @@ class TestGt09(unittest.TestCase):
         self.assertIn("orphan.py", msgs)
         self.assertTrue(any("100755" in f[3] for f in fs))
 
-    def test_green_and_hooks_absent_skip(self):
+    def test_green_and_hooks_absent_red(self):
         readme = "# R\n\n```text\n├── tools/\n├── deploy/\n└── .claude/\n    ├── settings.json\n    └── hooks/\n```\n"
         execs = ["deploy/sops.sh", "deploy/generate-age-key.sh", "deploy/generate-dev-cert.sh", "tools/bootstrap.sh"]
         files = {"README.md": readme, "tools/x.py": "1\n", ".claude/settings.json": self.SETTINGS, ".claude/hooks/s.sh": "#!/bin/sh\n"}
         files.update({e: "#!/bin/sh\n" for e in execs})
         root = make_repo(files, exec_paths=execs)
         fs = gates.gt_09(common.Ctx(root))
-        self.assertEqual([f for f in errs(fs) if "deploy/sops.sh" in f[2] or "tools/" in f[2] or "hooks" in f[2]], [])
-        self.assertTrue(any(f[0] == "SKIP" and "GT-09.hooks-absent" in f[3] for f in fs))
+        self.assertEqual([f for f in errs(fs) if "deploy/sops.sh" in f[2] or "tools/" in f[2]], [])
+        # 000-r2 修單：Day-1 型 SKIP 退場為 ERROR（.githooks／README 今日全在、分支已死）
+        self.assertTrue(any(f[0] == "ERROR" and ".githooks" in f[3] and "缺席" in f[3] for f in fs), fs)
+        self.assertFalse(any(f[0] == "SKIP" for f in fs))
         fs2 = gates.gt_09(common.Ctx(make_repo({"tools/x.py": "1\n"})))
-        self.assertTrue(any(f[0] == "SKIP" and "GT-09.readme-absent" in f[3] for f in fs2))
+        self.assertTrue(any(f[0] == "ERROR" and "README" in f[3] and "缺席" in f[3] for f in fs2), fs2)
+        self.assertFalse(any(f[0] == "SKIP" for f in fs2))
 
 
 class TestGt09OrchestrationRoster(unittest.TestCase):
@@ -235,10 +253,12 @@ class TestGt12(unittest.TestCase):
         self.assertEqual([f for f in fs if "BACKLOG 開放" in f[3]], [])
         self.assertFalse(hasattr(gates, "BUDGET_BACKLOG_OPEN"))
 
-    def test_three_sources_skip_when_absent_and_red_when_mismatch(self):
+    def test_three_sources_red_when_absent_and_when_mismatch(self):
         fs = gates.gt_12(stub(self._files(1)))
-        keys = {f[3].split("：")[0] for f in fs if f[0] == "SKIP"}
-        self.assertEqual(keys, {"GT-12.runbook-absent", "GT-12.precommit-absent"})
+        self.assertEqual([f for f in fs if f[0] == "SKIP"], [])   # 000-r2 修單：Day-1 型 SKIP 退場為 ERROR
+        msgs0 = [f[3] for f in errs(fs)]
+        self.assertTrue(any("pre-commit" in m and "缺席" in m and "空集合" in m for m in msgs0), msgs0)
+        self.assertTrue(any("RUNBOOK" in m and "缺席" in m and "空集合" in m for m in msgs0), msgs0)
         bad = self._files(1, extra={".githooks/pre-commit": "#!/bin/sh\n# lint（GT-01～GT-11）\n", "docs/ops/RUNBOOK.md": "| GT-01 | x |\n"})
         msgs = [f[3] for f in errs(gates.gt_12(stub(bad)))]
         self.assertTrue(any("pre-commit" in m for m in msgs) and any("RUNBOOK" in m for m in msgs))
@@ -315,7 +335,7 @@ class TestGt12CodeGateTable(unittest.TestCase):
 
 class TestRunLint(unittest.TestCase):
     def test_real_repo_zero_errors_and_summary_format(self):
-        fs, summary = gates.run_lint(common.Ctx(ROOT))
+        fs, summary = real_lint()
         self.assertRegex(summary, r"^lint：\d+ 錯誤／\d+ 警告／\d+ 閘跳過$")
         self.assertEqual(errs(fs), [])
 
@@ -334,6 +354,248 @@ class TestRunLint(unittest.TestCase):
         self.assertTrue(out.startswith(common.GENERATED_HEADER))
         self.assertEqual(re.findall(r"^\| (GT-\d{2}) \|", out, re.M), [f"GT-{i:02d}" for i in range(1, 13)])
 
+    def test_gt_01_self_description_covers_the_opts_scan_face(self):
+        """gt_01 的 `face=` 是 GATES.md「掃描面」欄的唯一來源：check_generated 的第四腿掃的是
+        tracked `tools/orchestration` 之 `*_OPTS` 字面，那批檔（`_sk_head.js`、`EXAMPLE-*.mjs`）除
+        `_sk_rules.js` 外都不在 GENERATED_FILES 名冊——自述只寫名冊＝讀 GATES.md 的人無從得知
+        改掉字面形會靜默縮小 GT-01 的掃描面，而那正是該腿要治的病（000-r2 修-CQ2）。"""
+        b = gates.parse_gate_blocks(gates.gt_01.__doc__)["GT-01"]
+        self.assertIn("_OPTS", b["face"])
+        self.assertIn("_OPTS", b["breaks-if-removed"])
+        self.assertIn("掃描面", b["drift"])
+        self.assertIn("_OPTS", gates.gen_gates_md(common.Ctx(ROOT)))
+
+
+class TestEnvSkipRegistry(unittest.TestCase):
+    """000-r2 修單（BL-00003②）：SKIP 分支二分——Day-1 型退場為 ERROR、環境型留 SKIP 但登記 ENV_SKIPS（ADR-00019 具名跳過 rc 0）；
+    GT-12 新腿斷言原始碼全部 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS。"""
+
+    def test_env_skips_shape(self):
+        self.assertEqual(sorted(gates.ENV_SKIPS), ["GT-02.submodule-absent", "GT-05.submodule-absent", "GT-07.secrets-absent"])
+        for k, v in gates.ENV_SKIPS.items():
+            self.assertRegex(k, r"^GT-\d{2}\.[a-z0-9-]+$")
+            self.assertEqual(len(v), 2)
+            self.assertTrue(all(isinstance(x, str) and x.strip() for x in v), k)
+
+    def test_all_source_skip_keys_are_registered(self):
+        """正：真 package 原始碼的 SKIP 錨形鍵集恰＝三筆環境型、且全數登記。"""
+        keys, anchorless = gates.derive_skip_keys("\n".join(gates.package_sources().values()))
+        self.assertEqual(anchorless, 0)
+        self.assertEqual(keys, set(gates.ENV_SKIPS))
+        self.assertTrue(keys <= set(gates.DAY1_EXEMPTIONS) | set(gates.ENV_SKIPS))
+
+    def test_unregistered_skip_key_is_red(self):
+        """反：合成一支帶未登記 SKIP 鍵的原始碼→GT-12 指名該鍵。"""
+        extra = ('def z(ctx):\n    return [' + 'finding(' + 'SKIP, "GT-05", "w", "GT-05.made-up-key：樁")]\n')
+        fs = gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}), extra_sources={"z.py": extra})
+        self.assertTrue(any("GT-05.made-up-key" in f[3] and "未登記" in f[3] for f in errs(fs)), errs(fs))
+
+    def test_skip_anchor_without_key_is_red(self):
+        extra = ('def z(ctx):\n    return [' + 'finding(' + 'SKIP, "GT-05", "w", "沒有鍵的跳過")]\n')
+        fs = gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}), extra_sources={"z.py": extra})
+        self.assertTrue(any("無 GT-NN.slug 鍵" in f[3] for f in errs(fs)), errs(fs))
+
+    def test_run_lint_reports_no_unregistered_skip_on_real_repo(self):
+        fs, _ = real_lint()
+        self.assertEqual([f for f in fs if "未登記的 SKIP 鍵" in f[3]], [])
+
+    def test_gates_md_has_no_bare_html_placeholder(self):
+        """登記表的謂詞字面直接渲染進 GATES.md：裸角括號佔位符（如 <sub>）會被 GFM 當原生 HTML 標籤
+        （`sub` 屬允許標籤、此處永不閉合，其後儲存格內容整段被當下標渲染）——佔位符一律反引號包或寫實名。"""
+        out = gates.gen_gates_md(common.Ctx(ROOT))
+        bare = [l for l in out.split("\n") if re.search(r"(?:^|[^`])<[a-zA-Z][a-zA-Z0-9]*>", l)]
+        self.assertEqual(bare, [])
+
+    def test_gates_md_has_env_skip_table(self):
+        out = gates.gen_gates_md(common.Ctx(ROOT))
+        self.assertIn("## 環境型跳過登記（鍵｜命中謂詞｜理由）", out)
+        for k, (pred, reason) in gates.ENV_SKIPS.items():
+            self.assertIn(f"| {k} | {pred} | {reason} |", out)
+
+
+CLAUDE_STUB = ("★編排：fix 迴圈 for 上限 ≤3 輪；TDD 執行單元 agent 總數保險絲 ≤20 支、review 形每 run ≤24 支（＝25 減 1）。\n"
+               "基線＝upstream `example` tip `8be6f9ba`；源倉 main `32c5254`。\n"
+               "rev5 凍結 SHA：外層 `7eab28a`／base-web `9833308`／rust-api `92919b9`。\n")
+# 憲法側樁比照真檔措辭（錨形認語境不認值：措辭走樣＝該處無人對賬，由槽外殘留腿指名）
+CONST_STUB = "憲法：base-web 基線 SHA＝`8be6f9ba`、自源倉 main `32c5254` 起；rev5 樹凍結於 SHA `7eab28a`。\n"
+BOOT_STUB = ('BASELINE_BRANCH="example";  BASEWEB_BASE_SHA="8be6f9ba"\n'
+             'RUSTAPI_BASE_BRANCH="main"; RUSTAPI_BASE_SHA="32c5254"\n'
+             'REV5_FROZEN=".:7eab28a base-web:9833308 rust-api:92919b9"\n')
+SKHEAD_STUB = "const MAX_FIX_ROUNDS = 3\nconst MAX_AGENTS_PER_RUN = 24\n  AGENT_FUSE = Math.min(20, WORST + 1)\n"
+
+
+class TestGt12ClaimReconcile(unittest.TestCase):
+    """GT-12 之「數值／SHA 主張 ⇄ 工具常數」腿（BL-00003③、user 停點① 拍板：補既有閘腿、不占閘數）。
+    ★兩側值一律唯讀讀檔＋正則取：不 import 編排骨架、不執行 js。"""
+
+    def _files(self, claude=None, boot=None, head=None):
+        return {RULES: RULES_TEXT, NOTES: "<!-- wave: 6 -->\n",
+                "CLAUDE.md": CLAUDE_STUB if claude is None else claude,
+                CONSTITUTION: CONST_STUB,
+                "tools/bootstrap.sh": BOOT_STUB if boot is None else boot,
+                "tools/orchestration/_sk_head.js": SKHEAD_STUB if head is None else head}
+
+    def _msgs(self, **kw):
+        return [f[2] + "｜" + f[3] for f in errs(gates.gt_12(stub(self._files(**kw)))) if "主張對賬" in f[3]]
+
+    def test_green_synthetic(self):
+        self.assertEqual(self._msgs(), [])
+
+    def test_real_repo_claims_reconcile(self):
+        self.assertEqual([f for f in errs(gates.gt_12(common.Ctx(ROOT))) if "主張對賬" in f[3]], [])
+
+    def test_tool_side_sha_change_names_both_sides(self):
+        bad = BOOT_STUB.replace('BASEWEB_BASE_SHA="8be6f9ba"', 'BASEWEB_BASE_SHA="deadbee1"')
+        msgs = self._msgs(boot=bad)
+        self.assertTrue(any("8be6f9ba" in m and "CLAUDE.md:2" in m for m in msgs), msgs)
+
+    def test_tool_side_cap_change_names_both_sides(self):
+        msgs = self._msgs(head=SKHEAD_STUB.replace("MAX_FIX_ROUNDS = 3", "MAX_FIX_ROUNDS = 5"))
+        self.assertTrue(any("MAX_FIX_ROUNDS" in m and "≤3" in m and "5" in m for m in msgs), msgs)
+
+    def test_missing_anchor_is_empty_face_red(self):
+        msgs = self._msgs(claude="沒有任何主張字面。\n")
+        self.assertTrue(any("空集合" in m for m in msgs), msgs)
+
+    def test_swapped_pair_is_red_in_both_slots(self):
+        """對調：base-web／rust-api 兩處凍結 SHA 互換——五值集合成員判定全綠，逐槽比值兩槽同時紅。"""
+        msgs = self._msgs(claude=CLAUDE_STUB.replace("base-web `9833308`／rust-api `92919b9`",
+                                                     "base-web `92919b9`／rust-api `9833308`"))
+        self.assertTrue(any("rev5 base-web 凍結" in m and "`92919b9`" in m and "`9833308`" in m for m in msgs), msgs)
+        self.assertTrue(any("rev5 rust-api 凍結" in m and "`9833308`" in m and "`92919b9`" in m for m in msgs), msgs)
+
+    def test_deleted_claim_line_is_red_per_slot(self):
+        """整行刪除：凍結主張整行拿掉——人寫面兩檔合計仍有 SHA 主張（舊腿只在合計為零時才紅），逐槽零命中才判得出來。"""
+        claude = "\n".join(l for l in CLAUDE_STUB.split("\n") if "凍結 SHA" not in l)
+        msgs = self._msgs(claude=claude)
+        for slot in ("rev5 base-web 凍結", "rev5 rust-api 凍結"):
+            self.assertTrue(any(slot in m and "零命中" in m for m in msgs), (slot, msgs))
+
+    def test_wrong_slot_value_is_red(self):
+        """張冠李戴：base-web 基線寫成 rev5 外層凍結 SHA——值仍在五值集內、集合判定全綠，逐槽指名兩側值。"""
+        msgs = self._msgs(claude=CLAUDE_STUB.replace("tip `8be6f9ba`", "tip `7eab28a`"))
+        self.assertTrue(any("base-web 基線" in m and "`7eab28a`" in m and "`8be6f9ba`" in m and "CLAUDE.md:2" in m for m in msgs), msgs)
+
+    def test_reworded_claim_out_of_slot_is_red(self):
+        """措辭改到錨形外＝該處無人對賬；槽外殘留腿指名（錨形隨人寫面演化的保命腿）。"""
+        msgs = self._msgs(claude=CLAUDE_STUB.replace("基線＝upstream `example` tip", "基線＝上游最新之"))
+        self.assertTrue(any("錨形外" in m and "`8be6f9ba`" in m for m in msgs), msgs)
+
+    def test_non_claim_hex_literal_is_not_red(self):
+        """反方向：非那五個值的反引號 hex（RULES-VERSION 值、commit SHA）不是基線／凍結主張、不得誤紅。"""
+        self.assertEqual(self._msgs(claude=CLAUDE_STUB + "附註：RULES-VERSION `89ec0586d6a9`、commit `deadbeef1234`。\n"), [])
+
+    def test_bootstrap_constant_set_must_match_slots(self):
+        msgs = self._msgs(boot=BOOT_STUB.replace(" rust-api:92919b9", ""))
+        self.assertTrue(any("REV5_FROZEN[rust-api]" in m and "不對應" in m for m in msgs), msgs)
+
+    def test_every_slot_hits_the_real_face(self):
+        """逐槽在真人寫面至少一命中——槽形與真檔措辭同步（零命中腿的正向自證）。"""
+        ctx = common.Ctx(ROOT)
+        texts = [t for t in (ctx.text(rel) for rel in gates.CLAIM_FACE) if t]
+        for name, rx, const_name in gates.SHA_CLAIMS:
+            self.assertTrue(any(rx.search(t) for t in texts), name)
+
+    def test_fuse_slot_anchor_is_bound_to_the_constant_name(self):
+        """保險絲槽以常數名為錨：`_sk_head.js` 在保險絲行之前多出任一個無關的 `Math.min(` 時，
+        取值仍須落在 AGENT_FUSE 那行。★認「第一個 Math.min」＝與被控常數零語境綁定，
+        與同檔自陳「錨形只認語境、不認值」矛盾（000-r2 修-CQ1）。"""
+        noisy = "  const CHUNK = Math.min(3, xs.length)\n" + SKHEAD_STUB
+        self.assertEqual(self._msgs(head=noisy), [])
+        msgs = self._msgs(head=noisy.replace("Math.min(20, WORST + 1)", "Math.min(12, WORST + 1)"))
+        self.assertTrue(any("保險絲" in m and "≤20" in m or "保險絲" in m and "12" in m for m in msgs), msgs)
+
+    def test_fuse_slot_anchor_absent_is_red(self):
+        """常數名錨形整個不在（改名／刪除）＝無對賬基準、照紅。"""
+        msgs = self._msgs(head=SKHEAD_STUB.replace("AGENT_FUSE = Math.min(20,", "FUSE2 = Math.min(20,"))
+        self.assertTrue(any("取不到" in m and "AGENT_FUSE" in m for m in msgs), msgs)
+
+    def test_tool_file_absent_is_red(self):
+        files = self._files()
+        del files["tools/orchestration/_sk_head.js"]
+        msgs = [f[2] + "｜" + f[3] for f in errs(gates.gt_12(stub(files))) if "主張對賬" in f[3]]
+        self.assertTrue(any("_sk_head.js" in m for m in msgs), msgs)
+
+
+class TestGt09PrefixAndTreeParsing(unittest.TestCase):
+    """000-r2 L3-07（hooks_absent 前綴缺尾斜線、連帶豁免 .githooks-submodule/* 的 EXEC_REQUIRED）
+    ／L3-08（README 樹「、」多檔行於深度 0 失去目錄前綴）。"""
+
+    def test_hooks_absent_does_not_exempt_githooks_submodule(self):
+        """`.githooks` 前綴會把 `.githooks-submodule/*` 一併吃掉，與同筆訊息「其餘 EXEC_REQUIRED 照驗」矛盾。"""
+        fs = errs(gates.gt_09(common.Ctx(make_repo({"tools/x.py": "1\n"}))))
+        named = " ".join(f[2] for f in fs if "EXEC_REQUIRED" in f[3])
+        self.assertIn(".githooks-submodule/pre-commit", named)
+        self.assertIn(".githooks-submodule/pre-push", named)
+        self.assertNotIn(".githooks/pre-commit", named.replace(".githooks-submodule/pre-commit", ""))
+
+    def test_depth_zero_multi_file_line_inherits_dir_prefix(self):
+        tree = ("```text\n"
+                "├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   兩卷\n"
+                "├── docs/ops/LESSONS.md、LESSONS/   索引與一坑一檔\n"
+                "├── docs/arc42/、docs/c4/、docs/compliance/   活書家族\n"
+                "└── base-web/、rust-api/   兩 worktree\n"
+                "```\n")
+        paths, leaf_dirs = gates.readme_tree_paths(tree)
+        self.assertIn("docs/ops/BACKLOG-DEFERRED.md", paths)
+        self.assertNotIn("BACKLOG-DEFERRED.md", paths)
+        self.assertIn("docs/ops/LESSONS/", paths)
+        self.assertNotIn("LESSONS/", leaf_dirs)
+        for d in ("docs/arc42/", "docs/c4/", "docs/compliance/", "base-web/", "rust-api/"):
+            self.assertIn(d, paths, d)
+
+    def test_real_readme_two_way_still_green(self):
+        self.assertEqual([f for f in errs(gates.gt_09(common.Ctx(ROOT)))], [])
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSkipRegistrySingleAuthority(unittest.TestCase):
+    """000-r2 修-CQ3：具名跳過的「登記集合」與「鍵抽取口徑」各只有一份權威——
+    gt_12（靜態掃原始碼錨形）與 run_lint（執行期掃 SKIP 訊息）兩腿同取，不得各寫一份。"""
+
+    def test_registered_skip_keys_is_the_union(self):
+        self.assertEqual(gates.registered_skip_keys(), set(gates.DAY1_EXEMPTIONS) | set(gates.ENV_SKIPS))
+
+    def test_both_legs_consume_the_single_registry(self):
+        """把單一權威換掉（多登記一個鍵）→ 靜態腿與執行期腿**同時**閉嘴；
+        任一腿仍自寫一份 `DAY1_EXEMPTIONS ∪ ENV_SKIPS` 即在此紅（日後加第三本登記時的靜默分叉）。"""
+        fake = "GT-05.made-up-key"
+        extra = {"z.py": 'def z(ctx):\n    return [' + 'finding(' + f'SKIP, "GT-05", "w", "{fake}：樁")]\n'}
+        skip_f = [common.finding(common.SKIP, "GT-05", "w", f"{fake}：樁")]
+        with unittest.mock.patch.object(gates, "registered_skip_keys",
+                                        lambda: set(gates.DAY1_EXEMPTIONS) | set(gates.ENV_SKIPS) | {fake}):
+            fs = gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}), extra_sources=extra)
+            self.assertEqual([f for f in errs(fs) if fake in f[3]], [])
+            self.assertEqual(gates.unregistered_skip_warnings(skip_f), [])
+        # 還原後兩腿都該重新指名（證明上面的靜默不是因為腿本身失效）
+        fs = gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}), extra_sources=extra)
+        self.assertTrue([f for f in errs(fs) if fake in f[3]], errs(fs))
+        self.assertTrue(gates.unregistered_skip_warnings(skip_f))
+
+    def test_both_legs_pick_the_same_key_when_message_carries_two(self):
+        """訊息交叉引用他閘跳過鍵（「同上：…」寫法的下一步）時，兩腿必取到同一鍵——
+        取到不同鍵＝一個判已登記、一個判未登記，方向相反。"""
+        msg = "GT-05.env-a：樁（同上：GT-07.env-b 亦跳過）"
+        src = 'def z(ctx):\n    return [' + 'finding(' + f'SKIP, "GT-05", "w", "{msg}")]\n'
+        keys, anchorless = gates.derive_skip_keys(src)
+        self.assertEqual((keys, anchorless), ({"GT-05.env-a"}, 0))
+        self.assertEqual(gates.skip_key_of(msg), "GT-05.env-a")
+        warns = gates.unregistered_skip_warnings([common.finding(common.SKIP, "GT-05", "w", msg)])
+        self.assertEqual([w[3] for w in warns], ["未登記的 SKIP 鍵 GT-05.env-a（須登記 DAY1_EXEMPTIONS 或 ENV_SKIPS）"])
+
+    def test_window_cap_does_not_truncate_any_real_skip_site(self):
+        """靜態面多一道 300 字元視窗（執行期面是訊息全文）：某支 SKIP 訊息一旦長到把鍵推出視窗，
+        gt_12 判「錨形無鍵」而 run_lint 照樣找得到鍵。本案釘住真 package 現況零截斷。"""
+        text = "\n".join(gates.package_sources().values())
+        n = 0
+        for m in gates.RE_SKIP_ANCHOR.finditer(text):
+            n += 1
+            nxt = text.find("finding(", m.end())
+            stmt_end = len(text) if nxt < 0 else nxt
+            capped = gates.skip_key_of(text, m.end(), min(stmt_end, m.end() + 300))
+            whole = gates.skip_key_of(text, m.end(), stmt_end)
+            self.assertEqual(capped, whole, f"視窗截斷：錨形 @{m.start()} 之鍵落在 300 字元外（{whole}）")
+        self.assertEqual(n, len(gates.ENV_SKIPS))

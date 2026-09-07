@@ -21,7 +21,7 @@ rad_ai_map:
 | review | ML 模型（只讀） | findings | 三分流（RL-0073） |
 | fix | ML 模型 | 允許清單內改動 | 次輪 review（RL-0071） |
 | lens（review 形探索） | ML 模型（只讀） | findings＋coverage | 兩鏡三態（`_sk_review.js`） |
-| 探針（冷啟動） | ML 模型（只讀、不帶脈絡） | 作答紀錄 | grader 評分（檢索性指標候選＝BL-00007） |
+| 探針（冷啟動） | ML 模型（只讀、不帶脈絡） | 作答紀錄 | grader 評分 → review 事件 `probe` 欄（檢索性指標＝ADR-00021） |
 | mirror（R-real／R-decided 兩鏡） | ML 模型（只讀） | 三態 verdicts | 主線三分流（RL-0073） |
 | grader（探針評分） | ML 模型（只讀） | grades＋衍生 findings | refuter 單鏡→三分流 |
 | critic（完整性） | ML 模型（只讀） | gaps／unverified | 補漏 run 或 BACKLOG |

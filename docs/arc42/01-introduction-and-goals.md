@@ -31,7 +31,7 @@ rev6-admin 是一套管理後台系統：前端 fork 自 soybean-admin（Vue3／
 | 目標 | 動機 | 守門 |
 |---|---|---|
 | 安全 | 授權判定 DB-fresh、fail-closed 方向、機密不入版控 | 憲法 §I.2／§I.7；GT-07 |
-| 契約守恆 | 前端 typings 為裁判、wire 契約機器化 | 憲法 §I.3；contract test 隨 wire 地基刀 |
+| 契約守恆 | 前端 typings 為裁判、wire 契約機器化 | 憲法 §I.3；`tools/wire-schema.py`（碼面閘）＋`rust-api/server/tests/contract.rs` |
 | 可重現 | 傘狀 pin、兩段式 commit、bootstrap 幂等 | GT-02；`tools/bootstrap.sh` |
 | 文件與碼零漂移 | 機器優先文件觀：每個事實一個家、鏡像機器生成 | GT-01／GT-12 |
 | UI 與 rev5 一致 | rev6 UI 須與 rev5 對照基準一致 | CDP 對照驗收（CLAUDE.md §7） |

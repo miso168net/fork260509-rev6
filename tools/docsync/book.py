@@ -1,6 +1,6 @@
 """守 RL-0050／RL-0046：配號取 next 後 bump、唯一、單調、永不回收；前代編號一律帶 rev5:／rev4: 前綴、裸刀號禁。
 
-book.py（一）：GT-05 ID 家族（BL／LL／RL 三帳＋ADR 檔名）、現在式面跨代裸編號（提及豁免、rev6 刀集豁免）、兩子庫碼面掃描。
+book.py（一）：GT-05 ID 家族（BL／LL／RL 三帳＋ADR 檔名）、現在式面跨代裸編號（提及豁免、rev6 刀集豁免）、ID 引用存在性與書寫形兩腿、兩子庫碼面掃描。
 （二）GT-06／GT-11／errata 與（三）GT-10 隨後續 Task 併入本檔。
 """
 import os
@@ -26,6 +26,29 @@ RE_KNIFE = re.compile(r"^\d{3}-")
 # 子庫 pin 樹粗篩（git grep ERE；五形與 BARE_REV5 同源、精判與 rev6 刀集豁免共用外層那套——# 只對齊正則不共用豁免會讓自家刀名整批誤紅，BL-00017）
 SUB_SCAN = (r"(^|[^A-Za-z0-9:_/-])(B-[0-9]{3}|L-[0-9]{3}|ADR 0[0-9]{3}|Lint[0-9]{2}"
             r"|[0-9]{3}-[a-z][a-z0-9]*(-[a-z0-9]+)+)([^A-Za-z0-9-]|$)")
+
+# 裸三碼前代刀號（`rev5 002`＝缺 RL-0046 冒號前綴形；000-r2 L5-02）——rev6 自家刀號、版本號、日期皆不入射程
+# （必以 rev4／rev5 起頭、其後恰三碼且不接數字或連字號＝完整 slug 走 BARE_REV5 那腿）。
+# ★子庫 pin 樹側尚未接（rust-api 兩處註解存量＝BL-00041、其觸發＝下一支動 rust-api 的刀；該刀同批把本形併入 SUB_SCAN 精判）。
+BARE_PREV_KNIFE_NUM = re.compile(r"(?<![:A-Za-z0-9-])rev([45])\s+(\d{3})(?![\d-])")
+# ID 兩腿共用字界：★不可用 `\b`——Python 的字界是 Unicode-aware，漢字與圈號（①②③，類別 No、isalnum 為真）皆算 \w，
+# 故 `\bRL-\d{4}` 在「承RL-0011」「③RL-0015」這類無空白書寫形前一律不成立（000-r2 修-CQ1 實測真 repo 四處真引用被靜默略過）。
+# 改以明確的「左側非 ID 續接字元」lookbehind；右側只擋英數，放行連字號——檔名形（`ADR-NNNNN-<slug>.md`）仍是真引用。
+ID_LB = r"(?<![A-Za-z0-9_-])"
+ID_LA = r"(?![0-9A-Za-z])"
+# 縮寫 ID 形（`ADR-00022／00023`、`RL-0043／0044`）——使 ID 全字 grep 枚舉漏抓（000-r2 C3-2）；尾段位寬須與該家族一致
+ABBREV_ID_FORM = re.compile(ID_LB + r"(?:(?:BL|LL|ADR)-\d{5}(?:\s*[/／]\s*\d{5})+|RL-\d{4}(?:\s*[/／]\s*\d{4})+|GT-\d{2}(?:\s*[/／]\s*\d{2})+)")
+# 三腿（引用存在性＋兩形制腿）共用的「不可改面」處置：機器生成鏡像與 vendored 第三方面整檔不掃
+# （前者的列由 append-only 事件現算、鏡像側修不了，GT-01 又要求它等於重算；後者本 repo 不編輯、升級即整批換）；
+# accepted ADR body（GT-04 不可變）與 append-only 事件源（RL-0055）以「該行逐字在 HEAD 版同檔」為存量豁免
+# ——存量紅永不可修、新寫的照擋。★引用存在性腿的真源會退役（RULES 刪一列即少一個 RL 號），少了這層處置，
+# 退役當下全部引用該號的不可改面整批轉永久紅、只能靠改閘解（000-r2 修-CQ1）。
+ID_FORM_SKIP_FACE = ("docs/generated/",)
+ID_FORM_FROZEN_FACE = (ADR_DIR + "/", EVENTS)
+# ID 引用存在性腿（BL-00003③c2）：現在式面 md（排除史料面）與 tools/**（排除 fixture 面）之四家族引用須在真源存在
+RE_ID_REFS = (("RL", re.compile(ID_LB + r"RL-\d{4}" + ID_LA)), ("GT", re.compile(ID_LB + r"GT-\d{2}" + ID_LA)),
+              ("ADR", re.compile(ID_LB + r"ADR-\d{5}" + ID_LA)), ("LL", re.compile(ID_LB + r"LL-\d{5}" + ID_LA)))
+RE_NEXT_LINE = re.compile(r"<!--\s*next:")
 
 PRESENT_TENSE_FACE = ("docs/arc42/", "docs/c4/", "docs/compliance/", "docs/process/", "docs/ops/", "docs/generated/",
                       "README.md", "CLAUDE.md", CONSTITUTION, "tools/", "deploy/", ".githooks/", ".githooks-submodule/", ".claude/hooks/", ".claude/settings.json")
@@ -110,16 +133,108 @@ def _rev6_knives(ctx):
     return names
 
 
+
+def _id_universe(ctx):
+    """四家族真源：RL＝RULES 表列、GT＝gates ROSTER、ADR＝decisions 檔集、LL＝LESSONS/ 檔集。"""
+    from . import gates   # 遲載：gates 於模組頂層 import book，故不可在本檔頂層反向 import
+    adr, ll = set(), set()
+    names = {os.path.basename(p) for p in ctx.tracked if p.startswith(ADR_DIR + "/")}
+    d = os.path.join(ctx.root, ADR_DIR)
+    if os.path.isdir(d):
+        names |= set(os.listdir(d))
+    for n in names:
+        m = RE_ADR_FILE.match(n)
+        if m:
+            adr.add(f"ADR-{m.group(1)}")
+    lnames = {os.path.basename(p) for p in ctx.tracked if p.startswith(LESSONS_DIR + "/")}
+    d = os.path.join(ctx.root, LESSONS_DIR)
+    if os.path.isdir(d):
+        lnames |= set(os.listdir(d))
+    ll = {RE_LL_FILE.match(n).group(1) for n in lnames if RE_LL_FILE.match(n)}
+    return {"RL": {m.group(1) for m in RE_ENTRY["RL"].finditer(ctx.text(RULES) or "")},
+            "GT": {gates.gate_id(g) for g in gates.ROSTER},
+            "ADR": adr, "LL": ll}
+
+
+def _id_ref_face(ctx):
+    """ID 引用存在性腿的掃描面：現在式面（＝單一真源 face_of，一次排除 fixture／史料／vendored 第三方面，
+    並沿用其「憲法優先於 .specify/ 第三方面」例外）窄化為 *.md ∪ tools/**。
+    ★面選擇必須走 _text_files／face_of、不得自行重打一套：同批兩支形制腿走的正是它，第二套邏輯會讓
+    最高權威的憲法只被其中一腿掃到（000-r2 修-CQ2 實測），且少掉 NUL 二進位保護。
+    不可改面處置與兩形制腿共用（見 ID_FORM_SKIP_FACE／ID_FORM_FROZEN_FACE 檔頭註解）：生成鏡像整檔不掃；
+    yield 第三欄＝該檔是否走「該行逐字在 HEAD」存量豁免。"""
+    for rel, text in _text_files(ctx, "present"):
+        if rel.startswith(ID_FORM_SKIP_FACE):
+            continue
+        if not (rel.endswith(".md") or rel.startswith("tools/")):
+            continue
+        yield rel, text, rel.startswith(ID_FORM_FROZEN_FACE)
+
+
+def _id_reference_legs(ctx):
+    """引用的 ID 須在對應真源存在（BL-00003③c2）；`<!-- next: -->` 檔頭是配號指標、不算引用。
+    面＝_id_ref_face（現在式面之 *.md〔含憲法〕 ∪ tools/**）。
+    ★BL 方向由 GT-03 的 events-only 不變式承擔（BL 只經事件誕生），本腿不重複。"""
+    universe = _id_universe(ctx)
+    where = {"RL": RULES, "GT": "gates ROSTER", "ADR": ADR_DIR, "LL": LESSONS_DIR}
+    out = []
+    for rel, text, frozen_face in _id_ref_face(ctx):
+        # 存量豁免的 HEAD 版一檔一支 git show：比照 _id_form_legs，只在該檔真有命中時才取。
+        frozen = None
+        for i, line in enumerate(text.split("\n"), 1):
+            if RE_NEXT_LINE.search(line):
+                continue
+            hits = [(fam, m.group(0)) for fam, rx in RE_ID_REFS
+                    for m in rx.finditer(line) if m.group(0) not in universe[fam]]
+            if not hits:
+                continue
+            if frozen_face:
+                if frozen is None:
+                    frozen = set((ctx.head_text(rel) or "").split("\n"))
+                if line in frozen:
+                    continue
+            out += [finding(ERROR, "GT-05", f"{rel}:{i}",
+                            f"ID 引用存在性：引用 {tok} 但真源查無（{where[fam]}）") for fam, tok in hits]
+    return out
+
+
+def _id_form_legs(ctx):
+    """兩形制腿：裸三碼前代刀號（RL-0046 冒號前綴形）與縮寫 ID 形（ID 全字枚舉漏抓）。
+    不可改面處置見 ID_FORM_SKIP_FACE／ID_FORM_FROZEN_FACE 檔頭註解。"""
+    out = []
+    for rel, text in _text_files(ctx, "present"):
+        if rel.startswith(ID_FORM_SKIP_FACE):
+            continue
+        # 存量豁免的 HEAD 版一檔一支 git show（drvfs 上約 0.1 s）：只在該檔真有命中時才取，
+        # 免得零命中的二十餘支 accepted ADR 每趟 lint 都各花一次 subprocess（lint 走 pre-commit 最長路徑）。
+        frozen_face, frozen = rel.startswith(ID_FORM_FROZEN_FACE), None
+        for i, line in enumerate(text.split("\n"), 1):
+            stripped = MENTION.sub("", line)
+            hits = [f"裸前代刀號「{m.group(0)}」——前代引用一律 rev5:／rev4: 冒號前綴形（RL-0046；提及形用反引號或「」）"
+                    for m in BARE_PREV_KNIFE_NUM.finditer(stripped)]
+            hits += [f"縮寫 ID 形「{m.group(0)}」——ID 全字 grep 枚舉會漏抓；逐個展開為全字（如 ADR-00022／ADR-00023）"
+                     for m in ABBREV_ID_FORM.finditer(stripped)]
+            if not hits:
+                continue
+            if frozen_face:
+                if frozen is None:
+                    frozen = set((ctx.head_text(rel) or "").split("\n"))
+                if line in frozen:
+                    continue
+            out += [finding(ERROR, "GT-05", f"{rel}:{i}", msg) for msg in hits]
+    return out
+
+
 def gt_05(ctx):
     """GATE:
       id=GT-05
       rule=RL-0050
       source=rev5:ADR 0012
-      drift=配號唯一單調、跨代裸編號
-      face=docs/ops 三帳＋現在式面＋兩子庫 pin 樹
+      drift=配號唯一單調、跨代裸編號、ID 引用存在性與書寫形
+      face=docs/ops 三帳＋現在式面＋兩子庫 pin 樹＋ID 引用面（現在式面之 *.md〔含憲法〕 ∪ tools/**、去生成鏡像與 vendored、ADR body 存量豁免）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=號碼可回收、rev5 編號走私入 rev6 現在式文件
+      breaks-if-removed=號碼可回收、rev5 編號走私入 rev6 現在式文件、引用可指向不存在的 ID、縮寫形讓全字枚舉漏抓
     """
     out = []
     for fam in ("BL", "LL", "RL"):
@@ -129,7 +244,7 @@ def gt_05(ctx):
             if fam == "RL":
                 out.append(finding(ERROR, "GT-05", main, "掃描面空集合：RULES.md 缺席——規則層首版必須存在"))
             else:
-                out.append(finding(SKIP, "GT-05", main, f"GT-05.ledgers-absent：{fam} 家族帳本 {main} 尚未建檔（Day-1；波 2 ops 帳本空檔即解除）"))
+                out.append(finding(ERROR, "GT-05", main, f"{fam} 家族帳本 {main} 缺席（現在式面必在；RL-0051 掃描面空集合即紅）"))
             continue
         if nxt is None:
             out.append(finding(ERROR, "GT-05", main, f"缺 next-id 檔頭（<!-- next: {fam}-NNNNN -->）"))
@@ -156,6 +271,8 @@ def gt_05(ctx):
                 if m.group(1) in adr_nums:
                     out.append(finding(ERROR, "GT-05", rel, f"ADR 檔名編號 {m.group(1)} 與 {adr_nums[m.group(1)]} 重複"))
                 adr_nums.setdefault(m.group(1), rel)
+    out += _id_reference_legs(ctx)
+    out += _id_form_legs(ctx)
     knives = _rev6_knives(ctx)
     for rel, text in _text_files(ctx, "present"):
         for i, line in enumerate(text.split("\n"), 1):
@@ -167,7 +284,8 @@ def gt_05(ctx):
                 out.append(finding(ERROR, "GT-05", f"{rel}:{i}", f"{kind}「{tok}」——前代引用一律 rev5:／rev4: 前綴（提及形用反引號或「」）"))
     for sub in SUBMODULES:
         if not ctx.exists(os.path.join(sub, ".git")):
-            out.append(finding(SKIP, "GT-05", sub, f"GT-05.submodule-absent：{sub} 不在工作樹、碼面裸編號未掃"))
+            out.append(finding(SKIP, "GT-05", sub, f"⤳ 跳過：{sub} 不在工作樹（命中謂詞＝{sub}/.git 不存在；GT-05.submodule-absent）"
+                                                   f"——碼面裸編號未掃；ADR-00019 環境缺席具名跳過 rc 0"))
             continue
         rc, stdout = ctx.git_try("grep", "-nE", SUB_SCAN, "HEAD", "--", cwd=os.path.join(ctx.root, sub))
         if rc == 0:
@@ -259,7 +377,7 @@ def gt_06(ctx):
                     if w in line:
                         out.append(finding(WARN, "GT-06", where, f"活書家族預告詞「{w}」——預告必標成預告並附回填義務"))
     if not book_seen:
-        out.append(finding(SKIP, "GT-06", "docs/arc42", "GT-06.book-absent：活書家族尚無檔（Day-1；波 2 骨架即解除）——連結／行號／路徑腿照跑"))
+        out.append(finding(ERROR, "GT-06", "docs/arc42", "活書家族缺席（現在式面必在；RL-0051 掃描面空集合即紅）——連結／行號／路徑腿照跑"))
     return out
 
 
@@ -334,7 +452,7 @@ def errata_scan(ctx, keyword):
 
 
 # ---------------------------------------------------------------------------
-# （三）GT-10 文件形制閘（§3.4；Day-1 豁免 GT-10.doc-skeleton-absent 已於波 2 解除——活書家族全缺時的 SKIP 為 fail-closed 分支、由 run_lint 以「未登記 SKIP 鍵」告警）
+# （三）GT-10 文件形制閘（§3.4；活書家族全缺＝掃描面空集合即紅，000-r2 修單把該 Day-1 型 SKIP 分支改 ERROR）
 # ---------------------------------------------------------------------------
 FORM_FACE = BOOK_FACE
 AIV_KEYS = tuple(f"AIV-1{c}" for c in "abcdefgh") + tuple(f"AIV-2{c}" for c in "abcdefgh") + tuple(f"AIV-{n}" for n in range(3, 10))
@@ -438,7 +556,7 @@ def gt_10(ctx):
     files = [(rel, ctx.text(rel)) for rel in ctx.tracked if rel.endswith(".md") and is_book(rel)]
     files = [(r, t) for r, t in files if t is not None]
     if not files:
-        return [finding(SKIP, "GT-10", "docs/arc42", f"GT-10.doc-skeleton-absent：活書家族尚無檔（Day-1；{SKELETON_ANCHOR} 存在即解除）")]
+        return [finding(ERROR, "GT-10", "docs/arc42", f"活書家族缺席（現在式面必在、錨＝{SKELETON_ANCHOR}；RL-0051 掃描面空集合即紅）")]
     wave = current_wave(ctx)
     if wave is None:
         out.append(finding(ERROR, "GT-10", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->（現在波唯一真源）"))
