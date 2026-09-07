@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-08 | misc | governance｜maint-py313-docstring-dedent | 輕量軌 maint-py313-docstring-dedent 收單：閘區塊 regex 去掉對 docstring 縮排的依賴。Python ≥3.13 編譯期剝掉 docstring 共同縮排後 gate_id() 對 12 支閘全回 None——GATES.md 算成無列空表（GT-01 漂移）、GT-05 的 ID 存在性真源成單元素 None 集（閘號引用 322 筆假紅）、docsync 自測 10 案連坐、bootstrap exit 2。`[ \t]+` → `[ \t]*` 還原原意＋補迴歸案；LESSONS 12→14。 | 9e420a2 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-40-39-37 | 輕量軌 maint-backlog-40-39-37 收單（003 開刀前治理維護、三條合一顆）：BL-00040 探針題庫隔離全收（否定對照表刪「真相」欄、r3 起真相烤進 grader prompt 不落 tracked）；BL-00039① 編排骨架五常數型別＋非空斷言（harness-test 十五→十八案）；BL-00037③ wire 契約閘雙側觸發（pre-commit 觸發字面＋wire-schema.py 快照側 pin 區間收窄、自測 27→31 案）。BACKLOG 15→14；閘數 12 與 RULES 未動。 | 4844b15 | — | — |
 | 2026-09-07 | misc | governance｜000-r2-doc-governance | 獨立輪 000-r2 文件治理架構第二輪體檢收單：五支 Workflow 85 支 agent、findings 102（confirmed 88）、修 69／BL 8 條／ADR 4 支；BL-00003 閘補腿群三腿全落地（GT-03 BL 存在性腿／SKIP 分類＋ENV_SKIPS＋GT-12 登記腿／主張閘兩腿，閘數維持 12）；憲法 1.1.0→1.2.0；檢索性第四指標 0.48→0.76。 | acc11a7 | ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — |
 | 2026-09-07 | review | doc-governance | findings 81（修 69／BL 8／ADR 4）；BL-00035、BL-00036、BL-00037、BL-00038、BL-00039、BL-00040、BL-00041、BL-00042、ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — | — | — |
@@ -30,6 +31,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-08｜misc｜governance｜maint-py313-docstring-dedent
+
+★成因細節：RE_GATE_BLOCK 以 `[ \t]+` 要求 kv 行有行首空白，而同一 regex 同時吃原始碼文字（縮排在）與 gate_id() 傳入的 fn.__doc__（3.13 起零縮排、gh-81283）；gate_id() 回 None 後 gen_gates_md 於 gid + "." 先 TypeError。★徵狀識別價值：ID 存在性類閘一次噴上百筆、連 CLAUDE.md 自己寫的閘號都判「真源查無」＝先懷疑真源集合算成空的，不是逐處查引用。★既有 test_blocks_anchors_roster_on_real_package 已含 {gate_id(g) for g in ROSTER} == set(blocks) 斷言，但它在開發機的 python 版本上恆綠、抓不到這一面；新案 test_gate_id_survives_docstring_dedent 改以合成 __doc__ 釘死、與跑測版本無關。★取證：舊 regex 下新測案紅（gate_id() 回 None）→ 修正後 docsync test 250 案 OK、check 零漂移、lint 0 錯 0 警 0 跳過（機密佈妥後 GT-07 由具名跳過轉為實值比對腿）、bash tools/bootstrap.sh rc=0／35 項 ✓／警告 0。零漂移即逐 byte 證明產出與既有生成檔相同＝還原原意、非改變行為。★併記一筆據實觀察：前一批 maint-backlog-40-39-37 的簿記顆 3173f4f 無對應 close_bookkeeping perf 事件（RL-0053 第四步漏做），牆鐘依 RUNBOOK §12b 無法回溯量測，故不補造、僅此記載。★兩筆 LESSONS：LL-00013 本坑、LL-00014 等長替換同秒還原使 pyc 判仍有效而沿用舊碼。★實作顆 2487507。
 
 ### 2026-09-07｜misc｜governance｜maint-backlog-40-39-37
 
