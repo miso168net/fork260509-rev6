@@ -2,14 +2,15 @@
 
 gates.py：ROSTER（恰 12 閘）、parse_gate_blocks／derive_anchor_codes（兩層真源）、DAY1_EXEMPTIONS（四欄制）、
 gt_01（generated 零漂移）、gt_07（機密樣式＋值比對）、gt_09（README 樹／EXEC_REQUIRED／settings.json 接線）、
-gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記）、run_lint、gen_gates_md。
+gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記＋SKIP 鍵登記＋主張對賬）、ENV_SKIPS（ADR-00019 環境型跳過登記）、
+registered_skip_keys／skip_key_of（登記集合與鍵抽取的單一權威、靜態面與執行期面同取）、run_lint、gen_gates_md。
 """
 import importlib.util
 import json
 import os
 import re
 
-from . import RULES, NOTES, LESSONS_INDEX, LESSONS_DIR
+from . import RULES, NOTES, LESSONS_INDEX, LESSONS_DIR, CONSTITUTION
 from .common import ERROR, WARN, SKIP, Day1Exemption, GENERATED_HEADER, GitError, finding
 from . import events as ev_mod
 from . import adr as adr_mod
@@ -94,6 +95,70 @@ DAY1_EXEMPTIONS = {
 
 
 # ---------------------------------------------------------------------------
+# 環境型具名跳過登記（ADR-00019 形；000-r2 修單＝BL-00003②）
+# ---------------------------------------------------------------------------
+# 與 Day-1 豁免兩制、不可混：Day-1 豁免有「解除謂詞」、到期即紅（RL-0052）；環境型跳過不會到期，
+# 只在**本機環境缺席**時觸發、印一行「⤳ 跳過：」rc 0（ADR-00019 決定 3：跳過與通過在輸出上必須可辨）。
+# 欄＝鍵 →（命中謂詞的人可讀字面, 理由）；GT-12 斷言原始碼全部 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ 本表。
+ENV_SKIPS = {
+    "GT-02.submodule-absent": ("base-web／rust-api 之 .git 任一不存在",
+                               "唯讀看碼捷徑（git submodule update --init、無源倉）或新機尚未 bootstrap：pins 的子庫側 SHA 無處實證"),
+    "GT-05.submodule-absent": ("base-web／rust-api 之 .git 任一不存在",
+                               "同上：子庫 pin 樹不在，碼面裸編號的 git grep 無標的"),
+    "GT-07.secrets-absent": ("SECRETS_DIR 三級解析所得路徑非目錄",
+                             "新機尚未佈機密（deploy/decrypt-secrets.py 未跑）：實值比對無標的；樣式面照掃"),
+}
+RE_SKIP_ANCHOR = re.compile(r'finding\(\s*SKIP\s*,\s*"GT-\d{2}"')
+RE_SKIP_KEY = re.compile(r"GT-\d{2}\.[a-z0-9-]+")
+
+
+def registered_skip_keys():
+    """具名跳過之**登記集合**的單一權威＝Day-1 豁免 ∪ 環境型跳過。
+    gt_12（靜態掃原始碼錨形）與 run_lint（執行期掃 SKIP 訊息）兩腿同取本函式：
+    日後若再分出第三本登記，兩處各寫一份聯集只會改到一邊——另一邊靜默停止承認新登記
+    （改 gt_12 漏 run_lint＝每趟 lint 多噴假 WARN；反向＝已登記的鍵被判未登記、pre-commit 直接紅）。"""
+    return set(DAY1_EXEMPTIONS) | set(ENV_SKIPS)
+
+
+def skip_key_of(text, start=0, end=None):
+    """文字中第一個 `GT-NN.slug` 鍵（無則 None）——靜態面與執行期面共用同一抽取口徑。
+    ★兩面的差別只在**視窗**（靜態＝錨形後方同一 call 內；執行期＝訊息全文），取法不得各寫一份。"""
+    text = text or ""
+    m = RE_SKIP_KEY.search(text, start, len(text) if end is None else end)
+    return m.group(0) if m else None
+
+
+def derive_skip_keys(source_text):
+    """原始碼每個 `finding(SKIP, "GT-NN", …)` 錨形後方（同一 call 內）的第一個 `GT-NN.slug` 鍵。
+    回 (鍵集, 無鍵錨形數)——具名跳過必帶鍵（ADR-00019），無鍵者由 GT-12 指名。"""
+    text = source_text or ""
+    keys, anchorless = set(), 0
+    for m in RE_SKIP_ANCHOR.finditer(text):
+        nxt = text.find("finding(", m.end())
+        end = m.end() + 300 if nxt < 0 else min(nxt, m.end() + 300)
+        k = skip_key_of(text, m.end(), end)
+        if k:
+            keys.add(k)
+        else:
+            anchorless += 1
+    return keys, anchorless
+
+
+def unregistered_skip_warnings(findings):
+    """執行期 SKIP findings 中鍵未登記者逐筆 WARN；登記集合與鍵抽取皆取上方單一權威。"""
+    reg = registered_skip_keys()
+    out = []
+    for f in findings:
+        if f[0] != SKIP:
+            continue
+        # 具名跳過的鍵可落在訊息任一處（ADR-00019 形以「⤳ 跳過：」起頭）；連鍵都沒有者退回冒號前綴、由本腿指名
+        key = skip_key_of(f[3]) or f[3].split("：", 1)[0]
+        if key not in reg:
+            out.append(finding(WARN, "GT-12", f[2], f"未登記的 SKIP 鍵 {key}（須登記 DAY1_EXEMPTIONS 或 ENV_SKIPS）"))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # GT-01
 # ---------------------------------------------------------------------------
 def gt_01(ctx):
@@ -101,11 +166,11 @@ def gt_01(ctx):
       id=GT-01
       rule=RL-0049
       source=rev5:ADR 0052
-      drift=generated↔真源
-      face=GENERATED_FILES（docs/generated/**＋tools/orchestration/_sk_rules.js＋例外註冊 docs/arc42/ARCHITECTURE.md、docs/ops/LESSONS.md）
+      drift=generated↔真源；真源掃描面存在性
+      face=GENERATED_FILES（docs/generated/**＋tools/orchestration/_sk_rules.js＋例外註冊 docs/arc42/ARCHITECTURE.md、docs/ops/LESSONS.md）＋agents.md 之真源掃描面（tracked tools/orchestration 之 *.js／*.mjs 的 *_OPTS 字面；空集合＝WARN）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=鏡像可手改、生成檔與真源靜默分叉
+      breaks-if-removed=鏡像可手改、生成檔與真源靜默分叉、*_OPTS 字面形改動可靜默縮小掃描面而不察
     """
     return ref_mod.check_generated(ctx, ref_mod.compute_generated(ctx))
 
@@ -179,7 +244,9 @@ def gt_07(ctx):
     if err:
         return out + [finding(ERROR, "GT-07", ".env", f"SECRETS_DIR 解析失敗：{err}")]
     if not os.path.isdir(sdir):
-        return out + [finding(SKIP, "GT-07", sdir, "GT-07.secrets-absent：機密落點缺席、值比對未執行（樣式面已掃）")]
+        return out + [finding(SKIP, "GT-07", sdir, "⤳ 跳過：機密落點目錄不存在"
+                                            "（命中謂詞＝SECRETS_DIR 三級解析所得路徑非目錄；GT-07.secrets-absent）"
+                                            "——實值比對未執行、樣式面已掃；ADR-00019 環境缺席具名跳過 rc 0")]
     secrets = {}
     for n in sorted(os.listdir(sdir)):
         if not n.endswith(".txt") or not os.path.isfile(os.path.join(sdir, n)):
@@ -216,10 +283,17 @@ def readme_tree_paths(text):
             stack = stack[:depth]
             if stack:
                 parents.add("/".join(stack) + "/")
-            for tok in m.group(2).split("、"):
-                full = "/".join(stack + [tok.rstrip("/")]) + ("/" if tok.endswith("/") else "")
+            toks = m.group(2).split("、")
+            # 深度 0 的項本身就是完整路徑；同列後續 token 若無目錄段（如「docs/ops/LESSONS.md、LESSONS/」之 LESSONS/），
+            # 繼承首項的目錄前綴——否則被解析成根層路徑、目錄形者還會誤入 leaf_dirs 覆蓋集（000-r2 L3-08）。
+            prefix = os.path.dirname(toks[0].rstrip("/")) if not stack else ""
+            for i, tok in enumerate(toks):
+                base = tok.rstrip("/")
+                if i and prefix and "/" not in base:
+                    base = f"{prefix}/{base}"
+                full = "/".join(stack + [base]) + ("/" if tok.endswith("/") else "")
                 paths.add(full)
-            stack.append(m.group(2).split("、")[0].rstrip("/"))
+            stack.append(toks[0].rstrip("/"))
     leaf_dirs = {d for d in paths if d.endswith("/") and d not in parents}
     return paths, leaf_dirs
 
@@ -265,7 +339,7 @@ def gt_09(ctx):
     tracked = set(ctx.tracked)
     readme = ctx.text(README)
     if readme is None:
-        out.append(finding(SKIP, "GT-09", README, "GT-09.readme-absent：README 文件地圖尚未建（Day-1；波 1 Task 13 即解除）"))
+        out.append(finding(ERROR, "GT-09", README, "README 文件地圖缺席（現在式面必在；RL-0051 掃描面空集合即紅）"))
     else:
         declared, leaf_dirs = readme_tree_paths(readme)
         for d in sorted(declared):
@@ -306,10 +380,10 @@ def gt_09(ctx):
                 out.append(finding(ERROR, "GT-09", ORCH_DIR + x, "tracked 檔未列於 tools/orchestration/README.md 檔表（增檔須同批入表；ADR-00020）"))
     hooks_absent = not ctx.exists(PRECOMMIT)
     if hooks_absent:
-        out.append(finding(SKIP, "GT-09", ".githooks", "GT-09.hooks-absent：.githooks 尚未落地（Day-1；波 1 Task 11 即解除）——其餘 EXEC_REQUIRED 照驗"))
+        out.append(finding(ERROR, "GT-09", ".githooks", ".githooks/pre-commit 缺席（現在式面必在；RL-0051 掃描面空集合即紅）——其餘 EXEC_REQUIRED 照驗"))
     for rel in EXEC_REQUIRED:
         if rel not in tracked:
-            if not (hooks_absent and rel.startswith(".githooks")):
+            if not (hooks_absent and rel.startswith(".githooks/")):   # 尾斜線：.githooks-submodule/* 不在此豁免內（000-r2 L3-07）
                 out.append(finding(ERROR, "GT-09", rel, "EXEC_REQUIRED 名冊檔缺席"))
             continue
         try:
@@ -337,6 +411,128 @@ def gt_09(ctx):
     for rel in sorted(r for r in tracked if r.startswith(HOOKS_DIR + "/")):
         if rel not in referenced:
             out.append(finding(ERROR, "GT-09", rel, "hook 檔未被 settings.json 任一命令引用（孤兒）"))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 主張對賬（000-r2 修單＝BL-00003③；user 停點① 拍板「補既有閘腿、不占閘數」）
+# ---------------------------------------------------------------------------
+# 人寫面（CLAUDE.md、憲法）寫死的數值與 SHA 字面，過去只靠人記得同批改；本腿把它們對回工具側常數。
+# ★兩側值一律**唯讀讀檔＋正則**取：不 import 編排骨架、不執行 js（骨架是 node 檔、閘是 host python）。
+CLAIM_FACE = ("CLAUDE.md", CONSTITUTION)
+BOOTSTRAP = "tools/bootstrap.sh"
+SK_HEAD = "tools/orchestration/_sk_head.js"
+# 人寫面之 SHA 主張＝反引號短 hex（至少含一位數字，避開 `decade` 這類純字母 token）
+RE_DOC_SHA = re.compile(r"`(?=[0-9a-f]*[0-9])([0-9a-f]{7,40})`")
+RE_BOOT_SHA = (("BASEWEB_BASE_SHA", re.compile(r'\bBASEWEB_BASE_SHA="([0-9a-f]+)"')),
+               ("RUSTAPI_BASE_SHA", re.compile(r'\bRUSTAPI_BASE_SHA="([0-9a-f]+)"')))
+RE_BOOT_FROZEN = re.compile(r'\bREV5_FROZEN="([^"]*)"')
+# 五處 SHA 主張**逐槽**對賬：(名, 人寫面錨形正則〔捕獲組＝被控字面〕, bootstrap 側常數名)；比照同檔 CAP_CLAIMS 形。
+# ★錨形只認語境、不認值——認值即循環論證。整檔「集合成員」判定只答得出「是不是那五個之一」、答不出「這一處該是哪一個」，
+#   三型真實錯法（兩處對調／整行刪除／張冠李戴）全數靜默過關，故逐槽比值＋逐槽錨形零命中即紅（RL-0051）。
+SHA_CLAIMS = (
+    ("base-web 基線", re.compile(r"(?:example|基線 SHA)[^\n]{0,14}?" + RE_DOC_SHA.pattern), "BASEWEB_BASE_SHA"),
+    ("rust-api 分支點", re.compile(r"源倉 main[^\n]{0,8}?" + RE_DOC_SHA.pattern), "RUSTAPI_BASE_SHA"),
+    # 外層槽：「rust-api 凍結 SHA」「base-web 凍結 SHA」屬下兩槽，以定寬 lookbehind 讓出
+    ("rev5 外層凍結", re.compile(r"(?<!base-web )(?<!rust-api )凍結(?:於)?\s?SHA[^\n]{0,6}?" + RE_DOC_SHA.pattern), "REV5_FROZEN[.]"),
+    ("rev5 base-web 凍結", re.compile(r"base-web\s?" + RE_DOC_SHA.pattern), "REV5_FROZEN[base-web]"),
+    ("rev5 rust-api 凍結", re.compile(r"rust-api[^\n]{0,10}?" + RE_DOC_SHA.pattern), "REV5_FROZEN[rust-api]"),
+)
+# 三個上限主張：(名, 人寫面錨形正則, 工具側取值正則, 工具側常數名)
+CAP_CLAIMS = (
+    ("fix 迴圈上限", re.compile(r"fix 迴圈[^\n；]*?≤\s*(\d+)"), re.compile(r"\bconst MAX_FIX_ROUNDS = (\d+)"), "MAX_FIX_ROUNDS"),
+    # ★工具側錨形必綁常數名：認「第一個 Math.min(」＝與 AGENT_FUSE 零語境綁定，骨架日後在該行之前多出任一
+    #   `Math.min(n, …)`（節流／切片／進度）即改抓別的值——要嘛指著錯的兩側值誤紅、要嘛在真保險絲已改時靜默放行（000-r2 修-CQ1）。
+    ("TDD 執行單元 agent 保險絲", re.compile(r"保險絲[^\n；]*?≤\s*(\d+)"),
+     re.compile(r"\bAGENT_FUSE\s*=\s*Math\.min\(\s*(\d+)\s*,"), "AGENT_FUSE = Math.min(<上限>, …)"),
+    ("review 形每 run 上限", re.compile(r"review 形每 run[^\n；]*?≤\s*(\d+)"), re.compile(r"\bconst MAX_AGENTS_PER_RUN = (\d+)"), "MAX_AGENTS_PER_RUN"),
+)
+
+
+def _bootstrap_sha_map(boot):
+    """bootstrap.sh → {常數名: 值}；`REV5_FROZEN` 依 `<子庫>:<sha>` 逐對展成 `REV5_FROZEN[<子庫>]`。取不到的鍵不入表。"""
+    vals = {}
+    for name, rx in RE_BOOT_SHA:
+        m = rx.search(boot)
+        if m:
+            vals[name] = m.group(1)
+    fm = RE_BOOT_FROZEN.search(boot)
+    for pair in (fm.group(1).split() if fm else ()):
+        if ":" in pair:
+            sub, sha = pair.split(":", 1)
+            vals[f"REV5_FROZEN[{sub}]"] = sha
+    return vals
+
+
+def _sha_claim_legs(ctx, tool_vals):
+    """五處 SHA 主張逐槽比值（不等即指名檔:行＋兩側值）、逐槽錨形零命中即紅；
+    槽外殘留的**基線／凍結 SHA 字面**＝錨形涵蓋不到的新寫法、一併指名（錨形隨人寫面演化的保命腿）。
+    ★非該五值的反引號 hex（commit SHA、RULES-VERSION 值）不在本腿射程——那些不是基線／凍結 SHA 主張。"""
+    out, claimed = [], {}
+    for name, doc_rx, const_name in SHA_CLAIMS:
+        want, n = tool_vals.get(const_name), 0
+        for rel in CLAIM_FACE:
+            text = ctx.text(rel)
+            if text is None:
+                continue
+            for i, line in enumerate(text.split("\n"), 1):
+                for m in doc_rx.finditer(line):
+                    n += 1
+                    claimed.setdefault((rel, i), set()).add(m.span(1))
+                    if want is not None and m.group(1) != want:
+                        out.append(finding(ERROR, "GT-12", f"{rel}:{i}",
+                                           f"主張對賬：{name} 宣稱 `{m.group(1)}`、{BOOTSTRAP} 之 {const_name}＝`{want}`（兩側之一失準）"))
+        if want is not None and n == 0:
+            out.append(finding(ERROR, "GT-12", "／".join(CLAIM_FACE),
+                               f"主張對賬：{name}（{const_name}）錨形於人寫面零命中（掃描面空集合即紅、RL-0051）"
+                               f"——主張整段刪除、或措辭改到錨形外，兩者都須同批處置"))
+    known = set(tool_vals.values())
+    for rel in CLAIM_FACE:
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        for i, line in enumerate(text.split("\n"), 1):
+            for m in RE_DOC_SHA.finditer(line):
+                if m.group(1) in known and m.span(1) not in claimed.get((rel, i), ()):
+                    out.append(finding(ERROR, "GT-12", f"{rel}:{i}",
+                                       f"主張對賬：`{m.group(1)}` 是基線／凍結 SHA、卻落在任一具名槽的錨形外"
+                                       f"（新寫法未入槽＝該處無人對賬；SHA_CLAIMS 須同批補錨形）"))
+    return out
+
+
+def _claim_legs(ctx):
+    """人寫面的數值／SHA 主張 ⇄ 工具常數；不符即 ERROR 指名（檔:行、兩側值）。錨形零命中＝掃描面空集合即紅（RL-0051）。"""
+    out = []
+    boot = ctx.text(BOOTSTRAP)
+    if boot is None:
+        out.append(finding(ERROR, "GT-12", BOOTSTRAP, "主張對賬：tools/bootstrap.sh 缺席——基線／凍結 SHA 的單一家不在，無對賬基準"))
+    else:
+        tool_vals = _bootstrap_sha_map(boot)
+        slots = {c for _, _, c in SHA_CLAIMS}
+        if set(tool_vals) != slots:
+            out.append(finding(ERROR, "GT-12", BOOTSTRAP,
+                               f"主張對賬：bootstrap SHA 常數集與具名槽不對應（缺 {sorted(slots - set(tool_vals))}"
+                               f"、多 {sorted(set(tool_vals) - slots)}）——常數形改動須同批改 SHA_CLAIMS"))
+        out += _sha_claim_legs(ctx, tool_vals)
+    head = ctx.text(SK_HEAD)
+    for name, doc_rx, tool_rx, const_name in CAP_CLAIMS:
+        tm = tool_rx.search(head or "")
+        if tm is None:
+            out.append(finding(ERROR, "GT-12", SK_HEAD, f"主張對賬：{SK_HEAD} 取不到 {const_name}（{name} 無對賬基準）"))
+            continue
+        n = 0
+        for rel in CLAIM_FACE:
+            text = ctx.text(rel)
+            if text is None:
+                continue
+            for i, line in enumerate(text.split("\n"), 1):
+                for m in doc_rx.finditer(line):
+                    n += 1
+                    if m.group(1) != tm.group(1):
+                        out.append(finding(ERROR, "GT-12", f"{rel}:{i}",
+                                           f"主張對賬：宣稱 {name} ≤{m.group(1)}、{SK_HEAD} 之 {const_name}＝{tm.group(1)}（兩側之一失準）"))
+        if n == 0:
+            out.append(finding(ERROR, "GT-12", "／".join(CLAIM_FACE), f"主張對賬：{name} 錨形於人寫面零命中（掃描面空集合即紅、RL-0051）——錨形措辭改動須同批改本腿"))
     return out
 
 
@@ -382,11 +578,11 @@ def gt_12(ctx, extra_sources=None):
       id=GT-12
       rule=RL-0052
       source=rev5:ADR 0024
-      drift=名冊同源與數量預算
-      face=tools/docsync/*.py、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記
+      drift=名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張
+      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有
+      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移
     """
     out = []
     sources = package_sources()
@@ -404,6 +600,12 @@ def gt_12(ctx, extra_sources=None):
             out.append(finding(ERROR, "GT-12", "tools/docsync", f"{gid} GATE 區塊缺鍵：{'、'.join(missing)}"))
     if set(blocks) != roster_ids:   # 只驗名冊一致；數量歸下方預算腿（ADR-00011：兩種語意分離）
         out.append(finding(ERROR, "GT-12", "tools/docsync", f"區塊集合 {sorted(blocks)} ≠ ROSTER {sorted(roster_ids)}"))
+    # SKIP 鍵登記腿（000-r2 修單＝BL-00003②）：原始碼全部 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS
+    skip_keys, anchorless = derive_skip_keys(joined)
+    for k in sorted(skip_keys - registered_skip_keys()):
+        out.append(finding(ERROR, "GT-12", "tools/docsync", f"GT-12：SKIP 鍵 {k} 未登記（DAY1_EXEMPTIONS／ENV_SKIPS）"))
+    if anchorless:
+        out.append(finding(ERROR, "GT-12", "tools/docsync", f"{anchorless} 處 SKIP 錨形後方無 GT-NN.slug 鍵——具名跳過必帶鍵（ADR-00019）"))
     gates_md = ctx.text(GATES_MD)
     if gates_md is not None:
         ids = set(re.findall(r"^\| (GT-\d{2}) \|", gates_md, re.M))
@@ -411,7 +613,7 @@ def gt_12(ctx, extra_sources=None):
             out.append(finding(ERROR, "GT-12", GATES_MD, f"GATES.md 閘集合 {sorted(ids)} ≠ ROSTER（跑 generate）"))
     pre = ctx.text(PRECOMMIT)
     if pre is None:
-        out.append(finding(SKIP, "GT-12", PRECOMMIT, "GT-12.precommit-absent：pre-commit 尚未落地（Day-1；波 1 Task 11 即解除）"))
+        out.append(finding(ERROR, "GT-12", PRECOMMIT, "pre-commit 缺席（現在式面必在；RL-0051 掃描面空集合即紅）"))
     else:
         head = "\n".join(pre.split("\n")[:20])
         m = RE_GT_RANGE.search(head)
@@ -420,7 +622,7 @@ def gt_12(ctx, extra_sources=None):
             out.append(finding(ERROR, "GT-12", PRECOMMIT, f"pre-commit 檔頭範圍字串 {'缺席' if not m else m.group(0)} ≠ ROSTER（{min(sorted(roster_ids))}～{max(sorted(roster_ids))}）"))
     rb = ctx.text(RUNBOOK)
     if rb is None:
-        out.append(finding(SKIP, "GT-12", RUNBOOK, "GT-12.runbook-absent：RUNBOOK 尚未建（Day-1；波 2 即解除）"))
+        out.append(finding(ERROR, "GT-12", RUNBOOK, "RUNBOOK 缺席（現在式面必在；RL-0051 掃描面空集合即紅）"))
     else:
         if _gt_ids_in(rb) != roster_ids:
             out.append(finding(ERROR, "GT-12", RUNBOOK, f"RUNBOOK 工具表閘集合 {sorted(_gt_ids_in(rb))} ≠ ROSTER"))
@@ -436,6 +638,7 @@ def gt_12(ctx, extra_sources=None):
                 out.append(finding(ERROR, "GT-12", RUNBOOK, f"RUNBOOK 碼面閘表列 {x} 但 tools/ 頂層無此 tracked 檔（幽靈列；改名／移除須同刀改表）"))
             for x in sorted(s_tools - s_table):
                 out.append(finding(ERROR, "GT-12", x, f"tools/ 頂層 {x} 未列於 RUNBOOK 碼面閘表（碼面閘進場須同刀入表；非閘工具改 NON_GATE_TOOLS）"))
+    out += _claim_legs(ctx)
     wave = book_mod.current_wave(ctx)
     if wave is None:
         out.append(finding(ERROR, "GT-12", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->"))
@@ -468,11 +671,7 @@ def run_lint(ctx):
     for key, ex in DAY1_EXEMPTIONS.items():
         if ex.released(ctx):
             findings.append(finding(ERROR, "GT-12", "tools/docsync/gates.py", f"Day-1 豁免 {key} 已到期（解除謂詞成立、登記 {ex.registered}）——自 DAY1_EXEMPTIONS 移除"))
-    for f in list(findings):
-        if f[0] == SKIP:
-            key = f[3].split("：", 1)[0]
-            if key not in DAY1_EXEMPTIONS:
-                findings.append(finding(WARN, "GT-12", f[2], f"未登記的 SKIP 鍵 {key}（環境型跳過；非 Day-1 豁免）"))
+    findings += unregistered_skip_warnings(list(findings))
     n_err = sum(1 for f in findings if f[0] == ERROR)
     n_warn = sum(1 for f in findings if f[0] == WARN)
     n_skip = sum(1 for f in findings if f[0] == SKIP)
@@ -483,7 +682,7 @@ def gen_gates_md(ctx):
     blocks = parse_gate_blocks("\n".join(package_sources().values()))
     lines = [GENERATED_HEADER, "# GATES — 閘名冊（§4.1）", "",
              f"閘數 {len(ROSTER)}／上限 {BUDGET_GATES}（一進一出；超限只警告不擋＝ADR-00011）。真源兩層：存在＝原始碼 finding 錨形、語意＝docstring GATE 區塊（GT-12 斷言錨形 ⊆ 區塊、三處名冊同源）。"
-             f"Day-1 豁免 {len(DAY1_EXEMPTIONS)} 筆（§4.6；到期即紅）。", "",
+             f"Day-1 豁免 {len(DAY1_EXEMPTIONS)} 筆（§4.6；到期即紅）、環境型具名跳過 {len(ENV_SKIPS)} 筆（ADR-00019；rc 0、不到期）。", "",
              "| 閘 | 守哪條 RULES／ADR | 監測哪一面的漂移 | 真源 | 掃描面 | 觸發時機 | 紅時 rc | Day-1 豁免狀態 | 拿掉會壞什麼 |",
              "|---|---|---|---|---|---|---|---|---|"]
     for g in ROSTER:
@@ -495,4 +694,9 @@ def gen_gates_md(ctx):
     lines += ["", "## Day-1 豁免登記（鍵｜理由｜解除謂詞｜登記日）", "", "| 鍵 | 理由 | 解除謂詞 | 登記日 |", "|---|---|---|---|"]
     for k, ex in DAY1_EXEMPTIONS.items():
         lines.append(f"| {k} | {ex.reason} | {ex.predicate_text or '（見 gates.py）'} | {ex.registered} |")
+    lines += ["", "## 環境型跳過登記（鍵｜命中謂詞｜理由）", "",
+              "ADR-00019 形：環境缺席＝具名跳過 rc 0（不到期、與 Day-1 豁免兩制）；GT-12 斷言原始碼 SKIP 錨形鍵 ⊆ 本表 ∪ Day-1 豁免。", "",
+              "| 鍵 | 命中謂詞 | 理由 |", "|---|---|---|"]
+    for k, (pred, reason) in ENV_SKIPS.items():
+        lines.append(f"| {k} | {pred} | {reason} |")
     return "\n".join(lines) + "\n"

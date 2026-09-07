@@ -83,7 +83,7 @@ class TestIndexAndBackfill(Repo):
         out = adr.gen_decisions_index(adrs, events)
         self.assertTrue(out.startswith(common.GENERATED_HEADER + "\n"))
         self.assertIn("| ADR-00001 | accepted | 2026-09-03 | t ADR-00001 | 001-x | — | — |", out)
-        self.assertIn("| ADR-00002 | proposed | 2026-09-03 | t ADR-00002 | 輕量軌 | — | — |", out)
+        self.assertIn("| ADR-00002 | proposed | 2026-09-03 | t ADR-00002 | — | — | — |", out)   # 000-r2 L1-04：查無出身＝中性「—」、不硬編「輕量軌」
 
     def test_backfill_superseded_by(self):
         self.write("ADR-00001-a.md", adr_text("ADR-00001", status="superseded"))
@@ -93,6 +93,45 @@ class TestIndexAndBackfill(Repo):
         self.assertEqual(changed, [f"{ADR_DIR}/ADR-00001-a.md"])
         self.assertEqual(self.errors(), [])
         self.assertEqual(adr.backfill_superseded_by(common.Ctx(self.root)), [])
+
+
+class TestDecisionsIndexProvenance(unittest.TestCase):
+    """000-r2 L1-03／L1-04：①review 事件之 findings.wontfix_adr 亦是 ADR 出身（won't-fix 立 ADR＝RL-0073），
+    舊版三輪反查缺這一輪、ADR-00008 查無來源 ②查無時硬編「輕量軌」＝生成面憑空斷言，改中性「—」。"""
+
+    class _A:
+        def __init__(self, aid):
+            self.id, self.status, self.date, self.title = aid, "accepted", "2026-09-03", "t"
+            self.supersedes, self.superseded_by = [], []
+
+    def _index(self, events, ids=("ADR-00001",)):
+        return adr.gen_decisions_index({i: self._A(i) for i in ids}, events)
+
+    def test_wontfix_adr_from_review_prints_independent_round(self):
+        out = self._index([{"type": "review", "date": "2026-09-04", "scope": "doc-governance",
+                            "findings": {"total": 1, "fixed": 0, "to_backlog": [], "wontfix_adr": ["ADR-00001"]}}])
+        self.assertIn("| 獨立輪｜doc-governance |", out)
+
+    def test_feature_close_wins_over_review_and_misc(self):
+        evs = [{"type": "feature_close", "feature": "001-x", "adrs": ["ADR-00001"]},
+               {"type": "misc", "date": "2026-09-04", "adrs": ["ADR-00001"], "workflow": "maint-x"},
+               {"type": "review", "date": "2026-09-04", "scope": "s",
+                "findings": {"total": 1, "fixed": 0, "to_backlog": [], "wontfix_adr": ["ADR-00001"]}}]
+        self.assertIn("| 001-x |", self._index(evs))
+
+    def test_unknown_provenance_is_neutral_dash(self):
+        out = self._index([])
+        self.assertIn("| — | — | — |", out)
+        self.assertNotIn("輕量軌", out)
+
+    def test_real_repo_wontfix_adr_gets_round_and_no_bare_lightweight(self):
+        from docsync import ROOT, EVENTS, events as ev_mod
+        ctx = common.Ctx(ROOT)
+        view, _ = ev_mod.events_view(ctx.text(EVENTS))
+        out = adr.gen_decisions_index(adr.load_adrs(ctx), view)
+        self.assertIn("| ADR-00008 | ", out)
+        self.assertTrue(any(ln.startswith("| ADR-00008 |") and "獨立輪｜doc-governance" in ln for ln in out.split("\n")), out)
+        self.assertEqual([ln for ln in out.split("\n") if "| 輕量軌 |" in ln], [])   # 裸「輕量軌」歸零
 
 
 if __name__ == "__main__":

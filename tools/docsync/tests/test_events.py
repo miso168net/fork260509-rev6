@@ -2,11 +2,13 @@
 import inspect
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
 
-from docsync import common, events
+from docsync import common, events, EVENTS, ROOT
+from docsync.tests.test_book_ids import stub
 
 
 def ev(**k):
@@ -83,7 +85,7 @@ class TestSchema(unittest.TestCase):
     def test_summary_limit_and_review_conservation(self):
         long = ev(type="misc", date="2026-09-03", summary="x" * 301, category="product", backlog_add=[])
         self.assertTrue(any("300" in m for _, m in events.parse_events(long + "\n")[1]))
-        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/x.md",
+        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-x.md",
                 findings={"total": 3, "fixed": 1, "to_backlog": ["BL-00001"], "wontfix_adr": []})
         self.assertTrue(any("守恆" in m for _, m in events.parse_events(rv + "\n")[1]))
 
@@ -91,7 +93,7 @@ class TestSchema(unittest.TestCase):
         """ADR-00021：probe 鍵集固定、四值守恆、negative 同形；壞形逐案紅指名。"""
         good = dict(questions=25, found=12, detour=13, not_found=0, wrong=0, avg_min_hops=2.0,
                     negative=dict(questions=7, found=6, detour=1, not_found=0, wrong=0, avg_min_hops=2.14))
-        rv = lambda p: ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/x.md",
+        rv = lambda p: ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-x.md",
                           findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}, probe=p)
         self.assertEqual(events.parse_events(rv(good) + "\n")[1], [])
         for bad, needle in ((dict(good, found=11), "不守恆"), ({k: v for k, v in good.items() if k != "wrong"}, "鍵集"),
@@ -126,14 +128,15 @@ class TestMetrics(unittest.TestCase):
 
     def test_probe_retrieval_latest_review_and_na(self):
         """ADR-00021：無帶 probe 之 review＝n/a；多筆取最近一筆；比例自計數現算；negative 缺席＝「—」。"""
-        rv = lambda scope, p: json.loads(ev(type="review", date="2026-09-03", scope=scope, report="docs/reviews/x.md",
+        rv = lambda scope, p: json.loads(ev(type="review", date="2026-09-03", scope=scope, report="docs/reviews/20260903-x.md",
                                            findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}, **({"probe": p} if p else {})))
         self.assertEqual(events.metrics([json.loads(MISC), rv("a", None)], lessons=[])["probe_retrieval"], "n/a")
         old = dict(questions=10, found=5, detour=3, not_found=1, wrong=1, avg_min_hops=3.0,
                    negative=dict(questions=4, found=3, detour=0, not_found=0, wrong=1, avg_min_hops=2.0))
         new = dict(questions=8, found=6, detour=2, not_found=0, wrong=0, avg_min_hops=1.5)
         pr = events.metrics([rv("r1", old), json.loads(MISC), rv("r2", new)], lessons=[])["probe_retrieval"]
-        self.assertEqual(pr, {"scope": "r2", "le3_ratio": 0.75, "hit_ratio": 1.0, "not_found": 0, "wrong": 0, "negative_wrong": "—"})
+        self.assertEqual(pr, {"scope": "r2", "le3_ratio": 0.75, "hit_ratio": 1.0, "not_found": 0, "wrong": 0,
+                              "avg_min_hops": 1.5, "negative_wrong": "—"})
         pr1 = events.metrics([rv("r1", old)], lessons=[])["probe_retrieval"]
         self.assertEqual((pr1["le3_ratio"], pr1["hit_ratio"], pr1["wrong"], pr1["negative_wrong"]), (0.5, 0.8, 1, 1))
 
@@ -176,7 +179,7 @@ class TestGt02(unittest.TestCase):
 
     def test_erratum_probe_backfills_review_only(self):
         """ADR-00021：probe 型 erratum 補 review 事件缺席之 probe 欄（000-r1 回填形）＝綠；指向 misc＝紅指名。"""
-        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
         p = dict(questions=3, found=2, detour=1, not_found=0, wrong=0, avg_min_hops=2.0)
         write(self.root, "docs/ops/events.jsonl", rv + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="回填") + "\n")
         self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
@@ -285,7 +288,7 @@ class TestErrataViewAndMiscAdrs(unittest.TestCase):
 
     def test_probe_erratum_adds_absent_key_in_view_and_bad_shape_is_loud(self):
         """ADR-00021：視圖面 probe 回填（目標列原無該欄）＋corrected 壞形於 schema 面紅。"""
-        rv = ev(type="review", date="2026-09-05", scope="s", report="docs/reviews/x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+        rv = ev(type="review", date="2026-09-05", scope="s", report="docs/reviews/20260903-x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
         p = dict(questions=3, found=2, detour=1, not_found=0, wrong=0, avg_min_hops=2.0)
         view, errs = self._view(rv, ev(type="erratum", date="2026-09-05", target_line=1, field="probe", corrected=p, reason="回填"))
         self.assertEqual(errs, [])
@@ -317,6 +320,126 @@ class TestErrataViewAndMiscAdrs(unittest.TestCase):
         out = adr_mod.gen_decisions_index({"ADR-00011": _A()}, view)
         self.assertIn("輕量軌｜2026-09-05", out)
         self.assertNotIn("| 輕量軌 |", out)
+
+
+class TestGt02NamedEnvSkip(unittest.TestCase):
+    """000-r2 修單 B(b)：`GT-02.submodule-absent` 屬環境型具名跳過（ADR-00019）——訊息形須以「⤳ 跳過：」起頭、
+    含命中謂詞一句、無「Day-1」字樣。★既有守衛只驗**鍵**：`gates.derive_skip_keys` 認的是錨形後方的 GT-NN.slug、
+    `run_lint` 的未登記檢查與 `ENV_SKIPS` 鍵集案同理，訊息改回舊形三者全綠；本機兩子庫都在、該分支於真 repo 不觸發，
+    lint 也照不到。本案補訊息形這面（形同 test_book_ids 之 GT-05 具名跳過案），三處環境型跳過至此各有一案。"""
+
+    FC = ev(type="feature_close", date="2026-09-03", feature="001-x", summary="s", merge="a" * 40,
+            pins={"web": "b" * 40, "api": "c" * 40}, adrs=[], arch_impact="none",
+            backlog_add=[], backlog_done=[], window=1)
+
+    def test_submodule_absent_skip_is_adr_00019_named_form(self):
+        fs = events.gt_02(stub({"docs/ops/events.jsonl": self.FC + "\n"}))
+        skips = [f for f in fs if f[0] == "SKIP"]
+        self.assertEqual(len(skips), 2, fs)          # base-web／rust-api 各一
+        for f in skips:
+            self.assertTrue(f[3].startswith("⤳ 跳過："), f)
+            self.assertIn("GT-02.submodule-absent", f[3])
+            self.assertIn("命中謂詞", f[3])
+            self.assertNotIn("Day-1", f[3])
+        self.assertEqual({f[3].split("不在工作樹")[0].split("：")[1] for f in skips}, {"base-web ", "rust-api "})
+
+
+class TestGt03BlExistence(unittest.TestCase):
+    """GT-03 之 BL 引用存在性腿（BL-00003①；events-only 不變式）：S＝全部事件 backlog_add 之聯集；
+    backlog_done／review.findings.to_backlog／兩卷帳本列號皆須 ∈ S。
+    ★帳本側分兩態：號 ≤ max(S)＝憑空／回收號即 ERROR；號 > max(S)＝配號已發但尚未落帳的在途窗口、WARN
+    （收單 backlog_add 落地即消——落帳早於 generate 但晚於 merge，RL-0053）。
+    ★★兩態＝偏離 000-r2 §4.7 條文 A 的單態 ERROR，理由與殘留破口見 `events._bl_existence` docstring；
+    本輪已升級主線待裁定，下列兩案釘的是**現行實作**、不是條文——條文若改回單態，兩案須同批改。"""
+
+    def _ctx(self, ev_lines, backlog=None, deferred=None):
+        files = {"docs/ops/events.jsonl": "\n".join(ev_lines) + "\n", "docs/reviews/20260903-s.md": "# r\n"}
+        if backlog is not None:
+            files["docs/ops/BACKLOG.md"] = backlog
+        if deferred is not None:
+            files["docs/ops/BACKLOG-DEFERRED.md"] = deferred
+        return stub(files)
+
+    RV = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-s.md",
+            findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+
+    @staticmethod
+    def _misc(**over):
+        base = dict(type="misc", date="2026-09-03", summary="s", category="governance", backlog_add=[])
+        base.update(over)
+        return ev(**base)
+
+    def test_green_when_every_reference_is_born(self):
+        ctx = self._ctx([self._misc(backlog_add=["BL-00001", "BL-00002"], backlog_done=["BL-00001"]), self.RV],
+                        backlog="<!-- next: BL-00003 -->\n- BL-00002｜governance｜x｜觸發：t\n")
+        self.assertEqual([f for f in events.gt_03(ctx) if "backlog_add 誕生" in f[3] or "尚無 backlog_add" in f[3]], [])
+
+    def test_backlog_done_of_unborn_id_is_red(self):
+        ctx = self._ctx([self._misc(backlog_add=["BL-00001"], backlog_done=["BL-00009"]), self.RV])
+        msgs = [f[3] for f in events.gt_03(ctx) if f[0] == "ERROR"]
+        self.assertTrue(any("BL-00009" in m and "未經事件 backlog_add 誕生" in m and "backlog_done" in m for m in msgs), msgs)
+
+    def test_review_to_backlog_of_unborn_id_is_red(self):
+        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-s.md",
+                findings={"total": 1, "fixed": 0, "to_backlog": ["BL-00007"], "wontfix_adr": []})
+        ctx = self._ctx([self._misc(backlog_add=["BL-00001"]), rv])
+        msgs = [f[3] for f in events.gt_03(ctx) if f[0] == "ERROR"]
+        self.assertTrue(any("BL-00007" in m and "findings.to_backlog" in m for m in msgs), msgs)
+
+    def test_ledger_row_below_top_is_red_and_above_top_is_inflight_warn(self):
+        """★本案釘的是偏離條文 A 的兩態實作（已升級主線）：≤max(S) 憑空號紅、>max(S) 在途號只 WARN。"""
+        base = [self._misc(backlog_add=["BL-00001", "BL-00005"]), self.RV]
+        ghost = self._ctx(base, backlog="<!-- next: BL-00009 -->\n- BL-00003｜governance｜x｜觸發：t\n")
+        msgs = [f[3] for f in events.gt_03(ghost) if f[0] == "ERROR"]
+        self.assertTrue(any("BL-00003" in m and "docs/ops/BACKLOG.md" in m for m in msgs), msgs)
+        inflight = self._ctx(base, deferred="<!-- next: BL-00009 -->\n- BL-00008｜governance｜x｜觸發：t\n")
+        fs = events.gt_03(inflight)
+        self.assertEqual([f for f in fs if f[0] == "ERROR" and "BL-00008" in f[3]], [])
+        self.assertTrue(any(f[0] == "WARN" and "BL-00008" in f[3] and "尚無 backlog_add" in f[3] for f in fs), fs)
+
+    def test_real_repo_zero_error_and_every_warn_strictly_inflight(self):
+        """條文 A 的「一正」在真帳的實況：本腿零 ERROR，但**非**零 finding——帳本側現有數筆在途 WARN
+        （本輪 979c046 配號、backlog_add 要到收單事件才寫）。故此處釘兩件事：①零 ERROR
+        ②真帳上絕無「號 ≤ max(誕生集) 卻只出 WARN」者——即殘留破口確實僅限 (max(誕生集), next-id) 窗口，
+        兩態分支不會悄悄擴大到憑空號那側。"""
+        ctx = common.Ctx(ROOT)
+        fs = events.gt_03(ctx)
+        self.assertEqual([f for f in fs if f[0] == "ERROR"], [])
+        evs, _ = events.parse_events(ctx.text(EVENTS))
+        top = max((events._bl_num(b) for b in events._bl_born(evs)), default=0)
+        inflight = [f for f in fs if f[0] == "WARN" and "尚無 backlog_add" in f[3]]
+        for f in inflight:
+            bid = re.search(r"BL-\d{5}", f[3]).group(0)
+            self.assertGreater(events._bl_num(bid), top, f)
+
+
+class TestProbeHopsAndReportForm(unittest.TestCase):
+    """000-r2 L1-05（probe.avg_min_hops 受 GT-02 形檢卻無渲染面）／L3-09（review.report 形檢過寬）／C3-4（RE_LID 死常數）。"""
+
+    def test_avg_min_hops_reaches_metrics_and_state_row(self):
+        from docsync import references
+        rv = json.loads(ev(type="review", date="2026-09-05", scope="s", report="docs/reviews/20260905-s.md",
+                           findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []},
+                           probe={"questions": 4, "found": 2, "detour": 2, "not_found": 0, "wrong": 0, "avg_min_hops": 2.5}))
+        pr = events._probe_retrieval([rv])
+        self.assertEqual(pr["avg_min_hops"], 2.5)
+        self.assertIn("平均最短 hops 2.5", references._probe_row(pr))
+
+    def test_review_report_path_form_matches_message(self):
+        bad = json.loads(ev(type="review", date="2026-09-05", scope="s", report="notes.md",
+                            findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}))
+        self.assertTrue(any("docs/reviews/YYYYMMDD-" in m for m in events._check_event(bad)), events._check_event(bad))
+        for good in ("docs/reviews/20260905-doc-governance.md", "docs/reviews/20260904-spec-compliance-001.md"):
+            ok = json.loads(ev(type="review", date="2026-09-05", scope="s", report=good,
+                               findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}))
+            self.assertEqual(events._check_event(ok), [], good)
+        for bad_path in ("docs/reviews/2026-09-05-s.md", "docs/reviews/20260905-S.md", "docs/reviews/sub/20260905-s.md"):
+            b = json.loads(ev(type="review", date="2026-09-05", scope="s", report=bad_path,
+                              findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}))
+            self.assertTrue(events._check_event(b), bad_path)
+
+    def test_dead_lid_constant_removed(self):
+        self.assertFalse(hasattr(events, "RE_LID"))
 
 
 if __name__ == "__main__":
