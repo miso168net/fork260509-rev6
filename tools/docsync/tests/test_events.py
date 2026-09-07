@@ -380,11 +380,18 @@ class TestGt03BlExistence(unittest.TestCase):
         self.assertTrue(any("BL-00009" in m and "未經事件 backlog_add 誕生" in m and "backlog_done" in m for m in msgs), msgs)
 
     def test_review_to_backlog_of_unborn_id_is_red(self):
-        rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-s.md",
-                findings={"total": 1, "fixed": 0, "to_backlog": ["BL-00007"], "wontfix_adr": []})
-        ctx = self._ctx([self._misc(backlog_add=["BL-00001"]), rv])
+        """to_backlog 與帳本側同判兩態（主線 T6 擴充）：≤max(誕生集)＝憑空／回收號紅；>max＝同輪在途只 WARN。"""
+        mk = lambda bid: ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-s.md",
+                            findings={"total": 1, "fixed": 0, "to_backlog": [bid], "wontfix_adr": []})
+        # 憑空／回收號（BL-00003 ≤ max=5）→ ERROR
+        ctx = self._ctx([self._misc(backlog_add=["BL-00001", "BL-00005"]), mk("BL-00003")])
         msgs = [f[3] for f in events.gt_03(ctx) if f[0] == "ERROR"]
-        self.assertTrue(any("BL-00007" in m and "findings.to_backlog" in m for m in msgs), msgs)
+        self.assertTrue(any("BL-00003" in m and "findings.to_backlog" in m for m in msgs), msgs)
+        # 同輪在途（BL-00007 > max=5）→ WARN、不擋
+        ctx2 = self._ctx([self._misc(backlog_add=["BL-00001", "BL-00005"]), mk("BL-00007")])
+        fs = events.gt_03(ctx2)
+        self.assertTrue(any(f[0] == "WARN" and "BL-00007" in f[3] and "findings.to_backlog" in f[3] for f in fs), fs)
+        self.assertFalse(any(f[0] == "ERROR" and "BL-00007" in f[3] for f in fs), fs)
 
     def test_ledger_row_below_top_is_red_and_above_top_is_inflight_warn(self):
         """★本案釘的是偏離條文 A 的兩態實作（已升級主線）：≤max(S) 憑空號紅、>max(S) 在途號只 WARN。"""

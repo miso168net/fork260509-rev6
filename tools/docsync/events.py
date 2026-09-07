@@ -409,7 +409,7 @@ def _bl_born(events):
 
 def _bl_existence(ctx, evs):
     """BL-00003①：事件側（backlog_done、review.findings.to_backlog）與帳本兩卷之每個 BL 號皆須 ∈ 誕生集。
-    ★帳本側分兩態：號 ≤ max(誕生集)＝憑空號或回收號、ERROR；號 > max(誕生集)＝配號已發而收單尚未落帳的
+    ★帳本側與 review.findings.to_backlog 側分兩態：號 ≤ max(誕生集)＝憑空號或回收號、ERROR；號 > max(誕生集)＝配號已發而收單尚未落帳的
     在途窗口、WARN（一輪之內帳本先 append、事件於收單才寫，兩者恆有時間差；把在途也判 ERROR 會讓該輪
     自身的收尾 commit 全被 pre-commit 擋死）。ADR 方向刻意不設同型反向不變式＝ADR-00025。
 
@@ -431,8 +431,15 @@ def _bl_existence(ctx, evs):
         if e.get("type") == "review":
             rw = f"{EVENTS}｜review {e.get('date')} {e.get('scope')}"
             for b in (e.get("findings") or {}).get("to_backlog") or []:
-                if b not in born:
+                if b in born:
+                    continue
+                # to_backlog＝該輪的分流結果，其誕生事件（收單 misc 之 backlog_add）依 RL-0053 排在 merge 之後、
+                # 與 review 事件同輪但更晚；故與帳本側同判兩態，不然 review 事件一 append 就把自己的收尾擋死。
+                # backlog_done 不適用（收掉一個從未誕生的號恆為錯），維持單態 ERROR。
+                if _bl_num(b) <= top:
                     out.append(finding(ERROR, "GT-03", rw, "GT-03：" + _BL_UNBORN.format(bid=b, src="findings.to_backlog")))
+                else:
+                    out.append(finding(WARN, "GT-03", rw, "GT-03：" + _BL_INFLIGHT.format(bid=b, src="findings.to_backlog")))
     from . import book as book_mod   # 帳本列形＝家族真源（判準單一家、不另抄一份正則）
     for rel in BL_LEDGERS:
         text = ctx.text(rel)

@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | review | doc-governance | findings 81（修 69／BL 8／ADR 4）；BL-00035、BL-00036、BL-00037、BL-00038、BL-00039、BL-00040、BL-00041、BL-00042、ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-7 | 輕量軌 maint-backlog-7 收單：BL-00007 檢索性第四指標——ADR-00021：review 事件 optional probe 欄（冷啟動探針＋否定對照題四值計數、grader 最短 hops 平均）為資料源、GT-02 形檢、erratum 欄集加 probe、STATE 治理指標表第四列比例現算（目標＝找不到＋答錯＝0、≤3 跳比例輪間不降）；000-r1 以 erratum 回填為基準。 | b6e62e3 | ADR-00021 | — |
 | 2026-09-07 | erratum | 行 13 | ADR-00021 回填：000-r1 探針結果自報告 §3 逐題表回算（冷啟動 25 題＋否定對照 7 題、grader 最短 hops 平均）——當時 review 事件無 probe 欄、只落 notes 自由文 | — | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-21 | 輕量軌 maint-backlog-21 收單：BL-00021 憲法 §I.5 例外②邊界定性——RUNBOOK §10 補一句「migration／entity 兩 crate 之 main.rs／lib.rs／Cargo.toml 五檔為承形自寫之自然收斂（去註解後只差改名級差異）、不屬例外②射程亦非未登記拷貝、稽核以 ADR-00009 之 17 檔為準」；ADR-00009／憲法不動。 | 3b42b40 | — | — |
@@ -27,6 +28,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜review｜doc-governance
+
+獨立輪 000-r2（第二輪 doc-governance；對象＝分支 000-r2-doc-governance @ 7b734e1、開出點 rev6-admin-root @ c097c48）。五支 Workflow、85 支 agent 零錯零 null：A 探索 18（12 lens＋6 探針、findings 95）／B1 22（批 1～11、54 筆兩鏡三態）／B2 22（批 12～16 兩鏡＋6 探針 grader→refuter＋完整性 critic）／C 補漏 9（critic 三缺口 lens＋inline 兩鏡）／D 修單 14（U-r2-gates）。四處 porcelain 全程零寫入。findings 實得 102＝A 去重後 77＋探針衍生 13＋C 12；三態 confirmed 88／refuted 12／uncertain 2（守恆）。★本欄 total 81 為帳面條目數（同 r1 先例）：88 confirmed 中 15 筆依 r1 Q11 同類合併為 8 條 BL、4 筆立 ADR、其餘 69 筆為修。主線逐 confirmed 重跑證據命令：零輸出 0 筆、6 筆非唯讀形人工補驗全數成立。修之落地＝739354a／b2e5b75／c3effa6（主線直改 51）＋0d91224（RL-0042 第二具名例外）＋598b806（D run 17）；BL＝979c046；ADR＝2b4d3f6（憲法 Amendment 1.1.0→1.2.0：ADR-00022 例外①含註解／ADR-00023 保留碼承載點／ADR-00024 §III 判準句）與 4f7c8b1（ADR-00025 won't-fix：ADR 方向不設反向存在性不變式）。★BL-00003 閘補腿群三腿全落地：GT-03 BL 引用存在性腿（events-only 不變式；帳本側兩態＝憑空／回收號 ERROR、在途落帳 WARN）、SKIP 分類（Day-1 型八處改 ERROR、環境型三處改 ADR-00019 具名跳過＋gates.ENV_SKIPS 登記＋GT-12 登記腿）、主張閘（user 停點① 拍板『補既有閘腿、不占閘數』＝GT-12 數值／SHA 主張腿＋GT-05 ID 引用存在性腿）；閘數維持 12。docsync test 178→249 案。第四指標首次輪間比較：≤3 跳比例 r1 0.48→r2 0.76；排除五題題文不可比者之可比子集 20 題亦由 0.45→0.70，兩口徑同向；找不到與答錯兩輪皆 0、否定對照答錯 0。題文可比性偏差已於報告 §3.5 揭露並更正計畫附錄 C 為 r1 實問版（r3 起完全可比）。停點① user 逐題親決六題。RULES-VERSION 741ae996dc61→89ec0586d6a9。
 
 ### 2026-09-07｜misc｜governance｜maint-backlog-7
 
