@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-07 | misc | governance｜maint-backlog-40-39-37 | 輕量軌 maint-backlog-40-39-37 收單（003 開刀前治理維護、三條合一顆）：BL-00040 探針題庫隔離全收（否定對照表刪「真相」欄、r3 起真相烤進 grader prompt 不落 tracked）；BL-00039① 編排骨架五常數型別＋非空斷言（harness-test 十五→十八案）；BL-00037③ wire 契約閘雙側觸發（pre-commit 觸發字面＋wire-schema.py 快照側 pin 區間收窄、自測 27→31 案）。BACKLOG 15→14；閘數 12 與 RULES 未動。 | 4844b15 | — | — |
 | 2026-09-07 | misc | governance｜000-r2-doc-governance | 獨立輪 000-r2 文件治理架構第二輪體檢收單：五支 Workflow 85 支 agent、findings 102（confirmed 88）、修 69／BL 8 條／ADR 4 支；BL-00003 閘補腿群三腿全落地（GT-03 BL 存在性腿／SKIP 分類＋ENV_SKIPS＋GT-12 登記腿／主張閘兩腿，閘數維持 12）；憲法 1.1.0→1.2.0；檢索性第四指標 0.48→0.76。 | acc11a7 | ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — |
 | 2026-09-07 | review | doc-governance | findings 81（修 69／BL 8／ADR 4）；BL-00035、BL-00036、BL-00037、BL-00038、BL-00039、BL-00040、BL-00041、BL-00042、ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-7 | 輕量軌 maint-backlog-7 收單：BL-00007 檢索性第四指標——ADR-00021：review 事件 optional probe 欄（冷啟動探針＋否定對照題四值計數、grader 最短 hops 平均）為資料源、GT-02 形檢、erratum 欄集加 probe、STATE 治理指標表第四列比例現算（目標＝找不到＋答錯＝0、≤3 跳比例輪間不降）；000-r1 以 erratum 回填為基準。 | b6e62e3 | ADR-00021 | — |
@@ -29,6 +30,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-07｜misc｜governance｜maint-backlog-40-39-37
+
+★BL-00039 與 BL-00037 為部分收（子項）、故不入 backlog_done、改以條文改列承載：BL-00039 刪①留②（探針 hops 口徑，觸發欄不變＝下次動 tools/orchestration/** 或 000-r3 發射前）；BL-00037 刪③留①②（pre-push 接線、bootstrap 名冊）。★BL-00037③ 的關鍵發現：只在 .githooks/pre-commit 加 `-e 'rust-api'` 觸發字面是假腿——`wire-schema.py check --staged-gate` 原在 base-web gitlink 未 staged 時回 not-staged 直接 rc 0，rust-api pin bump 一次都跑不到；故同批把單側判定抽成 _pin_range_verdict(sub, pathspecs, …)、新增 staged_snapshot_verdict（rust-api pin 區間 × server/tests/fixtures/wire-schema.json）、cmd_check 改兩側合判（皆零變動才跳過）。取「pin 區間 × 快照 pathspec」而非「只要 rust-api staged 就重抽」＝避免每次 pin bump 都跑 npx 撞 pre-commit 雙錨門檻。四個新測試案含 pathspec 對 OUTPUT_PATH 的釘值（防打錯＝區間 diff 恆空＝恆判 no-change＝假腿）；變異實測兩發皆紅（pathspec 打錯／收窄退回單側）。★BL-00039① 的斷言分兩處：UNIT／FEATURE／START_LOG 上提 _sk_head.js（兩形共用、_sk_review.js 同判準三行刪去），CONTEXT／ALLOWED_BLOCK 置於 _sk_main.js——TDD 拼接序 vars→head→allowed→rules→context→prompts→cycle→main，在 head 取值會落在 const 暫時死區（typeof 亦拋 ReferenceError）；main 早於任何 spawn、零派發性質不變。harness 三反例取「值被清空」而非「常數名打錯」：後者在頂層引用處即 ReferenceError（已 fail-loud），前者才是過得了 guard 的靜默洞（ALLOWED_BLOCK 空＝fix agent 拿到沒有允許清單的 prompt、六件套⑥ 靜默失效）。★BL-00040 另處置 errata 兩處失效引用（§4.2 與 Q12 之「§5.2 真相表」）；殘留破口（「型」欄本身透露應查無與否）逐句揭露、刻意不另設閘。r2 判分結果住報告 §3.2 彙總形、刪欄不損可重算性。★現在式面同步：案數十五→十八（README、tools/orchestration/README、RUNBOOK §12、P-C4-E3、P-E7）、wire-schema 雙側觸發（RUNBOOK §12 兩列、README 兩處、test_hook_wiring SEGMENTS＋一反例）；史料面（reviews／MILESTONES／brainstorms 正文）依 RL-0048 不動，ADR-00019 body 依「as-built 不回灌 ADR」不改。★自驗：docsync test 249／check 零漂移／lint 0 錯 0 警 0 跳過／wire-schema 31 案／五支工具自測 rc 0／三支入庫範例組裝三道自檢綠（harness-test 十八案 ×2 模式、harness-review 九案 ×2 支）。實作顆 4556778。
 
 ### 2026-09-07｜misc｜governance｜000-r2-doc-governance
 
