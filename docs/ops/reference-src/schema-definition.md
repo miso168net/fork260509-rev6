@@ -615,7 +615,7 @@ entity-drift 比對豁免本表。
   白名單承 `rev5:ADR 0005`（rev6 對應釋義隨 menu 域刀重審）。
 - 4 列選單之 `component` 指向 view 於 rev6 base-web（upstream `example` 基線）尚缺（manage_system-settings／
   manage_policy-archive／manage_audit／manage_ip-rule）——選單與政策隨基線先行、view 由
-  對應 UI 刀補齊（rev5 由 `rev5:B-008` 承載；rev6 條目隨 UI 刀立）。
+  對應 UI 刀補齊（rev5 由 `rev5:B-008` 承載；rev6 由 BL-00045 承載）。
 
 ## 9. sequences 落值（m0002 收尾 setval；gate2／SC-002 比對面含此）
 
