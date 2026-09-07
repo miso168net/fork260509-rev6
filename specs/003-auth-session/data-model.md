@@ -58,7 +58,9 @@
 | `session_policy` | `varchar(20) NOT NULL DEFAULT 'inherit'` | 三帳號皆 `inherit` | 值域＝`single`｜`multi`｜`inherit`（零 CHECK、碼層收斂＋值域測試守） |
 | `session_id` | `varchar(36)` nullable | 三帳號皆 NULL | login 第⑨步寫入當前 sid（single-session 生效時）；清理還原＝置回 NULL |
 
-**兩層政策解析**：`effective_single = session_policy=='single' || (session_policy=='inherit' && single_session_default=='on')`；`single_session_default` 讀不到→off 語意。★生效時點（Q9、入憲）：只於登入事件判定、翻轉不追溯既有會話。
+**status 語意（login 十一步之③⑤刻意不對稱）**：③`authenticate` 之「已停用」恰 `status == 2`（三態 collapse `1000`）；⑤鎖內重驗恰 `status == 1`（連同 `deleted_at IS NULL`、password 字面）——第三個 status 值（如 `0`）使③過⑤擋，稽核列第二寫入點由此確定性觸發（測試 fixture＝`UPDATE sys_user SET status=0 WHERE id=3`、RAII 還原）。
+
+**兩層政策解析**：`effective_single = session_policy=='single' || (session_policy=='inherit' && single_session_default=='on')`；`single_session_default` 讀不到→off 語意。★生效時點（brainstorm Q9、入憲）：只於登入事件判定、翻轉不追溯既有會話。
 seed `off`＋全帳號 `inherit` ⇒ 預設不啟用，驗收前置以 002 寫端翻 `on`、驗後翻回（§9）。
 
 ## §5 sys_menu → MenuRoute 映射（dynamic 選單）
@@ -103,7 +105,7 @@ seed 78 列；`constant` 值域 TRUE=0／FALSE=14／NULL=64 ⇒ `getConstantRout
 | 鍵 | seed | 消費事件（讀現值） | 缺鍵／壞值 | 既有會話 |
 |---|---|---|---|---|
 | `session_idle_timeout` | 60 | login 第⑥步（簽對）；refresh `active` 腿（簽新對＋idle 門檻） | **fail-loud `5000`** | 最晚下一次換發採新值；已簽發 token exp 不變 |
-| `single_session_default` | off | login 第⑨步 | off 語意 | 不追溯（Q9） |
+| `single_session_default` | off | login 第⑨步 | off 語意 | 不追溯（brainstorm Q9） |
 | `login_throttle_max_fails` | 5 | 每次登入嘗試 precheck 載入 | 退常數 5＋`settings_default` 告警 | 立即 |
 | `login_throttle_captcha_after` | 2 | 同上 | 退常數 2＋告警 | 立即 |
 | `login_throttle_window_minutes` | 15 | 同上 | 退常數 15＋告警 | 立即 |
@@ -112,7 +114,7 @@ seed 78 列；`constant` 值域 TRUE=0／FALSE=14／NULL=64 ⇒ `getConstantRout
 
 ## §8 降級不變式（島歸屬；全表＝research R5）
 
-島 A（grace fail-secure）／島 B（`single_session_default` 缺鍵 off；翻轉不追溯）／島 C（status 權威、denylist fail-closed、PG 亦故障不盲放、TTL＝refresh 全壽命）／島 D（last_activity fail-open、不寫 denylist、不等式）／島 E（三區、滑動窗權威、驗章前擋零列零桶、redis 整體不可用 fail-open、L2 失敗 fail-open＋補償、captcha 標記瞬斷 fail-closed 不罰、設定鍵缺失或矛盾退常數）；跨島註＝idle 鍵缺失 fail-loud 與 E 相反；跨島總則＝消費事件讀現值、不追溯已簽發。
+島 A（grace fail-secure）／島 B（`single_session_default` 缺鍵 off；翻轉不追溯）／島 C（status 權威、denylist fail-closed、PG 亦故障不盲放、TTL＝refresh 全壽命）／島 D（last_activity fail-open、不寫 denylist、不等式）／島 E（三區、滑動窗權威、驗章前擋零列零桶、redis 整體不可用 fail-open、L2 失敗 fail-open＋補償、captcha 標記瞬斷 fail-closed 不罰、設定鍵缺失或矛盾退常數）；兩處刻意方向不一致之理由（spec FR-012 MUST）：①`session_idle_timeout` 缺失 fail-loud vs 節流三鍵缺失退常數——前者猜錯會靜默改變所有人的會話壽命、後者猜錯只影響阻力強度；②captcha 整體不可用（redis 連不上）走 fail-open vs 單次 SET NX 瞬斷走 fail-closed 不罰——前者若仍要求驗證碼＝驗不了題卻要求、把合法使用者鎖在門外（故停用軟區、密碼錯仍計數保阻力），後者若放行＝攻擊者附偽造 captchaId 即可在瞬斷窗通關（降級恰好只放行對抗性流量；一次性標記寫不進去即無法認定該題已耗，但受害者不該被罰計數）。跨島總則＝消費事件讀現值、不追溯已簽發。
 
 ## §9 gate2 seed 與 runtime 寫入的相容紀律（本刀首撞）
 

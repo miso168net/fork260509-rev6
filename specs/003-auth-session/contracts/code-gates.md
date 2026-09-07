@@ -76,7 +76,7 @@
 | `.githooks/pre-commit` `for t in …` 自測名冊 | 加列 | 加列（`test_hook_wiring` 聯集斷言） |
 | RUNBOOK §12 碼面閘表前言（`NON_GATE_TOOLS` 現值句） | — | 現值改兩支 |
 | RUNBOOK 檔頭「創世期章節現況」句 | — | §9c 自指針章移入已補實文章 |
-| README 第 14 行憲法版本鏡像（U0、與 Amendment 同 commit） | 1.2.0→1.3.0＝ADR-00026 | — |
+| README 憲法版本鏡像行（含 `現行 1.2.0＝ADR-00022`；U0、與 Amendment 同 commit） | 1.2.0→1.3.0＝ADR-00026 | — |
 | `tools/fork-delta-lint.py` self_test 註解「rev6 §III.2 現為空表」（U0） | 改現在式 | — |
 
 ## §7 ADR 五筆（一決策一檔；序號＝落檔時取、現況 next＝ADR-00027；皆帶 rev5 provenance；刀內 proposed→accepted）
@@ -86,7 +86,7 @@
 | ADR-00026 | 憲法 Amendment 1.2.0→1.3.0（★軌道四條八用途＋島 A～E） | **plan 期 draft 已落**（proposed）；tasks 首個主線任務 user 親決→accepted | 條文全文在該檔；後果段含三分碼射程（R4） |
 | ② | `AppState` 恰兩欄封條翻案→五欄 | U1 | 決定文＝clarify Q1；提及 `rev5:ADR 0029` 同位 |
 | ③ | root `Cargo.toml` 不引 argon2 翻案＋server 依賴清單 | U1 | R1 雙源表為附錄；五支取最新之拍板紀錄（D1～D5） |
-| ④ | 快速登入鈕已知態（Q4 拍板；帳＝BL-00049） | U11 | 記「保留＋記帳」與棄案；觸發綁 RUNBOOK §16 |
+| ④ | 快速登入鈕已知態（brainstorm Q4 拍板；帳＝BL-00049） | U10（T073） | 記「保留＋記帳」與棄案；觸發綁 RUNBOOK §16 |
 | ⑤ | msg key 跨端閘形制＝逐檔雙向全等、無白名單 | U9 | 決定文＝clarify Q2；與 ADR-00017 射程關係（「雙向必恆紅」指整本字典） |
 
 收刀 `feature_close.adrs` 列全五筆。憲法版本恰 bump 一次。

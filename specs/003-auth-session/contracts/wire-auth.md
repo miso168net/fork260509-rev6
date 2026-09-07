@@ -30,7 +30,7 @@ Public 理由：設 Authed 則過期 token 永遠換不了。請求 `{refreshTok
 
 | 情境 | code | 備註 |
 |---|---|---|
-| `active`＋idle 未逾時 | `0000` | rotate（舊列→`rotated`、插新 `active`）＋寫 grace 30s；新對 TTL 讀 `session_idle_timeout` 現值（Q4 總則） |
+| `active`＋idle 未逾時 | `0000` | rotate（舊列→`rotated`、插新 `active`）＋寫 grace 30s；新對 TTL 讀 `session_idle_timeout` 現值（clarify Q4 總則） |
 | `rotated`＋grace 命中（≤30s） | `0000` | ★冪等回**既發的同一對** |
 | `rotated`＋grace miss | `8888` | ★唯一觸發 reuse：撤全鏈＋落 `session_event(reuse)` |
 | `revoked`＋denylist reason==`kicked` | `7777` | modal「你已在他處登入」 |

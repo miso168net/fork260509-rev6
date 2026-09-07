@@ -45,7 +45,7 @@ backend: {
 ```
 
 - `en-us.ts`／`zh-cn.ts`：頂層 object 內插入獨佔一行 `  backend: {` 起的區塊（新增型圈界標記；★I18N-WIRING(ii)）；`app.d.ts` `App.I18n.Schema` 補同構 `backend` 必填型節（★I18N-WIRING(iii)）⇒ `pnpm typecheck` 免費守兩語結構。
-- `zh-tw.ts`：新檔、檔頭 `// [rev6-inline BASE-WEB-I18N-WIRING+ 003-auth-session] …`、裸 object（`export default {` 換行後 `  backend: {` **獨佔一行**＝跨端閘右源錨、與兩語插入錨同形）、無 `App.I18n.Schema` 標註、不註冊 `LangType`（Q3）。
+- `zh-tw.ts`：新檔、檔頭 `// [rev6-inline BASE-WEB-I18N-WIRING+ 003-auth-session] …`、裸 object（`export default {` 換行後 `  backend: {` **獨佔一行**＝跨端閘右源錨、與兩語插入錨同形）、無 `App.I18n.Schema` 標註、不註冊 `LangType`（brainstorm Q3）。
 - 跨端閘攤平比對：`backend.common.success` 等 13 條鍵路徑 ⇔ `MSG_KEYS` 字面（`common.success` 等）逐檔全等。
 
 ## 機器閘落點

@@ -7,7 +7,7 @@
 ## Summary
 
 把 base-web fork 原版 service 已在呼叫的 12 條認證與路由端點補齊到終態（ROUTES 4→16）：真帳密登入（十一步、稽核列三處）、DB-stateful token rotation（grace 30 秒）、撤銷矩陣（logout／被踢／idle；`status` 權威＋denylist 加速層）、帳號維節流三區＋無狀態簽題 captcha、dynamic 側邊欄（Casbin `menu` 維度過濾＋`home` 收斂律＋constant routes 合併）、替代登入四 stub、後端 msg 前端轉譯（三檔 backend 樹 13 鍵＋`zh-tw.ts` 錨點檔）。
-技術路徑＝高度參照 `rev5:003-auth-session` 終態碼（research R2 逐檔清單、R3 二十筆 rev6 差異點＋十七筆承襲防回歸），六支新依賴＋`log` 全取最新穩定（R1 雙源表、API 守則）。
+技術路徑＝高度參照 `rev5:003-auth-session` 終態碼（research R2 逐檔清單、R3 二十筆 rev6 差異點＋十七筆承襲防回歸），八支新依賴（六支 auth＋`log`＋`getrandom`）依 R1 雙源表定版（五支取最新穩定、三支同值直採；API 守則）。
 同一筆 MINOR Amendment（ADR-00026 draft 已落、status proposed）開 §III.2 首批四 ★ 軌道八用途＋§I.7 島 A～E（含 Q9／Q3／Q4 三句 rev6 增補）——tasks 首個主線任務 user 親決凍結、accepted 前不得動 base-web 既有檔。治理面同刀：跨端閘 `tools/msg-key-gate.py`（逐檔雙向全等）、走查基準對賬工具遷入（`NON_GATE_TOOLS`）、BL-00037①②／BL-00026／BL-00041 刀內收；零 migration、零新 casbin 政策列（R13 複核）。
 
 ## Technical Context
@@ -18,7 +18,7 @@
 
 **Storage**: PostgreSQL 18.4（001 基線；`sys_token`／`session_event`／`sys_login_attempt` 只寫入不改結構、`sys_user` 兩欄、`sys_menu` 讀）＋Redis（DB 0；六鍵族＝data-model §6；不開 AOF＝已知態）；零 migration；rev6 stack 埠 35432／36379
 
-**Testing**: cargo test 三層（純函式紅綠／oneshot contract 16 case＋雙向覆蓋閘＋快照裁判／真 DB＋真 redis integration 掛四種 RAII 守衛——research R7）；`--test-threads=1` 容器內；python 工具自帶 `test`（跨端閘五案、走查工具離線樁、docsync test 新增 hook 四檔＋bootstrap 面＋GT-12／GT-05 腿）；前端零測試框架＝`pnpm typecheck`＋兩段 review＋CDP 對照 rev5（22080 vs 32080）；quickstart 經 front-nginx 真 HTTP 走查＋走查前後基準 diff rc 0
+**Testing**: cargo test 三層（純函式紅綠／oneshot contract 16 case＋雙向覆蓋閘＋快照裁判／真 DB＋真 redis integration 掛四種 RAII 守衛——research R7）；`--test-threads=1` 容器內；python 工具自帶 `test`（跨端閘七案、走查工具離線樁、docsync test 新增 hook 四檔＋bootstrap 面＋GT-12／GT-05 腿）；前端零測試框架＝`pnpm typecheck`＋兩段 review＋CDP 對照 rev5（22080 vs 32080）；quickstart 經 front-nginx 真 HTTP 走查＋走查前後基準 diff rc 0
 
 **Target Platform**: Linux 容器（compose project `rev6-admin`、七件業務件；host＝WSL2、/mnt/d drvfs 跑過 compose 後同 shell 重新 `cd`；CDP 由 host 瀏覽器 9229）
 
@@ -122,7 +122,7 @@ tools/
 .githooks/pre-commit(改：msg-key-gate 段＋for 自測名冊兩支＋selftest-docsync 觸發放寬)
 .specify/memory/constitution.md(改：§III.2 四列＋§I.7 島 A～E＋1.3.0；tasks 首個主線任務)
 docs/ops/RUNBOOK.md(改：檔頭章節現況句、§9c 實文、§12 兩列＋前言現值句)；README.md(改：第 14 行憲法版本鏡像〔U0〕＋tools/ 樹兩行)
-docs/arc42/{05,06,08,10,12}-*.md(as-built、U11；§10.2 島 A～E 各一品質情境)；docs/arc42/decisions/ADR-000{27..30}-*.md(刀內落)
+docs/arc42/{05,06,08,10,11,12}-*.md(as-built、U11；§10.2 島 A～E 各一品質情境、§11 三則 by-design 已知態)；docs/arc42/decisions/ADR-000{27..30}-*.md(刀內落)
 docs/ops/BACKLOG.md(收刀：done 4／BL-00031 條文改／add 8)；docs/ops/NOTES.md(收刀→004)
 ```
 

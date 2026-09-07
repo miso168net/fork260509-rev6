@@ -18,7 +18,7 @@ tags: [constitution, amendment, fork-delta, behavior-island, auth]
 
 兩者同屬 §V.3 MINOR（「新增 ★ 軌道」與「行為島隨刀進場」各自列名），合計一次 bump：**1.2.0 → 1.3.0**。
 
-**改本檔哪一節**（§V.2 步 1）：§III.2「已授權軌道與用途」表（落四軌道八用途、移除哨兵句；表外三項宣告不動）；§I.7「已入憲行為島」段（替換「（尚無…）」為島 A～E 條文＋跨島註）與承襲指針表 A～E 列註記；文末 `Version`／`Last Amended`／Amendment log。
+**改本檔哪一節**（§V.2 步 1）：§III.2「已授權軌道與用途」表（落四軌道八用途、移除哨兵句；表外三項宣告不動）；§I.7「已入憲行為島」段（替換「（尚無…）」為島 A～E 條文＋跨島註）與承襲指針表 A～E 列註記；§I.2 第三點 PATCH 級釐清（順帶、見 §四）；文末 `Version`／`Last Amended`／Amendment log。
 
 ## 決策驅動因子
 
@@ -85,6 +85,7 @@ tags: [constitution, amendment, fork-delta, behavior-island, auth]
 - 三區（自由／需驗證碼／鎖定）；滑動窗（PG）為**權威**、redis L1 為負快取。
 - 軟區與鎖定 MUST 在密碼雜湊驗證**之前**擋下，且**零稽核列、零計數桶**（拒絕不得消耗受害者的額度）。
 - fail-* 方向：redis 整體不可用＝**fail-open**（軟區 captcha 要求整層停用、續驗密碼，密碼錯仍計數）；L2（PG）查詢失敗＝**fail-open ＋ 補償**（計數歸零放行並置 `captcha_forced`）；captcha 標記 SET NX 瞬斷（redis 健康）＝**fail-closed 不罰**（拒該次、零計數桶）。
+- 上列 captcha 兩層方向刻意相反之理由（記於此以免被「統一」）：整體不可用時若仍要求驗證碼＝驗不了題卻要求、把合法使用者鎖在門外，故停用軟區、密碼錯仍計數保阻力；單次標記瞬斷時若放行＝攻擊者附偽造題即可在瞬斷窗通關（降級恰好只放行對抗性流量），故拒該次；一次性標記寫不進去即無法認定該題已耗，受害者不該被罰計數。
 - 節流設定鍵缺失、或**矛盾組合**（驗證碼門檻大於鎖定門檻）＝視同不可用、退活書常數並發結構化告警（每次載入至多一筆）；門檻相等＝合法（軟區寬度零）。
 
 **跨島註（方向刻意不一致，記於此以免日後被「統一」）**：登入流程讀 `session_idle_timeout` 設定鍵缺失＝**fail-loud**（`5000`、不猜 TTL 值），與 E 的節流設定鍵缺失走 fail-open 退常數方向相反——前者猜錯會靜默改變所有人的會話壽命，後者猜錯只影響阻力強度。
@@ -100,6 +101,10 @@ tags: [constitution, amendment, fork-delta, behavior-island, auth]
 - bump **1.2.0 → 1.3.0**（MINOR：§V.3「新增 ★ 軌道」與「行為島隨刀進場」兩款）；`Last Amended` 改凍結日；Amendment log 加一列（形沿 1.2.0 列）。
 - 本 ADR 轉 accepted 與憲法改動 MUST 同一顆 commit（§V.2 步驟 4）、同批 `python3 tools/docsync generate`；commit 訊息 `docs(constitution): amend §III.2 首批 ★ 軌道四條八用途＋§I.7 島 A～E（1.2.0→1.3.0）`。
 - 該 commit 落地即解除「base-web 既有檔硬閘」；在此之前，純新增檔（`rev6-auth.d.ts`／`rev6-auth.ts`／`zh-tw.ts`）依 §III.2 表外宣告 3 不受此閘。
+
+### 四、§I.2 第三點 PATCH 級釐清（順帶、不抬版級）
+
+§I.2 現句「constantRoutes（login／404／403）前端寫死、與 menu 無關、不動；constant route 集合可經 §III.2 授權新增——builtin 三頁不動與 Casbin 豁免語意不變」改為「constantRoutes（builtin 常量集，現為 403／404／500／iframe-page／login 五條、實數以 base-web `createStaticRoutes` 為準）前端寫死、與 menu 無關、不動；constant route 集合可經 §III.2 授權新增——builtin 常量集不動與 Casbin 豁免語意不變」。理由＝§一 (a) 列明寫「五條 builtin」，落表後憲法內部不得同時宣稱三頁與五條（實測 base-web `createStaticRoutes` 恰 5 條）；語意不變、屬 §V.3 PATCH 級，併入本 MINOR。
 
 ## 後果
 

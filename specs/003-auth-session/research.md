@@ -18,7 +18,7 @@
 | captcha | 1.0.0 | 1.0.0（同值） | 1.0.0 | `default-features = false`（關 `audio`＝唯一可關） | — | 圖形題產圖 |
 | sha2 | 0.10.9 | **0.11.0**（2026-03-25） | **0.11.0**（D4；★lock 將同時存 sqlx 間接帶的 0.10.9＝兩份副本、已知代價） | 預設（`alloc`／`oid`） | 1.85 | `token_hash`＋captcha `ans_mac` |
 | hex | 0.4.3（rev6 lock 已在） | 0.4.3（同值） | 0.4.3 | 預設 | — | hash hex 編碼 |
-| log | 0.4.33（rev6 lock 現值） | **0.4.34**（2026-08-22） | **0.4.34**（D5；容器內 `cargo update -p log` 統一間接依賴、單一副本；★取代 spec FR-034 之「釘 0.4.33」字面——該句寫於 D5 拍板前；「零新套件」仍成立、差別只在版本推進一次） | 預設 | — | 僅 `log::LevelFilter::Debug`（BL-00026） |
+| log | 0.4.33（rev6 lock 現值） | **0.4.34**（2026-08-22） | **0.4.34**（D5；容器內 `cargo update -p log` 統一間接依賴、單一副本；★spec FR-034 已同批校正為「依 R1 定案 0.4.34」；「零新 crate」仍成立、差別只在版本推進一次） | 預設 | — | 僅 `log::LevelFilter::Debug`（BL-00026） |
 | getrandom | —（rev5 經 argon2 之 `rand_core::OsRng` 取亂數、無直接依賴；rev6 lock 現值 0.4.3 為間接依賴） | 0.4.3（2026-06-17） | **0.4.3**（D6 主線自拍：lock 現值＝最新穩定、同值直採） | 預設 | — | CSPRNG：captcha nonce 與答案拒絕採樣、sid／jti uuid v4 素材（`getrandom::fill`） |
 
 **API 差異守則**（implementer 烤入；rev5 對應檔只當藍本、照新版 API 寫）：
@@ -117,7 +117,7 @@ rev5 003 邊界＝`git -C ../fork260509-rev5/rust-api diff --name-status bb29a0e
 | R3-10 | `dev_identity` 汰換須換兩支 lint must-list（`authz_entrypoint_lint.rs`／`entity_access_lint.rs`） | rev6 無 `authz_entrypoint_lint.rs`、`entity_access_lint.rs` 無 dev_identity 指名列 ⇒ 改 `auth/mod.rs`／`lib.rs`／`auth/enforce.rs`（`verify` 收斂）＋三處測試面真 token 化（`router.rs` 3、`handler/system_settings.rs` grep 現算約百處、`tests/contract.rs` 14） | rev6 實碼核實 |
 | R3-11 | unlock marker 不讀 redis、SQL 參數位綁 NULL | 同（沿 `rev5:R3-17`）；cache key builder 不含 unlock 鍵、degraded source 集不含 `redis_unlock_marker` | spec FR-014 |
 | R3-12 | `request_context.rs` 003 形（`from_headers`）後由 `rev5:004` 換血 | rev6 自空結構起家、取 003 形；004 ip-trust-anchor 接手時換血 | spec FR-018 |
-| R3-13 | 六 crate 沿 rev4 釘版（argon2 0.5.3／jsonwebtoken 10.4.0／redis 1.3.0／sha2 0.10.9）；亂數經 argon2 之 `rand_core::OsRng` | 五支取最新穩定（R1）＋新增 `getrandom` 取亂數（D6）；API 差異守則烤入；★spec FR-034 之 log 0.4.33 由 D5 取代為 0.4.34 | user 拍板 D1～D5 |
+| R3-13 | 六 crate 沿 rev4 釘版（argon2 0.5.3／jsonwebtoken 10.4.0／redis 1.3.0／sha2 0.10.9）；亂數經 argon2 之 `rand_core::OsRng` | 五支取最新穩定（R1）＋新增 `getrandom` 取亂數（D6）；API 差異守則烤入；★log 0.4.33→0.4.34（D5；spec FR-034 已同批校正） | user 拍板 D1～D5 |
 | R3-14 | 走查工具掛 rev5 名冊形 | 進 `NON_GATE_TOOLS`＋GT-12 自測＋bootstrap `run_tool_test`＋README 樹＋RUNBOOK §12 工具鏈速查列（非碼面閘表） | brainstorm 工程判斷 3、R10 |
 | R3-15 | — | BL-00037 ①②同批收（pre-push 面接線守衛＋selftest-docsync 觸發放寬；bootstrap 名冊自 tracked 檔集推導） | brainstorm Q6、R11 |
 | R3-16 | — | BL-00026（boot 鏈 `sqlx_logging_level(Debug)`＋`log`）與 BL-00041（兩處裸前代刀號＋`SUB_SCAN` 子庫腿）刀內收 | spec FR-034、R12 |
@@ -170,7 +170,7 @@ rev5 003 邊界＝`git -C ../fork260509-rev5/rust-api diff --name-status bb29a0e
 5. **redis 鍵空間隔離**：dev 與測試共用 DB 0；測試鍵一律 uniq 前綴（時戳＋pid）；`--test-threads=1` 只解 PG 列爭用。
 6. **`parse_router_routes` 窄形**：16 條每欄一行、`handler: || get|post(...)` 單動詞（鏈式多動詞靜默通過＝禁）、`method: HttpMethod::X`；generate 後 `docs/generated/reference/routes.md` 恰 16 列（DoD 機器核）。★`tools/docsync/tests/test_references.py` 之 `TestRoutes` 除合成語料外另有 `test_real_repo_pinned_rows`（002 T029 落、真 repo 四列逐列全等）——ROUTES 每次增列 MUST 同批增列該釘值列（U5～U9 五次：9／10／11／12／16）並把該檔納入允許檔案清單（RL-0022）；`router.rs` 自身 `routes_block_literal_form_and_pinned_rows`（`ROUTES_COUNT`＝4 與「002 刀恰四條」訊息）同批逐次改對。
 7. **稽核列寫入點恰三處**（spec FR-004）；不落列四類；best-effort＋`db_write` 告警。
-8. **wire-schema**：`TYPINGS_GLOB` 已含 `src/typings/api/*.d.ts` ⇒ 新檔 `rev6-auth.d.ts` 一入即進快照（容器內 `extract` 重抽、byte 比對）；`tests/wire_schema.rs` 裁判面補 `Api.Auth.{LoginToken,UserInfo,LoginCaptcha}`＋`Api.Route.{MenuRoute,UserRoute}` case（rev5 於 003 後一筆才補＝本刀直接納入）；pre-commit wire-schema 段於 base-web／rust-api pin bump 時首次真正生效。
+8. **wire-schema**：`TYPINGS_GLOB` 已含 `src/typings/api/*.d.ts` ⇒ 新檔 `rev6-auth.d.ts` 一入即進快照（容器內 `extract` 重抽、byte 比對）；`tests/wire_schema.rs` 裁判面補 `Api.Auth.{LoginToken,UserInfo,LoginCaptcha}`＋`Api.Route.{MenuRoute,UserRoute}` case（rev5 於 003 後一筆才補＝本刀直接納入）；pre-commit wire-schema 段：002 U3 已首度以 base-web pin bump 觸發，本刀為新檔入快照後首次重抽、且 rust-api 快照側觸發於本刀首次生效。
 9. **前端零測試框架**：前端單元 TDD 迴圈退化為 `pnpm typecheck`＋兩段 review＋CDP 走查（單元 `CONTEXT` 明文、不動 RULES）。
 10. **test_kit 擴充**（rev6 落點＝`server/src/model/facade/test_kit.rs`，承 rev5 `model/mod.rs` 之 `test_db`）：`real_state()`（真 DB＋真 redis＋seed enforcer＋測試 `JwtConfig`＋`captcha_secret`；U1 先 `cache: None`、U2 接真 redis）、`uniq_prefix()`、`SequenceResetGuard`（三支 setval）、`SessionRowsGuard`（DELETE 三表＋清 `sys_user.session_id`）、★`SeedRestoreGuard` 三件自 `handler/system_settings.rs` 私有 `mod tests` 搬入並 `pub(crate)` 曝出（RL-0070）、簽發 helper 固定簽名（`sign_access_for`／`sign_pair_for`）；handler 內 `#[cfg(test)]` 真 DB 案一律掛守衛（RL-0005／RL-0031）。★`test_kit` 為 `#[cfg(test)] pub(crate)`、integration test crate（`tests/`）取不到 ⇒ contract 面另以公開 API 簽發（`tests/common/mod.rs`）。
 11. **`schema-gate check` 於走查後才跑**（gate2 逐列）；contract／integration 測試自帶守衛故 `cargo test` 後 gate2 仍綠。
@@ -234,8 +234,9 @@ rev5 003 邊界＝`git -C ../fork260509-rev5/rust-api diff --name-status bb29a0e
 | U7（US3） | contract 1 case＋`login.rs` ⑨＋`refresh.rs` revoked 三分支與 idle＋`logout.rs`＋`router.rs` +1（11）＋`rev6-auth.ts`（fetchLogout）＋user-avatar (i)＋走查 §3 | U6 |
 | U8（US4） | contract 1 case＋`throttle/mod.rs`（三區＋矛盾組合）＋`captcha/mod.rs`＋`handler/captcha.rs`＋`login.rs` ①②＋`obs.rs` 兩序列＋`router.rs` +1（12）＋`rev6-auth.d.ts`／`rev6-auth.ts`（fetchLoginCaptcha／fetchLoginWithCaptcha）＋wire-schema 重抽＋auth store／pwd-login (i)＋軟區換題＋走查 §4 | U7 |
 | U9（US5） | contract 4 case（區別手法）＋`alt_stub.rs`＋`router.rs` +4（16）＋四鍵承載案落齊後移除 `#[ignore]`＋四 stub wrapper＋三表單 (b)＋captcha hook (c)＋`app.d.ts` (iii)＋兩語 backend 樹＋`zh-tw.ts` (ii)＋request 層 (i)＋`tools/msg-key-gate.py`＋pre-commit 段與 `for` 名冊＋test_hook_wiring＋README＋RUNBOOK §12 列＋跨端閘 ADR＋走查 §5 | U8、U0 |
-| U10（US6） | `tools/walkthrough-baseline.py` 遷入（`BARE_REV5` 復掃、CLAUDE.md §7 與 RUNBOOK 預告句改現在式）＋`NON_GATE_TOOLS`＋GT-12 自測＋pre-commit `for` 名冊＋RUNBOOK §9c 實文／§12 列與前言現值句／檔頭章節現況句＋BL-00037①②＋BL-00041（`system_settings.rs` 註解＋`SUB_SCAN` 子庫腿＋`test_book_ids` 自測）＋快速登入鈕 ADR＋治理自證四組 | U9、U0 |
-| U11（收攏） | release profile 復核（R7-13）＋CDP 對照走查（snapshot→三帳號登入／續期／登出／被踢／軟區→清理→diff rc 0）＋schema-gate check＋全量閘＋活書 §5／§6／§8／§10.2（島 A～E 各一品質情境、刪「目前零情境」句）／§12＋BACKLOG／LESSONS／NOTES 預告＋perf 事件＋final holistic review 輸入 | 全部 |
+| U10a（US6、★U4 後 U5 前） | `tools/walkthrough-baseline.py` 遷入（`BARE_REV5` 復掃、CLAUDE.md §7 與 RUNBOOK 預告句改現在式）＋`NON_GATE_TOOLS`＋GT-12 自測＋pre-commit `for` 名冊＋RUNBOOK §9c 實文／§12 列與前言現值句／檔頭章節現況句（FR-036 MUST 排在首次真登入走查之前） | U4 |
+| U10（US6） | BL-00037①②＋BL-00041（`system_settings.rs` 註解＋`SUB_SCAN` 子庫腿＋`test_book_ids` 自測）＋快速登入鈕 ADR＋治理自證四組 | U9、U0 |
+| U11（收攏） | release profile 復核（R7-13）＋CDP 對照走查（snapshot→三帳號登入／續期／登出／被踢／軟區→清理→diff rc 0）＋schema-gate check＋全量閘＋活書 §5／§6／§8／§10.2（島 A～E 各一品質情境、刪「目前零情境」句）／§11（三則 by-design 已知態）／§12＋BACKLOG／LESSONS／NOTES 預告＋perf 事件＋final holistic review 輸入 | 全部 |
 
 ★`router.rs`／`contract.rs`／`test_references.py` 為 U5～U9 序列共用檔（逐 US 加列並 bump 同一 `ROUTES_COUNT` 與釘值列、不可並發；承 rev5 003 analyze 修正與 002 T029／T033 形、不設尾端獨佔單元）。
 
