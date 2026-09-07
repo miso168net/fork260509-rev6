@@ -16,6 +16,20 @@
 > hook 接線守衛（BL-00037）、boot 鏈 log 級距（BL-00026）、裸前代刀號兩處＋子庫腿（BL-00041）。交付價值＝rev6 第一次端到端可見
 > （瀏覽器真登入 → 側邊欄由後端 Casbin 過濾生成 → 錯誤訊息顯人話）。
 
+## Clarifications
+
+### Session 2026-09-08
+
+- Q: `AppState` 自兩欄（db／enforcer）擴成哪種形（欄集）？（FR-032、候選⑤）→ A: **A 五欄承 rev5**——`db`／`enforcer`／`jwt`（簽章設定）／`cache`（`Option`：測試 None＝快取自始缺席之降級測試面、production 恆 Some、boot 建連失敗即 fail-loud panic）／`captcha_secret`；
+  編譯期窮舉解構錨測改五欄同形；「恰兩欄」封條翻案 ADR 之決定文據此（棄案：三欄 auth 子結構打包＝取用多一層、Option 語意藏進子結構；四欄 captcha 密鑰併 jwt 設定＝兩把秘鑰語意混型、與 RUNBOOK §7 輪替表分列不對齊）。
+- Q: msg key 跨端閘的比對語意——後端名冊 ⊆ 前端字典（ADR-00017 決定 3 字面、單向）還是後端 `MSG_KEYS` ⇔ 三檔各自 backend 子樹（逐檔雙向全等）？（FR-027、候選②）→ A: **A 逐檔雙向全等＋立 ADR**——
+  backend 子樹本刀自零建、為封閉集，雙向同時守「後端多發前端沒譯」與「某檔孤兒鍵／`zh-tw.ts` 漏插」、不需 rev5 九鍵白名單；新 ADR 一筆記形制與射程（不翻 ADR-00017：其「雙向必恆紅」指整本字典、不指子樹）。棄案：單向子集（少守一半、rev5 為此長出白名單＋腐化斷言）；雙向不立 ADR（「⊆→⇔」強化無拍板級的家）。
+- Q: `login_throttle_captcha_after > login_throttle_max_fails` 矛盾組合（002 寫端逐鍵驗、寫得出）本刀讀到時如何處置？（FR-015、BL-00031 消費側定方向與拒因）→ A: **A 視同設定不可用→退活書常數（2／5／15）＋一筆 `degraded=settings_invalid` 結構化告警（每次載入至多一筆）**；002 寫端零改動；
+  與島 E「節流設定鍵讀不到退常數」同一降級腿、零新碼路徑，方向隨島 E 條文入憲。前後對照：寫成 6／5 → 實際行為同 seed 2／5、`throttle_degraded_total{source=settings_invalid}` +1。棄案：clamp 取 min（軟區寬度歸零＝狀態機少一態、靜默修正）；fail-loud `5000`（全站不能登入、超管自己也進不去改）。
+- Q: 超管改設定值後對已登入者何時生效——要不要在島條文寫成一句總則？（FR-005／FR-009／FR-031）→ A: **A 寫總則：每個設定鍵只在其消費事件當下讀現值；已簽發 token 的壽命與已建立會話不追溯**——
+  具體＝`single_session_default` 於登入判定（Q9）；`session_idle_timeout` 於每次簽發（登入／換發）讀現值套 TTL 與 idle 門檻 ⇒ 既有會話最晚於下一次換發（≤ access 壽命 300 秒）採新值、手上 token 的 exp 不變；節流三鍵於每次登入嘗試讀現值 ⇒ 立即。承 rev5 實作、零新碼；007 密碼鍵同律。
+  前後對照：idle 60→30 分 → 已登入者下一次換發起以 30 分計。棄案：只寫島 B 一句、其餘留活書（三鍵三答案散兩層、改活書不走 Amendment）；idle 以簽發時 N 為準烙進 token claims（新 claim、rev5 無藍本、換發簽新對仍讀現值＝新舊 N 同鏈混用）。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 真帳密登入取得會話、側邊欄由後端生成 (Priority: P1)
@@ -162,8 +176,9 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
 - **redis RDB 回捲**（不開 AOF＝已知態）：denylist 鍵可在回捲窗內丟失；暴險受「`sys_token.status` 即權威」封頂（換發被 PG 擋）、復活面＝被踢者既有 access 直打 API 至自然過期（≤access TTL）。
 - **設定鍵讀不到（兩處刻意相反）**：節流三鍵退活書常數＋一筆 `degraded=settings_default` 告警（每次載入至多一筆）；`session_idle_timeout` 缺失於 login 套 TTL 步反而 fail-loud `5000`（不猜值）；
   `single_session_default` 缺鍵→off 語意。三方向皆隨 Amendment 條文寫明理由。
-- **`login_throttle_captcha_after > login_throttle_max_fails`（BL-00031 矛盾組合）**：消費側視同節流設定不可用→退活書常數＋`degraded=settings_invalid` 告警；002 寫端不加驗證（零改動）。
-- **`single_session_default` 翻轉時已有多會話**（Q9）：不追溯、只在該帳號下次登入時判定並踢；窗口上限＝refresh 全壽命（seed N=60 ⇒ 約 65 分）＝已知態、記活書非憲法。
+- **`login_throttle_captcha_after > login_throttle_max_fails`（BL-00031 矛盾組合；clarify 定案）**：消費側視同節流設定不可用→退活書常數（2／5／15）＋`degraded=settings_invalid` 告警（每次載入至多一筆）；002 寫端不加驗證（零改動）；方向隨島 E 入憲。
+- **設定值改動對已登入者的生效時點（clarify 總則：消費事件當下讀現值、不追溯已簽發）**：`single_session_default` 翻轉時已有多會話（Q9）→ 不追溯、只在該帳號下次登入時判定並踢，窗口上限＝refresh 全壽命（seed N=60 ⇒ 約 65 分）＝已知態、記活書非憲法；
+  `session_idle_timeout` 改值 → 既有會話最晚於下一次換發（≤300 秒）採新 TTL 與門檻、手上 token 的 exp 不變；節流三鍵改值 → 下一次登入嘗試立即生效。
 - **X-Real-IP 缺席**（integration 直打、無 nginx）：`sys_login_attempt.real_ip` 為 INET NOT NULL，測試 MUST 顯式注入 X-Real-IP、不為缺席開回填值。
 - **x_forwarded_for 惡意值**：入庫前截斷至 1024 字元＋剝 CR/LF；該欄為不可信原文、渲染端轉義隨稽核 UI 刀（008 audit-settings-pages）。
 - **非 2xx HTTP 吞信封**：前端 validateStatus 只放 2xx＋304，非 2xx 使錯誤信封整個丟失——故 `1000`／`2222`／`3333`／`7777`／`8888` MUST 皆映射 HTTP 200；僅 `4040`→404、`5003`→403（憲法 §I.3）。
@@ -178,7 +193,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
 - **`/auth/error` demo 端點**：base-web 原版兩張 demo 頁經 `fetchCustomBackendError` 打 `GET /auth/error`——本刀 16 條 ROUTES 不含；`.env` 翻 `/api`＋dynamic 後 R_SUPER 可見該兩頁、
   點擊得 `4040`＋`system.notFound` 信封＝user 可見已知態；排程錨於收刀新記 BACKLOG（Out of Scope）。
 - **快速登入鈕暴露 dev seed 帳密**：upstream 基線既有、本刀零 inline、UI 對照零差異；已知態由 BL-00049（滯後卷）承載、觸發＝RUNBOOK §16 prod 硬化拍板。
-- **dev 模式 `VITE_HTTP_PROXY=N` 後 base URL 來源**：rev6 `.env` 無 `VITE_SERVICE_BASE_URL` 行、dev 實載 `.env.test`；rev5 四行改法走查通過、承襲即可，plan MUST 實核 vite mode 載入鏈（clarify 候選⑦）。
+- **dev 模式 `VITE_HTTP_PROXY=N` 後 base URL 來源**（候選⑦、2026-09-08 實核）：`dev` script＝`vite --mode test` ⇒ `loadEnv` 載 `.env`＋`.env.test`；request 層 `isHttpProxy = DEV && VITE_HTTP_PROXY==='Y'`，翻 N 後 baseURL＝`.env.test` 之 `VITE_SERVICE_BASE_URL`（改 `/api` 即打 nginx）；四行改法承 rev5。
 - **DDL 冒出**：clarify／plan 若出現任何 migration 需求→本刀範圍拍板翻案（BL-00042 觸發、須先立跨刀活體契約抽取 ADR）＋RUNBOOK §10 Day-1 三步；本刀硬預期零 migration。
 - **rev5 側唯讀紀律**：一切讀取對凍結 worktree；絕不寫入、不動其 stack；走查工具只准指向 rev6 dev stack（3xxxx）、絕不指向 rev5 stack（2xxxx）。
 
@@ -209,7 +224,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   寫入為 best-effort：失敗只發 `degraded=db_write` 告警、不改登入回應——★但等於計數斷供（該帳號永不鎖亦永不 captcha），故 MUST 可觀測（FR-035）。
 - **FR-005**: single-session 判定（第⑨步）MUST 為**兩層政策解析**：`effective_single = session_policy=='single' || (session_policy=='inherit' && single_session_default==on)`；
   `sys_user.session_policy` 值域＝{single, multi, inherit}（碼層收斂＋值域測試守、不加 CHECK 以保零 migration）；`single_session_default` 缺鍵→off 語意。
-  ★生效時點（Q9、入憲條文）：單一會話只於登入事件判定，`single_session_default` 翻轉不影響既有會話；設定寫端（002）與會話域零耦合。
+  ★生效時點（Q9、入憲條文；clarify 2026-09-08 總則之一例）：單一會話只於登入事件判定，`single_session_default` 翻轉不影響既有會話；設定寫端（002）與會話域零耦合。
 - **FR-006**: getUserInfo MUST 回 `UserInfo{userId, userName, roles[], buttons[]}` 四欄皆備：`userId` typings 宣告字串、DB i64 於序列化邊界轉字串（憲法 §I.3）；
   `userName`＝`nick_name` fallback `user_name`（碼中零帳號字面）；`roles` DB-fresh；`buttons`＝Casbin `button` 維度政策枚舉（`get_filtered_policy`、非 `enforce*`＝不觸單一判定進入點守恆）。
 
@@ -221,14 +236,14 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   不落事件、不重複撤；查無列→`8888`。撤銷語意的權威＝`sys_token.status`，denylist 純加速層、其狀態永不污染稽核帳。
 - **FR-008**: denylist TTL MUST 為 **refresh 全壽命**（非 access），且 **kicked／revoked 兩 reason 一律 refresh_secs**（`rev5:R3-8` 已修正 rev4 不對稱）——否則被踢／被撤者於 (access, refresh) 窗內換發時
   denylist 已過期、掉進 reuse 分支回 `8888` 並落假 `session_event(reuse)`。
-- **FR-009**: idle 逾時 MUST：門檻＝`refresh_secs − access_secs`（＝N×60）、僅 last_activity 可讀時判；命中→`idle-emitted:{sid}` SET NX 冪等守門、僅首次落 `session_event(idle)`→`8888`；
+- **FR-009**: idle 逾時 MUST：門檻＝`refresh_secs − access_secs`（＝N×60；N 於每次簽發〔登入／換發〕讀 `session_idle_timeout` 現值、與該次簽發之 TTL 同源——既有會話最晚於下一次換發採新值、已簽發 token 的 exp 不變＝clarify 總則）、僅 last_activity 可讀時判；命中→`idle-emitted:{sid}` SET NX 冪等守門、僅首次落 `session_event(idle)`→`8888`；
   idle 命中 MUST NOT 寫 denylist（不變式 `access_TTL ≤ N×30 < N×60` ⇒ idle 觸發時 access 必已過期）。
 - **FR-010**: logout MUST 冪等：驗 refresh 成功→撤該會話（列轉 revoked＋denylist）＋落 `session_event(logout, created_by=本人)`→`0000`；驗章失敗（垃圾／過期）→仍 `0000` no-op、不落事件、
   ★絕不 `8888`（回異碼＝token 有效性 oracle）。
 - **FR-011**: enforce middleware MUST：驗 access→denylist 查→放行後推進 last_activity；redis 故障退 PG `has_active_in_chain`（無 active→`8888` fail-closed）；PG 亦故障→視為無 active、絕不盲放。
   Public 路由不掛本 middleware（「Public 不查 denylist／refresh 不推進 idle-clock」天然成立）；單一判定進入點守恆（002 既定）不變。
 - **FR-012**: 五座行為島的降級方向 MUST 落實並隨 §I.7 入憲：denylist fail-closed／idle fail-open／grace fail-secure／captcha 兩層（整體不可用→要求停用 fail-open；單次標記瞬斷→拒但不罰）／
-  節流設定鍵缺失退常數（與 idle 鍵缺失 fail-loud 刻意相反）；兩處刻意的方向不一致 MUST 在 Amendment 條文與 data-model 逐條寫明理由。`session_event.source_ip` 為 varchar(45)
+  節流設定鍵缺失**或矛盾組合**退常數＋告警（與 idle 鍵缺失 fail-loud 刻意相反；矛盾組合＝clarify 定案）；兩處刻意的方向不一致 MUST 在 Amendment 條文與 data-model 逐條寫明理由。`session_event.source_ip` 為 varchar(45)
   （與 `sys_login_attempt.real_ip` 的 INET 不同、寫入不共 helper）；event_type／reason 字面沿 rev5（kicked／reuse／idle／logout；reason=single_session／idle_timeout 等）。
 
 **登入節流（帳號維）**
@@ -240,7 +255,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   ★unlock marker 在本刀**無寫入者**（管理員解鎖端點屬後續刀）：SQL 參數位保留、綁 NULL、`GREATEST` 非 strict 自然退化為兩源、MUST NOT 用 sentinel 值；`precheck` 完全不讀 redis unlock marker
   （`rev5:R3-17`：無寫入者、讀了恆 nil）；「該源恆 NULL」列為已知態、不得據此宣稱三源皆已驗。
 - **FR-015**: 節流實作 MUST 老實記為 **login 專用**（本刀唯一消費者）、不宣稱通用 seam；per-IP 維本刀不做（`request_context` 留原樣轉錄欄、信任判定屬 004 ip-trust-anchor）。
-  BL-00031 之 `login_throttle_captcha_after ≤ login_throttle_max_fails` 不變式由本刀消費側定方向與拒因：讀入時矛盾組合視同設定不可用→退活書常數＋`degraded=settings_invalid` 告警；
+  BL-00031 之 `login_throttle_captcha_after ≤ login_throttle_max_fails` 不變式由本刀消費側定方向與拒因（clarify 2026-09-08 定案）：讀入時矛盾組合視同設定不可用→退活書常數＋`degraded=settings_invalid` 告警（每次載入至多一筆）；
   002 寫端零改動；`ip_*`／`password_*` 兩對留 004 ip-trust-anchor／007 user-password-admin，收刀時改 BL-00031 條文刪去 003 那一段、條目不刪列。
 
 **圖形驗證碼**
@@ -286,8 +301,8 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   ／(ii) `en-us.ts`＋`zh-cn.ts` 各插獨佔一行 `  backend: {` 起的 backend 樹 **13 鍵**（修改型、runtime 生效；簡中譯文以 rev5 為藍本重打字消化）＋新建 `zh-tw.ts` 裸 object 錨點檔 13 鍵
   （不接 runtime、不擴 `LangType`、不註冊 zh-TW 語系＝Q3；繁中譯文之家、跨端閘右源之一；檔頭圈界標記自稱 `BASE-WEB-I18N-WIRING+`、新增型不入名冊＝clarify 候選③）
   ／(iii) `app.d.ts` 只補 `backend` 必填型節（zh-cn 結構同步由必填型節＋`pnpm typecheck` 免費守）。三語譯文字面於 plan 之 contracts 定稿、繁中以 `zh-tw.ts` 為權威。
-- **FR-027**: msg key 跨端閘 MUST 以 `tools/` 頂層碼面閘工具落地（BL-00030 觸發、ADR-00017 決定 3 兌現；形＝brainstorm 工程判斷 1、clarify 候選②）：後端 `MSG_KEYS` ⇔ 三檔各自 backend **子樹**鍵集
-  **逐檔雙向**比對（backend 子樹為封閉集、不設白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）；self-test 一正一反（合成缺鍵／多鍵／檔缺席／非字面 Biz 構造）；
+- **FR-027**: msg key 跨端閘 MUST 以 `tools/` 頂層碼面閘工具落地（BL-00030 觸發、ADR-00017 決定 3 兌現；形＝clarify 2026-09-08 定案、立 ADR）：後端 `MSG_KEYS` ⇔ 三檔各自 backend **子樹**鍵集
+  **逐檔雙向全等**比對（backend 子樹為封閉集、不設白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）；self-test 一正一反（合成缺鍵／多鍵／檔缺席／非字面 Biz 構造）；
   入 pre-commit 條件段（staged 含 rust-api 或 base-web pin bump、或工具本體即跑）、`tools/bootstrap.sh` 之 `run_tool_test`、README 樹（GT-09）、RUNBOOK §12 碼面閘表（註記列轉工具檔列、GT-12 對賬）。
 
 **前端接線（`.env` ADAPT 軌道）**
@@ -307,12 +322,12 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   範圍欄逐檔列出（硬邊界、名單外一律無授權、處數為估值）；首列落入時哨兵句 MUST 同批移除（哨兵句與資料列並存＝fork-delta-lint die）；名冊斷言隨即對四軌道生效並 MUST 一正一反自證
   （名冊內過／名冊外攔／用途外攔／檔外攔）；修改型標記形＝`[rev6-inline <軌道名>(<用途>) 003-auth-session] 原行: …`。用途 (a) 為必需非選配（seed constant=TRUE 為 0 列、取代清空登入頁）。
 - **FR-031**: §I.7 行為島 A～E（token rotation／single-session／denylist 撤銷／idle 逾時／登入失敗節流〔帳號維〕）之不變式與 fail-* 方向 MUST 同筆 MINOR 入憲，以 state-machine 鏡頭寫
-  「現態×事件→次態＋副作用」、不寫 CRUD 格子；常數值（30 秒／300 秒／seed 門檻）與欄級細節留活書；島 B 條文含 Q9「單一會話只於登入事件判定；翻轉不影響既有會話」；
-  跨島刻意不一致（FR-012 兩處）逐條寫明理由。出處經 ADR provenance 引 `rev5:ADR 0028`。
+  「現態×事件→次態＋副作用」、不寫 CRUD 格子；常數值（30 秒／300 秒／seed 門檻）與欄級細節留活書；島 B 條文含 Q9「單一會話只於登入事件判定；翻轉不影響既有會話」；★跨島總則一句（clarify 2026-09-08）：「每個設定鍵只在其消費事件當下讀現值；已簽發 token 的壽命與已建立會話不追溯」——
+  single_session 於登入、idle_timeout 於每次簽發（登入／換發）、節流三鍵於每次登入嘗試；島 E 條文含矛盾組合退常數方向（Q3）；跨島刻意不一致（FR-012 兩處）逐條寫明理由。出處經 ADR provenance 引 `rev5:ADR 0028`。
 
 **依賴與汰換**
 
-- **FR-032**: `AppState` MUST 由兩欄→五欄（`db`／`enforcer` 既有＋jwt 設定／cache 句柄（測試 None、production 恆 Some、boot 建連失敗即 fail-loud panic）／captcha 簽章密鑰；確切欄名與型＝clarify 候選⑤、plan 定）；
+- **FR-032**: `AppState` MUST 由兩欄→五欄（clarify 2026-09-08 定案）：`db`／`enforcer` 既有＋`jwt`（簽章設定）／`cache`（`Option`；測試 None＝快取自始缺席、production 恆 Some、boot 建連失敗即 fail-loud panic）／`captcha_secret`；欄型於 plan 之 data-model 定；
   `state.rs`「恰兩欄」封條 MUST 立 ADR 翻案、檔頭拍板註同批改寫、編譯期窮舉解構錨測改為五欄同形。config MUST 新讀六鍵（`APP_JWT_JWT_SECRET`／`APP_JWT_REFRESH_TOKEN_SECRET`／`APP_JWT_ISS`／
   `APP_JWT_AUD`／`APP_REDIS_URL`／`APP_CAPTCHA_SECRET`，compose 皆已接、`_FILE` 形沿 002 `env_or_file`）。六支新依賴（密碼雜湊／jwt／redis 客戶端／產圖／hex／sha2）MUST 走全域版本紀律雙源核對
   （rev5 lockfile 值 vs 官方最新穩定；同值採、分歧問 user）、plan research 記表（候選⑥）；root `Cargo.toml`「不引 argon2」舊拍板 MUST 立 ADR 翻案並改寫註解、`server/Cargo.toml` 依賴清單註解同批改寫。
@@ -339,7 +354,7 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
   pre-commit 之 selftest-docsync 觸發樣式自 `^\.githooks/pre-commit$` 放寬至 `.githooks/**`；②`tools/bootstrap.sh` 呼叫名冊（`run_tool_test` 九支＋docsync 三段＋閘數斷言＋vendored-check）改自 tracked 檔集推導、
   刪任一行即紅自證。收刀 `backlog_done`。
 - **FR-038**: ADR MUST 於刀內落地 accepted、一決策一檔、皆帶 rev5 provenance：①主 Amendment（★軌道四條八用途＋島 A～E；draft 於 plan 期）②`AppState` 恰兩欄封條翻案 ③root `Cargo.toml` 不引 argon2 翻案
-  ④快速登入鈕已知態（Q4 拍板紀錄；帳由 BL-00049 承載）⑤跨端閘形制（工程判斷 1；若 clarify 判為需拍板才立）；收刀 `feature_close` 事件 `adrs` 列全。憲法版本恰 bump 一次（1.3.0）。
+  ④快速登入鈕已知態（Q4 拍板紀錄；帳由 BL-00049 承載）⑤跨端閘形制＝逐檔雙向全等（clarify 定案；記與 ADR-00017 之射程關係）；收刀 `feature_close` 事件 `adrs` 列全。憲法版本恰 bump 一次（1.3.0）。
 - **FR-039**: 帳本時點 MUST 兌現：收刀 `backlog_done`＝BL-00026／BL-00030／BL-00037／BL-00041；BL-00031 條文刪去 003 那一段、只留 004 ip-trust-anchor／007 user-password-admin 兩對（工程判斷 4）；`backlog_add` MUST 列 BL-00043～BL-00049 七條
   （開刀前承載體檢六條＋滯後卷 BL-00049：配號已發、事件未載，七筆 GT-03 在途 WARN 由此消；移卷不需事件、但新配號仍需 backlog_add）＋新記一條 `/auth/error` demo 端點排程錨（承 `rev5:B-053`；觸發＝首個動 demo 頁的前端刀）；NOTES「下一步」specify 起手後改 003 進行中、
   收刀改 004 ip-trust-anchor；活書 MUST 同刀更新（arc42 §5 server 管線 as-built／§6 會話狀態機與登入失敗節流兩情境／§8 API 慣例三分碼與 fork-delta 接線現況／§12 auth 域詞＋「降級（基礎設施）」術語條與既有「降級輪廓」消歧；
@@ -429,18 +444,18 @@ GT-12 對 `NON_GATE_TOOLS` 新成員一正一反；hook 接線守衛刪一行即
 - **零 migration＝事實非選擇**（Q2）：三張消費表與 `sys_user` 兩欄、16 鍵 seed 全在 001 基線；BL-00042／BL-00028 皆不觸發；本刀非一次性遷移、Risk／Guard／Rollback 三欄表免附。
 - **grace 窗＝30 秒**（承 rev5 clarify；rev4 10 秒小於前端最壞換發間隔約 11 秒）：不變式＝grace 窗 MUST > 前端最壞換發間隔，前端 timeout 若變更須重算。
 - **TTL 公式**已升為規範（FR-004 第⑥步逐字載明）；**home 多角色收斂律**沿 rev5 已驗證規則（FR-019）；**captcha 有效期 300 秒、字集 34 字、題長 4**（FR-016／017）；**ip_confidence 字面＝`nginx_peer`**、004 接手時再治理。
-- **`AppState` 五欄欄集**（候選⑤研判預設）＝`db`／`enforcer`／jwt 設定／cache 句柄（`Option`、測試 None）／captcha 密鑰；錨測改五欄窮舉同形；`/speckit-clarify` 可翻。
+- **`AppState` 五欄欄集**（候選⑤、clarify 定案）＝`db`／`enforcer`／`jwt`／`cache`（`Option`、測試 None）／`captcha_secret`；錨測改五欄窮舉同形。
 - **六支新依賴釘版**（候選⑥）：rev5 lockfile 值（密碼雜湊 0.5.3／產圖 1.0.0／hex 0.4.3／jwt 10.4.0〔須帶 rust_crypto feature〕／redis 1.3.0／sha2 0.10.9）為雙源之一、官方最新穩定版為另一源；
   同值採、分歧問 user（全域版本紀律）；hex／sha2／log 已在 lock、零新套件。
-- **跨端閘形**（候選②研判預設）＝工程判斷 1：`MSG_KEYS` ⇔ 三檔 backend 子樹逐檔雙向、無白名單、Biz 鍵非字面構造即紅；若 clarify 判為需拍板則立 ADR。
+- **跨端閘形**（候選②、clarify 定案）＝`MSG_KEYS` ⇔ 三檔 backend 子樹逐檔雙向全等、無白名單、Biz 鍵非字面構造即紅；立 ADR（FR-038 ⑤）。
 - **`zh-tw.ts` 檔頭圈界標記**（候選③研判預設）＝`// [rev6-inline BASE-WEB-I18N-WIRING+ 003-auth-session] <理由>`、自稱 ★ 軌道名但新增型不入名冊、不佔用途（憲法 §III.2 表外宣告 3）。
 - **走查工具 rc 語意**（候選④研判預設）＝0 全等／1 有差／2 環境或結構異常（含空面假綠）／64 用法錯；登記 `NON_GATE_TOOLS`、不掛 pre-commit。
 - **三分碼措辭**（候選①研判預設）＝FR-024；ADR-00014 不翻案、措辭落主 Amendment ADR 後果段。
-- **dev 模式 base URL 來源**（候選⑦研判預設）＝承 rev5 四行改法、vite dev mode 載 `.env.test` 之 `VITE_SERVICE_BASE_URL=/api`；plan 實核載入鏈後定案。
+- **dev 模式 base URL 來源**（候選⑦、已實核）＝`vite --mode test` 載 `.env.test` 之 `VITE_SERVICE_BASE_URL`；翻 `VITE_HTTP_PROXY=N` 後 request 層直用該值 ⇒ 四行改法承 rev5、無另一來源。
 - **wire fixture**：LoginToken／UserInfo／MenuRoute／UserRoute／ElegantConstRoute 已在 002 快照（TYPINGS_GLOB 全 api 目錄）；真正新增＝captcha 形、靠新檔 `rev6-auth.d.ts` 入快照。
 - **seed 密碼**＝明文與 upstream demo 同值、三帳共用同一 PHC（字面見 `docs/ops/reference-src/schema-definition.md`）；single-session 驗收前置＝先以 002 寫端翻 `single_session_default=on`（001 凍結 seed 不可動、驗後 RAII 還原）。
 - **登入頁三顆快速登入鈕保留**（Q4）：本刀零 inline、不占軌道用途、UI 對照零差異；已知態＝BL-00049（滯後卷、觸發＝RUNBOOK §16 prod 硬化拍板）；ADR 記拍板（FR-038 ④）。
-- **BL-00031 拒因**（工程判斷）：矛盾組合視同設定不可用、退常數＋告警；不在 002 寫端加驗證。
+- **BL-00031 拒因**（clarify 定案）：矛盾組合視同設定不可用、退常數＋告警；不在 002 寫端加驗證。
 - **前端零測試框架**（工程判斷 5）：前端執行單元的 TDD 迴圈退化為 `pnpm typecheck`＋兩段 review＋CDP 對照走查，以單元 `CONTEXT` 明文收窄、不動 RULES。
 - **Amendment 流程時點**（Q5）：draft 於 plan 期落 feature branch、凍結三步為 tasks 首個主線任務；plan 之 Constitution Check 記授權鏈與硬序、Complexity Tracking 不填。
 - **後端模組邊界與 handler 分檔**（brainstorm §3：`handler/auth/` 依端點群拆檔、`cache`／`throttle`／`captcha` 三新模組、facade 六支）為 plan 定案面；spec 只約束行為與圈界能力（允許檔案清單須有圈界力）。
