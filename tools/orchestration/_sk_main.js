@@ -4,6 +4,17 @@
 //   ★續跑形（RL-0010：需某階段重跑＝新開一支只跑該階段的 workflow、新 runId）：IMPLEMENTERS=0、IMPL_STAGES=[]，
 //   已完成結論與勿重報清單寫進 CONTEXT；本段跳過 implementer 迴圈、直入 SpecReview→CodeQualityReview。
 //   另引用 START_LOG（_vars 段）、SPEC_REVIEW_PROMPT／QUALITY_REVIEW_PROMPT／FIX_SELFCHECK（_prompts 段）。
+// ★_context／_allowed 兩段常數（BL-00039①；判準同 review 形 `_sk_review.js` 首段之 CONTEXT 腿）。
+//   ★為何在此段而非 `_sk_head.js`：TDD 拼接序＝vars→head→allowed→rules→context→prompts→cycle→main，head 早於此二段宣告，
+//   於 head 取值會落在 const 的暫時死區（`typeof` 亦拋 ReferenceError）；main 是 TDD 形最後一段、且早於任何 spawn，零派發性質不變。
+//   ★破口：ALLOWED_BLOCK 空值不會被 guard 攔（prompt 其餘段落已足 400 字元且含 zh-TW／冒煙 token／RULES-VERSION），
+//   fix agent 遂拿到沒有允許清單的 prompt、六件套⑥ 空間邊界靜默失效；續跑形（IMPLEMENTERS=0）更晚到 fix 輪才可能顯形。
+if (typeof CONTEXT !== 'string' || CONTEXT.length < 80 || !CONTEXT.includes(SMOKE) || !CONTEXT.includes('zh-TW')) {
+  throw new Error('防呆②：CONTEXT 須為 ≥80 字元字串且含冒煙 token 與 zh-TW 字面（_context 段；RL-0018）')
+}
+if (typeof ALLOWED_BLOCK !== 'string' || ALLOWED_BLOCK.length < 40) {
+  throw new Error('防呆②：ALLOWED_BLOCK 須為 ≥40 字元字串（_allowed 段；fix agent 允許檔案清單＝防呆六件套⑥ 空間邊界）')
+}
 if (!Array.isArray(IMPL_STAGES) || IMPL_STAGES.length !== IMPLEMENTERS) {
   throw new Error('防呆③：IMPL_STAGES 支數（' + (Array.isArray(IMPL_STAGES) ? IMPL_STAGES.length : '非陣列') + '）≠ IMPLEMENTERS（' + IMPLEMENTERS + '）——保險絲推導失準、零派發')
 }

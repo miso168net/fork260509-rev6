@@ -23,6 +23,18 @@ if (MODE === 'tdd') {
 if (typeof SMOKE !== 'string' || SMOKE.length < 6 || SMOKE === 'test') {
   throw new Error('防呆②：SMOKE 冒煙 token 須為 ≥6 字元字串且不可取字面 test、由 _vars 段定義（現值 ' + String(SMOKE) + '）')
 }
+// ★_vars 段三常數（兩形共用；BL-00039①：原僅 review 形於其主流程段自驗、TDD 形零斷言。空值不會被 guard 攔下——
+//   prompt 其餘段落已足 400 字元且含 zh-TW／冒煙 token／RULES-VERSION，身分句只是少了單元名，靜默失真）。
+//   ★逐個以 typeof 短路取值：常數名整個打錯時直接引用會 ReferenceError，訊息就不是防呆②了。
+;[
+  ['UNIT', typeof UNIT === 'undefined' ? undefined : UNIT],
+  ['FEATURE', typeof FEATURE === 'undefined' ? undefined : FEATURE],
+  ['START_LOG', typeof START_LOG === 'undefined' ? undefined : START_LOG],
+].forEach(function (kv) {
+  if (typeof kv[1] !== 'string' || kv[1].length === 0) {
+    throw new Error('防呆②：' + kv[0] + ' 須為非空字串、由 _vars 段定義（現值 ' + String(kv[1]) + '）')
+  }
+})
 
 const MAX_FIX_ROUNDS = 3
 const CYCLES = 2
