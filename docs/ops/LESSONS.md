@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00015 -->
+<!-- next: LL-00016 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -20,3 +20,4 @@
 | LL-00012 | pre-commit 期間 git 匯出的 `GIT_INDEX_FILE`／`GIT_DIR` 指外層 repo——子庫 `git -C <子庫> ls-files` 讀到外層 index 回空，測試直跑綠、hook 內紅 | none：hook 期間子行程 git 的環境隔離屬工具實作面、非流程規則；守法寫進 docsync 呼叫慣例與本檔 | code | [LL-00012-hook-env-git-index-file-leaks-into-submodule-git-calls.md](LESSONS/LL-00012-hook-env-git-index-file-leaks-into-submodule-git-calls.md) |
 | LL-00013 | 把 docstring 當資料解析的 regex 強制行首縮排——Python ≥3.13 編譯期剝掉共同縮排後 12 支閘 id 全回 None、GATES.md 算成空表、GT-05 滿地「真源查無」假紅 | none：把 docstring 當資料讀的地方目前只有 gates.parse_gate_blocks 一處，守法已釘在該 regex 上方註解與 test_gate_id_survives_docstring_dedent；再犯面窄（新增同類解析器時才成立），不值一條規則 | code | [LL-00013-docstring-as-data-regex-breaks-on-compiler-dedent.md](LESSONS/LL-00013-docstring-as-data-regex-breaks-on-compiler-dedent.md) |
 | LL-00014 | 等長字元替換＋同一秒內還原＝CPython 判 pyc 仍有效而沿用舊碼——反例驗證讀到假結果 | none：屬本機驗證程序的環境面陷阱、非流程規則；守法（等長改動的反例驗證前後清 __pycache__）寫進本檔 | none | [LL-00014-equal-length-source-edit-same-second-reuses-stale-pyc.md](LESSONS/LL-00014-equal-length-source-edit-same-second-reuses-stale-pyc.md) |
+| LL-00015 | 審查員標明「拍板級、超出 fix agent 權限」的修法，下一輪 fix 仍逕自落地——空間邊界只圈檔、不圈行為級別 | RL-0075 | rules | [LL-00015-fix-agent-landed-a-decision-level-change-inside-the-allowed-files.md](LESSONS/LL-00015-fix-agent-landed-a-decision-level-change-inside-the-allowed-files.md) |

@@ -51,7 +51,9 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      # jwt／refresh／redis_url rev5 接線時接而不讀（compose 接線就位、消費歸後續功能刀）
+      # jwt／refresh／redis_url／captcha_secret 四支 secret 檔＋iss／aud 兩支裸 env：003 刀 U1 起由
+      # config 六 getter 實讀、main.rs boot 鏈消費（JwtConfig／cache::connect／captcha_secret）；
+      # SMTP／MAIL 群仍為接而不讀、消費歸各自功能刀。
       APP_JWT_JWT_SECRET_FILE: /run/secrets/jwt_secret
       APP_JWT_REFRESH_TOKEN_SECRET_FILE: /run/secrets/refresh_token_secret
       APP_DATABASE_URL_FILE: /run/secrets/database_url
@@ -82,7 +84,12 @@ services:
       APP_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
       # rev4:020-email-verify：驗證憑據 HS256 獨立金鑰（與 jwt/refresh/captcha 隔離）
       APP_EMAIL_VERIFY_SECRET_FILE: /run/secrets/email_verify_secret
-      RUST_LOG: "info"
+      # 級距全域 info；★另帶一條 target 專屬指示把 PG NOTICE 轉發（`sqlx::postgres::notice`）壓到 warn
+      # ——BL-00026 的另一半：sea-orm 的 sqlx_logging_level 只管逐句語句 log（target sqlx::query）、管不到
+      # NOTICE，而 casbin adapter 的 CREATE TABLE IF NOT EXISTS 每次 boot 都會轉發一則「已存在、略過」。
+      # ★壓制點刻意落在此處而非碼裡（user 拍板 2026-09-08）：EnvFilter 對同 target 的指示是「後加即取代」，
+      # 寫進 main.rs 會讓營運者再也無法用 RUST_LOG 把它開回來；放這裡則改本行或以環境變數覆寫即可調回。
+      RUST_LOG: "info,sqlx::postgres::notice=warn"
     secrets:
       - jwt_secret
       - refresh_token_secret

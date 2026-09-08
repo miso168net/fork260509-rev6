@@ -1,4 +1,4 @@
-<!-- next: RL-0075 -->
+<!-- next: RL-0076 -->
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
@@ -82,6 +82,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0072 | rust 單元收尾除容器內 rc 綠外另跑 `python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事（碼面閘只看靜態形）。 | 主線 | checklist | rev5:L-064 |
 | RL-0073 | review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處三類：①不定期獨立輪落 `docs/reviews/` 報告＋review 事件 ②附屬某刀而由 user 臨時發起的對照輪同樣落報告＋review 事件、以其 `feature` 欄標所屬刀 ③feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。 | 主線,review | checklist | rev5:ADR 0075 |
 | RL-0074 | ADR 一決策一檔 `docs/arc42/decisions/ADR-NNNNN-<slug>.md`；accepted 後 body 不可變、翻案＝新檔帶 `supersedes: [舊號]`、`superseded_by` 由 generate 回填；ADR 檔永不刪除、編號永不重用；won't-fix／by-design 亦立 ADR。 | 主線,人 | lint | ADR-00003 |
+| RL-0075 | 改動屬拍板級判準（user／operator 可見行為變更、schema／migration、feature scope 邊界、破紀律例外）者，縱使檔在允許清單內亦一律 `done_with_escalation`＋`escalatedFindings` 指名、不得落地；審查員標「拍板級／超出權限」之 finding 只落據實碼註那一半。 | implementer,fix | prompt | LL-00015 |
 
 ## 名詞
 
