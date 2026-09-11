@@ -204,6 +204,7 @@ GATE_COUNT="$(cd "$ROOT/tools" && python3 -c 'from docsync import gates; print(l
 [ "$GATE_COUNT" = "12" ] || warn "閘數推導得 ${GATE_COUNT} ≠ 12——掃源錨形與 ROSTER 不同步（GT-12 應已紅；預算超限一律只警告不擋＝ADR-00011 決定 2）"
 [ "$GATE_COUNT" = "12" ] && ok "閘數斷言過（掃源推導 12＝GT-01～GT-12）"
 run_tool_test tools/wf-watchdog.py
+run_tool_test tools/comment-overlap.py
 run_tool_test tools/schema-gate.py
 run_tool_test tools/entity-drift-gate.py
 # ★三支碼面閘（002 刀 U0 隨遷）只接 test：rust-fmt／wire-schema 的 check 要 dev stack（工具自身在 stack 未起時

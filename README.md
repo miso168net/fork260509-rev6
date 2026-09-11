@@ -33,6 +33,7 @@ fork260509-rev6/
 │   ├── rust-fmt-gate.py             rust 格式閘：check＝容器內 cargo fmt --all --check 唯讀比對／test（隨遷自 rev5；pre-commit rust-fmt 段＝rust-api pin bump 或本檔 staged 時實跑、docker 缺或容器未起＝具名跳過 rc 0、容器在而 cargo-fmt 缺＝rc 2）
 │   ├── wire-schema.py               wire 契約閘：extract（typings→JSON Schema 快照、需 stack）／check [--staged-gate]（重抽 byte 比對、絕不覆寫；pre-commit wire-schema 段＝base-web 或 rust-api pin bump 時、容器未起＝具名跳過 rc 0）／test（隨遷自 rev5）
 │   ├── fork-delta-lint.py           base-web fork-delta 標記閘：修改型缺原行／新增型缺圈界（含新檔檔頭一行＋所稱軌道×檔路徑）／授權判定（§III.1 檔面收窄＋§III.2 三元組）、空 ★表以哨兵句守（隨遷自 rev5；pre-commit fork-delta 段＝base-web pin bump、本檔或憲法 staged 時全掃；test＝離線自測；--constitution 只供自身變異驗證）
+│   ├── comment-overlap.py           rev5↔rev6 註解逐字重疊核：對 rev5 同路徑檔量共同子字串比（預設 40 字元／5%、超標 rc 1）／test 自測（RL-0076 量尺；非閘工具＝`NON_GATE_TOOLS` 成員、自測入 pre-commit 條件觸發名冊）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／refresh（快照照相、需 dev stack）／rules emit／errata／vendored-check（§I.5 例外① 自證、bootstrap 3c）／test；tests/ 為語料面
 │   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架、TDD／review 兩種主流程共用首段；_sk_rules.js＝generate 產物）、assemble.py 組裝器（三道自檢）、harness-test 十八案（六反例）／harness-review 九案（三反例）（斷言＋退出碼）、cdp.mjs、EXAMPLE 成品與 TDD／review 單元定義範本
 ├── deploy/                          營運面：dev stack 部署資產＋機密管線（管「跑起來的系統」）

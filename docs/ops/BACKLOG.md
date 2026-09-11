@@ -1,4 +1,4 @@
-<!-- next: BL-00050 -->
+<!-- next: BL-00051 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -23,3 +23,4 @@
 - BL-00046｜governance｜entity 關聯宣告腿零機器守衛（003 開刀前承載體檢）：資料面兩拍板「無 DB FK 之邏輯關聯不建 ORM 關聯宣告」與「ActiveModelBehavior 恆空」共掛 `rust-api/server/tests/entity_behavior_lint.rs` 一個機器錨，但該測只守後者（掃 impl 站點數＝表 entity 檔數、非空實作即紅），關聯宣告腿零機器承載、只靠人工紀律｜觸發＝下次動 `rust-api/entity/**` 或 `entity_behavior_lint.rs` 時
 - BL-00047｜governance｜schema 閘表數斷言之改對義務失去指派對象（003 開刀前承載體檢）：`tools/schema-gate.py` 的 `len(tables) != 14` 硬編碼，ADR-00012 決定 6 指派「隨 002 首次加表時由該刀改對」，而 002 已零加表收刀；現在式面（RUNBOOK §10 加表清單／BACKLOG／NOTES）零承載，義務懸空｜觸發＝首支帶 create table 之 delta migration 的刀開寫前
 - BL-00048｜governance｜ADR-00014 後果段對 no-escalation 本體形的預告與前代 as-built 不符（003 開刀前承載體檢；user 拍板 2026-09-07：走 BL 對沖、不翻案）：該 ADR 後果段寫「本體刀只填掛點函式體、零簽章變更、零呼叫端改動」，而前代 as-built 之真本體＝`rev5:server/src/auth/no_escalation.rs` 的 body 級純函式（規則＝`T ⊆ A ∧ N ⊆ A`）、落 `rev5:007-user-password-admin`、呼叫端遍及使用者域寫端十檔；照該預告估工會把跨檔工作估成填一個函式體。ADR body 不可變（GT-04），本條即其對沖｜觸發＝no-escalation 本體刀（006 authz-governance）brainstorm 起手前
+- BL-00050｜governance｜002 刀落地之 rust-api 22 檔（src 16／tests 6）註解與 rev5 對應檔逐字重疊超標（`python3 tools/comment-overlap.py` 預設 40 字元／5%：7.4%～81.2%，obs.rs 72.6%、tests/entity_behavior_lint.rs 81.2%；憲法 §I.5 第 3 款／RL-0065、003 刀 U3 收尾全樹掃出＝LL-00016）：003 刀單元改寫到的檔隨 RL-0076 就地歸零、其餘一次改寫（碼面零改動、案數零增減）｜觸發＝003 刀收刀後首個維護批；到期判準＝全樹 `comment-overlap.py` rc 0
