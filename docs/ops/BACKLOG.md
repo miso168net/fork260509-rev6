@@ -1,4 +1,4 @@
-<!-- next: BL-00052 -->
+<!-- next: BL-00054 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -25,3 +25,5 @@
 - BL-00048｜governance｜ADR-00014 後果段對 no-escalation 本體形的預告與前代 as-built 不符（003 開刀前承載體檢；user 拍板 2026-09-07：走 BL 對沖、不翻案）：該 ADR 後果段寫「本體刀只填掛點函式體、零簽章變更、零呼叫端改動」，而前代 as-built 之真本體＝`rev5:server/src/auth/no_escalation.rs` 的 body 級純函式（規則＝`T ⊆ A ∧ N ⊆ A`）、落 `rev5:007-user-password-admin`、呼叫端遍及使用者域寫端十檔；照該預告估工會把跨檔工作估成填一個函式體。ADR body 不可變（GT-04），本條即其對沖｜觸發＝no-escalation 本體刀（006 authz-governance）brainstorm 起手前
 - BL-00050｜governance｜002 刀落地之 rust-api 22 檔（src 16／tests 6）註解與 rev5 對應檔逐字重疊超標（`python3 tools/comment-overlap.py` 預設 40 字元／5%：7.4%～81.2%，obs.rs 72.6%、tests/entity_behavior_lint.rs 81.2%；憲法 §I.5 第 3 款／RL-0065、003 刀 U3 收尾全樹掃出＝LL-00016）：003 刀單元改寫到的檔隨 RL-0076 就地歸零、其餘一次改寫（碼面零改動、案數零增減）｜觸發＝003 刀收刀後首個維護批；到期判準＝全樹 `comment-overlap.py` rc 0
 - BL-00051｜governance｜真 DB 測試仍有牆鐘定界面暴露於 postgres 容器時鐘非單調（WSL2／Docker、003 刀 U5 收尾實暴＝LL-00017 補記；守衛已改序列 id、此條只管其餘面）：`sys_login_attempt::count_recent_failures` 讀端窗起點 `now() - make_interval(…)` 與其自證案以 `now() - make_interval(secs => …)` 植列的偏移、login 案「登入時刻 ±60 秒」斷言——倒退幅度逼近窗邊際即假紅／假綠（現值邊際遠大於實測 1.4 秒、尚未實暴）；候選＝植列偏移與斷言邊際明文留 ≥ 5 秒安全帶、或讀端改序列 id 定界（產品碼語意、需拍板）｜觸發＝下一支動 `test_kit.rs` 的單元、或該面出現間歇紅
+- BL-00052｜governance｜測試側端點路徑字面九枚分住五檔（`handler/auth/login.rs` `LOGIN_PATH`／`USER_INFO_PATH`＋自持 oneshot 殼、`handler/auth/user_info.rs` `USER_INFO_PATH`、`handler/route.rs` 三枚、`handler/system_settings.rs` 兩枚、`auth/enforce.rs` 一枚）與 003 刀 U7 上提至 test_kit 的 `route_path`／`get_with_bearer`／`post_json_to` 並存（U7 品質審查 r2 指出；test_kit ④群敘述已收窄至現形）：收攏須一次收齊九枚、半套即敘述再改；現形非缺陷＝各檔字面等於 ROUTES 路徑釘值、路徑異動即該案紅｜觸發＝003 刀收刀後首個維護批（與 BL-00050 同批）
+- BL-00053｜governance｜`tools/walkthrough-baseline.py` 補 `restore <snapshot>` 子命令（三表 DELETE＋`sys_user.session_id` NULL＋三支 setval 自 snapshot 現讀＋redis `session:`／`throttle:` 前綴逐鍵 DEL＋`system_settings` 審計欄歸 NULL＝quickstart §8／RUNBOOK §9c 順序）：現況每支需走查的單元由 implementer 各寫一份 tmp 清理腳本（003 刀 U6／U7 各一）、被殺測試留下的殘列亦靠它清（2026-09-13 WSL 當機殺掉審查員測試＝2 token＋2 attempt＋序列 33）｜觸發＝下一支需走查的單元派發前、或 003 刀收刀維護批

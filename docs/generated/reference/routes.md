@@ -11,6 +11,7 @@
 | /systemManage/updateSystemSetting | POST | Policy | update-system-setting | 否 |
 | /auth/login | POST | Public | auth-login | 否 |
 | /auth/refreshToken | POST | Public | auth-refresh-token | 否 |
+| /auth/logout | POST | Public | auth-logout | 否 |
 | /auth/getUserInfo | GET | Authed | auth-get-user-info | 否 |
 | /route/getConstantRoutes | GET | Public | route-get-constant-routes | 否 |
 | /route/getUserRoutes | GET | Authed | route-get-user-routes | 否 |
