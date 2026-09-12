@@ -28,6 +28,7 @@ fork260509-rev6/
 ├── tools/                           repo 治理面工具鏈（pre-commit／bootstrap 掛勾；管「版控品質」）
 │   ├── bootstrap.sh                 新機重建／體檢：源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數
 │   ├── wf-watchdog.py               workflow 編排看門狗（stall／runaway 保險絲、可鎖定目標 run）
+│   ├── walkthrough-baseline.py      走查前後全表基準對賬：snapshot／diff（三面現算、唯讀、需 rev6 dev stack）／test（離線）；隨遷自 rev5、非碼面閘（NON_GATE_TOOLS）
 │   ├── schema-gate.py               三閘 schema 驗證閘：check（凍結 fixtures ⊕ 演進帳 vs 實庫）／test／doccheck（隨遷自 rev5、碼面閘不入 GATES 名冊）
 │   ├── entity-drift-gate.py         entity×schema 快照漂移閘：check／test（隨遷自 rev5；自測入 pre-commit 條件觸發名冊、check 入 pre-commit entity-drift 段＝rust-api pin bump 或快照 staged 時實跑、快照缺席即紅 rc 2＋refresh 提示）
 │   ├── rust-fmt-gate.py             rust 格式閘：check＝容器內 cargo fmt --all --check 唯讀比對／test（隨遷自 rev5；pre-commit rust-fmt 段＝rust-api pin bump 或本檔 staged 時實跑、docker 缺或容器未起＝具名跳過 rc 0、容器在而 cargo-fmt 缺＝rc 2）

@@ -544,7 +544,8 @@ def _claim_legs(ctx):
 # ---------------------------------------------------------------------------
 # 碼面閘表腿（002 刀 U0）：tools/ 頂層 *.py 除下列非閘工具外皆為碼面閘、MUST 列於 RUNBOOK §12 碼面閘表（名冊唯一權威；
 # GATES.md 依 ADR-00010 不收碼面閘）。新增非閘工具＝改此常數同刀；碼面閘進場＝入表同刀。
-NON_GATE_TOOLS = ("tools/wf-watchdog.py", "tools/comment-overlap.py")
+# 003 刀 U10a：tools/walkthrough-baseline.py＝走查前後全表基準對賬（隨遷、需 dev stack、走查收尾手動跑）、不守版控品質＝非閘。
+NON_GATE_TOOLS = ("tools/wf-watchdog.py", "tools/comment-overlap.py", "tools/walkthrough-baseline.py")
 RE_CODEGATE_HEADER = re.compile(r"^\|\s*工具檔\s*\|")
 RE_CODEGATE_PATH = re.compile(r"^`(tools/[^`/]+\.py)`$")
 

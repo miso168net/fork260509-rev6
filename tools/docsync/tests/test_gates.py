@@ -329,6 +329,20 @@ class TestGt12CodeGateTable(unittest.TestCase):
             msgs = self._run(self._runbook(), CODEGATE_TOOLS + ["tools/wf-watchdog.py"])
         self.assertTrue(any("tools/wf-watchdog.py" in m and "未列" in m for m in msgs), msgs)
 
+    def test_walkthrough_baseline_is_non_gate_and_green_without_table_row(self):
+        """003 刀 U10a：走查對賬工具 tools/walkthrough-baseline.py（隨遷、非碼面閘）進 NON_GATE_TOOLS——
+        真 repo 常數含它＋合成 tracked 含它＋RUNBOOK 碼面閘表不列它＝綠（列進表反而是幽靈列、見 ghost 案）。"""
+        self.assertIn("tools/walkthrough-baseline.py", gates.NON_GATE_TOOLS)
+        msgs = self._run(self._runbook(), CODEGATE_TOOLS + ["tools/walkthrough-baseline.py"])
+        self.assertEqual(msgs, [])
+
+    def test_walkthrough_baseline_dropped_from_non_gate_is_red_and_names_it(self):
+        """反例：常數抽掉該檔（只剩 wf-watchdog）→GT-12 判該檔「未列於碼面閘表」、訊息指名；未被抽的成員不誤紅。"""
+        with unittest.mock.patch.object(gates, "NON_GATE_TOOLS", ("tools/wf-watchdog.py",)):
+            msgs = self._run(self._runbook(), CODEGATE_TOOLS + ["tools/walkthrough-baseline.py", "tools/wf-watchdog.py"])
+        self.assertTrue(any("tools/walkthrough-baseline.py" in m and "未列" in m for m in msgs), msgs)
+        self.assertFalse(any("tools/wf-watchdog.py" in m for m in msgs), msgs)
+
     def test_nested_and_non_py_tools_not_counted(self):
         """tools/docsync/*.py、tools/orchestration/*、tools/bootstrap.sh 皆非頂層 *.py——不進 S_tools、不誤紅。"""
         msgs = self._run(self._runbook(), CODEGATE_TOOLS + list(gates.NON_GATE_TOOLS) + ["tools/docsync/book.py", "tools/orchestration/_sk_core.js"])
