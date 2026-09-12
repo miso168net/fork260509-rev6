@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00017 -->
+<!-- next: LL-00019 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -22,3 +22,5 @@
 | LL-00014 | 等長字元替換＋同一秒內還原＝CPython 判 pyc 仍有效而沿用舊碼——反例驗證讀到假結果 | none：屬本機驗證程序的環境面陷阱、非流程規則；守法（等長改動的反例驗證前後清 __pycache__）寫進本檔 | none | [LL-00014-equal-length-source-edit-same-second-reuses-stale-pyc.md](LESSONS/LL-00014-equal-length-source-edit-same-second-reuses-stale-pyc.md) |
 | LL-00015 | 審查員標明「拍板級、超出 fix agent 權限」的修法，下一輪 fix 仍逕自落地——空間邊界只圈檔、不圈行為級別 | RL-0075 | rules | [LL-00015-fix-agent-landed-a-decision-level-change-inside-the-allowed-files.md](LESSONS/LL-00015-fix-agent-landed-a-decision-level-change-inside-the-allowed-files.md) |
 | LL-00016 | implementer 把 rev5 對應檔的註解逐字搬進 rev6、靠審查輪才抓到——「註解一律重寫」是散文規則、交付前沒有機器自核 | RL-0076 | rules | [LL-00016-implementer-transcribes-rev5-comments-verbatim-no-machine-self-check.md](LESSONS/LL-00016-implementer-transcribes-rev5-comments-verbatim-no-machine-self-check.md) |
+| LL-00017 | 真 DB 測試守衛以「arm 水位」清列、合成帳號的殘列漏在水位之前，序列守衛照樣歸 1，下一跑 PK 23505 連環紅且自我延續 | none：守法已落碼——test_kit 兩支守衛硬化（合成 uid 無水位清列、序列重設前檢殘列拒絕）＋自證兩案；無新規則句 | code | [LL-00017-session-rows-guard-watermark-misses-synthetic-rows-then-sequence-reset-cascades.md](LESSONS/LL-00017-session-rows-guard-watermark-misses-synthetic-rows-then-sequence-reset-cascades.md) |
+| LL-00018 | 「以 release 二進位起服務打 /health」的探針配方跑的其實是 debug 二進位——dev 映像的 ENTRYPOINT 是 watchexec，`compose run <svc> <路徑>` 只換得到 command | none：一次性配方——release 探針正確形已寫入 U11 定義與本坑檔，非規則句 | none | [LL-00018-dev-image-entrypoint-is-watchexec-release-probe-needs-entrypoint-override.md](LESSONS/LL-00018-dev-image-entrypoint-is-watchexec-release-probe-needs-entrypoint-override.md) |
