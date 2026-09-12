@@ -95,7 +95,7 @@ seed 78 列；`constant` 值域 TRUE=0／FALSE=14／NULL=64 ⇒ `getConstantRout
 | `session:{sid}:last_activity` | unix 秒 | refresh 全壽命（SET EX） | login ⑪（起點）／enforce 放行後 | refresh idle 判定 |
 | `session:idle-emitted:{sid}` | `1` | refresh 全壽命 | refresh idle 首次（SET NX） | 同左（NX 即守門） |
 | `session:rotate-grace:{token_hash}` | 新對 JSON | 30 秒 | refresh rotate（commit 前） | refresh `rotated` 腿 |
-| `throttle:lock:user:{user_name}` | `1` | 900 秒（`THROTTLE_LOCK_TTL_SECS`） | precheck 鎖定判定成立時（L1 負快取、best-effort） | precheck（命中即拒、不續期） |
+| `throttle:lock:user:{user_name}` | unix 秒（寫入時戳） | min(窗秒, 900)＝`lock_ttl_secs`（上限＝`THROTTLE_LOCK_TTL_SECS`） | precheck 鎖定判定成立時（L1 負快取、best-effort） | precheck（命中即拒、不續期） |
 | `throttle:captcha:used:{nonce}` | `1` | 300 秒（＝`CAPTCHA_TTL_SECS`） | captcha 驗題（SET NX、先於答案比對） | 同左（NX 即消耗） |
 
 ★六鍵字面逐字承 rev5 `cache/mod.rs`（零差異）；不含 ip 維鍵、不含 unlock 鍵（`rev5:R3-17`）。測試鍵一律加 uniq 前綴（時戳＋pid）。

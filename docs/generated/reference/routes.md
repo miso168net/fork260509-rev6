@@ -13,6 +13,7 @@
 | /auth/refreshToken | POST | Public | auth-refresh-token | 否 |
 | /auth/logout | POST | Public | auth-logout | 否 |
 | /auth/getUserInfo | GET | Authed | auth-get-user-info | 否 |
+| /auth/loginCaptcha | GET | Public | auth-login-captcha | 否 |
 | /route/getConstantRoutes | GET | Public | route-get-constant-routes | 否 |
 | /route/getUserRoutes | GET | Authed | route-get-user-routes | 否 |
 | /route/isRouteExist | GET | Authed | route-is-route-exist | 否 |
