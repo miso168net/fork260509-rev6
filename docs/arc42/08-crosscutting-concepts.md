@@ -36,7 +36,7 @@ msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一
 
 ## 8.4 fork-delta 軌道
 
-紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守＝`tools/fork-delta-lint.py`（修改型原行／新增型圈界含新檔檔頭標記、軌道授權判定、生成檔紀律；碼面閘、名冊＝RUNBOOK §12 碼面閘表、pre-commit fork-delta 段實跑）。程式碼 fork-delta as-built＝base-web 兩支新增型新檔：`src/typings/api/rev6-settings.d.ts`（§III.1 BASE-WEB-ADAPT 軌道）與 `src/service/api/rev6-settings.ts`（§III.1 BASE-WEB-WRAPPER 軌道、不入 barrel）；零 inline 修改型；fork patch set 另含檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。新檔檔頭標記定形＝`[rev6-inline <軌道名>+ <刀名>]`（軌道名後緊接 `+` 尾綴＝新增型），由 `tools/fork-delta-lint.py` 兩道判定強制（`+` 尾綴定形×所稱軌道與檔路徑相符）。
+紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守＝`tools/fork-delta-lint.py`（修改型原行／新增型圈界含新檔檔頭標記、軌道授權判定、生成檔紀律；碼面閘、名冊＝RUNBOOK §12 碼面閘表、pre-commit fork-delta 段實跑）。程式碼 fork-delta as-built＝base-web 兩支新增型新檔：`src/typings/api/rev6-settings.d.ts`（§III.1 BASE-WEB-ADAPT 軌道）與 `src/service/api/rev6-settings.ts`（§III.1 BASE-WEB-WRAPPER 軌道、不入 barrel）＋inline 修改型 5 處（`.env` 2／`.env.test` 1／`.env.prod` 1＝BASE-WEB-ADAPT 軌道、`src/store/modules/route/index.ts` 1＝BASE-WEB-AUTH-WIRING(a) 軌道）；fork patch set 另含檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。新檔檔頭標記定形＝`[rev6-inline <軌道名>+ <刀名>]`（軌道名後緊接 `+` 尾綴＝新增型），由 `tools/fork-delta-lint.py` 兩道判定強制（`+` 尾綴定形×所稱軌道與檔路徑相符）。
 
 ## 8.5 E4 負責任 AI 概念
 
