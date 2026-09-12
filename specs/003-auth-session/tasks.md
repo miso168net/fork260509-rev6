@@ -123,14 +123,14 @@ description: "Task list for 003-auth-session"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T032 [P] [US2] contract case `auth-refresh-token`（POST／Public；含 body rejection→8888 案）加入 `rust-api/server/tests/contract.rs`；`observed_msgs` 追加
-- [ ] T033 [P] [US2] integration 於 `rust-api/server/src/handler/auth/refresh.rs` `#[cfg(test)]`：①`active`→rotate 新對（新對 TTL 讀現值）②同票二度→grace 冪等同一對 ③grace 窗外→reuse＋撤家族＋`session_event(reuse)`＋8888 ④驗章失敗／查無列→8888 ⑤同票兩並發→一 rotate 一 grace、不觸 reuse（唯一鍵衝突 `DbErr` 辨識、不得籠統 `5000`）⑥`session_idle_timeout` 缺失→`5000`
+- [x] T032 [P] [US2] contract case `auth-refresh-token`（POST／Public；含 body rejection→8888 案）加入 `rust-api/server/tests/contract.rs`；`observed_msgs` 追加
+- [x] T033 [P] [US2] integration 於 `rust-api/server/src/handler/auth/refresh.rs` `#[cfg(test)]`：①`active`→rotate 新對（新對 TTL 讀現值）②同票二度→grace 冪等同一對 ③grace 窗外→reuse＋撤家族＋`session_event(reuse)`＋8888 ④驗章失敗／查無列→8888 ⑤同票兩並發→一 rotate 一 grace、不觸 reuse（唯一鍵衝突 `DbErr` 辨識、不得籠統 `5000`）⑥`session_idle_timeout` 缺失→`5000`
 
 ### Implementation for User Story 2
 
-- [ ] T034 [US2] `rust-api/server/src/handler/auth/refresh.rs` 新建（`handler/auth/mod.rs` 加 `pub mod refresh;`）：驗章失敗一律 8888（★絕不 3333）；`find_by_hash_for_update` 鎖列後分流——`active`→`ttl_from_settings`→rotate→寫 grace（TTL 30、commit 前仍持鎖）／`rotated`＋grace 命中→冪等回既發後繼／`rotated`＋grace miss→`revoke_family`＋`session_event(reuse)`＋denylist(revoked、TTL＝refresh 全壽命)→8888／查無列→8888；`RefreshReq` rejection→8888；`revoked` 三分支與 idle 判定留 T040
-- [ ] T035 [US2] `rust-api/server/src/router.rs` 加 `/auth/refreshToken`（POST／Public）＋`ROUTES_COUNT` 10＋`router.rs` `mod tests` 之 `routes_block_literal_form_and_pinned_rows` 釘值 9→10（assert 訊息隨釘值同批改現在式）＋`tools/docsync/tests/test_references.py::TestRoutes::test_real_repo_pinned_rows` 真 repo 釘列同批增至 10 列（RL-0022 連動釘值檔）
-- [ ] T036 [US2] 走查 `specs/003-auth-session/quickstart.md` §2；★走查三步（FR-036）：`python3 tools/walkthrough-baseline.py snapshot tmp/walkthrough-<單元>.json`（rc 0）→走查→清理（quickstart §8：`single_session_default` 若翻過翻回、三表 DELETE、`session_id` NULL、三支 setval、redis `session:`／`throttle:` 前綴 DEL）→`diff` rc 0＋rust-api commit＋外層 pin bump＋generate（`docs/generated/STATE.md`／`reference/routes.md`）
+- [x] T034 [US2] `rust-api/server/src/handler/auth/refresh.rs` 新建（`handler/auth/mod.rs` 加 `pub mod refresh;`）：驗章失敗一律 8888（★絕不 3333）；`find_by_hash_for_update` 鎖列後分流——`active`→`ttl_from_settings`→rotate→寫 grace（TTL 30、commit 前仍持鎖）／`rotated`＋grace 命中→冪等回既發後繼／`rotated`＋grace miss→`revoke_family`＋`session_event(reuse)`＋denylist(revoked、TTL＝refresh 全壽命)→8888／查無列→8888；`RefreshReq` rejection→8888；`revoked` 三分支與 idle 判定留 T040
+- [x] T035 [US2] `rust-api/server/src/router.rs` 加 `/auth/refreshToken`（POST／Public）＋`ROUTES_COUNT` 10＋`router.rs` `mod tests` 之 `routes_block_literal_form_and_pinned_rows` 釘值 9→10（assert 訊息隨釘值同批改現在式）＋`tools/docsync/tests/test_references.py::TestRoutes::test_real_repo_pinned_rows` 真 repo 釘列同批增至 10 列（RL-0022 連動釘值檔）
+- [x] T036 [US2] 走查 `specs/003-auth-session/quickstart.md` §2；★走查三步（FR-036）：`python3 tools/walkthrough-baseline.py snapshot tmp/walkthrough-<單元>.json`（rc 0）→走查→清理（quickstart §8：`single_session_default` 若翻過翻回、三表 DELETE、`session_id` NULL、三支 setval、redis `session:`／`throttle:` 前綴 DEL）→`diff` rc 0＋rust-api commit＋外層 pin bump＋generate（`docs/generated/STATE.md`／`reference/routes.md`）
 
 **Checkpoint**: US1＋US2 獨立可用——會話可續期。
 
