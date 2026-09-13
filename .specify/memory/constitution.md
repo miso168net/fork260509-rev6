@@ -26,7 +26,7 @@
 **含義**：
 - 業務 menu 走 `/route/getUserRoutes` → 後端 Casbin enforce 過濾 → 前端顯示
 - demo menu 處理：demo view **全部進 `sys_menu` seed、初始僅勾給 `R_SUPER`**——全集完整、可見性由角色勾選層（casbin menu 維度）治理下放；`hideInMenu`／頁面排除等前端隱藏機制**皆不啟用**。例外與釋義（承 rev5:ADR 0005）：①toggle-auth 示範鏈（`function`／`function_toggle-auth`）保留 `R_ADMIN`／`R_USER_COMMON` 初始勾選（恰 4 列、示範「三角色各見不同按鈕」語意所需、承 rev4 終態）；②「不啟用」＝禁止以 hideInMenu 作 demo 可見性治理手段，upstream route meta 自帶之 `hide_in_menu` 值照原樣入 seed、不視為啟用（6 列白名單載 rev5:ADR 0005）
-- constantRoutes（login／404／403）前端寫死、與 menu 無關、不動；constant route 集合可經 §III.2 授權新增——builtin 三頁不動與 Casbin 豁免語意不變
+- constantRoutes（builtin 常量集，現為 403／404／500／iframe-page／login 五條、實數以 base-web `createStaticRoutes` 為準）前端寫死、與 menu 無關、不動；constant route 集合可經 §III.2 授權新增——builtin 常量集不動與 Casbin 豁免語意不變
 
 ### I.3 wire 契約權威序與不變式（NON-NEGOTIABLE）
 
@@ -91,17 +91,54 @@
 
 **進場規則**：每台狀態機（如 token rotation／policy governance／single-session）隨其刀的 brainstorm 拍板後，以 **MINOR Amendment** 將不變式條文入本節；前代已驗證狀態機之不變式（rev5 憲法 §I.7 已入憲者）為對應刀 brainstorm 的直接輸入（出處經 ADR provenance 溯源、引 `rev5:ADR 00NN`）。入本節後，動任一條不變式走 Amendment；方向性反轉（fail-OPEN/closed 方向、DB-first、踢人雙通道分離等）＝MAJOR。常數值與欄級細節留活書（非凍結面）。
 
-**已入憲行為島**：（尚無——首座隨首刀以 MINOR Amendment 進場。）
+**已入憲行為島**（首批五座由 ADR-00026 於 v1.3.0 隨 003-auth-session 進場；出處 `rev5:ADR 0028`、rev5 v1.3.0 字面為底；rev6 增補恰四處＝島 B 第二點（brainstorm Q9）、島 E 末點（clarify Q3）、跨島總則（clarify Q4）、末句「方向性反轉自此為 MAJOR」射程確認，其餘逐字）：
+
+**A. token rotation**
+- 同一鏈（family）至多一條 `active`；DB partial UNIQUE 為護欄而非唯一防線。
+- rotate 次序 MUST 為「舊列轉 `rotated` 並寫 `used_at` → 插新 `active`」，**次序不可反**。
+- grace 窗內同票二度換發 MUST 冪等回**既發的同一對**；grace 窗 MUST 大於前端最壞重試間隔。
+- reuse 偵測的**唯一觸發形**＝列為 `rotated` 且 grace miss；命中即撤整條家族。
+- fail-* 方向：grace 不可用＝**fail-secure**（並發換發觸發 reuse、撤家族；重登復原）。
+
+**B. single-session**
+- 政策解析為**兩層**：`effective_single = session_policy=='single' || (session_policy=='inherit' && single_session_default=='on')`。
+- 單一會話**只於登入事件判定**；`single_session_default` 翻轉不影響既有會話（不追溯；窗口上限＝refresh 全壽命、值留活書）。
+- 踢除 MUST 落 `session_event(kicked)` 並寫 denylist；被踢者在 `(access, refresh)` 窗內換發仍得 `7777`。
+- fail-* 方向：`single_session_default` 讀不到＝**off 語意**（刻意與 D、E 方向不同）。
+
+**C. denylist 撤銷**
+- `sys_token.status` 為**權威**、denylist 為加速層；兩者不一致時以 status 定案。
+- 鍵缺席（nil）＝「未撤」語意 ⇒ 放行；`revoked` 列缺 denylist MUST 靜默 `8888`、**不得落假 reuse**。
+- denylist TTL MUST ＝ refresh 全壽命，`kicked` 與 `revoked` 兩 reason 皆同。
+- fail-* 方向：讀不到（連線 Err）＝**fail-closed**——退 PG 查該鏈是否仍有 active，無 active→`8888`；**PG 亦故障 MUST 視為無 active、絕不盲放**。
+
+**D. idle 逾時**
+- 門檻＝`refresh_secs − access_secs`；`session_event(idle)` MUST 僅首次落（SET NX 守門）。
+- 不等式 `access_TTL ≤ N×30 < N×60` ⇒ idle 命中 **MUST NOT** 寫 denylist。
+- fail-* 方向：`last_activity` 不可讀＝**fail-open**（不 idle-reject，以 token exp 為界）。
+
+**E. 登入失敗節流（帳號維）**
+- 三區（自由／需驗證碼／鎖定）；滑動窗（PG）為**權威**、redis L1 為負快取。
+- 軟區與鎖定 MUST 在密碼雜湊驗證**之前**擋下，且**零稽核列、零計數桶**（拒絕不得消耗受害者的額度）。
+- fail-* 方向：redis 整體不可用＝**fail-open**（軟區 captcha 要求整層停用、續驗密碼，密碼錯仍計數）；L2（PG）查詢失敗＝**fail-open ＋ 補償**（計數歸零放行並置 `captcha_forced`）；captcha 標記 SET NX 瞬斷（redis 健康）＝**fail-closed 不罰**（拒該次、零計數桶）。
+- 上列 captcha 兩層方向刻意相反之理由（記於此以免被「統一」）：整體不可用時若仍要求驗證碼＝驗不了題卻要求、把合法使用者鎖在門外，故停用軟區、密碼錯仍計數保阻力；單次標記瞬斷時若放行＝攻擊者附偽造題即可在瞬斷窗通關（降級恰好只放行對抗性流量），故拒該次；一次性標記寫不進去即無法認定該題已耗，受害者不該被罰計數。
+- 節流設定鍵缺失、或**矛盾組合**（驗證碼門檻大於鎖定門檻）＝視同不可用、退活書常數並發結構化告警（每次載入至多一筆）；門檻相等＝合法（軟區寬度零）。
+
+**跨島註（方向刻意不一致，記於此以免日後被「統一」）**：登入流程讀 `session_idle_timeout` 設定鍵缺失＝**fail-loud**（`5000`、不猜 TTL 值），與 E 的節流設定鍵缺失走 fail-open 退常數方向相反——前者猜錯會靜默改變所有人的會話壽命，後者猜錯只影響阻力強度。
+
+**跨島總則（設定改值的生效時點）**：每個設定鍵只在其消費事件當下讀現值；已簽發 token 的壽命與已建立的會話不追溯——single-session 於登入事件、idle 門檻與 TTL 於每次簽發（登入／換發）、節流三鍵於每次登入嘗試。
+
+**方向性反轉自此為 MAJOR**（§I.7 進場規則既有條款，此處確認其射程已涵蓋上列五島）。
 
 **承襲指針**（user 拍板 2026-09-03：島體不預載、隨刀重新進場確認＝世代 DoD 的每刀驗收）：rev5 憲法 v1.10.0（唯讀、凍結 SHA `7eab28a`）§I.7 曾入憲十座行為島，對應域動刀時為 brainstorm 的直接輸入、依本節進場規則重新入憲——
 
 | 島 | 名稱 | rev5 入憲載體 |
 |---|---|---|
-| A | token rotation | rev5:ADR 0028（rev5 v1.3.0） |
-| B | single-session | rev5:ADR 0028（rev5 v1.3.0） |
-| C | denylist 撤銷 | rev5:ADR 0028（rev5 v1.3.0） |
-| D | idle 逾時 | rev5:ADR 0028（rev5 v1.3.0） |
-| E | 登入失敗節流 | rev5:ADR 0028（rev5 v1.3.0；來源維兩句隨 rev5 v1.4.0 補） |
+| A | token rotation | rev5:ADR 0028（rev5 v1.3.0）；rev6 已入憲 v1.3.0（ADR-00026） |
+| B | single-session | rev5:ADR 0028（rev5 v1.3.0）；rev6 已入憲 v1.3.0（ADR-00026） |
+| C | denylist 撤銷 | rev5:ADR 0028（rev5 v1.3.0）；rev6 已入憲 v1.3.0（ADR-00026） |
+| D | idle 逾時 | rev5:ADR 0028（rev5 v1.3.0）；rev6 已入憲 v1.3.0（ADR-00026） |
+| E | 登入失敗節流 | rev5:ADR 0028（rev5 v1.3.0；來源維兩句隨 rev5 v1.4.0 補）；rev6 已入憲 v1.3.0（ADR-00026） |
 | F | IP 存取閘＋信任錨＋來源維節流 | rev5:ADR 0040（rev5 v1.4.0）＋rev5:ADR 0043（rev5 v1.5.0、F7／F8）；釐清至 rev5 v1.6.2 |
 | G | casbin 授權治理（含 G6 結構性封死） | rev5:ADR 0053（rev5 v1.8.0；G6＝rev5:ADR 0054、復原五腿＝rev5:ADR 0055） |
 | H | 選單域生命週期 | rev5:ADR 0048（rev5 v1.7.0） |
@@ -166,8 +203,14 @@
 
 | 軌道 | 用途 | 範圍（檔案） | 紀律 |
 |---|---|---|---|
-
-（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）
+| **★BASE-WEB-AUTH-WIRING** | (a) constant routes 合併 | `src/store/modules/route/index.ts`（1 處，修改型） | 僅限 `initConstantRoute` 之 dynamic 分支；MUST 為**併入** static 常量集而非取代（seed `constant=TRUE` 為 0 列，取代會清空 login／403／404／500／iframe-page 五條 builtin）；不得擴及 route store 其他分支 |
+| **★BASE-WEB-AUTH-WIRING** | (b) 三表單 stub 化 | `src/views/_builtin/login/modules/{code-login,register,reset-pwd}.vue`（各 2 處，修改型） | 僅改 import 指向 stub wrapper＋消滅假成功 toast；不動表單欄位、驗證規則與版面 |
+| **★BASE-WEB-AUTH-WIRING** | (c) captcha hook 改打 stub | `src/hooks/business/captcha.ts`（約 4 處，修改型） | 僅改請求目標為 `/auth/sendCaptcha`＋移除假延遲與假成功 toast；hook 對外簽名不變 |
+| **★BASE-WEB-LOGIN-CAPTCHA-WIRING** | (i) 登入頁 captcha 軟區 | `src/store/modules/auth/index.ts`（修改型）／`src/views/_builtin/login/modules/pwd-login.vue`（修改型＋新增型） | auth store `login()` 改打 wrapper `fetchLoginWithCaptcha`（不改 upstream `auth.ts`）並串通失敗 msg 回傳鏈；軟區為條件渲染，登入失敗後 MUST 重取新題並清空輸入（後端提交即消耗）；**非軟區時零行為變更**；三顆快速登入鈕零 inline。★用途 (ii)（`formRules` 放寬）**不在本次授權**，延改密端點刀 |
+| **★BASE-WEB-I18N-WIRING** | (i) 後端 msg 轉譯 | `src/service/request/index.ts`（2 處修改型＋1 塊新增型） | 單一 helper `translateBackendMsg(msg)`＝`$t` 帶原文 fallback；modal `content` 與 `showErrorMsg` 鏈改走之；未命中 MUST graceful fallback，不得吞錯亦不得顯裸 key（錯誤信封 `data` 恆 null、無明細通道 ⇒ 不建 `translateDetailValue`） |
+| **★BASE-WEB-I18N-WIRING** | (ii) locale backend 樹 | `src/locales/langs/{en-us,zh-cn}.ts`（各 1 塊，新增型） | 插入錨為**獨佔一行**的 `  backend: {`；三檔（含新檔 `zh-tw.ts`、新增型不入名冊）backend 子樹鍵集 MUST 各自與後端 `MSG_KEYS` 全等（跨端閘）；譯文以 `specs/003-auth-session/contracts/msg-keys.md` 為權威 |
+| **★BASE-WEB-I18N-WIRING** | (iii) Schema backend 型節 | `src/typings/app.d.ts`（1 處，修改型） | 僅補 `App.I18n.Schema` 之 `backend` **必填**型節。★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構**不在本次授權**，延前端 UI 刀 |
+| **★BASE-WEB-LOGOUT-UX-WIRING** | (i) 登出前撤銷接線 | `src/layouts/modules/global-header/components/user-avatar.vue`（約 3 處，修改型） | `onPositiveClick` 改 async、登出前 best-effort `await` logout wrapper，**失敗不得阻斷** `resetStore()`。★用途 (ii)（reLogin toast）**不在本次授權** |
 
 **表外三項適用宣告**：
 1. 範圍欄的**處數為估值**，實作期以 `rev6-inline` 標記實數為準；**檔級名單則是硬邊界**——名單外的 base-web 既有檔一律無授權，需要動即回本節走 §V.2。
@@ -223,9 +266,10 @@
 
 ---
 
-**Version**: 1.2.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-07
+**Version**: 1.3.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-08
 
 **Amendment log**:
 - 1.0.0（2026-09-03）：創世初版——自 rev5 constitution v1.10.0（凍結 SHA `7eab28a`）依啟動書 §3.8 逐條表搬入：§I.1～§I.3、§I.6 承襲改字（分支名、基線 SHA、fork 標記 token、前代 ADR 引用一律 `rev5:` 前綴）；§I.4 收為方向性四句、程序細節移 RULES.md；§I.5 世代 bump（前代＝rev5、rev4 溯源、源倉 main `32c5254` 起全新寫）；§I.7 僅搬進場規則、十座行為島以承襲指針表列（rev5 入憲載體逐島註明）、島體隨刀重新進場；§I.8 新增（AI 代理產物必經人審與機器閘、review 只讀、push／merge 需 user 明確同意）；§II 三筆承襲（逐筆核 rev5 ADR 摘要無翻案）；§III fork-delta 紀律與 §III.1 三軌道承襲（token `rev6-inline`、wrapper 前綴 `rev6-`）、§III.2 僅機制骨架＋補完判準＋表外三項宣告＋空表頭、rev5 五條 ★ 軌道十七用途以承襲指針列名；§IV 九題承襲（第 2 題 token、第 5 題前代改引）；§V.1 權威鏈納 RULES.md、§V.2 第 4 步改 `python3 tools/docsync generate`、§V.3 MAJOR 款納 §I.8。user 親審 diff＋grill 三題親決（§I.4 錨定「刀」＝spec-kit feature、§I.8 人審＝merge 同意＋拍板親決、§III.2 宣告 2 改原則句）後定版（創世拍板）。ADR-00003 同 commit 轉 accepted。
 - 1.1.0（2026-09-04）：§I.5 例外清單加②資料形狀契約三件整檔拷貝（基線結構 migration＋基線 seed migration＋基線 entity 15 檔；射程鎖 rev5 rust-api `92919b9`；程式逐位元自證、檔名四碼＝ADR-00008、註解語意判準、防回歸照常、`m0003` 起不適用）；§V.3 MINOR 款補「§I 例外清單擴展」釋義。ADR-00009 同 commit accepted（user 拍板：例外射程 2026-09-03、版級 MINOR 與註解語意判準 2026-09-04、Amendment 全文核准 2026-09-04）。
 - 1.2.0（2026-09-07）：獨立輪 000-r2 三筆同批 Amendment——①§I.5 例外① 射程補「含註解」、豁免第 3 款（ADR-00022；自證腿 `vendored-check` 去註解口徑就此有權威來源；例外② 之「註解依語意判準重寫」不變）②§I.3 四保留碼「從不發出」之機器承載點自「contract test 斷言」改記為「型別層全變體窮舉＋`error.rs` 矩陣斷言雙錨」（ADR-00023；as-built 對齊、零行為變更）③§III 生成檔紀律判準句去除對空表 §III.2 的死引用、改為「與路由外掛（elegant-router）重算產出之檔同族；具體檔集隨相關 ★ 軌道 Amendment 落表」（ADR-00024）。版本取三者最高級別＝MINOR（①屬 §I 例外清單射程擴展；②③為 PATCH 級釐清）。三支 ADR 與本次憲法改動同 commit（§V.2 步 4）；user 停點① 逐題親決 2026-09-07。
+- 1.3.0（2026-09-08）：003-auth-session 首刀 Amendment（ADR-00026）——①§III.2 空表落入首批四條 ★ 軌道八用途（`BASE-WEB-AUTH-WIRING` (a)(b)(c)／`BASE-WEB-LOGIN-CAPTCHA-WIRING` (i)／`BASE-WEB-I18N-WIRING` (i)(ii)(iii)／`BASE-WEB-LOGOUT-UX-WIRING` (i)；12 支 base-web 既有檔取得修改型授權、(ii) 類三項明文不授權；哨兵句同批移除、`tools/fork-delta-lint.py` 名冊自此七名）②§I.7 首批五座行為島 A～E 入憲（rev5 v1.3.0 字面為底、rev6 增補四處＝島 B 不追溯、島 E 矛盾組合方向、跨島總則、MAJOR 射程確認；承襲指針表 A～E 列尾註）③§I.2 第三點 PATCH 級釐清（「builtin 三頁」→「builtin 常量集、現五條」）。版本取最高級別＝MINOR（§V.3「新增 ★ 軌道」與「行為島隨刀進場」兩款）。ADR-00026 同 commit accepted（§V.2 步 4）；user 親決 2026-09-08（003 刀 tasks T001）。

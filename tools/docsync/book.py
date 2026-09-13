@@ -23,13 +23,25 @@ RE_ADR_FILE = re.compile(r"^ADR-(\d{5})-")
 BARE_REV5 = re.compile(r"(?<![A-Za-z0-9:_/-])(B-\d{3}|L-\d{3}|ADR 0\d{3}|Lint\d{2}|\d{3}-[a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![A-Za-z0-9-])")
 MENTION = re.compile(r"`[^`\n]*`|「[^」\n]*」")
 RE_KNIFE = re.compile(r"^\d{3}-")
-# 子庫 pin 樹粗篩（git grep ERE；五形與 BARE_REV5 同源、精判與 rev6 刀集豁免共用外層那套——# 只對齊正則不共用豁免會讓自家刀名整批誤紅，BL-00017）
-SUB_SCAN = (r"(^|[^A-Za-z0-9:_/-])(B-[0-9]{3}|L-[0-9]{3}|ADR 0[0-9]{3}|Lint[0-9]{2}"
-            r"|[0-9]{3}-[a-z][a-z0-9]*(-[a-z0-9]+)+)([^A-Za-z0-9-]|$)")
+# 子庫 pin 樹粗篩（git grep ERE；六形＝五形與 BARE_REV5 同源＋第六形 `rev[45] NNN` 與 BARE_PREV_KNIFE_NUM 同源；
+# 精判（_sub_judge）與 rev6 刀集豁免共用外層那套——只對齊正則不共用豁免會讓自家刀名整批誤紅，BL-00017）
+# ★粗篩一律 ⊇ 精判；反向（粗篩比精判窄）＝粗篩擋掉的行精判永遠看不到＝閘的盲區。第六形故獨立成頂層交替、
+# 不套前五形那組頭尾界：BARE_PREV_KNIFE_NUM 的 lookbehind 不排除 `_`／`/`、lookahead 只擋數字與連字號，
+# 套上頭尾界會讓 `_rev5 002`、`a/rev5 002`、`rev5 002x` 三類精判看不到（前五形無此不對稱：BARE_REV5 的
+# 頭尾界與粗篩逐字相同）。過撈由精判擋下、零誤紅。
+# ★分隔寫 `[^0-9A-Za-z]+`＝精判那個 `\s+` 的真超集：Python 的 `\s` 是 Unicode-aware，另含 U+3000 全形空白、
+# NBSP、em space 等——zh-TW 註解碼面寫得出來（本 repo 現有檔即用全形空白），只收半形空白與 tab 會讓這幾類
+# 精判紅、粗篩撈不到＝同一句外層紅、子庫綠、判準分裂。本常數同時被 git grep 的 ERE 與自測的 Python `re`
+# 消費，POSIX 類 `[[:space:]]` 只有前者吃得下；本形則兩引擎同義，且 UTF-8 多位元組字每個位元組皆 ≥ 0x80、
+# 不在 `[0-9A-Za-z]` 內，故不受 locale 影響。代價＝連冒號前綴正確形（`rev5:002`）等也撈起
+# （實測兩子庫 pin 樹 base-web 51→52、rust-api 5→41 行），一律由精判擋下、零誤紅。
+SUB_SCAN = (r"((^|[^A-Za-z0-9:_/-])(B-[0-9]{3}|L-[0-9]{3}|ADR 0[0-9]{3}|Lint[0-9]{2}"
+            r"|[0-9]{3}-[a-z][a-z0-9]*(-[a-z0-9]+)+)([^A-Za-z0-9-]|$))"
+            r"|(rev[45][^0-9A-Za-z]+[0-9]{3})")
 
 # 裸三碼前代刀號（`rev5 002`＝缺 RL-0046 冒號前綴形；000-r2 L5-02）——rev6 自家刀號、版本號、日期皆不入射程
 # （必以 rev4／rev5 起頭、其後恰三碼且不接數字或連字號＝完整 slug 走 BARE_REV5 那腿）。
-# ★子庫 pin 樹側尚未接（rust-api 兩處註解存量＝BL-00041、其觸發＝下一支動 rust-api 的刀；該刀同批把本形併入 SUB_SCAN 精判）。
+# 子庫 pin 樹側同形接上（SUB_SCAN 第六形粗篩＋_sub_judge 精判、與外層 _id_form_legs 同一正則；003 刀 U10）。
 BARE_PREV_KNIFE_NUM = re.compile(r"(?<![:A-Za-z0-9-])rev([45])\s+(\d{3})(?![\d-])")
 # ID 兩腿共用字界：★不可用 `\b`——Python 的字界是 Unicode-aware，漢字與圈號（①②③，類別 No、isalnum 為真）皆算 \w，
 # 故 `\bRL-\d{4}` 在「承RL-0011」「③RL-0015」這類無空白書寫形前一律不成立（000-r2 修-CQ1 實測真 repo 四處真引用被靜默略過）。
@@ -225,6 +237,28 @@ def _id_form_legs(ctx):
     return out
 
 
+def _bare_rev5_hits(stripped, knives):
+    """BARE_REV5 五形命中 → [(kind, tok)]（rev6 自家刀名豁免）；外層 gt_05 迴圈與子庫 _sub_judge 共用＝分類與豁免單一來源
+    （003 刀 U10 品質審查：兩處逐字重複即日後改一漏一）。入參須已剝提及形。"""
+    out = []
+    for m in BARE_REV5.finditer(stripped):
+        tok = m.group(1)
+        if RE_KNIFE.match(tok) and (tok.startswith("000-") or tok in knives):
+            continue                                        # rev6 自家刀名＝合法
+        out.append(("裸刀名（rev6 刀集外）" if RE_KNIFE.match(tok) else "裸 rev5 編號", tok))
+    return out
+
+
+def _sub_judge(content, knives):
+    """子庫 pin 樹命中列精判（與外層同一套：MENTION 剝提及形 → BARE_REV5 五形＋rev6 刀集豁免 → BARE_PREV_KNIFE_NUM 第六形）。
+    回 [(kind, tok)]；空＝該列合法。粗篩 SUB_SCAN 只讓 git grep 少吐行、真假一律由本函式定
+    （成立的前提＝粗篩 ⊇ 本函式射程，由 SUB_SCAN 檔頭那組界與 TestSubScanSixForms 超集案共同承擔）。"""
+    stripped = MENTION.sub("", content)
+    out = _bare_rev5_hits(stripped, knives)
+    out += [("裸前代刀號", m.group(0)) for m in BARE_PREV_KNIFE_NUM.finditer(stripped)]
+    return out
+
+
 def gt_05(ctx):
     """GATE:
       id=GT-05
@@ -276,11 +310,7 @@ def gt_05(ctx):
     knives = _rev6_knives(ctx)
     for rel, text in _text_files(ctx, "present"):
         for i, line in enumerate(text.split("\n"), 1):
-            for m in BARE_REV5.finditer(MENTION.sub("", line)):
-                tok = m.group(1)
-                if RE_KNIFE.match(tok) and (tok.startswith("000-") or tok in knives):
-                    continue
-                kind = "裸刀名（rev6 刀集外）" if RE_KNIFE.match(tok) else "裸 rev5 編號"
+            for kind, tok in _bare_rev5_hits(MENTION.sub("", line), knives):
                 out.append(finding(ERROR, "GT-05", f"{rel}:{i}", f"{kind}「{tok}」——前代引用一律 rev5:／rev4: 前綴（提及形用反引號或「」）"))
     for sub in SUBMODULES:
         if not ctx.exists(os.path.join(sub, ".git")):
@@ -296,13 +326,8 @@ def gt_05(ctx):
                 rest = l.split(":", 1)[-1]                      # 去 "HEAD:" 前綴
                 parts = rest.split(":", 2)
                 where, content = ":".join(parts[:2]), parts[2] if len(parts) > 2 else ""
-                for m in BARE_REV5.finditer(MENTION.sub("", content)):   # 精判與外層同源
-                    tok = m.group(1)
-                    if RE_KNIFE.match(tok) and (tok.startswith("000-") or tok in knives):
-                        continue                                # rev6 自家刀名＝合法（豁免與外層共用）
-                    hits.append((where, tok))
-            for where, tok in hits[:10]:
-                kind = "裸刀名（rev6 刀集外）" if RE_KNIFE.match(tok) else "裸 rev5 編號"
+                hits += [(where, kind, tok) for kind, tok in _sub_judge(content, knives)]   # 精判與外層同源
+            for where, kind, tok in hits[:10]:
                 out.append(finding(ERROR, "GT-05", f"{sub}/{where}", f"子庫碼面{kind}「{tok}」——一律 rev5:／rev4: 前綴"))
             if len(hits) > 10:
                 out.append(finding(ERROR, "GT-05", sub, f"…另 {len(hits) - 10} 處"))

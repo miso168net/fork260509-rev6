@@ -2,7 +2,7 @@
 
 本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
 本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
-創世期章節現況：§1／§4／§7 抬頭／§10／§12／§12b／§14 為已補實文章、§9c／§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
+創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§12c／§14 為已補實文章、§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
 
 ## 1. 快速啟動（新機五步）
 
@@ -55,7 +55,15 @@ DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compo
 
 ## 9c. CDP 真登入走查的環境還原契約
 
-隨首個需走查的刀遷入（工具承 rev5 `tools/walkthrough-baseline.py`；契約住本節、CLAUDE.md §7 以節名引）。
+工具＝`tools/walkthrough-baseline.py`（隨遷自 rev5 同名工具、`rev5:L-071` 防法①的機制化；非碼面閘＝`NON_GATE_TOOLS` 成員、不掛 pre-commit 條件觸發、走查前後手動跑）。★只指向 rev6 dev stack（compose 專案＝倉庫根、埠 3xxxx）、絕不指向 rev5 對照 stack（2xxxx）。基準檔落 `tmp/walkthrough-<日期>.json`（gitignored；`<檔>` 必填、無隱含預設落點）。三面（表／序列／redis）與唯讀實作口徑＝工具 docstring（唯一人寫家、不在本節複述）；命令與需否 stack＝§12 工具鏈速查。CLAUDE.md §7 以節號引本節。
+
+1. 走查前：`python3 tools/walkthrough-baseline.py snapshot tmp/walkthrough-<日期>.json`（rc 0；輸出附三面規模＝表／序列／redis 鍵與前綴數，證明比對面非空）。
+2. 走查：CDP 接 `127.0.0.1:9229`、開 32080（對照 22080＝rev5 UI）；勿於秒內狂打 auth 端點——nginx `auth_limit` 5r/s burst 40 回 429。
+3. 清理（順序固定）：`single_session_default` 若翻過→以 002 刀 `system_settings` 寫端翻回 `off`；psql：`DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; UPDATE sys_user SET session_id = NULL; SELECT setval('sys_token_id_seq',1,false); SELECT setval('session_event_id_seq',1,false); SELECT setval('sys_login_attempt_id_seq',1,false);`（三支序列 seed 凍結態＝`1,false`；還原值一律以本次 snapshot 現讀值為準、不沿用上次指令）；redis：依 `session:`／`throttle:` 前綴 SCAN＋DEL（不 FLUSHDB）；`system_settings` 四欄若被寫端改動→還原 seed 值（含 `updated_at`／`updated_by` 審計欄歸 NULL——改回值≠改回痕）。
+4. `python3 tools/walkthrough-baseline.py diff tmp/walkthrough-<日期>.json` **rc 0 才算環境已還原**（三閘綠不算、`rev5:L-071` 招牌徵狀＝三閘綠而全量紅）；之後才跑 `python3 tools/schema-gate.py check`。
+5. 判準：diff 列出的任一序列 `last_value` 差＝清理漏 setval；任一 redis 前綴差＝漏 DEL；`sys_user` 列數不變但 diff 不報 `session_id`（列數面、非欄值）⇒ 第 3 步 `session_id` 還原由 gate2 seed 逐列比對兜底。
+
+退出碼：0 全等／1 有差（列出差異表／序列／前綴＋末行摘要）／2 環境或結構異常（docker 不可執行、psql／redis 失敗、基準檔缺席或壞形、比對面為空＝假綠）／64 用法錯。`test`＝離線自測（零 docker；pre-commit 於本體 staged 時、bootstrap 名冊皆跑）。
 
 ## 10. migration 操作
 
@@ -98,7 +106,10 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/rust-fmt-gate.py check｜test` | check（預設）＝rust-api 容器內 `cargo fmt --all --check` 唯讀比對（設定＝`rust-api/rustfmt.toml`）；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0、未格式化 rc 1（逐段計數＋補救命令）、容器在而 cargo-fmt 缺 rc 2／test＝離線自測（subprocess 全樁）；rc 64 用法錯 | check 是（未起＝具名跳過）；test 否 |
 | `python3 tools/wire-schema.py extract｜check [--staged-gate]｜test` | extract＝base-web 容器內 typings→draft-07 JSON Schema 快照、原子寫 `rust-api/server/tests/fixtures/wire-schema.json`／check＝重抽至暫存與工作樹快照 byte 比對、絕不覆寫（`--staged-gate`＝**兩側** pin 區間皆零變動才跳過：base-web 區間零 typings 變動＋rust-api 區間零快照變動）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0、重抽失敗或快照缺席或不一致＝rc 2／test＝離線自測；rc 64 用法錯 | extract 是；check 未起＝具名跳過；test 否 |
 | `python3 tools/fork-delta-lint.py [test] [--constitution <path>]` | 無引數＝self-test＋全掃 base-web vs 源倉 `example` 基線（修改型缺 `原行:`／新增型缺圈界〔含新檔檔頭一行＋軌道×路徑〕／授權判定；rc 0 綠／1 違規／2 結構斷言敗或源倉未在 example）／test＝離線只跑 self-test（bootstrap 名冊）／`--constitution`＝只供自身變異驗證、日常一律預設憲法路徑；rc 64 用法錯 | 否（前置＝源倉在 example、bootstrap 斷言） |
+| `python3 tools/msg-key-gate.py check｜test [--rust <error.rs>] [--locales <dir>]` | check（預設）＝左源 `MSG_KEYS` ⇔ 三檔 locale backend 子樹逐檔雙向全等＋Biz 構造點守衛（碼面閘表列；pre-commit msg-key-gate 段於 rust-api／base-web pin bump 或本體 staged 時跑）／test＝離線 self-test（合成契約七案＋判準補強三案〔斷言 2 比對面為空／`MSG_KEYS` 宣告數≠元素數／Biz 構造鍵之名冊歸屬兩分支〕＋真 repo 左源綠案；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；`--rust`／`--locales` 只供自測注入、日常一律預設路徑；rc 0 綠／1 違規／2 結構異常／64 用法錯 | 否 |
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]｜test` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對）；`test`＝離線自測，由 pre-commit 自測迴圈與 bootstrap 名冊呼叫——亦即冒煙 token 不可取字面 `test`（會被當自測子命令、CLAUDE.md §2） | 否 |
+| `python3 tools/walkthrough-baseline.py snapshot <檔>｜diff <檔> [--user U] [--db D]｜test` | 走查前後全表基準對賬（§9c 契約；非碼面閘＝`NON_GATE_TOOLS` 成員）：snapshot＝三面現算（public 全部表列數／全部序列 `last_value`＋`is_called`／redis `DBSIZE`＋逐前綴鍵數）寫 JSON 基準檔、`<檔>` 必填落 `tmp/walkthrough-<日期>.json`／diff＝重取現況逐值比對、只列有差者＋末行摘要、★rc 0 才算環境已還原／test＝離線自測（subprocess 全樁；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；唯讀（pg 只 SELECT、redis 只 DBSIZE／SCAN）、只指向 rev6 dev stack；`--user`／`--db` 預設同 `tools/schema-gate.py` 常數；rc 0 全等／1 有差／2 環境或結構異常（含比對面為空）／64 用法錯 | snapshot／diff 是；test 否 |
+| `python3 tools/comment-overlap.py [--min N] [--max-pct P] <rev6 檔 …>｜test` | rev5↔rev6 註解逐字重疊核（RL-0076 量尺；預設 `--min 40` 字元／`--max-pct 5`、逐檔超標 rc 1、rev5 對應檔缺席報 n/a；非碼面閘＝`NON_GATE_TOOLS` 成員、自測入 pre-commit 條件觸發名冊與 bootstrap 名冊；只准項既有超標＝BACKLOG 承載） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
 | `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>` | Workflow script 組裝器（單元定義→成品；unitdef `MODE` 決定 tdd／review 拼接序；三道自檢＝RULES-VERSION 對賬／node --check／harness，任一紅不留產物） | 否 |
 | `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | TDD 形編排骨架 harness 自測（十八案＝十二正例＋六反例、逐項斷言、rc 1 即紅） | 否 |
@@ -113,7 +124,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
-**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數，現＝`tools/wf-watchdog.py`）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。
+**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數，現＝`tools/wf-watchdog.py`、`tools/comment-overlap.py`、`tools/walkthrough-baseline.py`）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。
 
 | 工具檔 | 守什麼 | 觸發時機（含環境缺席語意） | 根據 ADR |
 |---|---|---|---|
@@ -122,7 +133,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `tools/rust-fmt-gate.py` | rust 格式：容器內 `cargo fmt --all --check`（唯讀、絕不寫檔） | pre-commit rust-fmt 段＝`rust-api` pin bump 或本體 staged 時 `check`；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0；容器在而 cargo-fmt 缺＝rc 2 fail-loud；未格式化＝rc 1；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud；承 rev5:ADR 0057 決定 3） |
 | `tools/wire-schema.py` | wire 契約：base-web typings → JSON Schema 快照 byte 比對（快照＝`rust-api/server/tests/fixtures/wire-schema.json`；唯讀鐵則、前端 porcelain 前後皆空） | pre-commit wire-schema 段＝`base-web` **或 `rust-api`** pin bump 時 `check --staged-gate`（雙側觸發、對稱於 entity-drift：typings 側住 base-web、快照側住 rust-api worktree；兩側 pin 區間皆零變動才跳過）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0；容器在而重抽失敗、快照缺席或不一致＝rc 2；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意） |
 | `tools/fork-delta-lint.py` | base-web fork-delta 標記：修改型缺 `原行:`／新增型缺圈界（含我方新檔之檔頭一行標記＋所稱軌道×檔路徑相符）／授權判定（憲法 §III.1 檔面收窄＋§III.2 三元組）＋名冊結構斷言（空 ★表以哨兵句守；§III.1 範圍欄反引號 token 集對賬本工具常數、次序不計，不符即 rc 2＝Amendment 須同批重導新增面判定） | pre-commit fork-delta 段＝`base-web` pin bump、本體或憲法 staged 時全掃（源倉在 `example`＝bootstrap 斷言；源倉缺席＝rc 2 fail-loud、hook 不設跳過分支）；`test`＝離線自測、入 bootstrap 名冊 | 憲法 §III（標記字面 `rev6-inline`＋★軌道授權）；哨兵句改形＝002 刀 research R10 |
-| msg key 跨端閘 | 後端錯誤 msg key 名冊 ⊆ 前端 i18n 字典（單向包含＝ADR-00017 決定 3；前端字典含大量與後端 msg 無關的 UI 鍵，雙向必恆紅）（非 `tools/` 工具檔形、GT-12 腿不計） | 延前端 i18n 刀進場（觸發由 BACKLOG 條目承載）；002 刀只閉後端側名冊（註記列） | ADR-00017（msg key 跨端契約延前端 i18n 刀、002 後端側閉環；承 rev5:Lint24） |
+| `tools/msg-key-gate.py` | msg key 跨端：後端 `rust-api/server/src/error.rs` 之 `MSG_KEYS`（常數表＋常數引用陣列兩段解析）⇔ base-web `src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 子樹鍵集**逐檔雙向全等**（子樹為封閉集、無白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）＋Biz 構造點守衛（`server/src/**/*.rs` 生產區間每處 `AppError::Biz(` 須 `Cow::Borrowed(字面｜msg_key::NAME)` 且鍵 ∈ 名冊、動態構造即紅、構造點零處＝比對面為空 rc 2；`#[cfg(test)]` 所附項目排除＝本體形 brace 配對、欄位／variant 形以 `,`／`}` 收界） | pre-commit msg-key-gate 段＝`rust-api` **或** `base-web` pin bump、本體 staged 時 `check`（雙側觸發、比對面＝兩側工作樹；「兩側須同一顆外層 commit 同 bump」＝跨子庫同步律之紀律面，本閘讀不到 pin 樹、非其守備範圍）；零 docker、無環境跳過分支；rc 1 鍵集不等或動態構造、rc 2 結構異常（檔缺席／節缺席／名冊解析失敗／比對面為空）；`test`＝離線自測（契約七案＋判準補強三案＋真 repo 左源綠案）、入 for 自測迴圈與 bootstrap 名冊 | ADR-00029（逐檔雙向全等、無白名單、Biz 守衛兩形；承 ADR-00017 決定 3 兌現、rev5:Lint24 翻案為逐檔雙向） |
 
 ## 12b. 收刀簿記牆鐘量法（perf 事件 `close_bookkeeping` 的唯一命令形）
 

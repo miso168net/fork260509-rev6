@@ -203,19 +203,20 @@ ok "docsync lint 零 ERROR（$(echo "$docsync_out" | tail -1)）"
 GATE_COUNT="$(cd "$ROOT/tools" && python3 -c 'from docsync import gates; print(len(gates.derive_anchor_codes("\n".join(gates.package_sources().values()))))' 2>/dev/null || echo 0)"
 [ "$GATE_COUNT" = "12" ] || warn "閘數推導得 ${GATE_COUNT} ≠ 12——掃源錨形與 ROSTER 不同步（GT-12 應已紅；預算超限一律只警告不擋＝ADR-00011 決定 2）"
 [ "$GATE_COUNT" = "12" ] && ok "閘數斷言過（掃源推導 12＝GT-01～GT-12）"
-run_tool_test tools/wf-watchdog.py
-run_tool_test tools/schema-gate.py
-run_tool_test tools/entity-drift-gate.py
-# ★三支碼面閘（002 刀 U0 隨遷）只接 test：rust-fmt／wire-schema 的 check 要 dev stack（工具自身在 stack 未起時
-#   具名跳過 rc 0、不會誤紅，但體檢節跑一支恆跳過的 check 零資訊量）；fork-delta 的 test 只跑 self-test、不掃
-#   base-web 不碰源倉——bootstrap MUST 離線可用；實跑面由 pre-commit 條件觸發段承擔（名冊＝RUNBOOK §12 碼面閘表）。
-run_tool_test tools/rust-fmt-gate.py
-run_tool_test tools/wire-schema.py
-run_tool_test tools/fork-delta-lint.py
-run_tool_test deploy/preflight-secrets.py
-run_tool_test deploy/generate-secrets.py
-run_tool_test deploy/setup-reaper-role.py
-run_tool_test deploy/backup-db.py
+# ★隨遷工具自測名冊自 tracked 檔集推導（003 刀 U10 收 BL-00037②；字面由 tools/docsync/tests/test_hook_wiring.py TestBootstrapRoster 機器守、
+#   DoD＝推導名冊 ≡ 兩 pathspec 全集去兩排除項、處數由等式釘不寫死支數）：新工具入 tracked 即自動入名冊、人不再維護逐列硬編。
+#   ★`:(glob)` magic 不可省——git pathspec 的裸 `*` 會跨 `/`，裸 'tools/*.py' 會撈進 tools/docsync/*.py 與 tools/orchestration/*.py
+#   （後者 `assemble.py test` 回 2 即 die）；`:(glob)` 令 `*` 不跨層＝只取 tools/／deploy/ 頂層檔。
+#   兩排除：deploy/decrypt-secrets.py＝下方 Day-1 條件分支獨立處理（自測要密文檔在場）；deploy/secrets_common.py＝共用模組、無 `test` 子命令。
+#   四支碼面閘（rust-fmt／wire-schema／fork-delta／msg-key-gate）在此只接 test：rust-fmt／wire-schema 的 check 要 dev stack（工具自身在 stack
+#   未起時具名跳過 rc 0、體檢節跑一支恆跳過的 check 零資訊量）；fork-delta 的 test 只跑 self-test、不掃 base-web 不碰源倉——bootstrap MUST
+#   離線可用；msg-key-gate 零 docker、check 離線跑得動，只接 test 純為不重複——實跑面皆由 pre-commit 條件觸發段承擔（名冊＝RUNBOOK §12 碼面閘表）。
+#   ★名冊先落變數再斷言非空才進迴圈——`set -euo pipefail` 下，for 字詞表內的命令替換失敗不觸發 set -e：
+#   pathspec 打錯、`:(glob)` 被誤刪成不匹配形、或 git 在該環境失敗時，迴圈零圈、無任何訊息、bootstrap 仍 rc 0，
+#   而 CLAUDE.md §6 正拿這個 rc 當「掃描防線就位」判準＝就位可在零自測下成立（改形前的逐列硬編不可能靜默零跑）。
+tool_roster="$(git -C "$ROOT" ls-files ':(glob)tools/*.py' ':(glob)deploy/*.py' | grep -v -e '^deploy/decrypt-secrets\.py$' -e '^deploy/secrets_common\.py$' || true)"
+[ -n "$tool_roster" ] || die "隨遷工具自測名冊推導為空集合——pathspec 或 git ls-files 失效（掃描面空集合即紅；RL-0051）"
+for t in $tool_roster; do run_tool_test "$t"; done
 # ★Day-1 具名豁免（§4.6）：decrypt-secrets 的「五面 parity」案要求 deploy/secrets.dev.enc.yaml 在檔；
 #   rev6 世代錯開不搬 rev5 密文（.sops.yaml）、產鑰前該檔必缺。解除謂詞＝檔案存在（存在即無條件全跑）。
 if [ -f "$ROOT/deploy/secrets.dev.enc.yaml" ]; then

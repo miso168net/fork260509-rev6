@@ -28,3 +28,8 @@
 | ADR-00023 | accepted | 2026-09-07 | 憲法 §I.3 四保留碼「從不發出」之機器承載點改記為型別層全變體窮舉＋error.rs 矩陣斷言雙錨（as-built 對齊，非行為變更） | 輕量軌｜000-r2-doc-governance | — | — |
 | ADR-00024 | accepted | 2026-09-07 | 憲法 §III 生成檔紀律去除對空表的死引用——判準改為「路由外掛重算產出之檔同族」、具體檔集隨相關 ★ 軌道 Amendment 落表 | 輕量軌｜000-r2-doc-governance | — | — |
 | ADR-00025 | accepted | 2026-09-07 | won't-fix——ADR 方向不設「誕生必帶事件」反向不變式；ADR 的家是檔案本身，BL／ADR 兩個 ID 家族刻意兩制 | 輕量軌｜000-r2-doc-governance | — | — |
+| ADR-00026 | accepted | 2026-09-08 | 憲法 Amendment 1.2.0→1.3.0——§III.2 首批四條 ★ 軌道八用途授權＋§I.7 首批五座行為島 A～E 入憲 | — | — | — |
+| ADR-00027 | accepted | 2026-09-08 | AppState 恰兩欄封條翻案→五欄——加 jwt／cache／captcha_secret；ip_rules／trust_model／mailer 續留域外 | — | — | — |
+| ADR-00028 | accepted | 2026-09-08 | root Cargo.toml「不引 argon2」翻案——引入 auth 依賴八支（六支 auth＋log＋getrandom）、全域版本紀律雙源核對 D1～D6 | — | — | — |
+| ADR-00029 | accepted | 2026-09-13 | msg key 跨端閘形制＝後端名冊與三檔 locale backend 子樹逐檔雙向全等、無白名單、Biz 構造點守衛兩形（tools/msg-key-gate.py） | — | — | — |
+| ADR-00030 | accepted | 2026-09-13 | 登入頁三顆快速登入鈕與表單預填密碼＝已知態「保留＋記帳」（零 inline、UI 對照零差異；帳＝滯後卷 BL-00049、觸發綁 RUNBOOK §16 prod 硬化拍板） | — | — | — |

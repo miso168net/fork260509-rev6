@@ -567,7 +567,7 @@ def self_test():
     bad = "  content: $t(x),\n  other: keep,\n"  # 改了 content、無原行 → 須攔
     # ★rev5 T069④：修改型樣本的軌道名一律用名冊內實名（rev4 原用 I18N-WIRING／UI／DEP 等名冊外短名
     #   ——名冊斷言進場後，樣本自身就得是合規形，成對反例另列於下）。樣本軌道名為合成名冊 t_s2 之名、
-    #   非 rev6 憲法現表（rev6 §III.2 現為空表）。
+    #   不讀真憲法；與 rev6 憲法 §III.2 現表之 BASE-WEB-I18N-WIRING(i) 同名無害＝刻意複用而非隔離。
     good = (
         "  // [rev6-inline BASE-WEB-I18N-WIRING(i)] 原行: content: response.data.msg,\n"
         "  content: $t(x),\n  other: keep,\n"

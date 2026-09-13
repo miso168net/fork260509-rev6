@@ -1,4 +1,4 @@
-<!-- next: RL-0075 -->
+<!-- next: RL-0077 -->
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
@@ -29,7 +29,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0019 | 暫改真檔驗紅後以存原文寫回還原、禁 `git checkout` 整檔還原（會丟該檔其它未 commit 改動）；還原後 `git diff --name-only` 證零殘留。 | implementer,fix | prompt | rev5:L-060 |
 | RL-0020 | 提及刀號／單元輪次寫「本刀 U2」形、不寫裸刀號；★跨刀存活面（BACKLOG／LESSONS／工具與 hook 註解）改寫刀名形「001 刀 U2」——「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；新建 ops 檔先 `git add` 再驗 lint 才進掃描面。 | implementer,主線 | prompt | rev5:L-067 |
 | RL-0021 | 變異紅證必印 skipped=0；探針就地變異或改寫 ROOT、不自 repo 外載入 mutant。 | implementer | prompt | rev5:L-073 |
-| RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
+| RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」，★同檔 RL-0011 種子③④鏡像句（數量詞／段序或成員枚舉／檔頭名冊句）恆在限定內、fix 得改並回報檔:行；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
 | RL-0023 | 枚舉同語意命中逐行剝 token 再判、不 `grep -v` 過濾整行（同行雙 token 會漏）；枚舉筆數要有第二來源對賬。 | implementer,fix | prompt | rev5:L-076 |
 | RL-0024 | 對賬 schema 真源腳本化：真源與文件各拉 {欄名:可空性} 比對；可空性以 migration／entity 為準；同檔同型欄寫法不一致即失真訊號。 | implementer | prompt | rev5:L-077 |
 | RL-0025 | fix 對 `done_with_escalation`＋零改動＝該批未駁回 blocker 成立但落允許清單外、記為已升級主線：零駁回即判該段收斂帶升級項進下一段（碼品質段照跑、不終止 run）、有駁回續下一輪 review 核駁回；已升級 blocker 於後續輪次過濾不計入收斂比較；此分支置於零改動偵測之前、零改動偵測只服務 status ok 的真空轉；升級項以 fix 回傳之結構化 `escalatedFindings`（file×summary）記入、不論改動數，零改動分支為兜底（LL-00010）。 | 主線 | prompt | ADR-00013 |
@@ -82,6 +82,8 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0072 | rust 單元收尾除容器內 rc 綠外另跑 `python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事（碼面閘只看靜態形）。 | 主線 | checklist | rev5:L-064 |
 | RL-0073 | review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處三類：①不定期獨立輪落 `docs/reviews/` 報告＋review 事件 ②附屬某刀而由 user 臨時發起的對照輪同樣落報告＋review 事件、以其 `feature` 欄標所屬刀 ③feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。 | 主線,review | checklist | rev5:ADR 0075 |
 | RL-0074 | ADR 一決策一檔 `docs/arc42/decisions/ADR-NNNNN-<slug>.md`；accepted 後 body 不可變、翻案＝新檔帶 `supersedes: [舊號]`、`superseded_by` 由 generate 回填；ADR 檔永不刪除、編號永不重用；won't-fix／by-design 亦立 ADR。 | 主線,人 | lint | ADR-00003 |
+| RL-0075 | 改動屬拍板級判準（user／operator 可見行為變更、schema／migration、feature scope 邊界、破紀律例外）者，縱使檔在允許清單內亦一律 `done_with_escalation`＋`escalatedFindings` 指名、不得落地；審查員標「拍板級／超出權限」之 finding 只落據實碼註那一半。 | implementer,fix | prompt | LL-00015 |
+| RL-0076 | 承 rev5 對應碼之新建或改寫檔，交付前跑 `python3 tools/comment-overlap.py <檔…>` 須 rc 0、逐檔百分比入回報；限定式（只准）項之既有超標不動、回報指名。 | implementer | prompt | LL-00016 |
 
 ## 名詞
 
