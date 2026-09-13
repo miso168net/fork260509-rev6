@@ -3,6 +3,7 @@
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
 滯後項另居 `BACKLOG-DEFERRED.md`（user 拍板暫不排程；配號計入 GT-05 家族、STATE 分開計數）——查待辦全帳須兩卷併看。開放條數不設上限（觀測值、只報表；RL-0052／ADR-00011）；觸發條件寫「何時該做」、ADR 翻案觸發器寫「決定何時失效」，兩者不混。
+觸發條件寫「下次動 X 時」者，「動」＝改到 X 的可執行碼（X 本身是測試設施時含其測試碼）；純註解／doc 改寫、或只在 X 所在檔的測試模組增案而 X 本體未改，皆不構成到期。
 
 - BL-00002｜governance｜GT-10 對 `docs/arc42/09-architecture-decisions.md` 的兩腿在首個 AI-ADR 落地（「目前無」句移除）後互斥：子項名冊腿要 `rad_ai_map` 鍵 ⊇ E5 七欄、第八腿要值＝同檔 `###`，而 E5 子項住 ADR body 的 `####`→ E5 改由 ADR 檔面守或豁免 §9 兩腿（工具改動、一正一反自證）｜觸發：首個 AI-ADR 開寫前
 - BL-00027｜product｜讀端 wire 集合≠registry 鍵集：`check_type_consistency` 第③臂讓宣告集外之列（setting_type 在認識集）照常上 wire——沿 rev5 讀端只驗認識集、spec FR-009 射程外（`rust-api/server/src/validation.rs` 已自陳）；若要求「registry 集合＝wire 集合」須另立拍板｜觸發＝設定頁 view 刀進場、或 registry 鍵集首次變動時
