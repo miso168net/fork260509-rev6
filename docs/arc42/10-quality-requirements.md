@@ -13,10 +13,10 @@ rev5_blueprint:
 | 屬性 | §1.2 目標 | 量測 | 守門 |
 |---|---|---|---|
 | 安全性 | 安全 | 授權判定零快取（角色一撤、下一請求即生效）；fail-* 方向逐島明文；tracked 檔零機密實值 | 憲法 §I.2／§I.7；GT-07 |
-| 契約一致性 | 契約守恆 | 每條 route 有 contract case、13 碼矩陣零偏離 | 憲法 §I.3；`tools/wire-schema.py`（碼面閘） |
+| 契約一致性 | 契約守恆 | 每條 route 有 contract case、13 碼矩陣零偏離 | 憲法 §I.3；`rust-api/server/tests/contract.rs`（ROUTES×case 雙向覆蓋閘）／`src/error.rs` 13 碼矩陣斷言；wire 快照面另由 `tools/wire-schema.py`（碼面閘）守 |
 | 可重現性 | 可重現 | 任一外層 commit 的 pin＝子庫 worktree HEAD；新機 bootstrap rc 0 | GT-02；`tools/bootstrap.sh` |
 | 文件正確性 | 文件與碼零漂移 | generate 兩次同 bytes；名冊同源；預算表「內」 | GT-01／GT-12；STATE 預算對賬 |
-| UI 一致性 | UI 與 rev5 一致 | CDP 三方比對零差異（rev5／rev6／example） | 走查流程（CLAUDE.md §7） |
+| UI 一致性 | UI 與 rev5 一致 | CDP 三方比對零差異（rev5／rev6／example；已知例外＝四支未進場管理頁選單標題於側邊欄展開態顯裸鍵、帳住 BACKLOG，收合態零差異） | 走查流程（CLAUDE.md §7） |
 
 ## 10.2 品質情境
 

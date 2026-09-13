@@ -2,7 +2,7 @@
 
 本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
 本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
-創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§14 為已補實文章、§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
+創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§12c／§14 為已補實文章、§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
 
 ## 1. 快速啟動（新機五步）
 
@@ -109,6 +109,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/msg-key-gate.py check｜test [--rust <error.rs>] [--locales <dir>]` | check（預設）＝左源 `MSG_KEYS` ⇔ 三檔 locale backend 子樹逐檔雙向全等＋Biz 構造點守衛（碼面閘表列；pre-commit msg-key-gate 段於 rust-api／base-web pin bump 或本體 staged 時跑）／test＝離線 self-test（合成契約七案＋判準補強三案〔斷言 2 比對面為空／`MSG_KEYS` 宣告數≠元素數／Biz 構造鍵之名冊歸屬兩分支〕＋真 repo 左源綠案；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；`--rust`／`--locales` 只供自測注入、日常一律預設路徑；rc 0 綠／1 違規／2 結構異常／64 用法錯 | 否 |
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId]｜test` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合成對）；`test`＝離線自測，由 pre-commit 自測迴圈與 bootstrap 名冊呼叫——亦即冒煙 token 不可取字面 `test`（會被當自測子命令、CLAUDE.md §2） | 否 |
 | `python3 tools/walkthrough-baseline.py snapshot <檔>｜diff <檔> [--user U] [--db D]｜test` | 走查前後全表基準對賬（§9c 契約；非碼面閘＝`NON_GATE_TOOLS` 成員）：snapshot＝三面現算（public 全部表列數／全部序列 `last_value`＋`is_called`／redis `DBSIZE`＋逐前綴鍵數）寫 JSON 基準檔、`<檔>` 必填落 `tmp/walkthrough-<日期>.json`／diff＝重取現況逐值比對、只列有差者＋末行摘要、★rc 0 才算環境已還原／test＝離線自測（subprocess 全樁；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；唯讀（pg 只 SELECT、redis 只 DBSIZE／SCAN）、只指向 rev6 dev stack；`--user`／`--db` 預設同 `tools/schema-gate.py` 常數；rc 0 全等／1 有差／2 環境或結構異常（含比對面為空）／64 用法錯 | snapshot／diff 是；test 否 |
+| `python3 tools/comment-overlap.py [--min N] [--max-pct P] <rev6 檔 …>｜test` | rev5↔rev6 註解逐字重疊核（RL-0076 量尺；預設 `--min 40` 字元／`--max-pct 5`、逐檔超標 rc 1、rev5 對應檔缺席報 n/a；非碼面閘＝`NON_GATE_TOOLS` 成員、自測入 pre-commit 條件觸發名冊與 bootstrap 名冊；只准項既有超標＝BACKLOG 承載） | 否 |
 | `bash tools/bootstrap.sh` | 新機重建／舊機體檢（§1 步驟 1） | 否 |
 | `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>` | Workflow script 組裝器（單元定義→成品；unitdef `MODE` 決定 tdd／review 拼接序；三道自檢＝RULES-VERSION 對賬／node --check／harness，任一紅不留產物） | 否 |
 | `node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec\|quality]` | TDD 形編排骨架 harness 自測（十八案＝十二正例＋六反例、逐項斷言、rc 1 即紅） | 否 |
