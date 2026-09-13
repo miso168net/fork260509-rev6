@@ -122,3 +122,6 @@ python3 deploy/generate-secrets.py --force  # 亂數生成的十二支全重生�
   `reaper_password`／`alert_webhook_url`）由 postgres／redis／grafana／設密腳本消費、**不過這道
   黑名單**——那幾支填錯只能靠該服務自己起不來或功能失效看出（`alert_webhook_url` 連這都沒有，
   見上方特例節）。
+- **JWT 兩鑰相異**（守衛在 rust-api、非 preflight）：`jwt_secret` 與 `refresh_token_secret` 兩檔值相同時，
+  rust-api 於 boot 期 panic、訊息指名兩個 env 鍵且不含值，DB／redis 尚未建連即中止（ADR-00031）——兩種票 Claims
+  同形、驗章只換秘鑰，同值即 refresh 票可冒充 access。兩檔各自亂數生成即自然相異；手填或輪替時勿把同一值貼進兩檔。

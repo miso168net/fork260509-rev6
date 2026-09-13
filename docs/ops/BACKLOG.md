@@ -1,4 +1,4 @@
-<!-- next: BL-00070 -->
+<!-- next: BL-00071 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -40,3 +40,4 @@
 - BL-00067｜product｜`/auth/error` demo 端點排程錨：base-web upstream 兩張 demo 頁經 `fetchCustomBackendError` 打 `GET /auth/error`（003 ROUTES 16 條不含、現恆 4040）；延後理由＝拍板級衝突（回吐 client 任意 code／msg 撞保留碼 `9999` 三錨與憲法 §I.3 信封不變式）＝憲法 §I.1「v1 從簡只能是交付排程」（003 spec Out of Scope）｜觸發＝首個動 demo 頁或決定 demo 頁去留的刀（與 BL-00064 service-alova 同批）
 - BL-00068｜test｜`sys_user_role::roles_of_user` DbErr 落地閘（查庫失敗須先 `tracing::error!` 落 root cause 再翻 Internal 5000、非 5003）零案：現只由 `sys_user_role.rs` 檔內「★DbErr 落地閘」碼註承載；候選＝以 `test_kit::FailingConn` 直呼 `roles_of_user` 斷言 5000＋`capture()` 含 root cause（003 data-model §9）｜觸發＝003 收刀後首個維護批（與 BL-00054／BL-00060 同批）
 - BL-00069｜test｜`sys_user_role` 三帳只讀案未持 `test_kit::DB_SERIAL`（真 DB 案行程級互斥）＝並行互斥覆蓋缺口：該案讀 `sys_role` 之 status／deleted_at 兩濾網，與持鎖暫改列的角色翻轉案並行時可能讀到暫態（與 BL-00068 同函式、不同關切：那條要 DbErr 覆蓋、本條要並行互斥）；回填錨＝`test_kit.rs` `DB_SERIAL` doc 預告段（本號落地後補進）｜觸發＝003 收刀後首個維護批（與 BL-00060 同批）
+- BL-00070｜governance｜src 測試模組仍有六支自持「oneshot＋解封包」殼，與 test_kit `oneshot_json`（body 上限／JSON 解析／panic 措辭的單一份）並存：`handler/route.rs` `integration_tests::get_json`（須帶 query、bearer 可選＝組好 req 後可委派）、`auth/enforce.rs` `probe`、`router.rs` `send`、`handler/system_settings.rs` `post_probe`／`post_update_bytes`／`probe_endpoint`（system_settings 寫端助手於 maint-backlog-pre-004 A1 裁定不在 BL-00052 射程）——同形邏輯各持一份＝改一處漏一處（maint-backlog-pre-004 A1 碼品質審查升級）；候選＝逐支核同形者改委派 `oneshot_json`、非 JSON 信封形者具名留存並於 test_kit 該 doc 列明｜觸發＝下次動上列任一測試模組的可執行碼時
