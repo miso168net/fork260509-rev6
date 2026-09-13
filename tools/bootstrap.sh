@@ -208,12 +208,16 @@ run_tool_test tools/comment-overlap.py
 run_tool_test tools/walkthrough-baseline.py
 run_tool_test tools/schema-gate.py
 run_tool_test tools/entity-drift-gate.py
-# ★三支碼面閘（002 刀 U0 隨遷）只接 test：rust-fmt／wire-schema 的 check 要 dev stack（工具自身在 stack 未起時
-#   具名跳過 rc 0、不會誤紅，但體檢節跑一支恆跳過的 check 零資訊量）；fork-delta 的 test 只跑 self-test、不掃
-#   base-web 不碰源倉——bootstrap MUST 離線可用；實跑面由 pre-commit 條件觸發段承擔（名冊＝RUNBOOK §12 碼面閘表）。
+# ★四支碼面閘（rust-fmt／wire-schema／fork-delta 隨 002 刀 U0 進場、msg-key-gate 隨 003 刀 U9）只接 test：
+#   rust-fmt／wire-schema 的 check 要 dev stack（工具自身在 stack 未起時具名跳過 rc 0、不會誤紅，但體檢節跑一支
+#   恆跳過的 check 零資訊量）；fork-delta 的 test 只跑 self-test、不掃 base-web 不碰源倉——bootstrap MUST 離線可用；
+#   msg-key-gate 零 docker、左右源皆 tracked 檔，check 在此離線跑得動，只接 test 純為不重複——同一次比對已由
+#   pre-commit msg-key-gate 條件段承擔（接線＝003 刀 contracts/code-gates.md §2）。
+#   四支之實跑面皆由 pre-commit 條件觸發段承擔（名冊＝RUNBOOK §12 碼面閘表）。
 run_tool_test tools/rust-fmt-gate.py
 run_tool_test tools/wire-schema.py
 run_tool_test tools/fork-delta-lint.py
+run_tool_test tools/msg-key-gate.py
 run_tool_test deploy/preflight-secrets.py
 run_tool_test deploy/generate-secrets.py
 run_tool_test deploy/setup-reaper-role.py

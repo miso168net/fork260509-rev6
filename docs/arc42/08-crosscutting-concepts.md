@@ -28,7 +28,7 @@ ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯
 
 部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00015，後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
 
-msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一常數陣列＋contract 雙向斷言（實發 ⊆ 名冊、名冊每鍵 ≥1 發出點）；跨端閘（名冊 ⊆ 前端 i18n 字典）不在本面、去處＝ADR-00017（延首個接 i18n 的前端刀、觸發由 BACKLOG 承載）。
+msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一常數陣列＋contract 雙向斷言（實發 ⊆ 名冊、名冊每鍵 ≥1 發出點）；跨端閘＝`tools/msg-key-gate.py`（003 刀 U9；ADR-00029）：`MSG_KEYS` ⇔ base-web `src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 子樹逐檔雙向全等（子樹為封閉集、無白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）＋Biz 構造點守衛（字面形或 `msg_key::NAME` 常數形、動態構造即紅）；接線＝pre-commit msg-key-gate 段、名冊＝RUNBOOK §12 碼面閘表。
 
 ## 8.3 授權慣例
 
@@ -36,7 +36,7 @@ msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一
 
 ## 8.4 fork-delta 軌道
 
-紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守＝`tools/fork-delta-lint.py`（修改型原行／新增型圈界含新檔檔頭標記、軌道授權判定、生成檔紀律；碼面閘、名冊＝RUNBOOK §12 碼面閘表、pre-commit fork-delta 段實跑）。程式碼 fork-delta as-built＝base-web 四支新增型新檔：`src/typings/api/rev6-settings.d.ts` 與 `src/typings/api/rev6-auth.d.ts`（§III.1 BASE-WEB-ADAPT 軌道）、`src/service/api/rev6-settings.ts` 與 `src/service/api/rev6-auth.ts`（§III.1 BASE-WEB-WRAPPER 軌道、不入 barrel）＋inline 修改型 11 處（`.env` 2／`.env.test` 1／`.env.prod` 1＝BASE-WEB-ADAPT 軌道、`src/store/modules/route/index.ts` 1＝BASE-WEB-AUTH-WIRING(a) 軌道、`src/layouts/modules/global-header/components/user-avatar.vue` 1＝§III.2 BASE-WEB-LOGOUT-UX-WIRING(i) 軌道、`src/store/modules/auth/index.ts` 3 與 `src/views/_builtin/login/modules/pwd-login.vue` 2＝§III.2 BASE-WEB-LOGIN-CAPTCHA-WIRING(i) 軌道；後三檔另新增型圈界 2／5／4 處）；fork patch set 另含檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。新檔檔頭標記定形＝`[rev6-inline <軌道名>+ <刀名>]`（軌道名後緊接 `+` 尾綴＝新增型），由 `tools/fork-delta-lint.py` 兩道判定強制（`+` 尾綴定形×所稱軌道與檔路徑相符）。
+紀律上位＝憲法 §III（token `rev6-inline`；修改型帶 `原行:`、新增型圈界）；規則面承 rev5 `docs/arc42/FORK-DELTA-WIRING.md`、接線 as-built 隨 base-web 各刀重生；機器守＝`tools/fork-delta-lint.py`（修改型原行／新增型圈界含新檔檔頭標記、軌道授權判定、生成檔紀律；碼面閘、名冊＝RUNBOOK §12 碼面閘表、pre-commit fork-delta 段實跑）。程式碼 fork-delta as-built＝base-web 五支新增型新檔：`src/typings/api/rev6-settings.d.ts` 與 `src/typings/api/rev6-auth.d.ts`（§III.1 BASE-WEB-ADAPT 軌道）、`src/service/api/rev6-settings.ts` 與 `src/service/api/rev6-auth.ts`（§III.1 BASE-WEB-WRAPPER 軌道、不入 barrel）、`src/locales/langs/zh-tw.ts`（§III.2 BASE-WEB-I18N-WIRING 軌道之繁中錨點檔、不接 runtime）＋inline 修改型 19 處（`.env` 2／`.env.test` 1／`.env.prod` 1＝BASE-WEB-ADAPT 軌道、`src/store/modules/route/index.ts` 1＝BASE-WEB-AUTH-WIRING(a) 軌道、`src/views/_builtin/login/modules/{code-login,register,reset-pwd}.vue` 各 1＝§III.2 BASE-WEB-AUTH-WIRING(b) 軌道、`src/hooks/business/captcha.ts` 3＝§III.2 BASE-WEB-AUTH-WIRING(c) 軌道、`src/layouts/modules/global-header/components/user-avatar.vue` 1＝§III.2 BASE-WEB-LOGOUT-UX-WIRING(i) 軌道、`src/store/modules/auth/index.ts` 3 與 `src/views/_builtin/login/modules/pwd-login.vue` 2＝§III.2 BASE-WEB-LOGIN-CAPTCHA-WIRING(i) 軌道、`src/service/request/index.ts` 2＝§III.2 BASE-WEB-I18N-WIRING(i) 軌道；另新增型圈界＝user-avatar 2／auth store 5／pwd-login 4／三表單各 1／captcha.ts 2／request 1／`src/typings/app.d.ts` 1＝BASE-WEB-I18N-WIRING(iii)／`src/locales/langs/{en-us,zh-cn}.ts` 各 1＝BASE-WEB-I18N-WIRING(ii)）；fork patch set 另含檔頭標記的分支來源紀錄檔 `x_fork.branch-origin.md`（非程式邏輯）。新檔檔頭標記定形＝`[rev6-inline <軌道名>+ <刀名>]`（軌道名後緊接 `+` 尾綴＝新增型），由 `tools/fork-delta-lint.py` 兩道判定強制（`+` 尾綴定形×所稱軌道與檔路徑相符）。
 
 ## 8.5 E4 負責任 AI 概念
 

@@ -1,6 +1,6 @@
 """語料面：pre-commit 接線機器守衛（BL-00023；承 rev5:tools/docs-sync.py TestGateWiring 乾跑案形）——讀真 .githooks/pre-commit，
 純函式 check_hook_wiring(text, codegate_tools, non_gate_tools) 逐段斷言：固定鏈（betterleaks→docsync check＋lint→staged 取得→pc_join→雙錨常數）、
-七條件段（selftest-docsync／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
+八條件段（selftest-docsync／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
 與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
 一正（真檔零 finding）多反（刪段／改觸發字面／抽名冊一支／改命令子命令／幽靈段／刪 pc_join→紅指名）。
 ★hook 本體 staged 時 pre-commit 自跑 docsync test（本案隨之）；bootstrap 體檢亦跑；接線不再只靠人記得（002 刀 U0 變異實測：刪三段 lint 仍綠）。"""
@@ -29,6 +29,7 @@ SEGMENTS = (
     ("rust-fmt", ["-e 'rust-api'", "-e 'tools/rust-fmt-gate.py'"], 'python3 "$HOOK_DIR/../tools/rust-fmt-gate.py" check'),
     ("wire-schema", ["-e 'base-web'", "-e 'rust-api'"], 'python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate'),
     ("fork-delta", ["-e 'base-web'", "-e 'tools/fork-delta-lint.py'", "-e '.specify/memory/constitution.md'"], 'python3 "$HOOK_DIR/../tools/fork-delta-lint.py"'),
+    ("msg-key-gate", ["-e 'rust-api'", "-e 'base-web'", "-e 'tools/msg-key-gate.py'"], 'python3 "$HOOK_DIR/../tools/msg-key-gate.py" check'),
     ("entity-drift", ["-e 'rust-api'", "-e 'docs/ops/reference-src/schema-snapshot.json'"], 'python3 "$HOOK_DIR/../tools/entity-drift-gate.py" check'),
     ("schema-frozen", ["'^(specs/001-schema-baseline/(fixtures/|data-model\\.md$)|docs/ops/reference-src/schema-definition\\.md$)'"], 'python3 "$HOOK_DIR/../tools/schema-gate.py" test'),
     ("orchestration", ["'^tools/orchestration/.*\\.(js|mjs|py)$'"], "tools/orchestration/assemble.py"),

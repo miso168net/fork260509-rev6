@@ -14,6 +14,10 @@
 | /auth/logout | POST | Public | auth-logout | 否 |
 | /auth/getUserInfo | GET | Authed | auth-get-user-info | 否 |
 | /auth/loginCaptcha | GET | Public | auth-login-captcha | 否 |
+| /auth/sendCaptcha | POST | Public | auth-send-captcha | 否 |
+| /auth/codeLogin | POST | Public | auth-code-login | 否 |
+| /auth/register | POST | Public | auth-register | 否 |
+| /auth/resetPwd | POST | Public | auth-reset-pwd | 否 |
 | /route/getConstantRoutes | GET | Public | route-get-constant-routes | 否 |
 | /route/getUserRoutes | GET | Authed | route-get-user-routes | 否 |
 | /route/isRouteExist | GET | Authed | route-is-route-exist | 否 |
