@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-14 | feature_close | 003-auth-session | 003 auth-session 收單（rev6 第三刀）：真登入／續期 rotation＋grace／撤銷三型＋denylist 四級降級／節流三區＋captcha／替代登入 stub／i18n 跨端閘 msg-key-gate／治理六項；零 migration；憲法 1.3.0；ROUTES 16、contract 16、MSG_KEYS 13；SC-012「RULES 零改動」子句失效＝三處 RULES 改動皆 LL promotion；backlog_add 以在途 GT-03 全集為準；final review 分流見 51ab7c7。 | 0e74551 | ADR-00026、ADR-00027、ADR-00028、ADR-00029、ADR-00030 | §5、§6、§8、§10、§11、§12 |
 | 2026-09-08 | misc | governance｜maint-py313-docstring-dedent | 輕量軌 maint-py313-docstring-dedent 收單：閘區塊 regex 去掉對 docstring 縮排的依賴。Python ≥3.13 編譯期剝掉 docstring 共同縮排後 gate_id() 對 12 支閘全回 None——GATES.md 算成無列空表（GT-01 漂移）、GT-05 的 ID 存在性真源成單元素 None 集（閘號引用 322 筆假紅）、docsync 自測 10 案連坐、bootstrap exit 2。`[ \t]+` → `[ \t]*` 還原原意＋補迴歸案；LESSONS 12→14。 | 9e420a2 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-40-39-37 | 輕量軌 maint-backlog-40-39-37 收單（003 開刀前治理維護、三條合一顆）：BL-00040 探針題庫隔離全收（否定對照表刪「真相」欄、r3 起真相烤進 grader prompt 不落 tracked）；BL-00039① 編排骨架五常數型別＋非空斷言（harness-test 十五→十八案）；BL-00037③ wire 契約閘雙側觸發（pre-commit 觸發字面＋wire-schema.py 快照側 pin 區間收窄、自測 27→31 案）。BACKLOG 15→14；閘數 12 與 RULES 未動。 | 4844b15 | — | — |
 | 2026-09-07 | misc | governance｜000-r2-doc-governance | 獨立輪 000-r2 文件治理架構第二輪體檢收單：五支 Workflow 85 支 agent、findings 102（confirmed 88）、修 69／BL 8 條／ADR 4 支；BL-00003 閘補腿群三腿全落地（GT-03 BL 存在性腿／SKIP 分類＋ENV_SKIPS＋GT-12 登記腿／主張閘兩腿，閘數維持 12）；憲法 1.1.0→1.2.0；檢索性第四指標 0.48→0.76。 | acc11a7 | ADR-00022、ADR-00023、ADR-00024、ADR-00025 | — |
