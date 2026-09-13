@@ -2,7 +2,7 @@
 section: 12
 summary: 系統術語與 AI 術語（保留）；流程術語住 RULES 名詞段
 rev5_blueprint:
-  §12 名詞表: 承襲（治理詞入 §12 系統術語；域詞四組隨島 A～I 進場刀）
+  §12 名詞表: 承襲（治理詞入 §12 系統術語；踢除／撤銷與鎖定兩組域詞已入表，停用／軟刪、重設／修改密碼兩組隨島 I 進場刀）
 ---
 # §12 名詞表
 
@@ -21,8 +21,18 @@ rev5_blueprint:
 | 島 | 具狀態機性質的行為子系統（如 token rotation）；其不變式隨所屬域的刀 brainstorm 拍板後以 MINOR Amendment 入憲法 §I.7（進場規則）——「島 X 進場刀」即指該刀 | 憲法 §I.7 |
 | 事件源 | `docs/ops/events.jsonl`：五型事件（feature_close 收刀／misc 收單／review／erratum 勘誤／perf 效能資料點）的 append 型單一事實源；人讀面＝`docs/generated/` 之 MILESTONES／reference/perf／STATE／DECISIONS-INDEX | CLAUDE.md §4 |
 | 對照 stack | rev5 於 `../fork260509-rev5/` 起的 dev stack（埠 2xxxx）；UI 對照基準、唯讀 | CLAUDE.md §7 |
+| 會話 | 一條 `sys_token.rotation_chain`＝`sid`（JWT `sid` claim、`sys_user.session_id`、`session:*` 鍵素材三處都以它認會話）；同鏈至多一列 `active`（DB partial UNIQUE 為護欄） | `rust-api/server/src/model/facade/sys_token.rs`；憲法 §I.7 島 A |
+| 憑證對 | `(token, refreshToken)`＝access（存活 `min(300, N×30)` 秒）與 refresh（`N×60＋access` 秒）兩枚 HS256 JWT、各自秘鑰簽驗（N＝`session_idle_timeout` 分鐘）；只有 refresh 以 `token_hash`（SHA-256 hex）落庫、原文不落 | `rust-api/server/src/auth/jwt.rs` |
+| 態三值 | `sys_token.status`＝`active`（現行）／`rotated`（已被換發；grace 窗內同票冪等、窗外＝reuse）／`revoked`（終態、不再轉出） | `rust-api/server/src/model/facade/sys_token.rs`；憲法 §I.7 島 A／C |
+| 撤銷三型 | logout（本人、只撤呈遞列、denylist `revoked`→舊 access 8888 靜默）／kick（single-session 頂替、撤同帳號其他 chain、denylist `kicked`→7777 modal）／idle（逾時拒換發、列不動、不寫 denylist→8888）；稽核落 `session_event`（event_type kicked／reuse／idle／logout） | §6.1；憲法 §I.7 島 B／C／D |
+| grace 窗 | rotate 後 30 秒（`cache::GRACE_TTL_SECS`）的冪等窗：同票再呈遞回既發同一對、不再轉列；窗外（grace miss）＝reuse 偵測的唯一觸發形、撤整條家族 | `rust-api/server/src/cache/mod.rs`；憲法 §I.7 島 A |
+| 節流三區 | 帳號維滑動窗計數（PG `sys_login_attempt` 權威、redis L1 負快取）：`count < captcha_after` 自由／`captcha_after ≤ count < max_fails` 軟區（須過圖形驗證碼、否則 2222 `biz.auth.captchaRequired`）／`count ≥ max_fails` 鎖定（2222 `biz.auth.locked`）；三個拒絕皆在密碼驗證之前、零稽核列零計數桶 | `rust-api/server/src/throttle/mod.rs`；憲法 §I.7 島 E |
+| 鎖定 | 節流第三區：窗內失敗達 `max_fails` 後新的登入嘗試被拒（L1 `throttle:lock:user:{name}`、TTL＝min(窗秒, 900)、命中不續期）；不動 token、不寫 denylist——鎖的是門、已持有效憑證者照常；本代現無解鎖端點、只等窗過 | `rust-api/server/src/throttle/mod.rs` |
+| denylist 加速層 vs status 權威 | redis `session:denylist:{sid}`（值＝reason `kicked`｜`revoked`、TTL＝refresh 全壽命）只是每請求的加速判定；定案恆＝`sys_token.status`——鍵缺席＝未撤放行、鍵不可讀退 PG 查鏈上是否仍有 active、兩者不一致以 status 為準、`revoked` 列缺鍵靜默 8888 不落假 reuse | `rust-api/server/src/auth/enforce.rs`；憲法 §I.7 島 C |
+| idle 逾時 | 換發時距 `session:{sid}:last_activity` 逾 `refresh_secs − access_secs`（＝N×60 秒）即拒；時鐘只住 redis、由 enforce 放行後推進、換發端點自身不推進；不可讀＝fail-open | `rust-api/server/src/handler/auth/refresh.rs`；憲法 §I.7 島 D |
+| 降級（基礎設施） | 本系統確定性本體的降級：redis／PG／設定鍵不可用時依憲法 §I.7 各島拍板的 fail-* 方向走保守腿（denylist 讀不到退 PG＝fail-closed、`last_activity` 讀不到續換發＝fail-open、節流三鍵缺失整組退常數…）；二軌可觀測面覆蓋不等寬——軌道①結構化 warn（target `security.session`／`security.throttle`、`degraded` 欄即腿名）是每條具名腿的共同軌，軌道②計數器只有 `throttle_degraded_total`（節流七源）與 `denylist_hit_total`（enforce 驗章面 denylist 二源）兩支（FR-035 三支的第三支 `throttle_soft_zone_total` 計的是軟區命中、不屬降級），`last_activity_read`／`grace_read`／`grace_write` 等其餘腿只查得到事件、無計數序列可撈（逐腿覆蓋＝§6.1、§8.3 與各該 fn doc；enforce 放行後推進 `last_activity` 的 best-effort 寫入兩軌皆無、語意見其碼註）；★與下表 AI 術語「降級輪廓」（AI 元件不可用或低信心時的行為型錄）不同義、兩詞不互用 | §8.3、§10.2；`rust-api/server/src/obs.rs` |
 
-停用／軟刪、踢除／撤銷、鎖定、重設／修改密碼四組域詞，隨憲法 §I.7 島 A～I 的進場刀入本表（rev5 活書 §12 為藍本）。
+踢除／撤銷（撤銷三型）與鎖定兩組域詞已隨憲法 §I.7 島 A～E 入上表；停用／軟刪、重設／修改密碼兩組隨島 I 的進場刀入本表（rev5 活書 §12 為藍本）。
 
 ## AI 術語（保留；自 RAD-AI glossary 中文改寫）
 

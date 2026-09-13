@@ -29,7 +29,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0019 | 暫改真檔驗紅後以存原文寫回還原、禁 `git checkout` 整檔還原（會丟該檔其它未 commit 改動）；還原後 `git diff --name-only` 證零殘留。 | implementer,fix | prompt | rev5:L-060 |
 | RL-0020 | 提及刀號／單元輪次寫「本刀 U2」形、不寫裸刀號；★跨刀存活面（BACKLOG／LESSONS／工具與 hook 註解）改寫刀名形「001 刀 U2」——「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；新建 ops 檔先 `git add` 再驗 lint 才進掃描面。 | implementer,主線 | prompt | rev5:L-067 |
 | RL-0021 | 變異紅證必印 skipped=0；探針就地變異或改寫 ROOT、不自 repo 外載入 mutant。 | implementer | prompt | rev5:L-073 |
-| RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
+| RL-0022 | 只准動允許檔清單內的檔；清單外需要動＝絕不擅改、依 status 分值升級；限定式清單項附「本檔之限定外改動＝清單外、走 done_with_escalation」，★同檔 RL-0011 種子③④鏡像句（數量詞／段序或成員枚舉／檔頭名冊句）恆在限定內、fix 得改並回報檔:行；主線復核看 `git diff` 實際改動面、不看 escalations 欄下結論。 | implementer,fix,主線 | prompt | rev5:L-075 |
 | RL-0023 | 枚舉同語意命中逐行剝 token 再判、不 `grep -v` 過濾整行（同行雙 token 會漏）；枚舉筆數要有第二來源對賬。 | implementer,fix | prompt | rev5:L-076 |
 | RL-0024 | 對賬 schema 真源腳本化：真源與文件各拉 {欄名:可空性} 比對；可空性以 migration／entity 為準；同檔同型欄寫法不一致即失真訊號。 | implementer | prompt | rev5:L-077 |
 | RL-0025 | fix 對 `done_with_escalation`＋零改動＝該批未駁回 blocker 成立但落允許清單外、記為已升級主線：零駁回即判該段收斂帶升級項進下一段（碼品質段照跑、不終止 run）、有駁回續下一輪 review 核駁回；已升級 blocker 於後續輪次過濾不計入收斂比較；此分支置於零改動偵測之前、零改動偵測只服務 status ok 的真空轉；升級項以 fix 回傳之結構化 `escalatedFindings`（file×summary）記入、不論改動數，零改動分支為兜底（LL-00010）。 | 主線 | prompt | ADR-00013 |
