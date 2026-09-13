@@ -95,22 +95,43 @@ class TestBareRev5(unittest.TestCase):
         self.assertEqual(self._run("docs/ops/x.md", "見 rev5:008-audit-settings-pages"), [])
 
 
+def _synth_pin_tree(rel, content):
+    """合成外層＋一個 base-web 子庫（rust-api 缺席＝具名 SKIP）：把 content 寫進子庫 rel 並 commit，回外層 root。"""
+    root = tempfile.mkdtemp()
+    subprocess.run(["git", "init", "-q", "-b", "main", root], check=True)
+    with open(os.path.join(root, "RULES.md"), "w") as f:
+        f.write("x")
+    sub = os.path.join(root, "base-web")
+    os.makedirs(sub)
+    subprocess.run(["git", "init", "-q", "-b", "main", sub], check=True)
+    with open(os.path.join(sub, rel), "w", encoding="utf-8") as f:
+        f.write(content)
+    subprocess.run(["git", "-C", sub, "add", rel], check=True)
+    subprocess.run(["git", "-C", sub, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], check=True)
+    return root
+
+
 class TestSubmoduleScan(unittest.TestCase):
     def test_hit_in_submodule_is_red(self):
-        root = tempfile.mkdtemp()
-        subprocess.run(["git", "init", "-q", "-b", "main", root], check=True)
-        with open(os.path.join(root, "RULES.md"), "w") as f:
-            f.write("x")
-        sub = os.path.join(root, "base-web")
-        os.makedirs(sub)
-        subprocess.run(["git", "init", "-q", "-b", "main", sub], check=True)
-        with open(os.path.join(sub, "a.ts"), "w", encoding="utf-8") as f:
-            f.write("// see L-011 and B-042\n")
-        subprocess.run(["git", "-C", sub, "add", "a.ts"], check=True)
-        subprocess.run(["git", "-C", sub, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], check=True)
-        fs = book.gt_05(common.Ctx(root))
+        fs = book.gt_05(common.Ctx(_synth_pin_tree("a.ts", "// see L-011 and B-042\n")))
         self.assertTrue(any(f[0] == "ERROR" and "base-web" in f[2] for f in fs))
         self.assertTrue(any(f[0] == "SKIP" and "rust-api" in f[3] for f in fs))
+
+    def test_bare_prev_knife_number_in_submodule_is_red_and_named(self):
+        """第六形（003 刀 U10）：子庫 pin 樹之裸三碼前代刀號「rev5 002」→ ERROR 指名 <子庫>/<檔>:<行>（精判＝BARE_PREV_KNIFE_NUM、與外層同源）。
+        ★第三行走真 git grep 驗非 ASCII 空白分隔（U+3000）：粗篩由 ERE 引擎跑、Python 側的超集案證不到它，
+        分隔若只收半形空白與 tab，這行外層紅、子庫綠＝判準分裂（U10 fix 輪實證）。"""
+        fs = book.gt_05(common.Ctx(_synth_pin_tree("a.rs", "//! 守衛族\n//! 承 rev5 002 收刀坑\n//! 承 rev5\u3000002 全形空白分隔\n")))
+        named = {f[2]: f[3] for f in fs if f[0] == "ERROR" and f[2].startswith("base-web")}
+        self.assertEqual(sorted(named), ["base-web/a.rs:2", "base-web/a.rs:3"], fs)
+        self.assertTrue(all("裸前代刀號" in m for m in named.values()), named)
+        self.assertIn("rev5 002", named["base-web/a.rs:2"])
+        self.assertIn("rev5\u3000002", named["base-web/a.rs:3"])
+
+    def test_prefixed_and_mention_forms_in_submodule_are_green(self):
+        """正向：冒號前綴形與提及形（反引號／「」）皆不紅——「rev5 002」提及形會被粗篩撈起、再由精判剝提及形放行。"""
+        fs = book.gt_05(common.Ctx(_synth_pin_tree("a.rs", "//! `rev5:002` 收刀坑；「rev5 002」提及；承 `rev5 002` 之形；rev5:002 冒號形\n")))
+        self.assertEqual([f for f in fs if f[0] == "ERROR" and f[2].startswith("base-web")], [], fs)
 
 
 class TestGt08LessonsSide(unittest.TestCase):
@@ -136,34 +157,60 @@ class TestGt08LessonsSide(unittest.TestCase):
         self.assertFalse(any(f[0] == "SKIP" for f in fs))
 
 
-class TestSubScanFiveForms(unittest.TestCase):
-    """GT-05 子庫 pin 樹腿對齊外層五形＋共用 rev6 刀集豁免（BL-00017）。
-    ★只對齊正則不共用豁免會讓自家刀名整批誤紅——實測 rust-api 六處命中全是 `001-schema-baseline`。"""
+class TestSubScanSixForms(unittest.TestCase):
+    """GT-05 子庫 pin 樹腿對齊外層六形＝五形（BARE_REV5 同源）＋第六形裸三碼前代刀號（BARE_PREV_KNIFE_NUM 同源；003 刀 U10）、
+    共用 rev6 刀集豁免（BL-00017）。★只對齊正則不共用豁免會讓自家刀名整批誤紅——實測 rust-api 六處命中全是 `001-schema-baseline`。"""
 
     SUB = re.compile(book.SUB_SCAN)
 
     def _judge(self, content, knives=frozenset()):
-        """精判＝外層同一套：MENTION 剝提及形 → BARE_REV5 → rev6 刀集豁免。回報紅 token 清單。"""
-        out = []
-        for m in book.BARE_REV5.finditer(book.MENTION.sub("", content)):
-            tok = m.group(1)
-            if book.RE_KNIFE.match(tok) and (tok.startswith("000-") or tok in knives):
-                continue
-            out.append(tok)
-        return out
+        """精判＝真函式 book._sub_judge（外層同一套：MENTION 剝提及形 → BARE_REV5＋rev6 刀集豁免 → BARE_PREV_KNIFE_NUM）。回報紅 token 清單。"""
+        return [tok for _, tok in book._sub_judge(content, knives)]
 
-    def test_prefilter_covers_five_forms(self):
-        for txt in ("承 B-065 之形", "見 L-015", "承 ADR 0057 拍板", "參 Lint24 契約", "隨 004-ip-trust-anchor 進場"):
+    # 第六形的邊界類（多空白／tab／全形空白 U+3000／NBSP／`_` 前置／`/` 前置／尾接英數）：精判 BARE_PREV_KNIFE_NUM
+    # 一律命中（其 `\s+` 是 Unicode-aware、另含 U+3000 與 NBSP 等非 ASCII 空白），故粗篩必須一併撈起——
+    # 粗篩若比精判窄，這些就是子庫腿的盲區（U10 fix 輪實測：套上前五形頭尾界時 `_`／`/` 前置與尾接英數全漏、
+    # 分隔取字面單一空白時多空白與 tab 全漏、取 `[ \t]+` 時非 ASCII 空白全漏——同一句外層紅、子庫綠）。
+    SIXTH_EDGE = ("// 承 rev5  002 坑", "// 承 rev5\t002 坑", "// 承 rev5\u3000002 坑", "// 承 rev5\u00a0002 坑",
+                  "// _rev5 002 坑", "// a/rev5 002 坑", "// 承 rev5 002x 坑")
+    # 粗篩過撈（精判判綠）：尾接第四碼、四碼數字、冒號前綴正確形——粗篩不設尾界、分隔又取精判 `\s+` 的超集，
+    # 三類皆撈得起、真假一律由精判定。
+    OVERFETCH = ("rev5 0021 非三碼", "未認證須 8888（勿帶回 rev4 3333）", "承 rev5:002 之形（冒號前綴正確形）")
+
+    def test_prefilter_covers_six_forms(self):
+        for txt in ("承 B-065 之形", "見 L-015", "承 ADR 0057 拍板", "參 Lint24 契約", "隨 004-ip-trust-anchor 進場",
+                    "承 rev5 002 收刀坑") + self.SIXTH_EDGE:
             self.assertTrue(self.SUB.search(txt), txt)
-        self.assertIsNone(self.SUB.search("m0001 與 RL-0052 皆非本腿射程"))
+        for txt in ("m0001 與 RL-0052 皆非本腿射程", "rev6 002 自家刀號", "rev3 002 非前代編號"):
+            self.assertIsNone(self.SUB.search(txt), txt)
 
-    def test_five_forms_all_red_without_prefix(self):
+    def test_prefilter_is_superset_of_judge(self):
+        """★契約：粗篩 ⊇ 精判（粗篩只讓 git grep 少吐行、真假由 _sub_judge 定）。
+        反向成立即盲區——粗篩擋掉的行精判永遠看不到，同一句會外層紅、子庫綠、判準分裂。"""
+        corpus = (self.SIXTH_EDGE + self.OVERFETCH
+                  + ("承 B-065 之形", "見 L-015", "承 ADR 0057 拍板", "參 Lint24 契約", "隨 004-ip-trust-anchor 進場",
+                     "承 rev5 002 收刀坑", "# 承 rev4 001 之形", "承 rev5:B-065 之形", "承 `rev5 002` 之形",
+                     "承「rev5 002」之形", "rev6 002 刀是自家刀", "_B-065 之形", "a/L-015", "承 B-065x",
+                     "m0001 與 RL-0052 皆非本腿射程", "日期 2026-09-07 與版本 1.10.0"))
+        for txt in corpus:
+            if book._sub_judge(txt, frozenset()):
+                self.assertTrue(self.SUB.search(txt), f"精判紅但粗篩撈不到＝盲區：{txt!r}")
+        for txt in self.OVERFETCH:                       # 過撈方向合法：粗篩中、精判綠
+            self.assertTrue(self.SUB.search(txt), txt)
+            self.assertEqual(self._judge(txt), [], txt)
+
+    def test_six_forms_all_red_without_prefix(self):
         for txt, tok in (("承 B-065 之形", "B-065"), ("見 L-015", "L-015"), ("承 ADR 0057 拍板", "ADR 0057"),
-                         ("參 Lint24 契約", "Lint24"), ("隨 004-ip-trust-anchor 進場", "004-ip-trust-anchor")):
+                         ("參 Lint24 契約", "Lint24"), ("隨 004-ip-trust-anchor 進場", "004-ip-trust-anchor"),
+                         ("承 rev5 002 收刀坑", "rev5 002"), ("# 承 rev4 001 之形", "rev4 001"),
+                         ("// 承 rev5\u3000002 坑", "rev5\u3000002")):
             self.assertEqual(self._judge(txt), [tok], txt)
+        self.assertEqual(book._sub_judge("承 rev5 002 收刀坑", frozenset()), [("裸前代刀號", "rev5 002")])
 
     def test_prefixed_and_mention_forms_green(self):
-        for txt in ("承 rev5:B-065 之形", "承 `B-065` 之形", "承「L-015」之形", "承 rev4:ADR 0057"):
+        for txt in ("承 rev5:B-065 之形", "承 `B-065` 之形", "承「L-015」之形", "承 rev4:ADR 0057",
+                    "承 rev5:002 之形", "承 `rev5 002` 之形", "承「rev5 002」之形", "rev6 002 刀是自家刀",
+                    "日期 2026-09-07 與版本 1.10.0", "rev5 0021 非三碼"):
             self.assertEqual(self._judge(txt), [], txt)
 
     def test_rev6_knife_names_exempt_like_outer_leg(self):

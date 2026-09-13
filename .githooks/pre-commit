@@ -55,9 +55,9 @@ fi
 # 值比對層（機密現值 × tracked 文字檔）住 docsync lint 的 GT-07（樣式四組自測＋SECRETS_DIR 實值）——與 check／lint 並行跑。
 pc_run "docsync-check" python3 "$HOOK_DIR/../tools/docsync" check
 pc_run "docsync-lint" python3 "$HOOK_DIR/../tools/docsync" lint
-# 守門工具自測條件觸發：staged 含某工具本體才跑該支、平時零開銷（名冊與 GT-09／bootstrap 對賬）。★hook 本體 staged 亦跑 docsync test（接線守衛 test_hook_wiring 隨之；BL-00023）。
+# 守門工具自測條件觸發：staged 含某工具本體才跑該支、平時零開銷（名冊與 GT-09／bootstrap 對賬）。★hook 面任一檔（.githooks/**、.githooks-submodule/**＝pre-commit／pre-push／共用 lib）staged 亦跑 docsync test（接線守衛 test_hook_wiring 四檔名冊隨之；BL-00023、003 刀 U10 放寬）。
 staged=$(git diff --cached --name-only)
-if echo "$staged" | grep -q '^tools/docsync/\|^\.githooks/pre-commit$'; then
+if echo "$staged" | grep -q '^tools/docsync/\|^\.githooks/\|^\.githooks-submodule/'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
 for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do

@@ -1,4 +1,4 @@
-<!-- next: BL-00059 -->
+<!-- next: BL-00060 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -32,3 +32,4 @@
 - BL-00056｜governance｜`tools/comment-overlap.py`（RL-0076）對帶 fork-delta 標記之 base-web 既有檔結構性必紅：`原行:` 後逐字（憲法 §III 修改型契約強制）與標記 token `-inline BASE-WEB-<軌道>(<用途>)+ 003-auth-session`（rev5 同軌道同刀名、只差前綴）計入重疊，003 刀 U9 九檔量得 29%～69%（`request/index.ts` 另含 upstream 英文原註＝兩代共享基線）而我方散文零命中；候選＝工具豁免 `原行:` 載荷、`[rev6-inline …]` 標記行與 example 基線原有行（以基線 diff 定界）後重量；豁免前 base-web 面不以百分比判紅、只看散文命中｜觸發＝003 刀收刀維護批（與 BL-00050 同批）
 - BL-00057｜governance｜跨子庫同步律「兩側改動須同一顆外層 commit 同時 bump 兩 pin」零機器守：`msg-key-gate` 與 `wire-schema` 兩支雙側閘皆讀工作樹（003 刀 U9 實證：pin 樹無右源 backend 子樹時 `msg-key-gate.py check` 仍 rc 0），GT-02 只斷言 gitlink＝worktree HEAD、對「只 commit 並 bump 單側」不紅；候選＝pre-commit 於 `rust-api`／`base-web` 任一 gitlink staged 時，以 `git -C <子庫> status --porcelain -- <該閘左右源路徑>` 粗判另一側工作樹尚有未 commit 的同面改動即紅，或閘增 `--staged-gate` 形改比對 pin 樹版本｜觸發＝003 刀收刀維護批（與 BL-00055 同批）
 - BL-00058｜governance｜憲法 §III.2 ★BASE-WEB-I18N-WIRING (iii) 範圍欄「`src/typings/app.d.ts`（1 處，修改型）」與 as-built 相反：純插入 `backend` 必填型節、無 upstream 既有行被動、`原行:` 無可填，落地形＝新增型 START／END 圈界（`fork-delta-lint.py` 19 處修改型不含該檔；活書 05／08 已記新增型）；同表 (i)／(ii) 精確分型可證「修改型」係孤立筆誤；ADR-00026:49 條文全文同字（accepted body 不可變＝GT-04）、`specs/003-auth-session/spec.md` fork-delta 風險表亦標修改型；碼面無誤、無閘會紅、只能人工落帳｜★拍板級：觸發＝003 刀收刀前 user 二擇一——①PATCH 級 Amendment（§V.2、新 ADR、ADR-00026 body 不動）把該欄改「1 塊，新增型」；②留待下一次 §III.2 Amendment 同批修正
+- BL-00059｜governance｜pre-commit `selftest-docsync` 觸發式（`^tools/docsync/\|^\.githooks/\|^\.githooks-submodule/`＝FR-037①／code-gates §4① 逐字）未含 `tools/bootstrap.sh`：003 刀 U10 新增之 `test_hook_wiring` bootstrap 名冊面守衛（推導行／空集合守衛／閘數斷言等九字面）在 commit 閘對其唯一守備對象恆不觸發（只 stage bootstrap.sh 的 commit 不跑 docsync test）；納入觸發＝每顆碰 bootstrap.sh 的 commit 都跑 42～48s 的 docsync test、逼近 `PRECOMMIT_WARN_SEC=45`（門檻調整走 ADR）；候選＝①觸發式加 `\|^tools/bootstrap\.sh$`＋spec FR-037①／code-gates §4① 同批改字；②新段只跑 `test_hook_wiring` 單檔（秒級）；③留 bootstrap 自身 `bash tools/bootstrap.sh` 體檢承載（現況）｜觸發＝003 刀收刀維護批（與 BL-00055 同批、皆 hook 面）
