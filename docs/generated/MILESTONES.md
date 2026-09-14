@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-15 | misc | governance｜maint-spec-compliance-002 | 002 刀附屬規格對照審查輪（spec-compliance-002）修單收單：facade 同值更新審計欄成對純測、description 型別不符 rust 側拒收案、contract 覆蓋閘判準自證；wire-schema.py 兩處註解、RUNBOOK §12 名冊現值鏡像改指針、arc42 05 真 DB 端點案住所改現在式；RULES 名詞段碼面閘環境缺席語意改逐支見表（ADR-00032 supersedes ADR-00016）；BL-00028 條文併入 seed 值↔REGISTRY 界值零守。 | 37461af | ADR-00032 | — |
 | 2026-09-15 | review | 002-system-settings | findings 8（修 8／BL 0／ADR 0） | — | — | — |
 | 2026-09-15 | misc | governance｜maint-backlog-71-46-76 | 輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.vue` HTML 註解解析、rev6-↔rev5- 對應檔映射、反引號 span 與 doctest 圍欄豁免全路徑；base-web 註解改寫（BL-00071＋新量尺浮出之超標）與 wire-schema 快照 description 重抽；rust-api entity 關聯宣告只映真 DB FK 之機器腿、復原 A3 拆碎字面；BACKLOG 條文勘誤十列。 | cf1541b | — | — |
 | 2026-09-14 | misc | governance｜maint-backlog-pre-004 | 輕量軌 maint-backlog-pre-004 收單（003 刀收刀後、004 刀前；四單元）：A1 rust-api 測試側補強＋JWT 兩鑰 boot 斷言（ADR-00031）；A2a pre-commit 段序鏡像腿／submodule-sync／bootstrap-roster；A2b walkthrough restore／帳號快照投影腿／comment-overlap fork-delta 豁免／msg-key-gate 前端消費點腿；A3 rust-api 註解改寫 21 檔（comment-overlap rc 0）。 | db25165 | ADR-00031 | — |
@@ -35,6 +36,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-15｜misc｜governance｜maint-spec-compliance-002
+
+報告 docs/reviews/20260915-spec-compliance-002.md；findings 11＝修 8／none 2／併入 1（review 事件 total 8＝fixed 8）。修單 commit 7f250b2（rust-api e907b53）。全量 cargo test 首跑 65 紅＝dev 庫 2026-09-14 18:27Z 真登入殘列使序列重設守衛拒跑，依 RUNBOOK §9c 以空基準快照 restore 後 435 綠。
 
 ### 2026-09-15｜review｜002-system-settings
 

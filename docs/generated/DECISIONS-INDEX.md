@@ -34,4 +34,4 @@
 | ADR-00029 | accepted | 2026-09-13 | msg key 跨端閘形制＝後端名冊與三檔 locale backend 子樹逐檔雙向全等、無白名單、Biz 構造點守衛兩形（tools/msg-key-gate.py） | 003-auth-session | — | — |
 | ADR-00030 | accepted | 2026-09-13 | 登入頁三顆快速登入鈕與表單預填密碼＝已知態「保留＋記帳」（零 inline、UI 對照零差異；帳＝滯後卷 BL-00049、觸發綁 RUNBOOK §16 prod 硬化拍板） | 003-auth-session | — | — |
 | ADR-00031 | accepted | 2026-09-14 | rust-api boot 期 JWT access／refresh 兩把秘鑰同值即 fail-loud（兩鍵指名、訊息不含值；射程只 JWT 兩鑰） | 輕量軌｜maint-backlog-pre-004 | — | — |
-| ADR-00032 | accepted | 2026-09-15 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表（續行 ADR-00016）——名詞定義之環境缺席語意改為逐支見表、容器依賴型具名跳過 | — | ADR-00016 | — |
+| ADR-00032 | accepted | 2026-09-15 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表（續行 ADR-00016）——名詞定義之環境缺席語意改為逐支見表、容器依賴型具名跳過 | 輕量軌｜maint-spec-compliance-002 | ADR-00016 | — |

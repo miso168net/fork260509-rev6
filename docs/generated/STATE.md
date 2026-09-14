@@ -16,13 +16,13 @@
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
 - BACKLOG 開放：23｜滯後：2
 - LESSONS：21 筆
-- events：56 筆（erratum 2、feature_close 3、misc 20、perf 26、review 5）
+- events：57 筆（erratum 2、feature_close 3、misc 21、perf 26、review 5）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 6.67 | ≤1 | 超標 |
+| 治理批對 feature 比 | 7.0 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.14 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 37 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
@@ -40,6 +40,6 @@
 | docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-15｜misc｜governance｜maint-spec-compliance-002｜002 刀附屬規格對照審查輪（spec-compliance-002）修單收單：facade 同值更新審計欄成對純測、description 型別不符 rus…
 - 2026-09-15｜review｜002-system-settings｜findings 8（修 8／BL 0／ADR 0）
 - 2026-09-15｜perf｜close_bookkeeping｜close_bookkeeping 16.72 秒 rc=0
-- 2026-09-15｜misc｜governance｜maint-backlog-71-46-76｜輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.…
