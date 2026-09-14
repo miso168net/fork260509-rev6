@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-15 | misc | governance｜maint-spec-compliance-003 | 003 刀附屬規格對照審查輪（spec-compliance-003）修單收單：login／refresh／route 六處測試保護補案（⑥TTL 兩腿、last_activity 兩寫端 TTL、驗章前擋與⑩臂源序守、idle 門檻隨現值、home 兜底）；msg-key-gate 斷言 2 同義構造形、fork-delta-lint template 形與樓地板守、hook 守衛補子庫 pre-commit；活書 08 §8.4 標記定形與四處現在式勘誤；ADR-00033 logout 舊票 no-op by-design。 | 8df3efd | ADR-00033 | — |
 | 2026-09-15 | review | 003-auth-session | findings 21（修 16／BL 4／ADR 1）；BL-00042、BL-00066、BL-00077、BL-00078、ADR-00033 | — | — | — |
 | 2026-09-15 | misc | governance｜maint-spec-compliance-002 | 002 刀附屬規格對照審查輪（spec-compliance-002）修單收單：facade 同值更新審計欄成對純測、description 型別不符 rust 側拒收案、contract 覆蓋閘判準自證；wire-schema.py 兩處註解、RUNBOOK §12 名冊現值鏡像改指針、arc42 05 真 DB 端點案住所改現在式；RULES 名詞段碼面閘環境缺席語意改逐支見表（ADR-00032 supersedes ADR-00016）；BL-00028 條文併入 seed 值↔REGISTRY 界值零守。 | 37461af | ADR-00032 | — |
 | 2026-09-15 | review | 002-system-settings | findings 8（修 8／BL 0／ADR 0） | — | — | — |
@@ -37,6 +38,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-15｜misc｜governance｜maint-spec-compliance-003
+
+報告 docs/reviews/20260915-spec-compliance-003.md；findings 26＝修 16／轉 BL 4（BL-00042 併入②、BL-00066 user 拍板留帳至 004 brainstorm、新記 BL-00077／BL-00078）／by-design ADR 1／駁回 4／併入 1。修單 commit bb0629e（rust-api 2ec9df7）；三輪變異抽驗各自只紅對應新案、全量 cargo test 440 綠。
 
 ### 2026-09-15｜review｜003-auth-session
 
