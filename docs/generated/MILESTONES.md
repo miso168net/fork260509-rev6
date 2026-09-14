@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-15 | misc | governance｜maint-backlog-71-46-76 | 輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.vue` HTML 註解解析、rev6-↔rev5- 對應檔映射、反引號 span 與 doctest 圍欄豁免全路徑；base-web 註解改寫（BL-00071＋新量尺浮出之超標）與 wire-schema 快照 description 重抽；rust-api entity 關聯宣告只映真 DB FK 之機器腿、復原 A3 拆碎字面；BACKLOG 條文勘誤十列。 | cf1541b | — | — |
 | 2026-09-14 | misc | governance｜maint-backlog-pre-004 | 輕量軌 maint-backlog-pre-004 收單（003 刀收刀後、004 刀前；四單元）：A1 rust-api 測試側補強＋JWT 兩鑰 boot 斷言（ADR-00031）；A2a pre-commit 段序鏡像腿／submodule-sync／bootstrap-roster；A2b walkthrough restore／帳號快照投影腿／comment-overlap fork-delta 豁免／msg-key-gate 前端消費點腿；A3 rust-api 註解改寫 21 檔（comment-overlap rc 0）。 | db25165 | ADR-00031 | — |
 | 2026-09-14 | feature_close | 003-auth-session | 003 auth-session 收單（rev6 第三刀）：真登入／續期 rotation＋grace／撤銷三型＋denylist 四級降級／節流三區＋captcha／替代登入 stub／i18n 跨端閘 msg-key-gate／治理六項；零 migration；憲法 1.3.0；ROUTES 16、contract 16、MSG_KEYS 13；SC-012「RULES 零改動」子句失效＝三處 RULES 改動皆 LL promotion；backlog_add 以在途 GT-03 全集為準；final review 分流見 51ab7c7。 | 0e74551 | ADR-00026、ADR-00027、ADR-00028、ADR-00029、ADR-00030 | §5、§6、§8、§10、§11、§12 |
 | 2026-09-08 | misc | governance｜maint-py313-docstring-dedent | 輕量軌 maint-py313-docstring-dedent 收單：閘區塊 regex 去掉對 docstring 縮排的依賴。Python ≥3.13 編譯期剝掉 docstring 共同縮排後 gate_id() 對 12 支閘全回 None——GATES.md 算成無列空表（GT-01 漂移）、GT-05 的 ID 存在性真源成單元素 None 集（閘號引用 322 筆假紅）、docsync 自測 10 案連坐、bootstrap exit 2。`[ \t]+` → `[ \t]*` 還原原意＋補迴歸案；LESSONS 12→14。 | 9e420a2 | — | — |
@@ -33,6 +34,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-15｜misc｜governance｜maint-backlog-71-46-76
+
+單元 commit：S1 2f47c35（BACKLOG 條文勘誤：BL-00028／BL-00036／BL-00039／BL-00047／BL-00048／BL-00062／BL-00065／BL-00070／BL-00076＋滯後卷 BL-00049 之 rev5 引用）；B1 57ede8a（comment-overlap 量尺：自測 16→35、量測 base-web 超標 4／rust-api 47 檔 0）；B2 base-web ff528496／rust-api 546dcb4／外層 c4ff83f（base-web 4 檔純註解改寫、wire-schema.json 2 處 description 重抽、雙 pin 同顆）；B3 rust-api b0db679／外層 2229152（BL-00046 entity 關聯宣告腿＋BL-00073 復原字面九處）；B3-fix rust-api b33b952／外層 759d633（B3 審查升級三項）；final holistic review 收單 eb4c520（13 筆＝修 11／駁回 2、零轉 BL）。user 2026-09-14 裁定：範圍＝桶 A 兩條＋comment-overlap 量尺群＋條文勘誤；`/** */` 盲區併入 BL-00076；`.vue` HTML 註解一併納入；code span／doctest 圍欄豁免全路徑套用；全部 agent＝opus[1m] xhigh（成品換模、骨架不動）。主線工程裁定：BL-00046 落 entity_behavior_lint.rs、宣告 ⊆ FK＋完整性等式＋原生 SQL 守衛；HTML 註解只解析 .vue；BL-00043／BL-00045 觸發拆面待 004 brainstorm。單元收尾主線處置：B1 補 M21 反例＋docstring 射程外（巢狀塊註解、跨註解行 code span）；B2 標記行只 token 不動、同行散文可改寫。B3 arc42 08／05 對應句；B3-fix strip 引擎合一（行為等價 probe 69 檔＋400000 次模糊輸入差異 0）、A3 拆碎字面餘四處、ADR-00009 條號（決定 2 之 ③）。final review 分流：修 11（comment-overlap `.vue` HTML 註解內圍欄反例＋行首塊註解未閉合之射程外句；entity_behavior_lint 原生 SQL 字樣整詞比對、未建模 FK 建立形〔add_foreign_key／TableForeignKey／ForeignKeyCreateStatement〕出現即紅、檔頭 ② 出處改為 rev5:002 FR-022 拍板①並使 ADR-00009 轉述同向；BACKLOG BL-00028／BL-00047／BL-00065 措辭；README 圍欄限定語）、駁回 2（`#` 註解檔型＝三形聯集窮舉已拍板；在途 BACKLOG 四列＝收單簿記刪列之既定程序）。已知態：comment-overlap 行首 `/*`／`<!--` 至檔尾未閉合時其後各行照註解收（docstring 射程外）。
 
 ### 2026-09-14｜misc｜governance｜maint-backlog-pre-004
 
