@@ -28,7 +28,7 @@ ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯
 
 部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00015，後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
 
-msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一常數陣列（13 鍵；發出點一律取同檔 `msg_key` 常數形、不直書字面）＋contract 雙向斷言（實發 ⊆ 名冊、名冊每鍵 ≥1 發出點）；跨端閘＝`tools/msg-key-gate.py`（003 刀 U9；ADR-00029）：`MSG_KEYS` ⇔ base-web `src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 子樹逐檔雙向全等（子樹為封閉集、無白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）＋Biz 構造點守衛（字面形或 `msg_key::NAME` 常數形、動態構造即紅）；接線＝pre-commit msg-key-gate 段、名冊＝RUNBOOK §12 碼面閘表。
+msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一常數陣列（13 鍵；發出點一律取同檔 `msg_key` 常數形、不直書字面）＋contract 雙向斷言（實發 ⊆ 名冊、名冊每鍵 ≥1 發出點）；跨端閘＝`tools/msg-key-gate.py`（003 刀 U9；ADR-00029）：`MSG_KEYS` ⇔ base-web `src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 子樹逐檔雙向全等（子樹為封閉集、無白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）＋Biz 構造點守衛（字面形或 `msg_key::NAME` 常數形、動態構造即紅）＋前端 msg 字面消費點名冊（base-web `src/**/*.{ts,vue,tsx}`〔排除 `locales/`〕剝註解後之 wire 字面 ⇔ 工具內 `FRONTEND_MSG_CONSUMERS` 逐項雙向全等且每鍵 ∈ `MSG_KEYS`；安全前綴＝`MSG_KEYS` 頂層前綴 − locale 頂層鍵、程式現算；不等 rc 1 指名檔:行、掃描面空 rc 2）；接線＝pre-commit msg-key-gate 段、名冊＝RUNBOOK §12 碼面閘表。
 
 ## 8.3 授權慣例
 

@@ -12,7 +12,7 @@ scan_push_ranges || exit 1）＋lib 之 betterleaks 呼叫與四種範圍推導�
 ④段序枚舉鏡像面 check_mirror_words(hook, readme)（BL-00055）：段名冊 MIRROR_LABELS（FIXED 之 pc_run 固定段＋SEGMENTS；hook 靜態 pc_run 標籤須 ⊆ 之）每段之字樣（MIRROR_WORDS）
 須在三處人寫鏡像行（pre-commit 檔頭段序／README 樹 `.githooks/` 列／README 守門條目）各恰出現一次（ASCII 詞界計數）；一正多反（逐面×逐段刪該一處→恰一條紅指名檔、面與段／
 他段夾帶→紅／路徑內嵌不計／鏡像行缺席／段未宣告字樣／hook 段未入名冊）。
-⑤跨子庫同步律段閘面路徑對賬 check_sync_paths(hook, want)（BL-00057）：submodule-sync 段路徑字面集 ⇔ msg-key-gate DEFAULT_RUST／DEFAULT_LOCALES
+⑤跨子庫同步律段閘面路徑對賬 check_sync_paths(hook, want)（BL-00057）：submodule-sync 段路徑字面集 ⇔ msg-key-gate DEFAULT_RUST／DEFAULT_LOCALES／DEFAULT_SRC（前端消費點掃描面）
 ∪ wire-schema TYPINGS_PATHSPECS／SNAPSHOT_PATHSPECS（正規化為 repo 根相對）；一正多反（hook 少一／多一／常數多一／段缺席）。
 ★hook 本體 staged 時 pre-commit 自跑 docsync test（本案隨之）；tools/bootstrap.sh staged 時 bootstrap-roster 段只跑本檔（BL-00059）；bootstrap 體檢亦跑；接線不再只靠人記得（002 刀 U0 變異實測：刪三段 lint 仍綠）。"""
 import importlib.util
@@ -241,7 +241,7 @@ def load_tool(name):
 
 def gate_face_paths(msg_key_gate, wire_schema):
     """兩雙側閘常數 → repo 根相對、`/` 分隔之閘面路徑集（正規化理由見 SYNC_LABEL 上方註）。"""
-    return ({p.replace(os.sep, "/") for p in (msg_key_gate.DEFAULT_RUST, msg_key_gate.DEFAULT_LOCALES)}
+    return ({p.replace(os.sep, "/") for p in (msg_key_gate.DEFAULT_RUST, msg_key_gate.DEFAULT_LOCALES, msg_key_gate.DEFAULT_SRC)}
             | {"base-web/" + p for p in wire_schema.TYPINGS_PATHSPECS}
             | {"rust-api/" + p for p in wire_schema.SNAPSHOT_PATHSPECS})
 
