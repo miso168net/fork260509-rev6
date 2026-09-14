@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=1584407｜rust-api=13725e3
+- pins：base-web=1584407｜rust-api=838ed77
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -12,10 +12,10 @@
 - 版本：1.3.0
 
 ## 帳面統計
-- ADR：30（proposed 0、accepted 29、superseded 1）
+- ADR：31（proposed 0、accepted 30、superseded 1）
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
-- BACKLOG 開放：35｜滯後：2
-- LESSONS：20 筆
+- BACKLOG 開放：42｜滯後：2
+- LESSONS：21 筆
 - events：51 筆（erratum 2、feature_close 3、misc 18、perf 24、review 4）
 - CLAUDE.md 行數：160（只報表、不擋）
 
@@ -23,7 +23,7 @@
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
 | 治理批對 feature 比 | 6.0 | ≤1 | 超標 |
-| LESSONS 重複率 | 0.15 | 0 | 超標 |
+| LESSONS 重複率 | 0.14 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 37 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
 
@@ -37,7 +37,7 @@
 | RULES fix | 16 | 19 | 內 |
 | RULES 主線 | 43 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 3568 | 4000 | 內 |
+| docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-09-14｜perf｜close_bookkeeping｜close_bookkeeping 21 秒 rc=0

@@ -53,8 +53,36 @@ def fake_fetch(sql, root=None):
     raise AssertionError("未知 SQL：" + sql)
 
 
-def src_files(schema=True, accounts=True, amap=True, **override):
-    """stub 用 reference-src 三檔；override 可換任一檔的原文（壞 JSON 案）。"""
+def syn_pwd():
+    """合成密碼雜湊樣本（RL-0054：執行期串接、不落完整字面）。"""
+    return "$argon2id$" + "合成假雜湊-" + "a2b"
+
+
+def syn_seed(users, roles, binds, pwd=None):
+    """合成凍結 seed.sql 三 COPY 段（欄序刻意與快照投影鍵序不同、sys_user 帶 password 欄＝紅線自證用）。"""
+    pwd = syn_pwd() if pwd is None else pwd
+    out = ["--\n-- Data for Name: sys_role; Type: TABLE DATA; Schema: public; Owner: soybean\n--\n\n",
+           "COPY public.sys_role (id, created_at, status, role_code, role_name, role_home) FROM stdin;\n"]
+    out += [f"{r['id']}\t2026-08-05 00:00:00+00\t{r['status']}\t{r['role_code']}\t{r['role_name']}\thome\n" for r in roles]
+    out.append("\\.\n\n\nCOPY public.sys_user (id, created_at, status, user_name, password, nick_name, session_id) FROM stdin;\n")
+    out += [f"{u['id']}\t2026-08-05 00:00:00+00\t{u['status']}\t{u['user_name']}\t{pwd}\t{u['nick_name']}\t\\N\n" for u in users]
+    out.append("\\.\n\n\nCOPY public.sys_user_role (user_id, role_id) FROM stdin;\n")
+    out += [f"{b['user_id']}\t{b['role_id']}\n" for b in binds]
+    out.append("\\.\n")
+    return "".join(out)
+
+
+EMPTY_LEDGER = '{\n  "next_id": 1,\n  "entries": []\n}\n'
+
+
+def syn_ledger(*entries):
+    """合成演進登記檔（id／knife／date 自動補、形同 tools/schema-gate.py 登記檔斷言）。"""
+    full = [dict(e, id=f"E-{i:03d}", knife="004-ip-trust-anchor", date="2026-09-14") for i, e in enumerate(entries, 1)]
+    return json.dumps({"next_id": len(full) + 1, "entries": full}, ensure_ascii=False)
+
+
+def src_files(schema=True, accounts=True, amap=True, seed=True, ledger=True, **override):
+    """stub 用 reference-src 三檔＋帳號投影對賬兩左源（凍結 seed.sql、演進登記檔）；override 可換任一檔的原文（壞 JSON 案）。"""
     files = {}
     if schema:
         files[SCHEMA_SNAPSHOT] = snapshot.snapshot_dumps(snapshot.build_schema_snapshot(SYN_COLS, SYN_IDX, SYN_CONS))
@@ -62,6 +90,10 @@ def src_files(schema=True, accounts=True, amap=True, **override):
         files[ACCOUNTS_SNAPSHOT] = snapshot.snapshot_dumps(snapshot.build_accounts_snapshot(SYN_USERS, SYN_ROLES, SYN_BINDS))
     if amap:
         files[ARCHETYPE_MAP] = json.dumps(SYN_MAP, ensure_ascii=False)
+    if seed:
+        files[snapshot.SEED_FIXTURE] = syn_seed(SYN_USERS, SYN_ROLES, SYN_BINDS)
+    if ledger:
+        files[snapshot.SCHEMA_EVOLUTION] = EMPTY_LEDGER
     files.update(override)
     return files
 
@@ -265,7 +297,8 @@ class TestGenReferenceAccounts(unittest.TestCase):
     def test_multi_binding_sorted_and_unbound_dash(self):
         binds = SYN_BINDS + [{"user_id": 1, "role_id": 2}]
         users = SYN_USERS + [{"id": 4, "user_name": "Ghost", "nick_name": "G", "status": 0}]
-        files = src_files(**{ACCOUNTS_SNAPSHOT: snapshot.snapshot_dumps(snapshot.build_accounts_snapshot(users, SYN_ROLES, binds))})
+        files = src_files(**{ACCOUNTS_SNAPSHOT: snapshot.snapshot_dumps(snapshot.build_accounts_snapshot(users, SYN_ROLES, binds)),
+                             snapshot.SEED_FIXTURE: syn_seed(users, SYN_ROLES, binds)})                  # seed 同步＝投影對賬面全等、本案只驗渲染
         out = snapshot.gen_reference_accounts(stub(files))
         self.assertIn("| Super | Super | 1 | R_ADMIN、R_SUPER |", out)
         self.assertIn("| Ghost | G | 0 | — |", out)
@@ -282,6 +315,99 @@ class TestGenReferenceAccounts(unittest.TestCase):
         self.assertIn(ACCOUNTS_SNAPSHOT, str(cm.exception)); self.assertIn("python3 tools/docsync refresh", str(cm.exception))
         with self.assertRaises(snapshot.SnapshotError):
             snapshot.gen_reference_accounts(stub(src_files(**{ACCOUNTS_SNAPSHOT: "[壞"})))
+
+
+class TestAccountsSeedProjection(unittest.TestCase):
+    """BL-00038：accounts 快照三節 ⇔ 凍結 seed.sql 之 sys_user／sys_role／sys_user_role COPY 段投影全等（generate／check／lint 皆經
+    gen_reference_accounts 此路）；schema-evolution.json 之 seed_* 登記＝合法差額、未登記差額即紅；password 欄不進任何輸出面。"""
+
+    def _red(self, **override):
+        with self.assertRaises(snapshot.SnapshotError) as cm:
+            snapshot.gen_reference_accounts(stub(src_files(**override)))
+        return str(cm.exception)
+
+    def _green(self, **override):
+        return snapshot.gen_reference_accounts(stub(src_files(**override)))
+
+    def test_real_repo_snapshot_equals_seed_projection_on_non_empty_surface(self):
+        ctx = common.Ctx(ROOT)
+        seed_text = ctx.text(snapshot.SEED_FIXTURE)
+        entries = json.loads(ctx.text(snapshot.SCHEMA_EVOLUTION))["entries"]
+        proj = snapshot.seed_account_projection(seed_text, entries)
+        # 比對面非空：三節皆在且各 ≥1 列——不釘列數，免得日後合法的 seed_add 登記把本案打紅
+        self.assertEqual(set(proj), {"users", "roles", "bindings"})
+        self.assertTrue(all(len(v) >= 1 for v in proj.values()), {k: len(v) for k, v in proj.items()})
+        self.assertEqual({tuple(r) for rows in proj.values() for r in rows},
+                         {snapshot.USER_KEYS, snapshot.ROLE_KEYS, snapshot.BINDING_KEYS})                   # 投影列只帶白名單鍵
+        self.assertEqual(snapshot.accounts_seed_findings(json.loads(ctx.text(ACCOUNTS_SNAPSHOT)), seed_text, entries), [])
+
+    def test_unregistered_diff_is_red_naming_section_and_row(self):
+        msg = self._red(**{snapshot.SEED_FIXTURE: syn_seed([u for u in SYN_USERS if u["id"] != 3], SYN_ROLES, SYN_BINDS)})
+        self.assertIn("users", msg); self.assertIn("id=3", msg)
+        self.assertIn(snapshot.SCHEMA_EVOLUTION, msg)                                                          # 補救去處
+        nick = [dict(u, nick_name="User02") if u["id"] == 3 else u for u in SYN_USERS]
+        msg = self._red(**{snapshot.SEED_FIXTURE: syn_seed(nick, SYN_ROLES, SYN_BINDS)})
+        for needle in ("users", "id=3", "nick_name", "User02"):
+            self.assertIn(needle, msg)
+        roles = [dict(r, role_name="管理者") if r["id"] == 2 else r for r in SYN_ROLES]
+        msg = self._red(**{snapshot.SEED_FIXTURE: syn_seed(SYN_USERS, roles, SYN_BINDS)})
+        for needle in ("roles", "id=2", "role_name", "管理者"):
+            self.assertIn(needle, msg)
+        msg = self._red(**{snapshot.SEED_FIXTURE: syn_seed(SYN_USERS, SYN_ROLES, SYN_BINDS + [{"user_id": 1, "role_id": 2}])})
+        for needle in ("bindings", "user_id=1", "role_id=2"):
+            self.assertIn(needle, msg)
+
+    def test_registered_seed_evolution_is_tolerated_and_same_diff_unregistered_is_red(self):
+        old = [dict(u, nick_name="Old01") if u["id"] == 3 else u for u in SYN_USERS]
+        seed_old = syn_seed(old, SYN_ROLES, SYN_BINDS)
+        upd = {"kind": "seed_update", "table": "sys_user", "detail": {"pk": {"id": 3}, "set": {"nick_name": "User01"}}}
+        self._green(**{snapshot.SEED_FIXTURE: seed_old, snapshot.SCHEMA_EVOLUTION: syn_ledger(upd)})
+        self.assertIn("id=3", self._red(**{snapshot.SEED_FIXTURE: seed_old}))
+        other = dict(upd, table="sys_menu")                                                                   # 他表登記不外溢
+        self.assertIn("id=3", self._red(**{snapshot.SEED_FIXTURE: seed_old, snapshot.SCHEMA_EVOLUTION: syn_ledger(other)}))
+        ghost = {"id": 4, "user_name": "Ghost", "nick_name": "G", "status": 0}
+        snap4 = snapshot.snapshot_dumps(snapshot.build_accounts_snapshot(SYN_USERS + [ghost], SYN_ROLES, SYN_BINDS + [{"user_id": 4, "role_id": 3}]))
+        adds = ({"kind": "seed_add", "table": "sys_user",
+                 "detail": {"pk": ["id"], "values": dict(ghost, created_at="2026-09-14 00:00:00+00", password=syn_pwd(), session_id=None)}},
+                {"kind": "seed_add", "table": "sys_user_role", "detail": {"pk": ["user_id", "role_id"], "values": {"user_id": 4, "role_id": 3}}})
+        self._green(**{ACCOUNTS_SNAPSHOT: snap4, snapshot.SCHEMA_EVOLUTION: syn_ledger(*adds)})
+        msg = self._red(**{ACCOUNTS_SNAPSHOT: snap4, snapshot.SCHEMA_EVOLUTION: syn_ledger(adds[0])})
+        self.assertIn("bindings", msg); self.assertIn("user_id=4", msg)
+        seed_extra = syn_seed(SYN_USERS, SYN_ROLES + [{"id": 4, "role_code": "R_TMP", "role_name": "暫", "status": 1}], SYN_BINDS)
+        dele = {"kind": "seed_delete", "table": "sys_role", "detail": {"pk": {"id": 4}}}
+        self._green(**{snapshot.SEED_FIXTURE: seed_extra, snapshot.SCHEMA_EVOLUTION: syn_ledger(dele)})
+        self.assertIn("R_TMP", self._red(**{snapshot.SEED_FIXTURE: seed_extra}))
+
+    def test_password_column_never_reaches_any_output(self):
+        pwd = syn_pwd()
+        nick = [dict(u, nick_name="User02") if u["id"] == 3 else u for u in SYN_USERS]
+        for files in ({snapshot.SEED_FIXTURE: syn_seed(nick, SYN_ROLES, SYN_BINDS, pwd=pwd)},                     # 列值不等
+                      {snapshot.SEED_FIXTURE: syn_seed(SYN_USERS, SYN_ROLES, SYN_BINDS, pwd=pwd + "\textra")},    # 壞列（欄數不符）
+                      {snapshot.SEED_FIXTURE: syn_seed(SYN_USERS[:1], SYN_ROLES, SYN_BINDS, pwd=pwd)},           # 缺列
+                      {snapshot.SCHEMA_EVOLUTION: syn_ledger({"kind": "seed_update", "table": "sys_user",         # 登記以密碼欄當 pk、命中數≠1
+                                                              "detail": {"pk": {"password": pwd}, "set": {"nick_name": "x"}}})}):
+            msg = self._red(**files)
+            self.assertNotIn(pwd, msg); self.assertNotIn("argon2", msg)
+        out = self._green(**{snapshot.SCHEMA_EVOLUTION: syn_ledger({"kind": "seed_update", "table": "sys_user",   # 登記改雜湊＝投影面零差額
+                                                                    "detail": {"pk": {"id": 1}, "set": {"password": pwd + "2"}}})})
+        self.assertNotIn("argon2", out)
+        leaked = json.loads(src_files()[ACCOUNTS_SNAPSHOT])
+        leaked["users"][0]["password"] = pwd                                                                  # 快照檔被塞 password 鍵
+        msg = self._red(**{ACCOUNTS_SNAPSHOT: json.dumps(leaked, ensure_ascii=False)})
+        self.assertIn("password", msg); self.assertNotIn(pwd, msg)
+
+    def test_missing_or_empty_left_source_fail_loud(self):
+        self.assertIn(snapshot.SEED_FIXTURE, self._red(seed=False))
+        no_binds = syn_seed(SYN_USERS, SYN_ROLES, SYN_BINDS).split("COPY public.sys_user_role")[0]
+        msg = self._red(**{snapshot.SEED_FIXTURE: no_binds})
+        self.assertIn("sys_user_role", msg); self.assertIn("比對面為空", msg)
+        msg = self._red(**{snapshot.SEED_FIXTURE: syn_seed(SYN_USERS, [], SYN_BINDS)})
+        self.assertIn("sys_role", msg); self.assertIn("比對面為空", msg)
+        self.assertIn(snapshot.SCHEMA_EVOLUTION, self._red(ledger=False))
+        self.assertIn(snapshot.SCHEMA_EVOLUTION, self._red(**{snapshot.SCHEMA_EVOLUTION: "{壞"}))
+        self.assertIn("entries", self._red(**{snapshot.SCHEMA_EVOLUTION: '{"next_id": 1, "entries": {}}'}))
+        msg = self._red(**{snapshot.SCHEMA_EVOLUTION: syn_ledger({"kind": "seed_delete", "table": "sys_role", "detail": {"pk": {"id": 99}}})})
+        self.assertIn("E-001", msg); self.assertIn("命中 0 列", msg)
 
 
 class TestWiring(unittest.TestCase):

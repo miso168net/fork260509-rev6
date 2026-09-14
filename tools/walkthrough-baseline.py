@@ -6,8 +6,22 @@
   snapshot <檔>   取 rev6 dev stack 實庫＋redis 現況三面、寫成 JSON 基準檔（走查**前**跑）
   diff <檔>       重取現況、與基準檔逐值比對、只列有差者＋末行摘要（走查**後**清理完跑；
                   ★rc 0 才算「環境已還原」——三閘綠不算，rev5:L-055／rev5:L-071 招牌徵狀＝三閘綠而全量紅）
+  restore <檔>    走查後清理（RUNBOOK §9c 第 3 步之順序機器化；寫面恰為下列、次序固定）：
+                  ①system_settings 對凍結 seed（specs/001-schema-baseline/fixtures/seed.sql 之 COPY 段）——值≠seed
+                    （含鍵缺／鍵多）即 fail-loud 指名、**不自動改值**（值還原走 002 刀寫端＝人工前置）；值＝seed 而
+                    審計欄 updated_at／updated_by 非 NULL 者歸 NULL（改回值≠改回痕）；★左源未合成演進帳——
+                    docs/ops/reference-src/schema-evolution.json 有 system_settings 之 seed_* 登記即拒跑、指名登記 id
+                    （凍結段已非期望 seed；先擴充本工具）
+                  ②DELETE session_event／sys_token／sys_login_attempt 全表＋sys_user.session_id 歸 NULL
+                  ③三支 setval（sys_token_id_seq／session_event_id_seq／sys_login_attempt_id_seq）值自基準檔現讀
+                    ——①～③ 同一交易（BEGIN…COMMIT、ON_ERROR_STOP=1；任一句敗即整筆回滾、不進④）
+                  ④redis 以 `--scan --pattern` 取 session:*／throttle:* 鍵、逐鍵指名 DEL（每批 ≤REDIS_DEL_BATCH
+                    把；絕不 FLUSHDB、絕不以樣式刪）
+                  ⑤收尾自動跑一次 diff、其 rc 即 restore 之 rc（0＝已還原）
+                  ★安全帶：基準檔三表列數或 session／throttle 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
+                    會毀掉基準資料——restore 只服務「走查前為空基準」之形）；安全帶與 seed 比對皆在任何寫入之前
   test            自帶 self-test（unittest、離線、零 docker；subprocess 全樁）
-  選項（snapshot／diff 共用）：`--user U`／`--db D`（預設同 tools/schema-gate.py 常數）。
+  選項（snapshot／diff／restore 共用）：`--user U`／`--db D`（預設同 tools/schema-gate.py 常數）。
   `<檔>` 為必填位置引數、無隱含預設落點（契約用法落 tmp/、見 RUNBOOK §9c）。
 
 三面（★全部現算、零手抄名冊——清單式防法已被 rev5:L-071 證偽：rev5:006 的清單擋不住 rev5:007 的組合）：
@@ -20,10 +34,13 @@
   基準檔另帶 taken_at（UTC ISO）與 schema_version（檔形演進用）；diff 忽略 taken_at。
 
 退出碼：0 全等／1 有差／2 環境或結構異常（docker 不可執行、psql／redis 失敗、基準檔缺席或壞形、
-★比對面為空＝零表或零序列——空面的全綠是假綠、同 schema-gate 紀律，snapshot 與 diff 皆然）／
-64 用法錯（usage 走 stderr）。
+★比對面為空＝零表或零序列——空面的全綠是假綠、同 schema-gate 紀律，snapshot 與 diff 皆然；restore 另含
+安全帶拒跑、基準檔缺清理面之表或序列、seed 左源缺席或不可解、演進登記檔缺席或壞形、system_settings 有 seed_*
+演進登記、system_settings 值≠seed）／
+64 用法錯（usage 走 stderr）。restore 之 0／1 即其收尾 diff 之 rc。
 
-唯讀紀律（self-test 逐字釘住）：pg 只下 SELECT（含目錄視圖）、redis 只下 DBSIZE／--scan；
+唯讀紀律（self-test 逐字釘住）：snapshot／diff 唯讀——pg 只下 SELECT（含目錄視圖）、redis 只下 DBSIZE／--scan；
+restore 之寫面恰為上列①～④（交易句逐字、redis 只 DEL 指名鍵），其餘撈取同唯讀判準；
 pg 走 `docker compose … exec -T postgres psql -U … -d … -At -F <分隔>`；redis 走
 `exec -T redis sh -c` 以 `$(cat /run/secrets/redis_password)` 取密（同 compose healthcheck 形、
 `--no-auth-warning`）——密碼值只在容器內 sh 展開，host argv 與本工具任何輸出皆不含。
@@ -35,12 +52,16 @@ pg 走 `docker compose … exec -T postgres psql -U … -d … -At -F <分隔>`�
 `for t in …` 自測名冊＋bootstrap run_tool_test 名冊＋README 樹＋RUNBOOK §12 工具鏈速查；★不掛 pre-commit
 條件觸發（要 dev stack、且走查收尾才有意義）——走查前後手動跑。stdlib-only（rev5:ADR 0010）；連字檔名＝CLI、
 不可 import。隨遷自 rev5:tools/walkthrough-baseline.py（003 刀 U10a；四型失效引用 rev6 化、其餘逐字承襲）。
+restore 子命令＝BL-00053（maint-backlog-pre-004 A2b 新增、rev5 無對應）：取代 003 刀 U6／U7／U11 各自手寫之 tmp
+清理腳本；寫面由 self-test 逐字釘住（多一句即紅）。
 """
 import contextlib
 import datetime
 import io
 import json
 import os
+import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -73,6 +94,27 @@ SQL_TABLES = ("SELECT table_name FROM information_schema.tables "
               "WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY 1")
 SQL_SEQUENCES = ("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
                  "WHERE c.relkind='S' AND n.nspname='public' ORDER BY 1")
+
+# ── restore 清理面（BL-00053；次序＝RUNBOOK §9c 第 3 步）──────────────────────────
+# seed 左源＝凍結 fixture 之 system_settings COPY 段（唯讀、REPO_ROOT 相對）
+SEED_FIXTURE = os.path.join("specs", "001-schema-baseline", "fixtures", "seed.sql")
+# 演進登記檔（形斷言權威＝tools/schema-gate.py）：期望 seed＝凍結 ⊕ 演進；本工具左源只讀凍結段、未合成演進，
+# 故帳上有 system_settings 之 seed 面登記即拒跑（check_settings_seed_evolution）
+SCHEMA_EVOLUTION = os.path.join("docs", "ops", "reference-src", "schema-evolution.json")
+SEED_EVOLUTION_KINDS = ("seed_add", "seed_update", "seed_delete")
+RESTORE_TABLES = ("session_event", "sys_token", "sys_login_attempt")        # DELETE 全表；次序即語句序
+RESTORE_SEQUENCES = ("sys_token_id_seq", "session_event_id_seq", "sys_login_attempt_id_seq")
+RESTORE_REDIS_PREFIXES = ("session", "throttle")
+# 一次 DEL 指名的鍵數上限：逐鍵指名、分批送（免每把鍵各一次 docker exec；也免 sh -c 參數過長）
+REDIS_DEL_BATCH = 100
+SQL_SETTINGS = ("SELECT COALESCE(json_agg(t ORDER BY t.setting_key), '[]'::json) FROM "
+                "(SELECT setting_key, setting_value, "
+                "(updated_at IS NOT NULL OR updated_by IS NOT NULL) AS stamped "
+                "FROM system_settings) t")
+SQL_RESTORE_AUDIT = ("UPDATE system_settings SET updated_at = NULL, updated_by = NULL "
+                     "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL;")
+SQL_RESTORE_CLEAR = tuple(f"DELETE FROM {t};" for t in RESTORE_TABLES) + (
+    "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL;",)
 
 
 class BaselineError(Exception):
@@ -344,14 +386,179 @@ def cmd_diff(path, user, db, run=subprocess.run):
     return RC_DIFF if rows else RC_OK
 
 
+# ── restore（寫面恰為列舉語句；安全帶與 seed 比對全在任何寫入之前）────────────────
+
+def _copy_unescape(text):
+    """pg COPY text 格 → python 值（`\\N`＝None；反斜線跳脫還原）。"""
+    if text == "\\N":
+        return None
+    return re.sub(r"\\(.)", lambda m: {"t": "\t", "n": "\n", "r": "\r"}.get(m.group(1), m.group(1)), text)
+
+
+def seed_settings(seed_text):
+    """凍結 seed.sql 之 `COPY public.system_settings` 段 → {setting_key: setting_value}。
+    段缺席／零列＝比對面為空、段首缺鍵或值欄／列欄數不符＝凍結面受損，皆 BaselineError（rc 2）。"""
+    lines = seed_text.splitlines()
+    for i, ln in enumerate(lines):
+        m = re.match(r"^COPY public\.system_settings \(([^)]*)\) FROM stdin;$", ln)
+        if not m:
+            continue
+        cols = [c.strip().strip('"') for c in m.group(1).split(",")]
+        if "setting_key" not in cols or "setting_value" not in cols:
+            raise BaselineError(f"seed system_settings 段首缺 setting_key／setting_value 欄：{cols}")
+        ki, vi = cols.index("setting_key"), cols.index("setting_value")
+        got = {}
+        for row in lines[i + 1:]:
+            if row == "\\.":
+                break
+            vals = row.split("\t")
+            if len(vals) != len(cols):
+                raise BaselineError(f"seed system_settings 列欄數 {len(vals)} ≠ 段首 {len(cols)}："
+                                    f"{row[:80]!r}——凍結面受損")
+            got[_copy_unescape(vals[ki])] = _copy_unescape(vals[vi])
+        if not got:
+            raise BaselineError("seed system_settings 段零列——比對面為空、不得靜默判綠")
+        return got
+    raise BaselineError("seed 缺 COPY public.system_settings 段——比對面為空、不得靜默判綠")
+
+
+def check_settings_seed_evolution(ledger_path):
+    """演進帳有 system_settings 之 seed_* 登記＝凍結 COPY 段已非期望 seed（期望＝凍結 ⊕ 演進、同 tools/schema-gate.py
+    gate2 之 apply_seed_entries）。本工具左源未合成演進——照比會把 migration 定義的合法值誤報為值≠seed、並給出
+    「以寫端改回」的錯誤補救——故拒跑 rc 2、指名登記 id。結構性 kind（add_column 等）不擋：不改 setting_key／
+    setting_value 鍵值集。登記檔缺席／非 JSON／entries 非 list 或含非物件項＝rc 2（形之完整斷言權威在 schema-gate、
+    此處只驗判定所需）。"""
+    try:
+        with open(ledger_path, encoding="utf-8") as fh:
+            ledger = json.load(fh)
+    except FileNotFoundError:
+        raise BaselineError(f"演進登記檔缺席：{ledger_path}（{SCHEMA_EVOLUTION}）——無從判定凍結 seed 是否仍為"
+                            "期望 seed") from None
+    except (OSError, json.JSONDecodeError) as ex:
+        raise BaselineError(f"演進登記檔讀取或解析失敗：{ledger_path}（{SCHEMA_EVOLUTION}）：{ex}") from None
+    entries = ledger.get("entries") if isinstance(ledger, dict) else None
+    if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
+        raise BaselineError(f"演進登記檔壞形：{ledger_path}（{SCHEMA_EVOLUTION}）entries 須為物件 list"
+                            "——形＝specs/001-schema-baseline/contracts/schema-evolution.md §2")
+    hits = [f"{e.get('id', '?')}（{e.get('kind')}）" for e in entries
+            if e.get("table") == "system_settings" and e.get("kind") in SEED_EVOLUTION_KINDS]
+    if hits:
+        raise BaselineError(f"{SCHEMA_EVOLUTION} 有 system_settings 之 seed 演進登記：{'、'.join(hits)}——restore 之 "
+                            "seed 左源只讀凍結 COPY 段、未合成演進（期望 seed＝凍結 ⊕ 演進），照比會把合法值誤報為值≠seed；"
+                            "先擴充本工具之 seed 左源合成、再跑 restore；拒絕執行、零寫入")
+
+
+def check_restore_baseline(snap):
+    """安全帶：清理面之表或序列不在基準檔＝結構異常；三表列數或 session／throttle 前綴鍵數非 0＝拒跑。
+    restore 只服務「走查前為空基準」之形——DELETE 全表對非空基準會連基準資料一起毀掉、diff 還報不出來。"""
+    absent = [t for t in RESTORE_TABLES if t not in snap["tables"]] + \
+             [s for s in RESTORE_SEQUENCES if s not in snap["sequences"]]
+    if absent:
+        raise BaselineError(f"基準檔缺 restore 清理面：{'、'.join(absent)}——庫錯或基準檔非本 schema 所取")
+    loaded = [f"{t} {snap['tables'][t]} 列" for t in RESTORE_TABLES if snap["tables"][t]] + \
+             [f"{p} 前綴 {snap['redis']['prefixes'][p]} 鍵" for p in RESTORE_REDIS_PREFIXES
+              if snap["redis"]["prefixes"].get(p)]
+    if loaded:
+        raise BaselineError("基準非空、DELETE 全表會毀掉基準資料（" + "、".join(loaded) +
+                            "）——restore 只服務走查前為空基準之形；拒絕執行、零寫入。補救：手上有取於空基準之較早 "
+                            "snapshot 檔＝改以該檔跑 restore；無此檔＝本工具不承載，殘列須人工清至空基準後重取 snapshot")
+
+
+def psql_json(sql, user, db, run):
+    """跑一句回單值 JSON 的 SELECT → 解析後的值；psql 非零或輸出非 JSON＝rc 2。"""
+    r = _run_docker(psql_argv(sql, user, db), run)
+    if r.returncode != 0:
+        raise BaselineError(f"psql 失敗（rc={r.returncode}）：{(r.stderr or '').strip()[:300]}"
+                            f"——補救：dev stack 未起→{STARTUP_HINT}")
+    try:
+        return json.loads((r.stdout or "").strip() or "[]")
+    except json.JSONDecodeError as ex:
+        raise BaselineError(f"psql JSON 輸出不可解（{ex.msg}）——輸出被污染或查詢形改變") from None
+
+
+def check_settings_against_seed(live_rows, seed):
+    """①system_settings 現況 vs seed：鍵缺／鍵多／值不等＝fail-loud 指名（restore 不改值）；回審計欄非 NULL 之列數。"""
+    need = {"setting_key", "setting_value", "stamped"}
+    if not isinstance(live_rows, list) or not all(isinstance(r, dict) and need <= set(r) for r in live_rows):
+        raise BaselineError("system_settings 撈取輸出形不符（須為 [{setting_key, setting_value, stamped}]）")
+    live = {r["setting_key"]: r["setting_value"] for r in live_rows}
+    bad = [f"{k} 現值缺席／seed {seed[k]!r}" for k in sorted(set(seed) - set(live))] + \
+          [f"{k} 現值 {live[k]!r}／seed 無此鍵" for k in sorted(set(live) - set(seed))] + \
+          [f"{k} 現值 {live[k]!r}／seed {seed[k]!r}" for k in sorted(set(seed) & set(live))
+           if live[k] != seed[k]]
+    if bad:
+        raise BaselineError("system_settings 與 seed 不等——restore 不自動改值（先以 002 刀 system_settings "
+                            "寫端改回 seed 值、再跑 restore）：" + "；".join(bad))
+    return sum(1 for r in live_rows if r["stamped"])
+
+
+def restore_sql(snap):
+    """②③ 單交易寫句：審計欄歸 NULL → 三表 DELETE＋session_id 歸 NULL → 三支 setval（值自基準檔現讀）。"""
+    seqs = snap["sequences"]
+    setvals = tuple(f"SELECT setval('{n}', {seqs[n]['last_value']}, "
+                    f"{'true' if seqs[n]['is_called'] else 'false'});" for n in RESTORE_SEQUENCES)
+    return " ".join(("BEGIN;", SQL_RESTORE_AUDIT) + SQL_RESTORE_CLEAR + setvals + ("COMMIT;",))
+
+
+def redis_clear_prefixes(run):
+    """④依前綴 `--scan --pattern` 取鍵（去重、排序）→ 逐鍵指名 DEL（每批 ≤REDIS_DEL_BATCH；零鍵不送 DEL）。
+    回 ({前綴: 鍵數}, DEL 回報刪除數)；DEL 回非整數＝rc 2。"""
+    found, keys, deleted = {}, [], 0
+    for p in RESTORE_REDIS_PREFIXES:
+        got = sorted({k.strip() for k in
+                      redis_out(f"--scan --pattern {shlex.quote(p + ':*')}", run).splitlines()
+                      if k.strip()})
+        found[p] = len(got)
+        keys += got
+    for i in range(0, len(keys), REDIS_DEL_BATCH):
+        raw = redis_out("DEL " + " ".join(shlex.quote(k) for k in keys[i:i + REDIS_DEL_BATCH]),
+                        run).strip()
+        try:
+            deleted += int(raw)
+        except ValueError:
+            raise BaselineError(f"redis DEL 回非整數：{raw[:80]!r}——pg 交易已提交、redis 殘鍵未必清完；"
+                                "補救：確認 redis 容器可用後重跑同一 restore（冪等：pg 面已空、只剩前綴鍵待清）") from None
+    return found, deleted
+
+
+def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=None):
+    base = load_snapshot(path)
+    check_restore_baseline(base)
+    check_settings_seed_evolution(ledger_path or os.path.join(REPO_ROOT, SCHEMA_EVOLUTION))
+    seed_path = seed_path or os.path.join(REPO_ROOT, SEED_FIXTURE)
+    try:
+        with open(seed_path, encoding="utf-8") as fh:
+            seed = seed_settings(fh.read())
+    except OSError as ex:
+        raise BaselineError(f"seed 左源讀取失敗：{seed_path}：{ex}") from None
+    stamped = check_settings_against_seed(psql_json(SQL_SETTINGS, user, db, run), seed)
+    _say(f"[walkthrough-baseline] restore ①system_settings：{len(seed)} 鍵值＝seed；"
+         f"審計欄非 NULL {stamped} 列（交易內歸 NULL）")
+    r = _run_docker(psql_argv(restore_sql(base), user, db), run)
+    if r.returncode != 0:
+        raise BaselineError(f"restore 交易失敗（rc={r.returncode}、整筆回滾、未動 redis）："
+                            f"{(r.stderr or '').strip()[:300]}"
+                            "；補救：依上列 psql 錯誤修正（常見＝postgres 容器未起）後重跑同一 restore（交易已回滾、可安全重跑）")
+    seqs = "、".join(f"{n}（{_seq_text(base['sequences'][n])}）" for n in RESTORE_SEQUENCES)
+    _say(f"[walkthrough-baseline] restore ②③pg 單交易已提交：DELETE {'／'.join(RESTORE_TABLES)}＋"
+         f"sys_user.session_id 歸 NULL＋setval（{seqs}）")
+    found, deleted = redis_clear_prefixes(run)
+    counts = "／".join(f"{p} 前綴 {n} 鍵" for p, n in found.items())
+    _say(f"[walkthrough-baseline] restore ④redis：{counts}、DEL 回報 {deleted} 鍵（逐鍵指名）")
+    _say("[walkthrough-baseline] restore ⑤收尾 diff（其 rc 即 restore 之 rc；0＝已還原）：")
+    return cmd_diff(path, user, db, run)
+
+
 def usage(msg=None):
     if msg:
         _say(f"[walkthrough-baseline] 用法錯：{msg}", err=True)
     _say(f"用法：python3 {PROG} snapshot <檔> [--user U] [--db D]\n"
          f"      python3 {PROG} diff <檔> [--user U] [--db D]\n"
+         f"      python3 {PROG} restore <檔> [--user U] [--db D]\n"
          f"      python3 {PROG} test\n"
          f"  snapshot＝走查前取三面基準寫 JSON；diff＝走查後重取現況逐值比對（rc 0 才算環境已還原）；"
-         f"退出碼 0 全等／1 有差／2 環境或結構異常／64 用法錯", err=True)
+         f"restore＝走查後清理（安全帶：基準須為空）＋收尾 diff（rc 即 diff 之 rc）；"
+         f"退出碼 0 全等／1 有差／2 環境或結構異常（restore 含拒跑）／64 用法錯", err=True)
     return RC_USAGE
 
 
@@ -383,11 +590,14 @@ def main(argv, run=subprocess.run):
             _say(f"[walkthrough-baseline] ✓ self-test 過（{result.testsRun} 案：diff 純函式六形、"
                  "前綴分組與 SCAN 去重、DBSIZE 互證、JSON 往返、基準檔缺席／壞形（含型別）、"
                  "空面與撈取截斷 rc 2、"
-                 "psql 輸出不可解 rc 2、退出碼四態＋字面契約、用法、psql／redis 命令構造與唯讀、"
-                 "目錄 SQL 與 count 腿抗窄化、密碼不出 argv、print 全 flush）")
+                 "psql 輸出不可解 rc 2、退出碼四態＋字面契約、用法、psql／redis 命令構造與 snapshot／diff 唯讀、"
+                 "目錄 SQL 與 count 腿抗窄化、密碼不出 argv、print 全 flush；restore 寫面逐字＋次序、"
+                 "setval 自基準現讀、安全帶拒跑零呼叫、清理面缺席、settings 值≠seed 零寫入、收尾 diff rc、"
+                 "失敗即停、DEL 分批、seed 解析與空面、演進帳 system_settings seed 登記拒跑／他表與結構性登記不擋／"
+                 "登記檔缺席壞形、預設 seed 與演進帳哨兵與 --user／--db）")
             return RC_OK
         return RC_DIFF
-    if cmd in ("snapshot", "diff"):
+    if cmd in ("snapshot", "diff", "restore"):
         if len(argv) < 3 or argv[2].startswith("--"):
             return usage(f"{cmd} 需要 <檔> 位置引數（無隱含預設落點）")
         opts, err = _parse_opts(argv[3:])
@@ -397,6 +607,8 @@ def main(argv, run=subprocess.run):
         try:
             if cmd == "snapshot":
                 return cmd_snapshot(argv[2], user, db, run)
+            if cmd == "restore":
+                return cmd_restore(argv[2], user, db, run)
             return cmd_diff(argv[2], user, db, run)
         except BaselineError as ex:
             _say(f"[walkthrough-baseline] ✗ 環境或結構異常：{ex}", err=True)
@@ -417,16 +629,19 @@ def _completed(argv, rc, stdout="", stderr=""):
 
 
 class _StubRun:
-    """樁 subprocess.run：依 argv 分流 psql（依 SQL 內容）／redis（依命令）；記錄每次 argv。"""
+    """樁 subprocess.run：依 argv 分流 psql（依 SQL 內容）／redis（依命令）；記錄每次 argv。
+    restore 路徑另模擬寫面：交易句依其 DELETE／setval／審計 UPDATE 改樁內狀態、DEL 刪樁內鍵——
+    收尾 diff 因此對著「被 restore 改過的樁」算，rc 0／1 皆真實走過。"""
 
     def __init__(self, tables=None, seqs=None, keys=None, dbsize=None, fail=None, garble=None,
-                 truncate=None):
-        self.tables = FAKE_TABLES if tables is None else tables
-        self.seqs = FAKE_SEQS if seqs is None else seqs
-        self.keys = FAKE_KEYS if keys is None else keys
-        self.dbsize = len(self.keys) if dbsize is None else dbsize
-        self.fail = fail            # "psql"／"redis"＝該支非零退出
-        self.garble = garble        # "tables"／"seqs"＝該面回不可解輸出（缺欄／非整數）
+                 truncate=None, settings=None):
+        self.tables = dict(FAKE_TABLES if tables is None else tables)
+        self.seqs = dict(FAKE_SEQS if seqs is None else seqs)
+        self.keys = list(FAKE_KEYS if keys is None else keys)
+        self._dbsize = dbsize       # None＝隨現存鍵數（DEL 後同步變小）
+        self.settings = [dict(s) for s in (settings or [])]
+        self.fail = fail            # "psql"／"redis"＝該支非零退出；"tx"＝交易句失敗；"del"＝DEL 回非整數
+        self.garble = garble        # "tables"／"seqs"／"settings"＝該面回不可解輸出（缺欄／非整數／非 JSON）
         self.truncate = truncate    # "tables"／"seqs"＝該面值腿少回一列（輸出被截斷／撈取不完整）
         self.log = []
 
@@ -440,6 +655,21 @@ class _StubRun:
                 out = "\n".join(sorted(self.tables))
             elif sql == SQL_SEQUENCES:
                 out = "\n".join(sorted(self.seqs))
+            elif sql == SQL_SETTINGS:
+                if self.garble == "settings":
+                    return _completed(argv, 0, "not json\n", "")
+                return _completed(argv, 0, json.dumps(self.settings, ensure_ascii=False) + "\n", "")
+            elif sql.startswith("BEGIN;"):
+                if self.fail == "tx":
+                    return _completed(argv, 3, "", "ERROR:  simulated failure")
+                for t in re.findall(r"DELETE FROM (\w+);", sql):
+                    self.tables[t] = 0
+                for name, v, called in re.findall(r"setval\('(\w+)', (\d+), (true|false)\)", sql):
+                    self.seqs[name] = (int(v), "t" if called == "true" else "f")
+                if sql.count("UPDATE system_settings SET updated_at = NULL, updated_by = NULL"):
+                    for s in self.settings:
+                        s["stamped"] = False
+                return _completed(argv, 0, "COMMIT\n", "")
             elif "count(*)" in sql:
                 if self.garble == "tables":
                     return _completed(argv, 0, "sys_user\n", "")           # 缺列數欄
@@ -457,7 +687,19 @@ class _StubRun:
             return _completed(argv, 1, "", "NOAUTH Authentication required.")
         cmd = argv[-1]
         if cmd.endswith(" DBSIZE"):
-            return _completed(argv, 0, f"{self.dbsize}\n", "")
+            size = len(self.keys) if self._dbsize is None else self._dbsize
+            return _completed(argv, 0, f"{size}\n", "")
+        if " DEL " in cmd:
+            if self.fail == "del":
+                return _completed(argv, 0, "ERR simulated\n", "")
+            names = shlex.split(cmd.split(" DEL ", 1)[1])
+            hit = sum(1 for k in names if k in self.keys)
+            self.keys = [k for k in self.keys if k not in names]
+            return _completed(argv, 0, f"{hit}\n", "")
+        if " --scan --pattern " in cmd:
+            pattern = shlex.split(cmd.split(" --scan --pattern ", 1)[1])[0]
+            stem = pattern[:-1] if pattern.endswith("*") else pattern
+            return _completed(argv, 0, "".join(k + "\n" for k in self.keys if k.startswith(stem)), "")
         return _completed(argv, 0, "".join(k + "\n" for k in self.keys), "")
 
 
@@ -680,7 +922,9 @@ class TestExitCodes(unittest.TestCase):
 
     def test_usage_is_64_on_stderr(self):
         for argv in ([PROG], [PROG, "nope"], [PROG, "snapshot"], [PROG, "diff", "--user", "x"],
-                     [PROG, "diff", "f.json", "--bogus"], [PROG, "diff", "f.json", "--user"]):
+                     [PROG, "diff", "f.json", "--bogus"], [PROG, "diff", "f.json", "--user"],
+                     [PROG, "restore"], [PROG, "restore", "--db", "x"],
+                     [PROG, "restore", "f.json", "--bogus"]):
             err = io.StringIO()
             with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(main(argv, run=_StubRun()), RC_USAGE, msg=str(argv))
@@ -707,18 +951,34 @@ class TestCommandForms(unittest.TestCase):
         self.assertTrue(psqls and all(a[a.index("-U") + 1] == "u9" and a[a.index("-d") + 1] == "d9"
                                       for a in psqls))
 
-    def test_every_pg_statement_is_select_and_every_redis_command_is_read(self):
+    def test_snapshot_and_diff_are_read_only(self):
+        """★唯讀紀律的射程＝snapshot 與 diff 兩路（restore 的寫面另由 TestRestore 逐字釘死）：
+        兩路任一混入寫句（非 SELECT 起首、或含寫入字詞）或非讀 redis 命令即紅。"""
         stub = _StubRun()
         snapshot_live(run=stub)
         sqls = [a[-1] for a in stub.log if "psql" in a]
         self.assertEqual(len(sqls), 4)                   # 表清單／表列數／序列清單／序列值
-        self.assertTrue(all(s.startswith("SELECT ") for s in sqls), msg=sqls)
-        self.assertFalse(any(w in s.upper() for s in sqls
-                             for w in ("INSERT", "UPDATE", "DELETE", "TRUNCATE", "SETVAL", "ALTER")))
+        self.assertEqual(_pg_write_offenders(sqls), [])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(len(redis_cmds), 2)
-        self.assertTrue(all(c.endswith(" DBSIZE") or c.endswith(" --scan") for c in redis_cmds),
-                        msg=redis_cmds)
+        self.assertEqual(_redis_write_offenders(redis_cmds), [])
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "b.json")
+            dump_snapshot(snapshot_live(run=_StubRun()), path)
+            diff_stub = _StubRun()
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(cmd_diff(path, DB_USER, DB_NAME, diff_stub), RC_OK)
+        diff_sqls = [a[-1] for a in diff_stub.log if "psql" in a]
+        diff_redis = [a[-1] for a in diff_stub.log if "sh" in a]
+        self.assertEqual((len(diff_sqls), len(diff_redis)), (4, 2))
+        self.assertEqual(_pg_write_offenders(diff_sqls), [])
+        self.assertEqual(_redis_write_offenders(diff_redis), [])
+        # 判準本身抓得到寫句（含「SELECT 起首卻夾帶寫句」形）、且不被 updated_at 之類欄名誤觸
+        self.assertEqual(len(_pg_write_offenders(["DELETE FROM sys_token", "SELECT 1; DELETE FROM x",
+                                                  "SELECT setval('s', 1, false)",
+                                                  "SELECT updated_at, deleted_at FROM t"])), 3)
+        self.assertEqual(len(_redis_write_offenders([f"{REDIS_CLI} DEL k", f"{REDIS_CLI} FLUSHDB",
+                                                     f"{REDIS_CLI} --scan"])), 2)
         # 表名照規矩雙引號、名欄單引號（UNION ALL 一次撈）
         self.assertIn('SELECT \'sys_user\', count(*) FROM "sys_user"', sqls[1])
         self.assertIn(" UNION ALL ", sqls[1])
@@ -777,6 +1037,340 @@ class TestCommandForms(unittest.TestCase):
             src = fh.read()
         offenders = [ln for ln in src.splitlines() if "print(" in ln and "flush=True" not in ln]
         self.assertEqual(offenders, [], msg=str(offenders))
+
+
+# ── restore 自測（BL-00053）──────────────────────────────────────────────────
+
+_WRITE_WORDS = re.compile(r"\b(INSERT|UPDATE|DELETE|TRUNCATE|SETVAL|ALTER|DROP|CREATE|BEGIN|COMMIT|"
+                          r"COPY|GRANT)\b")
+_REDIS_READ_SUFFIXES = (" DBSIZE", " --scan", " --scan --pattern 'session:*'",
+                        " --scan --pattern 'throttle:*'")
+
+
+def _pg_write_offenders(sqls):
+    """唯讀判準：非 SELECT 起首、或含寫入字詞（字詞邊界比對——updated_at 之類欄名不誤觸）者皆列出。"""
+    return [s for s in sqls if not s.startswith("SELECT ") or _WRITE_WORDS.search(s.upper())]
+
+
+def _redis_write_offenders(cmds):
+    """唯讀判準：redis 命令只准 DBSIZE／--scan（含 restore 兩前綴樣式掃描）；其餘一律列出。"""
+    return [c for c in cmds if not c.endswith(_REDIS_READ_SUFFIXES)]
+
+
+RESTORE_FAKE_TABLES = {"sys_user": 3, "sys_token": 0, "session_event": 0, "sys_login_attempt": 0,
+                       "system_settings": 2, "seaql_migrations": 7}
+RESTORE_FAKE_SEQS = {"sys_user_id_seq": (3, "t"), "sys_token_id_seq": (1, "f"),
+                     "session_event_id_seq": (1, "f"), "sys_login_attempt_id_seq": (1, "f")}
+SEED_SETTINGS_TEXT = (
+    "--\n-- Data for Name: system_settings; Type: TABLE DATA; Schema: public; Owner: soybean\n--\n\n"
+    "COPY public.system_settings (setting_key, created_at, updated_at, updated_by, setting_type, "
+    "setting_value, description) FROM stdin;\n"
+    "session_idle_timeout\t2026-08-05 00:00:00+00\t\\N\t\\N\tnumber\t60\t閒置逾時\n"
+    "single_session_default\t2026-08-05 00:00:00+00\t\\N\t\\N\tenum:on,off\toff\t全站單一-session 預設\n"
+    "\\.\n")
+
+
+def _seed_settings_rows(**value_over):
+    """樁 system_settings 現況列（值＝SEED_SETTINGS_TEXT、審計欄全 NULL）；可覆寫個別鍵的值。"""
+    rows = [{"setting_key": "session_idle_timeout", "setting_value": "60", "stamped": False},
+            {"setting_key": "single_session_default", "setting_value": "off", "stamped": False}]
+    for r in rows:
+        r["setting_value"] = value_over.get(r["setting_key"], r["setting_value"])
+    return rows
+
+
+def _restore_stub(**over):
+    kw = {"tables": RESTORE_FAKE_TABLES, "seqs": RESTORE_FAKE_SEQS, "keys": ["plainkey"],
+          "settings": _seed_settings_rows()}
+    kw.update(over)
+    return _StubRun(**kw)
+
+
+def _ledger_entry(eid, kind, table, detail):
+    """合成演進登記項（欄位齊同 specs/001-schema-baseline/contracts/schema-evolution.md §2）。"""
+    return {"id": eid, "knife": "001-schema-baseline", "kind": kind, "table": table,
+            "detail": detail, "date": "2026-09-14"}
+
+
+class TestRestore(unittest.TestCase):
+    """restore 五步：安全帶（基準須為空）→system_settings 對 seed（值不等 fail-loud、不改值）→pg 單交易
+    （寫句恰為列舉、setval 自基準檔現讀）→redis 兩前綴逐鍵指名 DEL（絕不 FLUSHDB）→收尾 diff 之 rc 即 restore 之 rc。"""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.d = self._tmp.name
+        self.seed = os.path.join(self.d, "seed.sql")
+        with open(self.seed, "w", encoding="utf-8") as fh:
+            fh.write(SEED_SETTINGS_TEXT)
+        self.ledger = os.path.join(self.d, "schema-evolution.json")
+        self._write_ledger()                        # 各案預設空帳（＝基線初始態）、與真 repo 登記檔隔離
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _write_ledger(self, *entries):
+        with open(self.ledger, "w", encoding="utf-8") as fh:
+            json.dump({"next_id": len(entries) + 1, "entries": list(entries)}, fh, ensure_ascii=False)
+
+    def _baseline(self, stub):
+        path = os.path.join(self.d, "walk.json")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cmd_snapshot(path, DB_USER, DB_NAME, stub), RC_OK)
+        stub.log.clear()
+        return path
+
+    def _restore(self, path, stub):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        return rc, out.getvalue() + err.getvalue()
+
+    @staticmethod
+    def _dirty(stub):
+        """模擬走查殘留：三表列＋序列推進＋session／throttle 鍵（含須引號的鍵名）＋審計欄被寫。"""
+        stub.tables.update(sys_token=2, session_event=3, sys_login_attempt=1)
+        stub.seqs.update(sys_token_id_seq=(33, "t"), session_event_id_seq=(4, "t"),
+                         sys_login_attempt_id_seq=(9, "t"))
+        stub.keys += ["session:sid-a:last_activity", "throttle:lock:user:走查 探針",
+                      "session:denylist:sid-b"]
+        stub.settings[1]["stamped"] = True
+
+    def test_write_statements_are_exactly_the_enumerated_transaction_and_del(self):
+        """★寫面逐字釘死（多一句、少一句、換序皆紅）；其餘 pg 句與 redis 命令一律過唯讀判準。"""
+        stub = _restore_stub(seqs=dict(RESTORE_FAKE_SEQS, sys_token_id_seq=(5, "t")))
+        path = self._baseline(stub)
+        self._dirty(stub)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        sqls = [a[-1] for a in stub.log if "psql" in a]
+        writes = [s for s in sqls if _pg_write_offenders([s])]
+        self.assertEqual(writes, [
+            "BEGIN; "
+            "UPDATE system_settings SET updated_at = NULL, updated_by = NULL "
+            "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL; "
+            "DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; "
+            "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
+            "SELECT setval('sys_token_id_seq', 5, true); "
+            "SELECT setval('session_event_id_seq', 1, false); "
+            "SELECT setval('sys_login_attempt_id_seq', 1, false); "
+            "COMMIT;"])
+        redis_cmds = [a[-1] for a in stub.log if "sh" in a]
+        self.assertEqual(_redis_write_offenders(redis_cmds), [
+            f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
+            "'throttle:lock:user:走查 探針'"])
+        self.assertFalse(any("FLUSH" in c.upper() for c in redis_cmds))
+        self.assertEqual(stub.keys, ["plainkey"])                      # 非清理前綴之鍵不動
+        self.assertFalse(any(s["stamped"] for s in stub.settings))     # 審計欄已歸 NULL
+        # 次序：settings 讀 → 交易 → 前綴掃 → DEL → 收尾 diff 取樣
+        flat = [a[-1] for a in stub.log]
+        order = (flat.index(SQL_SETTINGS), flat.index(writes[0]),
+                 min(i for i, c in enumerate(flat) if " --scan --pattern " in c),
+                 min(i for i, c in enumerate(flat) if " DEL " in c),
+                 max(i for i, c in enumerate(flat) if c == SQL_TABLES))
+        self.assertEqual(list(order), sorted(order), msg=order)
+        self.assertIn("✓ 全等", text)
+
+    def test_setval_values_are_read_from_the_baseline_file_not_hardcoded(self):
+        snap = _snap(tables={t: 0 for t in RESTORE_TABLES},
+                     sequences={"sys_token_id_seq": {"last_value": 9, "is_called": True},
+                                "session_event_id_seq": {"last_value": 8, "is_called": False},
+                                "sys_login_attempt_id_seq": {"last_value": 7, "is_called": True}},
+                     redis={"dbsize": 0, "prefixes": {}})
+        sql = restore_sql(snap)
+        self.assertTrue(sql.endswith("SELECT setval('sys_token_id_seq', 9, true); "
+                                     "SELECT setval('session_event_id_seq', 8, false); "
+                                     "SELECT setval('sys_login_attempt_id_seq', 7, true); COMMIT;"),
+                        msg=sql)
+        self.assertEqual(sql.count("setval("), 3)
+
+    def test_nonempty_baseline_refuses_rc2_before_any_docker_call(self):
+        """★安全帶：基準檔三表任一列數或 session／throttle 前綴鍵數非 0＝rc 2、零 docker 呼叫＝零寫入。"""
+        for over in ({"tables": dict(RESTORE_FAKE_TABLES, sys_token=2)},
+                     {"tables": dict(RESTORE_FAKE_TABLES, session_event=1)},
+                     {"tables": dict(RESTORE_FAKE_TABLES, sys_login_attempt=4)},
+                     {"keys": ["plainkey", "session:sid-x"]},
+                     {"keys": ["throttle:lock:ip:203.0.113.9"]}):
+            stub = _restore_stub(**over)
+            path = self._baseline(stub)
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                rc = main([PROG, "restore", path], run=stub)
+            self.assertEqual(rc, RC_ENV, msg=over)
+            self.assertIn("基準非空、DELETE 全表會毀掉基準資料", err.getvalue(), msg=over)
+            self.assertEqual(stub.log, [], msg=over)
+
+    def test_baseline_lacking_restore_tables_or_sequences_is_env_error(self):
+        for over, needle in (({"tables": {"sys_user": 3, "sys_token": 0, "session_event": 0}},
+                              "sys_login_attempt"),
+                             ({"seqs": {k: v for k, v in RESTORE_FAKE_SEQS.items()
+                                        if k != "session_event_id_seq"}}, "session_event_id_seq")):
+            stub = _restore_stub(**over)
+            path = self._baseline(stub)
+            with self.assertRaises(BaselineError) as ctx:
+                cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+            self.assertIn(needle, str(ctx.exception))
+            self.assertEqual(stub.log, [])
+
+    def test_settings_value_drift_fails_loud_by_name_and_writes_nothing(self):
+        """值≠seed（含鍵缺／鍵多）＝fail-loud 指名、不自動改值；只讀過 settings 一句、零寫入。"""
+        extra = {"setting_key": "zz_extra", "setting_value": "1", "stamped": False}
+        for rows, needles in ((_seed_settings_rows(single_session_default="on"),
+                               ("single_session_default", "'on'", "'off'")),
+                              (_seed_settings_rows()[:1], ("single_session_default",)),
+                              (_seed_settings_rows() + [extra], ("zz_extra",))):
+            stub = _restore_stub()
+            path = self._baseline(stub)
+            self._dirty(stub)
+            stub.settings = rows
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+                cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+            for needle in needles + ("002 刀",):
+                self.assertIn(needle, str(ctx.exception))
+            self.assertEqual([a[-1] for a in stub.log], [SQL_SETTINGS])
+
+    def test_restore_rc_is_the_final_diff_rc(self):
+        stub = _restore_stub()
+        path = self._baseline(stub)
+        self._dirty(stub)
+        stub.tables["sys_user"] = 4                 # 清理面之外的殘留：restore 不碰、收尾 diff 照報
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_DIFF)
+        self.assertIn("表｜sys_user｜3｜4｜1", text)
+        self.assertEqual((stub.tables["sys_token"], stub.keys), (0, ["plainkey"]))
+
+    def test_failures_are_env_errors_and_stop_before_later_steps(self):
+        stub = _restore_stub()                      # 交易失敗 → 不進 redis
+        path = self._baseline(stub)
+        self._dirty(stub)
+        stub.fail = "tx"
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError):
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        self.assertFalse(any(" --scan --pattern " in a[-1] or " DEL " in a[-1] for a in stub.log))
+        stub = _restore_stub()                      # DEL 回非整數 → 不進收尾 diff
+        path = self._baseline(stub)
+        self._dirty(stub)
+        stub.fail = "del"
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError):
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        self.assertNotIn(SQL_TABLES, [a[-1] for a in stub.log])
+        stub = _restore_stub(garble="settings")     # settings 輸出不可解 → 零寫入
+        path = self._baseline(stub)
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError):
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        self.assertEqual(_pg_write_offenders([a[-1] for a in stub.log if "psql" in a]), [])
+        stub = _restore_stub()                      # seed 缺席 → 零 docker 呼叫
+        path = self._baseline(stub)
+        with self.assertRaises(BaselineError) as ctx:
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=os.path.join(self.d, "nope.sql"),
+                        ledger_path=self.ledger)
+        self.assertIn("nope.sql", str(ctx.exception))
+        self.assertEqual(stub.log, [])
+
+    def test_system_settings_seed_evolution_entry_refuses_by_id_before_any_docker_call(self):
+        """★seed 左源只讀凍結 COPY 段、未合成演進帳：帳上一有 system_settings 之 seed_* 登記，凍結段即非期望 seed
+        （期望＝凍結 ⊕ 演進、同 tools/schema-gate.py gate2）——照比會把 migration 定義的合法值報成「值≠seed」、
+        並叫操作者以 002 刀寫端改回（seed_add 之新鍵更無從經寫端刪除）。三 kind 任一＝指名登記 id、明說先擴充
+        本工具、不出寫端補救句、零 docker 呼叫＝零寫入；同帳他表之登記不影響判定。"""
+        other = _ledger_entry("E-001", "seed_update", "sys_user",
+                              {"pk": {"id": 3}, "set": {"nick_name": "User01"}})
+        for eid, kind, detail in (
+                ("E-002", "seed_add", {"pk": ["setting_key"],
+                                       "values": {"setting_key": "trusted_proxy_cidrs"}}),
+                ("E-003", "seed_update", {"pk": {"setting_key": "session_idle_timeout"},
+                                          "set": {"setting_value": "30"}}),
+                ("E-004", "seed_delete", {"pk": {"setting_key": "single_session_default"}})):
+            self._write_ledger(other, _ledger_entry(eid, kind, "system_settings", detail))
+            stub = _restore_stub()
+            path = self._baseline(stub)
+            self._dirty(stub)
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+                cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+            msg = str(ctx.exception)
+            for needle in (eid, kind, "system_settings", "先擴充本工具", "零寫入"):
+                self.assertIn(needle, msg, msg=kind)
+            self.assertNotIn("E-001", msg, msg=kind)
+            self.assertNotIn("002 刀", msg, msg=kind)
+            self.assertEqual(stub.log, [], msg=kind)
+
+    def test_evolution_entries_off_system_settings_seed_kinds_do_not_block(self):
+        """反面：他表之 seed_* 登記、system_settings 之結構性登記（add_column＝nullable 無 default、不改鍵值集）
+        皆不擋——restore 照常清理、收尾 diff rc 0。"""
+        self._write_ledger(
+            _ledger_entry("E-001", "seed_update", "sys_user", {"pk": {"id": 3}, "set": {"nick_name": "User01"}}),
+            _ledger_entry("E-002", "add_column", "system_settings",
+                          {"column": "note", "type": "text", "nullable": True}))
+        stub = _restore_stub()
+        path = self._baseline(stub)
+        self._dirty(stub)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        self.assertEqual((stub.tables["sys_token"], stub.keys), (0, ["plainkey"]))
+
+    def test_ledger_missing_or_malformed_is_env_error_before_any_docker_call(self):
+        """演進登記檔缺席／非 JSON／entries 非 list／含非物件項＝rc 2、零 docker 呼叫（讀不懂帳＝不知左源是否仍為期望 seed）。"""
+        for body in (None, "not json", '{"next_id": 1}', '{"next_id": 1, "entries": {}}',
+                     '{"next_id": 2, "entries": ["E-001"]}'):
+            if body is None:
+                os.remove(self.ledger)
+            else:
+                with open(self.ledger, "w", encoding="utf-8") as fh:
+                    fh.write(body)
+            stub = _restore_stub()
+            path = self._baseline(stub)
+            with self.assertRaises(BaselineError, msg=body) as ctx:
+                cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+            self.assertIn("schema-evolution.json", str(ctx.exception), msg=body)
+            self.assertEqual(stub.log, [], msg=body)
+
+    def test_del_is_named_keys_in_bounded_batches_and_skipped_when_none(self):
+        stub = _restore_stub()
+        path = self._baseline(stub)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        self.assertFalse(any(" DEL " in a[-1] for a in stub.log))   # 零鍵不送空 DEL
+        names = [f"throttle:fail:user:u{i:03d}" for i in range(2 * REDIS_DEL_BATCH + 5)]
+        stub.keys += names
+        stub.log.clear()
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        batches = [shlex.split(a[-1].split(" DEL ", 1)[1]) for a in stub.log if " DEL " in a[-1]]
+        self.assertEqual([len(b) for b in batches], [REDIS_DEL_BATCH, REDIS_DEL_BATCH, 5])
+        self.assertEqual(sorted(k for b in batches for k in b), sorted(names))
+
+    def test_seed_settings_parse_and_empty_surface(self):
+        self.assertEqual(seed_settings(SEED_SETTINGS_TEXT),
+                         {"session_idle_timeout": "60", "single_session_default": "off"})
+        escaped = SEED_SETTINGS_TEXT.replace("\toff\t", "\ta\\tb\\\\c\t").replace("\t60\t", "\t\\N\t")
+        self.assertEqual(seed_settings(escaped),
+                         {"session_idle_timeout": None, "single_session_default": "a\tb\\c"})
+        for bad in ("",
+                    SEED_SETTINGS_TEXT.replace("COPY public.system_settings", "COPY public.other"),
+                    SEED_SETTINGS_TEXT.split("session_idle_timeout")[0] + "\\.\n",     # 零列
+                    SEED_SETTINGS_TEXT.replace("\tnumber\t60", "\t60"),                # 欄數不符
+                    SEED_SETTINGS_TEXT.replace("setting_value", "value")):            # 缺值欄
+            with self.assertRaises(BaselineError, msg=bad[:80]):
+                seed_settings(bad)
+        with open(os.path.join(REPO_ROOT, SEED_FIXTURE), encoding="utf-8") as fh:
+            real = seed_settings(fh.read())
+        self.assertEqual((len(real), real["single_session_default"]), (16, "off"))
+
+    def test_main_restore_defaults_to_frozen_seed_and_honours_user_db(self):
+        """main 走預設左源＝真 repo 凍結 seed＋真 repo 演進登記檔——演進帳登記 system_settings 之 seed_* 後本案即紅
+        （rc 2、訊息指名登記 id）。★觸發面只有本檔 staged 時之 pre-commit 自測與 bash tools/bootstrap.sh 名冊：只登記演進帳之
+        commit 不跑本案，首撞點可能延到走查當下 restore rc 2（前置斷言在任何寫入之前、零寫入）。"""
+        with open(os.path.join(REPO_ROOT, SEED_FIXTURE), encoding="utf-8") as fh:
+            real = seed_settings(fh.read())
+        stub = _restore_stub(settings=[{"setting_key": k, "setting_value": v, "stamped": False}
+                                       for k, v in sorted(real.items())])
+        path = self._baseline(stub)
+        self._dirty(stub)
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            rc = main([PROG, "restore", path, "--user", "u9", "--db", "d9"], run=stub)
+        self.assertEqual(rc, RC_OK, msg=err.getvalue())
+        psqls = [a for a in stub.log if "psql" in a]
+        self.assertTrue(psqls and all(a[a.index("-U") + 1] == "u9" and a[a.index("-d") + 1] == "d9"
+                                      for a in psqls))
 
 
 if __name__ == "__main__":

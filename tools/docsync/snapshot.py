@@ -5,14 +5,19 @@ snapshot.py：refresh 快照管線（需 dev stack postgres）與兩張參考真
 對賬面＝tests/test_snapshot.py）、psql_fetch（compose exec psql、stack 缺席 fail-loud＋啟動提示）、build_schema_snapshot／build_accounts_snapshot
 （白名單投影＋確定性排序）、snapshot_dumps、cmd_refresh（六撈全成功才原子落兩檔、任一失敗零寫入）、gen_reference_schema／gen_reference_accounts
 （Ctx 注入、讀 reference-src 三檔；缺檔／壞 JSON／map 缺表或缺 label／綁定懸空＝fail-loud）。
+帳號快照投影對賬腿（BL-00038）：gen_reference_accounts 渲染前以 accounts_seed_findings 對賬快照 users／roles／bindings 三節 ⇔
+凍結 specs/001-schema-baseline/fixtures/seed.sql 之 sys_user／sys_role／sys_user_role COPY 段投影（⊕ schema-evolution.json 之 seed_* 登記＝合法差額）；
+不等、左源缺席或比對面為空＝SnapshotError——generate／check／lint 同經此路（每顆 commit 的 docsync check 即承接、不另占閘號）。
+比對在 pg COPY 文字面做；seed 列之 password 欄只留在解析區域資料內、任何訊息只回顯投影鍵值。
 generate／check／lint 只讀快照、絕不碰 docker（承 rev5:docs-sync.py 快照管線、重打字為 package 形）。
 """
 import json
 import os
+import re
 import subprocess
 import tempfile
 
-from . import ROOT, SCHEMA_SNAPSHOT, ACCOUNTS_SNAPSHOT, ARCHETYPE_MAP
+from . import ROOT, SCHEMA_SNAPSHOT, ACCOUNTS_SNAPSHOT, ARCHETYPE_MAP, REFERENCE_SRC_DIR
 from .common import GENERATED_HEADER
 
 STACK_HINT = "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait postgres"
@@ -58,6 +63,15 @@ USER_KEYS = ("id", "user_name", "nick_name", "status")
 ROLE_KEYS = ("id", "role_code", "role_name", "status")
 BINDING_KEYS = ("user_id", "role_id")
 FRAMEWORK_TABLE = "seaql_migrations"
+
+# 帳號快照投影對賬腿（BL-00038）之兩左源與節對照：(快照節, seed COPY 表, 投影鍵, 身分鍵)
+SEED_FIXTURE = "specs/001-schema-baseline/fixtures/seed.sql"     # 凍結 fixture（唯讀；pg_dump --data-only 形）
+SCHEMA_EVOLUTION = f"{REFERENCE_SRC_DIR}/schema-evolution.json"  # 演進登記檔（形斷言權威＝tools/schema-gate.py）
+ACCOUNT_SECTIONS = (("users", "sys_user", USER_KEYS, ("id",)),
+                    ("roles", "sys_role", ROLE_KEYS, ("id",)),
+                    ("bindings", "sys_user_role", BINDING_KEYS, BINDING_KEYS))
+SEED_KINDS = ("seed_add", "seed_update", "seed_delete")
+_RE_COPY_HDR = re.compile(r"^COPY public\.(\w+) \(([^)]*)\) FROM stdin;$")
 
 
 class SnapshotError(Exception):
@@ -197,8 +211,129 @@ def gen_reference_schema(ctx):
     return "".join(parts)
 
 
+def _copy_text(v):
+    """JSON 值 → pg COPY text 格（同 tools/schema-gate.py copy_literal 之則）：投影比對一律在 COPY 文字面做、免猜欄型別。"""
+    if v is None:
+        return "\\N"
+    if isinstance(v, bool):
+        return "t" if v else "f"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, str):
+        return v.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r")
+    raise SnapshotError(f"帳號投影對賬不支援的值型別：{type(v).__name__}")
+
+
+def _seed_copy_rows(seed_text, table, keys):
+    """凍結 seed 取一表 COPY 段 → [{欄: COPY 文字}]（全欄；sys_user 含 password——只留在此區域資料內、壞列訊息只報列序不回顯列文）。
+    段缺席／零列＝比對面為空、段首缺投影欄或列欄數不符＝凍結面受損，皆 fail-loud。"""
+    lines = seed_text.splitlines()
+    for i, ln in enumerate(lines):
+        m = _RE_COPY_HDR.match(ln)
+        if not (m and m.group(1) == table):
+            continue
+        cols = [c.strip().strip('"') for c in m.group(2).split(",")]
+        missing = [k for k in keys if k not in cols]
+        if missing:
+            raise SnapshotError(f"{SEED_FIXTURE} COPY public.{table} 段首缺投影欄 {missing}——凍結面受損或投影鍵與 seed 分家")
+        rows = []
+        for body in lines[i + 1:]:
+            if body == "\\.":
+                break
+            vals = body.split("\t")
+            if len(vals) != len(cols):
+                raise SnapshotError(f"{SEED_FIXTURE} COPY public.{table} 段第 {len(rows) + 1} 列欄數 {len(vals)} ≠ 段首 {len(cols)}"
+                                    "（凍結面受損；列文含機密欄、不回顯）")
+            rows.append(dict(zip(cols, vals)))
+        if not rows:
+            raise SnapshotError(f"{SEED_FIXTURE} COPY public.{table} 段零列——比對面為空、不得靜默判綠")
+        return rows
+    raise SnapshotError(f"{SEED_FIXTURE} 缺 COPY public.{table} 段——比對面為空、不得靜默判綠")
+
+
+def _row_text(row):
+    return "、".join(f"{k}={v}" for k, v in row.items())
+
+
+def seed_account_projection(seed_text, entries):
+    """凍結 seed ⊕ seed_* 登記 → {快照節: [投影列（COPY 文字）]}。合成語意同 tools/schema-gate.py apply_seed_entries
+    （登記檔形斷言權威在該閘、此處只驗合成所需）；三表以外或非 seed_* 之登記不動本面；登記 pk 只回顯投影鍵之值。"""
+    if not isinstance(entries, list):
+        raise SnapshotError(f"{SCHEMA_EVOLUTION} entries 須為 list——登記檔壞形（形＝specs/001-schema-baseline/contracts/schema-evolution.md §2）")
+    rows = {table: _seed_copy_rows(seed_text, table, keys) for _, table, keys, _ in ACCOUNT_SECTIONS}
+    shown = {table: keys for _, table, keys, _ in ACCOUNT_SECTIONS}
+    for e in entries:
+        if not isinstance(e, dict):
+            raise SnapshotError(f"{SCHEMA_EVOLUTION} entries 含非物件項——登記檔壞形")
+        table, kind = e.get("table"), e.get("kind")
+        if table not in rows or kind not in SEED_KINDS:
+            continue
+        eid, d = e.get("id", "?"), e.get("detail") if isinstance(e.get("detail"), dict) else {}
+        if kind == "seed_add":
+            values = d.get("values")
+            if not isinstance(values, dict) or any(k not in values for k in shown[table]):
+                raise SnapshotError(f"{SCHEMA_EVOLUTION} {eid} seed_add {table}：detail.values 須為物件且含投影欄 {list(shown[table])}")
+            rows[table].append({k: _copy_text(v) for k, v in values.items()})
+            continue
+        pk = d.get("pk")
+        if not isinstance(pk, dict) or not pk:
+            raise SnapshotError(f"{SCHEMA_EVOLUTION} {eid} {kind} {table}：detail.pk 須為非空物件（欄:值）")
+        want = {k: _copy_text(v) for k, v in pk.items()}
+        hits = [i for i, r in enumerate(rows[table]) if all(r.get(k) == v for k, v in want.items())]
+        if len(hits) != 1:
+            pk_text = _row_text({k: (v if k in shown[table] else "<略>") for k, v in want.items()})
+            raise SnapshotError(f"{SCHEMA_EVOLUTION} {eid} {kind} {table}：pk（{pk_text}）命中 {len(hits)} 列（須恰 1）")
+        if kind == "seed_delete":
+            del rows[table][hits[0]]
+            continue
+        sets = d.get("set")
+        if not isinstance(sets, dict) or not sets:
+            raise SnapshotError(f"{SCHEMA_EVOLUTION} {eid} seed_update {table}：detail.set 須為非空物件（欄:值）")
+        rows[table][hits[0]].update({k: _copy_text(v) for k, v in sets.items()})
+    return {section: [{k: r[k] for k in keys} for r in rows[table]] for section, table, keys, _ in ACCOUNT_SECTIONS}
+
+
+def accounts_seed_findings(snap, seed_text, entries):
+    """accounts 快照三節 ⇔ seed 投影（⊕ seed_* 登記）逐節以身分鍵對齊比對 → 差異訊息列（空＝全等）。
+    快照列鍵集須恰為白名單（多鍵——含 password——即 fail-loud、只報鍵名）；訊息只回顯投影鍵值。"""
+    expected = seed_account_projection(seed_text, entries)
+    out = []
+    for section, _, keys, id_keys in ACCOUNT_SECTIONS:
+        rows = snap.get(section)
+        if not isinstance(rows, list):
+            raise SnapshotError(f"{ACCOUNTS_SNAPSHOT} {section} 節須為 list——重跑 {REFRESH_HINT}")
+        live = []
+        for r in rows:
+            if not isinstance(r, dict) or set(r) != set(keys):
+                extra = sorted(set(r) - set(keys)) if isinstance(r, dict) else "非 object"
+                raise SnapshotError(f"{ACCOUNTS_SNAPSHOT} {section} 節列鍵集不符白名單 {list(keys)}（多：{extra or '無'}）"
+                                    f"——password 連雜湊都不入快照；重跑 {REFRESH_HINT}")
+            live.append({k: _copy_text(r[k]) for k in keys})
+        index = {}
+        for side, side_rows in (("快照", live), ("seed", expected[section])):
+            idx = index[side] = {}
+            for r in side_rows:
+                ident = tuple(r[k] for k in id_keys)
+                if ident in idx:
+                    out.append(f"{section} 節（{side}側）身分鍵重複：{_row_text({k: r[k] for k in id_keys})}")
+                idx[ident] = r
+        got, want = index["快照"], index["seed"]
+        for ident in sorted(set(got) | set(want)):
+            g, w = got.get(ident), want.get(ident)
+            if w is None:
+                out.append(f"{section} 節：快照有而 seed 無 {_row_text(g)}")
+            elif g is None:
+                out.append(f"{section} 節：seed 有而快照無 {_row_text(w)}")
+            else:
+                diffs = [f"{k} 快照 {g[k]!r}／seed {w[k]!r}" for k in keys if g[k] != w[k]]
+                if diffs:
+                    out.append(f"{section} 節 {_row_text({k: g[k] for k in id_keys})}：" + "；".join(diffs))
+    return out
+
+
 def gen_reference_accounts(ctx):
-    """reference/accounts ← accounts 快照：帳號｜暱稱｜狀態｜角色綁定（多綁依角色碼排序、無綁定「—」）＋角色表；綁定指向不存在 role＝fail-loud。"""
+    """reference/accounts ← accounts 快照：帳號｜暱稱｜狀態｜角色綁定（多綁依角色碼排序、無綁定「—」）＋角色表；綁定指向不存在 role＝fail-loud；
+    渲染前過帳號快照投影對賬腿（快照 ⇔ 凍結 seed ⊕ seed_* 登記；未登記差額、左源缺席或比對面為空＝fail-loud）。"""
     snap = _load_json(ctx, ACCOUNTS_SNAPSHOT, f"先跑 {REFRESH_HINT}（需 dev stack postgres 在跑）")
     role_code = {r["id"]: r["role_code"] for r in snap.get("roles", [])}
     bound = {}
@@ -206,6 +341,14 @@ def gen_reference_accounts(ctx):
         if b["role_id"] not in role_code:
             raise SnapshotError(f"accounts 快照綁定指向不存在的 role id {b['role_id']}（user id {b['user_id']}）——重跑 {REFRESH_HINT}")
         bound.setdefault(b["user_id"], []).append(role_code[b["role_id"]])
+    seed_text = ctx.text(SEED_FIXTURE)
+    if seed_text is None:
+        raise SnapshotError(f"{SEED_FIXTURE} 缺席——帳號快照投影對賬之左源（凍結 fixture）不在場＝比對面為空；凍結面受損自 git 還原、絕不重產")
+    ledger = _load_json(ctx, SCHEMA_EVOLUTION, "人寫演進登記檔（形＝specs/001-schema-baseline/contracts/schema-evolution.md §2）")
+    findings = accounts_seed_findings(snap, seed_text, ledger.get("entries"))
+    if findings:
+        raise SnapshotError(f"{ACCOUNTS_SNAPSHOT} ⇔ {SEED_FIXTURE} 投影不等（{len(findings)} 項未登記差額）：" + "；".join(findings) +
+                            f"——補救：seed 真變更→於 {SCHEMA_EVOLUTION} 登記 seed_* 演進；快照漂移→重跑 {REFRESH_HINT}（需 dev stack postgres）")
     user_rows = "".join(f"| {_cell(u['user_name'])} | {_cell(u['nick_name'])} | {_cell(u['status'])} | {_cell('、'.join(sorted(bound.get(u['id'], []))))} |\n"
                         for u in snap.get("users", []))
     role_rows = "".join(f"| {_cell(r['role_code'])} | {_cell(r['role_name'])} | {_cell(r['status'])} |\n" for r in snap.get("roles", []))
