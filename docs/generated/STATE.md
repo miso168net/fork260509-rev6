@@ -16,7 +16,7 @@
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
 - BACKLOG 開放：23｜滯後：2
 - LESSONS：21 筆
-- events：54 筆（erratum 2、feature_close 3、misc 20、perf 25、review 4）
+- events：55 筆（erratum 2、feature_close 3、misc 20、perf 26、review 4）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-15｜perf｜close_bookkeeping｜close_bookkeeping 16.72 秒 rc=0
 - 2026-09-15｜misc｜governance｜maint-backlog-71-46-76｜輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.…
 - 2026-09-14｜perf｜close_bookkeeping｜close_bookkeeping 15.17 秒 rc=0
-- 2026-09-14｜misc｜governance｜maint-backlog-pre-004｜輕量軌 maint-backlog-pre-004 收單（003 刀收刀後、004 刀前；四單元）：A1 rust-api 測試側補強＋JWT 兩鑰 boot…
