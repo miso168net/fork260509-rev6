@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-15 | review | 002-system-settings | findings 8（修 8／BL 0／ADR 0） | — | — | — |
 | 2026-09-15 | misc | governance｜maint-backlog-71-46-76 | 輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.vue` HTML 註解解析、rev6-↔rev5- 對應檔映射、反引號 span 與 doctest 圍欄豁免全路徑；base-web 註解改寫（BL-00071＋新量尺浮出之超標）與 wire-schema 快照 description 重抽；rust-api entity 關聯宣告只映真 DB FK 之機器腿、復原 A3 拆碎字面；BACKLOG 條文勘誤十列。 | cf1541b | — | — |
 | 2026-09-14 | misc | governance｜maint-backlog-pre-004 | 輕量軌 maint-backlog-pre-004 收單（003 刀收刀後、004 刀前；四單元）：A1 rust-api 測試側補強＋JWT 兩鑰 boot 斷言（ADR-00031）；A2a pre-commit 段序鏡像腿／submodule-sync／bootstrap-roster；A2b walkthrough restore／帳號快照投影腿／comment-overlap fork-delta 豁免／msg-key-gate 前端消費點腿；A3 rust-api 註解改寫 21 檔（comment-overlap rc 0）。 | db25165 | ADR-00031 | — |
 | 2026-09-14 | feature_close | 003-auth-session | 003 auth-session 收單（rev6 第三刀）：真登入／續期 rotation＋grace／撤銷三型＋denylist 四級降級／節流三區＋captcha／替代登入 stub／i18n 跨端閘 msg-key-gate／治理六項；零 migration；憲法 1.3.0；ROUTES 16、contract 16、MSG_KEYS 13；SC-012「RULES 零改動」子句失效＝三處 RULES 改動皆 LL promotion；backlog_add 以在途 GT-03 全集為準；final review 分流見 51ab7c7。 | 0e74551 | ADR-00026、ADR-00027、ADR-00028、ADR-00029、ADR-00030 | §5、§6、§8、§10、§11、§12 |
@@ -34,6 +35,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-15｜review｜002-system-settings
+
+user 2026-09-15 發起之 002 刀附屬對照輪（RL-0073 ②；HEAD f2f57a4 基準、收刀範圍只歸因、specs 本文不改）。唯讀 Workflow wf_7281df94-3c9：三 lens＋一冷啟動探針、派 12 支零錯零 null；findings 11 兩鏡 confirmed 11＝修 8（L2-3 經 user 拍板立 ADR-00032 supersedes ADR-00016）／none 2（data-model §2、§7 字面缺陷只記載）／探針衍生 1 併入 L2-1；守恆 total 8＝fixed 8。主線三發變異抽驗：新增三案各自轉紅、既有相關案全綠。探針三題皆繞路、找不到 0、答錯 0（只入 notes、不填 probe 欄）；seed 值↔REGISTRY 界值零守併入 BL-00028 條文。
 
 ### 2026-09-15｜misc｜governance｜maint-backlog-71-46-76
 

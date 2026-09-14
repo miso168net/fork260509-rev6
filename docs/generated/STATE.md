@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=ff52849｜rust-api=e978900
+- pins：base-web=ff52849｜rust-api=e907b53
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -12,11 +12,11 @@
 - 版本：1.3.0
 
 ## 帳面統計
-- ADR：31（proposed 0、accepted 30、superseded 1）
+- ADR：32（proposed 0、accepted 30、superseded 2）
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
 - BACKLOG 開放：23｜滯後：2
 - LESSONS：21 筆
-- events：55 筆（erratum 2、feature_close 3、misc 20、perf 26、review 4）
+- events：56 筆（erratum 2、feature_close 3、misc 20、perf 26、review 5）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-15｜review｜002-system-settings｜findings 8（修 8／BL 0／ADR 0）
 - 2026-09-15｜perf｜close_bookkeeping｜close_bookkeeping 16.72 秒 rc=0
 - 2026-09-15｜misc｜governance｜maint-backlog-71-46-76｜輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.…
-- 2026-09-14｜perf｜close_bookkeeping｜close_bookkeeping 15.17 秒 rc=0

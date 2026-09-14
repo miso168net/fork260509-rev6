@@ -2,9 +2,9 @@
 id: "ADR-00016"
 title: 碼面閘名冊承載於 RUNBOOK §12 碼面閘表，由 GT-12 新腿對賬 tools/ 頂層工具檔集
 date: 2026-09-05
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00032]
 provenance: "BL-00011（碼面閘名冊在現在式面無單一權威）；docs/brainstorms/002-system-settings.md §0 Q3／Q8；specs/002-system-settings/contracts/code-gates.md §3；as-built＝002 刀 U0（tools/docsync/gates.py NON_GATE_TOOLS＋runbook_codegate_tools、RUNBOOK §12 碼面閘表六列、RULES 名詞段「碼面閘／治理閘」）；user 於 brainstorm 過目、主線擬稿即 accepted（2026-09-05）"
 tags: [governance, gates, roster]
 ---

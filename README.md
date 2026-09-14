@@ -104,7 +104,7 @@ fork260509-rev6/
 | 我要開新刀（從哪起手） | `docs/ops/NOTES.md` 下一步 → `CLAUDE.md` §2 階段 0 → `docs/brainstorms/<NNN>-<feature-name>.md` |
 | feature 分支與 specs 目錄怎麼來 | `CLAUDE.md` §2 SDD 段（分支＝before_specify hook 建、目錄＝`/speckit-specify` 自建並寫 `.specify/feature.json`；序號設定＝`.specify/extensions/git/git-config.yml`、`.specify/init-options.json`） |
 | 哪些規則、誰守 | `docs/ops/RULES.md`、`docs/generated/GATES.md` |
-| 哪些碼面閘在守子庫碼與跨端契約 | `docs/ops/RUNBOOK.md` §12 碼面閘表（名冊唯一權威、ADR-00016；治理閘另見 `docs/generated/GATES.md`） |
+| 哪些碼面閘在守子庫碼與跨端契約 | `docs/ops/RUNBOOK.md` §12 碼面閘表（名冊唯一權威、ADR-00032；治理閘另見 `docs/generated/GATES.md`） |
 | 踩過什麼坑、怎麼避 | `docs/ops/LESSONS.md`（索引、機器生成；全文＝`docs/ops/LESSONS/` 一坑一檔） |
 | 還欠什麼、下一批做什麼 | `docs/ops/BACKLOG.md`、`docs/ops/BACKLOG-DEFERRED.md`（條目帶觸發欄） |
 | git／submodule 怎麼操作（兩段式 commit、pin 判方向） | `CLAUDE.md` §3 |

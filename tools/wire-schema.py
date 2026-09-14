@@ -10,8 +10,9 @@ ADR-00019「容器依賴型碼面閘之環境缺席語意＝具名跳過、工�
   extract   base-web 容器內 npx 抽取 typings → draft-07 JSON Schema 快照，
             原子替換寫 rust-api/server/tests/fixtures/wire-schema.json（需 stack 在跑）
   check     重抽 typings 至暫存路徑、與工作樹快照 byte 比對（rev4:B-128 drift 閘；絕不覆寫
-            快照）。--staged-gate＝pre-commit 專用收窄：staged base-web gitlink 區間零
-            typings 變動即跳過。容器不可用＝警告＋0 放行；容器可用但重抽失敗／不一致＝2
+            快照）。--staged-gate＝pre-commit 專用收窄：兩側 pin 區間皆零變動才跳過（base-web
+            區間零 typings 變動＋rust-api 區間零快照變動）。容器不可用＝警告＋0 放行；容器可用
+            但重抽失敗／不一致＝2
   test      跑自帶測試（unittest、離線可跑）
 
 失敗語意：stack 不在／抽取工具非零退出＝非零退出（2）＋stderr 提示啟動命令；抽取輸出
@@ -58,7 +59,8 @@ COMPOSE = ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compos
 BASE_WEB_EXEC = COMPOSE + ["exec", "-T", "-w", "/app", "base-web"]
 
 # 快照輸出路徑（追蹤、隨 rust-api worktree；rev6 002 刀 contracts/wire-settings.md §4；
-# 首抽已隨 002 刀 U3 之 base-web typings 新檔落地；快照缺席時 check 走 rc 2 fail-loud）。
+# 首抽已隨 002 刀 U3 之 base-web typings 新檔落地；base-web 容器可用而快照缺席時 check 走 rc 2 fail-loud——
+# 容器不可用先具名跳過 rc 0、不讀快照＝ADR-00019 決定 2）。
 OUTPUT_PATH = os.path.join("rust-api", "server", "tests", "fixtures", "wire-schema.json")
 
 # stack 啟動提示（fail-loud 補救命令）。
