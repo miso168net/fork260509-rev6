@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-15 | review | 003-auth-session | findings 21（修 16／BL 4／ADR 1）；BL-00042、BL-00066、BL-00077、BL-00078、ADR-00033 | — | — | — |
 | 2026-09-15 | misc | governance｜maint-spec-compliance-002 | 002 刀附屬規格對照審查輪（spec-compliance-002）修單收單：facade 同值更新審計欄成對純測、description 型別不符 rust 側拒收案、contract 覆蓋閘判準自證；wire-schema.py 兩處註解、RUNBOOK §12 名冊現值鏡像改指針、arc42 05 真 DB 端點案住所改現在式；RULES 名詞段碼面閘環境缺席語意改逐支見表（ADR-00032 supersedes ADR-00016）；BL-00028 條文併入 seed 值↔REGISTRY 界值零守。 | 37461af | ADR-00032 | — |
 | 2026-09-15 | review | 002-system-settings | findings 8（修 8／BL 0／ADR 0） | — | — | — |
 | 2026-09-15 | misc | governance｜maint-backlog-71-46-76 | 輕量軌 maint-backlog-71-46-76 收單（004 刀前第二支維護批）：comment-overlap 量尺擴充——`/** */` 與 `.vue` HTML 註解解析、rev6-↔rev5- 對應檔映射、反引號 span 與 doctest 圍欄豁免全路徑；base-web 註解改寫（BL-00071＋新量尺浮出之超標）與 wire-schema 快照 description 重抽；rust-api entity 關聯宣告只映真 DB FK 之機器腿、復原 A3 拆碎字面；BACKLOG 條文勘誤十列。 | cf1541b | — | — |
@@ -36,6 +37,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-15｜review｜003-auth-session
+
+user 2026-09-15 發起之 003 刀附屬對照輪（RL-0073 ②；HEAD 4f8d607 基準、收刀範圍只歸因、specs 本文不改；CONTEXT 烤入 002 輪經驗五條）。唯讀 Workflow wf_986564f0-f2d：六 lens＋一冷啟動探針、派 21 支零錯零 null；findings 26＝confirmed 21／refuted 4／uncertain 1。分流：修 16／轉 BL 4（BL-00042 併入②、BL-00066 user 拍板留帳至 004、新記 BL-00077／BL-00078）／by-design ADR 1（ADR-00033，user 拍板）／駁回 4／併入 1；守恆 total 21＝fixed 16＋to_backlog 4＋wontfix_adr 1。主線三輪變異抽驗：新增與加強之六案各自轉紅、同模組既有案全綠；全量 cargo test 440 綠。探針三題皆繞路、找不到 0、答錯 0（只入 notes、不填 probe 欄）。
 
 ### 2026-09-15｜misc｜governance｜maint-spec-compliance-002
 

@@ -9,10 +9,10 @@
     （rev5「≥4 列」樓地板守「名冊被無聲移除」、rev6 由哨兵句承擔同一目的；哨兵句與資料列並存＝矛盾亦 die）。
   · 加 `test` 子命令（只跑 self-test、離線、不掃 base-web、不碰源倉；供 pre-commit `for t in` 自測迴圈與 bootstrap
     `run_tool_test`）與 `--constitution <path>`（只供自身變異驗證、日常一律預設路徑）；用法錯 rc 64。
-  · rev5 之 `checked_total < 1 → die` 改為掃描面可達性斷言（git diff 必 rc 0＋源倉必在 example）：rev6 base-web 零 inline
-    （base-web vs example 掃描面零差異）、修改型 0 處＝合法 vacuous、印明示不 die。
+  · 修改型樓地板守：002 刀時 rev6 base-web 零 inline、rev5 之 `checked_total < 1 → die` 曾改為印明示不 die；003 刀起 base-web
+    帶修改型 inline，復為 die（rc 2；spec-compliance-003 L4-4），掃描面可達性斷言（git diff 必 rc 0＋源倉必在 example）照留。
   · rev5 曾有三組語意守（rev5:B-061 假 toast／rev5:B-062 `$t` fallback／交付面必存字面），各隨其功能刀重定、002 刀 U0
-    不遷（其標的檔在 rev6 base-web＝upstream example tip 零 inline、留著＝首跑必 die；憲法 §III.2 承襲指針明寫用途集隨
+    不遷（其標的檔在 002 刀當時的 rev6 base-web＝upstream example tip 零 inline、留著＝首跑必 die；憲法 §III.2 承襲指針明寫用途集隨
     rev6 刀序重定、不整表照搬）。
 
 最原始源-基線＝`fork260509-soybean-admin-base/` @ `example` 分支 tip（實體目錄、須先切到；bootstrap 斷言在場）。
@@ -372,7 +372,15 @@ def find_missing(base_content, ours_content):
             continue  # rev5 T069③：裸 `原行:`（無 rev6-inline token）不算已記錄——防形制外洗白
         m = MARKER.search(l)
         if m:
-            recorded.add(norm(m.group(1)))
+            val = m.group(1)
+            # ★註解收尾 token 不入原行值（spec-compliance-003 L4-2）：`.vue` template 形 `<!-- [...] 原行: <基線該行> -->`／塊註解形
+            #   `/* [...] 原行: … */` 之行尾 `-->`／`*/` 屬標記自身；只在標記行以同族開頭起首時剝一次，`//` 標記之原行尾端照原樣比對。
+            head = l.lstrip()
+            for opener, closer in (("<!--", "-->"), ("/*", "*/")):
+                if head.startswith(opener) and val.endswith(closer):
+                    val = val[: -len(closer)].rstrip()
+                    break
+            recorded.add(norm(val))
     seen = set()
     missing = []
     for raw in base_content.splitlines():
@@ -562,6 +570,14 @@ def _parse_args(args):
     return test_only, constitution
 
 
+def floor_violation(checked_total):
+    """修改型樓地板守（spec-compliance-003 L4-4；復 rev5「真 repo 修改型 ≥1 處」之 die）：base-web 自 003 刀起帶修改型 inline，
+    實掃 0 處＝掃描面塌縮（工作樹切離 rev6 分支、掃描根或副檔名收窄壞掉）或標記整批遺失，不得回綠。回錯因字串或 None。"""
+    if checked_total < 1:
+        return "修改型 0 處——base-web 自 003 刀起帶修改型 inline、實掃為零＝掃描面塌縮或標記整批遺失（查 base-web 分支與 changed_files 掃描面）"
+    return None
+
+
 def self_test():
     base = "  content: response.data.msg,\n  other: keep,\n"
     bad = "  content: $t(x),\n  other: keep,\n"  # 改了 content、無原行 → 須攔
@@ -577,6 +593,15 @@ def self_test():
     assert find_missing(base, good) == [], "self-test B：有原行須過"
     assert find_missing(base, added) == [], "self-test C：純新增不誤判（find_missing 不管新增）"
     assert find_missing(base, bad + "brandNew: 1,\n") == ["content: response.data.msg,"], "self-test D：改+新增混合仍攔改的"
+    # spec-compliance-003 L4-2：`.vue` template 修改型標記之行尾 `-->` 不入原行值——單行 HTML 註解形須過、原行值與基線不符仍攔。
+    tbase = "<template>\n  <div class=x>\n</template>\n"
+    tmark = "  <!-- [rev6-inline BASE-WEB-LOGIN-CAPTCHA-WIRING(i) 003-auth-session] 原行: {} -->\n"
+    assert find_missing(tbase, "<template>\n" + tmark.format("<div class=x>") + "  <div class=y>\n</template>\n") == [], \
+        "self-test D2：template 單行 HTML 註解形修改型標記須過（行尾 --> 不入原行值）"
+    assert find_missing(tbase, "<template>\n" + tmark.format("<div class=z>") + "  <div class=y>\n</template>\n") == ["<div class=x>"], \
+        "self-test D3：template 形原行值與基線不符仍須攔"
+    # spec-compliance-003 L4-4：修改型樓地板守——0 處須回錯因、≥1 處放行。
+    assert floor_violation(0) and floor_violation(19) is None, "self-test FL：修改型 0 處須 die、≥1 處放行"
 
     # 補位 find_unmarked_additions（新增型圈界覆蓋；rev4:B-052）：
     marked_add = "  content: response.data.msg,\n  other: keep,\n  // [rev6-inline I18N-WIRING(ii)] 新鍵\n  brandNew: 1,\n"
@@ -1142,7 +1167,7 @@ def main(argv):
         print("[fork-delta-lint] ✓ self-test 過（修改型缺原行／新增型缺圈界／新檔檔頭標記（含 `+` 尾綴定形）＋軌道×路徑"
               "（含真 scan 接線 fixture）／五形抽取＋token 換世代／"
               "分層授權判定／範圍欄展開器／掃描面 fixture／名冊載入守 RG1～RG24 含空 ★表哨兵句一正一反"
-              "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／CLI 引數）")
+              "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／template 形行尾 `-->`／修改型樓地板守／CLI 引數）")
         return 0
     # 含結構斷言（空名冊／★段零列須哨兵句／§III.1 恰 3／表外宣告 2 反例／升維非空／§III.1 範圍欄字面對賬＝die）
     s1, s2 = load_roster(constitution)
@@ -1174,14 +1199,9 @@ def main(argv):
                   " §V.2 Amendment 開立；新檔標記帶 `+` 尾綴、改用範圍欄涵蓋該路徑的軌道"
                   "（§III.1；純新增檔不觸 ★軌道＝rev5:ADR 0021 款 1）。")
         return 1
-    if checked_total < 1:
-        # ★rev6 改形（取代 rev5「真 repo 修改型 ≥1 處、零＝掃描面失效」之 die）：rev6 base-web 零 inline、
-        #   修改型 0 處是合法 vacuous；掃描面可達性由 changed_files 的 git diff rc 0＋assert_baseline 承擔，
-        #   此處只把掃描面實況印出來（零差異 vs 零 inline 兩種「0」都看得見）。
-        print(f"[fork-delta-lint] ⓘ 修改型 0 處（本 repo 零 inline、合法 vacuous）——掃描面 {stats['files']} 檔"
-              f"（base-web vs {BASELINE}@{tip}：src/ .ts/.vue＋build/ .ts＋根層 .env*）、我方新檔 {stats['new_files']} 檔"
-              f"（其中 {stats['new_checked']} 支過檔頭圈界＋軌道×路徑兩道、餘為生成檔豁免）；"
-              f"可達性＝git diff rc 0＋源倉在 {BASELINE}")
+    floor = floor_violation(checked_total)
+    if floor:
+        die(f"{floor}——掃描面 {stats['files']} 檔（base-web vs {BASELINE}@{tip}：src/ .ts/.vue＋build/ .ts＋根層 .env*）")
     print(f"[fork-delta-lint] ✓ base-web 修改型全帶原行（{checked_total} 處授權判定皆合："
           f"★軌道三元組＋§III.1 檔面收窄）、新增型全圈界"
           f"（含我方新檔 {stats['new_checked']} 支：檔頭標記＋軌道×路徑皆合）"

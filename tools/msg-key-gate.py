@@ -3,7 +3,7 @@
 
 用法：
   python3 tools/msg-key-gate.py [check] [--rust <error.rs>] [--locales <dir>] [--src <dir>]   左源 ⇔ 三檔 backend 子樹逐檔雙向全等＋Biz 構造點守衛＋前端 msg 字面消費點名冊
-  python3 tools/msg-key-gate.py test                                                           離線 self-test（契約七案＋判準補強三案＋真 repo 左源綠案＋斷言 3 八案；零 docker）
+  python3 tools/msg-key-gate.py test                                                           離線 self-test（契約案＋判準補強案＋真 repo 左源綠案＋斷言 3 案；案數以本命令輸出為準；零 docker）
 左源（`--rust`，預設 rust-api/server/src/error.rs）兩段解析——實碼形＝常數表＋常數引用陣列、零第二份字面：
   ①`pub mod msg_key { pub const NAME: &str = "字面"; … }` 建 名稱→字面 映射；
   ②`pub const MSG_KEYS: [&str; N] = [ msg_key::NAME, … ];` 逐元素經映射解回字面（亦容直寫 "字面"）；元素數≠N、任一元素解不出（含常數表缺該名）＝rc 2。
@@ -11,8 +11,9 @@
   brace 配對取塊；剝 `//`／`/* */` 註解與字串值後，巢狀鍵以 `.` 串接攤平（`backend.common.success` ⇒ `common.success`）。
 斷言 1：三檔各自 set(backend) == set(MSG_KEYS)（逐檔、雙向）；不等＝rc 1、逐檔指名「缺：…」「多：…」。
 斷言 2（Biz 構造點守衛）：`<error.rs 所在目錄>/**/*.rs` 生產區間——`#[cfg(test)]` 所附項目（mod／impl／fn…）以 brace 配對整段排除——
-  每處 `AppError::Biz(` MUST 緊接 `Cow::Borrowed(` 且引數為 ①字串字面 或 ②`msg_key::NAME`（經映射解回），解出之鍵 ∈ MSG_KEYS；
-  動態構造（變數／`format!`／函式回傳）＝rc 1 指名檔:行。match 樣式（`AppError::Biz(_) =>`／`AppError::Biz(k) =>`／`… if`／`= …`）
+  每處 Biz 構造點（`AppError::Biz(`／`Self::Biz(`／經 use 匯入之裸 `Biz(`；`::` 與 `(` 之間容空白）MUST 緊接 `Cow::Borrowed(` 且引數為 ①字串字面 或 ②`msg_key::NAME`（經映射解回），解出之鍵 ∈ MSG_KEYS；
+  動態構造（變數／`format!`／函式回傳；函式值形 `AppError::Biz`／`Self::Biz` 不帶括號者亦是、`use` 行除外）＝rc 1 指名檔:行。
+  `enum AppError { … }` 本體內之變體宣告非構造、不計。match 樣式（`AppError::Biz(_) =>`／`AppError::Biz(k) =>`／`… if`／`= …`）
   非構造、不計。生產區間內 Biz 構造點零處＝比對面為空（rc 2）——排除過度或掃描根有誤時不得回綠。
 斷言 3（前端 msg 字面消費點名冊；BL-00063）：`--src`（預設 base-web/src）下 `*.ts`／`*.vue`／`*.tsx`（排除頂層 `locales/`）剝註解（`//`、
   `/* */` 含 JSDoc；`.vue` 之 `<script>` 塊外只剝 `<!-- -->`；再同步判準＝`<script>` 開標籤認引號屬性、`'`／`"` 字串不跨行、regex literal
@@ -49,7 +50,9 @@ RE_ELEM_CONST = re.compile(r"^msg_key::(\w+)$")
 RE_ELEM_LIT = re.compile(r'^"([^"]+)"$')
 RE_BACKEND_ANCHOR = re.compile(r"^[ \t]*backend:[ \t]*\{[ \t]*$", re.M)
 RE_TS_KEY = re.compile(r"(?<![\w$])([A-Za-z_$][\w$]*)[ \t]*:(?!:)")
-RE_BIZ = re.compile(r"AppError::Biz\(")
+RE_BIZ = re.compile(r"(?:\bAppError::|\bSelf::|(?<![\w:]))Biz\s*\(")
+RE_BIZ_FNVALUE = re.compile(r"\b(?:AppError|Self)::Biz\b(?!\s*\()")
+RE_ENUM_APPERROR = re.compile(r"\benum\s+AppError\b[^{;]*\{")
 RE_BORROWED = re.compile(r'^\s*Cow::Borrowed\(\s*(?:"([^"]+)"|msg_key::(\w+))\s*\)\s*$')
 RE_CFG_TEST = re.compile(r"#\[cfg\(test\)\]")
 RE_RAW_STR = re.compile(r'r(#*)"')
@@ -297,12 +300,38 @@ def is_pattern_use(bv, close_idx):
         rest.startswith("=") and not rest.startswith("=="))
 
 
+def enum_spans(bv):
+    """`enum AppError { … }` 本體區間（brace 配對）：變體宣告 `Biz(Cow<'static, str>)` 非構造點、不入斷言 2。"""
+    spans = []
+    for m in RE_ENUM_APPERROR.finditer(bv):
+        depth = 0
+        for j in range(m.end() - 1, len(bv)):
+            if bv[j] == "{":
+                depth += 1
+            elif bv[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    spans.append((m.end() - 1, j + 1))
+                    break
+    return spans
+
+
 def scan_biz_text(text, rel, const_map, keys):
     """單檔掃描 → (構造點數, findings)；生產區間內每處構造點驗 `Cow::Borrowed(字面|msg_key::NAME)` 且鍵 ∈ keys。"""
     bv = blank_view(text, ts=False, strings=True)
     cv = blank_view(text, ts=False, strings=False)
-    excluded = test_spans(bv)
+    excluded = list(test_spans(bv)) + enum_spans(bv)
     count, findings = 0, []
+    src_lines = text.splitlines()
+    # 函式值形（`map_err(AppError::Biz)` 等不帶括號之路徑）＝把任意執行期值包成 Biz＝動態構造；`use` 匯入行不計。
+    for m in RE_BIZ_FNVALUE.finditer(bv):
+        if any(a <= m.start() < b for a, b in excluded):
+            continue
+        line = line_of(text, m.start())
+        if src_lines[line - 1].lstrip().startswith(("use ", "pub use ", "pub(crate) use ")):
+            continue
+        count += 1
+        findings.append(f"{rel}:{line}：Biz 以函式值形動態構造 `{cv[m.start():m.end()]}`——須 `Cow::Borrowed(\"字面\")` 或 `Cow::Borrowed(msg_key::NAME)`")
     for m in RE_BIZ.finditer(bv):
         if any(a <= m.start() < b for a, b in excluded):
             continue
@@ -317,7 +346,7 @@ def scan_biz_text(text, rel, const_map, keys):
                     break
         line = line_of(text, m.start())
         if close < 0:
-            findings.append(f"{rel}:{line}：`AppError::Biz(` 括號不配對")
+            findings.append(f"{rel}:{line}：`Biz(` 括號不配對")
             continue
         inner_bv = bv[m.end():close].strip()
         if inner_bv == "_" or is_pattern_use(bv, close):
@@ -709,8 +738,8 @@ def write_locales(d, per_file, backend=True, tail=LOCALE_TAIL):
 
 
 def self_test():
-    """契約七案（code-gates.md §2 self-test 列）＋判準補強三案（斷言 2 比對面為空／`MSG_KEYS` 宣告數≠元素數／
-    Biz 構造鍵之名冊歸屬兩分支）＋真 repo 左源綠案＋斷言 3 八案（綠／鍵改名／未登記／名冊項消失／次數不等／註解與 i18n 不誤紅／
+    """契約七案（code-gates.md §2 self-test 列）＋判準補強案（斷言 2 比對面為空／同義構造形／`MSG_KEYS` 宣告數≠元素數／
+    Biz 構造鍵之名冊歸屬兩分支）＋真 repo 左源綠案＋斷言 3 案（綠／鍵改名／未登記／名冊項消失／次數不等／註解與 i18n 不誤紅／
     安全前綴隨 locale 頂層鍵變動／比對面為空）；任一案敗＝rc 2、指名案號。"""
     all_keys = [v for _, v in SYN_CONSTS]
     cases = []
@@ -780,6 +809,22 @@ def self_test():
                 and any("handler.rs:4" in ln and "於常數表解不出" in ln for ln in flagged))
         cases.append(("⑩Biz 構造鍵之名冊歸屬 rc 1（L3 字面不在 MSG_KEYS 名冊／L4 `msg_key::UNKNOWN` 常數表解不出；"
                       "L5 合法常數形不誤報）", ok10, rc, out))
+        # 斷言 2 之同義構造形（spec-compliance-003 L3-1）：比對面須涵蓋 `Self::Biz(`／經 use 匯入之裸 `Biz(`／`::` 與 `(` 間夾空白／
+        # 函式值形；`use` 行、合法常數形與 `enum AppError { … }` 變體宣告不計（誘餌：拿掉任一排除即多報、拿掉任一形即漏報）。
+        synonyms = (
+            "use std::borrow::Cow;\nuse crate::error::{AppError, msg_key};\nuse crate::error::AppError::Biz;\n"  # L3 use 行（函式值形誘餌）
+            "pub fn a(x: String) -> AppError { Biz(Cow::Owned(x)) }\n"                                           # L4 裸 Biz( 動態
+            "impl AppError { pub fn b(x: String) -> Self { Self::Biz(Cow::Owned(x)) } }\n"                       # L5 Self::Biz( 動態
+            "pub fn c(x: String) -> AppError { AppError::Biz (Cow::Owned(x)) }\n"                                # L6 夾空白動態
+            "pub fn d(r: Result<(), Cow<'static, str>>) -> Result<(), AppError> { r.map_err(AppError::Biz) }\n"  # L7 函式值形
+            "pub fn e() -> AppError { Biz(Cow::Borrowed(msg_key::A)) }\n"                                        # L8 裸 Biz( 合法常數形
+            "pub enum AppError { Biz(Cow<'static, str>), Other }\n")                                             # L9 變體宣告
+        rc, out = scenario("c10b", lit, {"*": all_keys}, extra_rs=synonyms)
+        flagged = [ln for ln in out if "handler.rs" in ln]
+        ok10b = (rc == RC_VIOLATION and len(flagged) == 4
+                 and all(any(f"handler.rs:{n}：" in ln for ln in flagged) for n in (4, 5, 6, 7)))
+        cases.append(("⑩b 斷言 2 同義構造形 rc 1（L4 裸 Biz(／L5 Self::Biz(／L6 夾空白／L7 函式值形；L3 use 行、L8 合法常數形、"
+                      "L9 enum 變體宣告不計）", ok10b, rc, out))
         # 真 repo 左源綠案：現行 error.rs 常數形解得出、Biz 構造點皆常數／字面形；右源以解出鍵集合成（三檔實體＝check 的事、pre-commit 段跑）。
         real_rust = os.path.join(ROOT, DEFAULT_RUST)
         ok_real, rc, out, keys = False, None, [], []

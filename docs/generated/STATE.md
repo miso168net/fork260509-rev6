@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=ff52849｜rust-api=e907b53
+- pins：base-web=ff52849｜rust-api=2ec9df7
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -12,11 +12,11 @@
 - 版本：1.3.0
 
 ## 帳面統計
-- ADR：32（proposed 0、accepted 30、superseded 2）
+- ADR：33（proposed 0、accepted 31、superseded 2）
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
-- BACKLOG 開放：23｜滯後：2
+- BACKLOG 開放：25｜滯後：2
 - LESSONS：21 筆
-- events：58 筆（erratum 2、feature_close 3、misc 21、perf 27、review 5）
+- events：59 筆（erratum 2、feature_close 3、misc 21、perf 27、review 6）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-15｜review｜003-auth-session｜findings 21（修 16／BL 4／ADR 1）；BL-00042、BL-00066、BL-00077、BL-00078、ADR-00033
 - 2026-09-15｜perf｜close_bookkeeping｜close_bookkeeping 22.27 秒 rc=0
 - 2026-09-15｜misc｜governance｜maint-spec-compliance-002｜002 刀附屬規格對照審查輪（spec-compliance-002）修單收單：facade 同值更新審計欄成對純測、description 型別不符 rus…
-- 2026-09-15｜review｜002-system-settings｜findings 8（修 8／BL 0／ADR 0）

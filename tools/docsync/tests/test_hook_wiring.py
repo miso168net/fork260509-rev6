@@ -1,5 +1,5 @@
-"""語料面：hook 接線機器守衛（BL-00023；承 rev5:tools/docs-sync.py TestGateWiring 乾跑案形）——讀真四檔（HOOKS 名冊＝.githooks/pre-commit／
-.githooks/pre-push／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）、真 tools/bootstrap.sh、真 README.md 與兩支雙側閘工具常數，五支純函式各守一面：
+"""語料面：hook 接線機器守衛（BL-00023；承 rev5:tools/docs-sync.py TestGateWiring 乾跑案形）——讀真五檔（HOOKS 名冊＝.githooks/pre-commit／
+.githooks/pre-push／.githooks-submodule/pre-commit／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）、真 tools/bootstrap.sh、真 README.md 與兩支雙側閘工具常數，六支純函式各守一面：
 ①pre-commit 面 check_hook_wiring(text, codegate_tools, non_gate_tools) 逐段斷言：固定鏈（betterleaks→docsync check＋lint→staged 取得→pc_join→雙錨常數）、
 十條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
 submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
@@ -14,6 +14,8 @@ scan_push_ranges || exit 1）＋lib 之 betterleaks 呼叫與四種範圍推導�
 他段夾帶→紅／路徑內嵌不計／鏡像行缺席／段未宣告字樣／hook 段未入名冊）。
 ⑤跨子庫同步律段閘面路徑對賬 check_sync_paths(hook, want)（BL-00057）：submodule-sync 段路徑字面集 ⇔ msg-key-gate DEFAULT_RUST／DEFAULT_LOCALES／DEFAULT_SRC（前端消費點掃描面）
 ∪ wire-schema TYPINGS_PATHSPECS／SNAPSHOT_PATHSPECS（正規化為 repo 根相對）；一正多反（hook 少一／多一／常數多一／段缺席）。
+⑥子庫 pre-commit 面 check_sub_precommit(text)（spec-compliance-003 L3-2）：兩源倉 commit 期唯一機密掃描——betterleaks 呼叫緊接 `rc=$?`、rc 0 放行、
+rc 2 命中分支、非零收尾 `exit 1`；一正多反（刪任一字面→紅指名該檔與字面）。
 ★hook 本體 staged 時 pre-commit 自跑 docsync test（本案隨之）；tools/bootstrap.sh staged 時 bootstrap-roster 段只跑本檔（BL-00059）；bootstrap 體檢亦跑；接線不再只靠人記得（002 刀 U0 變異實測：刪三段 lint 仍綠）。"""
 import importlib.util
 import os
@@ -23,9 +25,10 @@ import unittest
 
 from docsync import ROOT, common, gates
 
-# 四檔名冊（BL-00037①）：pre-commit 面＋pre-push 面三檔（外層／子庫 hook 與共用 lib）；鍵＝短名、值＝repo 相對路徑
+# 五檔名冊（BL-00037①；子庫 pre-commit＝spec-compliance-003 L3-2 補）：外層與子庫 pre-commit 面＋pre-push 面三檔（外層／子庫 hook 與共用 lib）；鍵＝短名、值＝repo 相對路徑
 HOOKS_REL = {
     "pre-commit": ".githooks/pre-commit",
+    "sub-pre-commit": ".githooks-submodule/pre-commit",
     "pre-push": ".githooks/pre-push",
     "sub-pre-push": ".githooks-submodule/pre-push",
     "scan-range": ".githooks/lib/scan-range.sh",
@@ -118,6 +121,14 @@ PUSH_LITERALS = {
     ),
 }
 PUSH_KEYS = ("pre-push", "sub-pre-push", "scan-range")
+# 子庫 pre-commit 面（spec-compliance-003 L3-2）：兩源倉 commit 期唯一機密掃描——刪 betterleaks 行則 `rc=$?` 取到 HOOK_DIR 賦值之 0、
+# hook 靜默 exit 0；bootstrap hooks 指紋只比工作樹＝HEAD、commit 後即守不到。每項一句必含字面（標籤, 字面）。
+SUB_PRECOMMIT_LITERALS = (
+    ("betterleaks", 'betterleaks git --config "$HOOK_DIR/../.gitleaks.toml" --pre-commit --staged --redact --verbose --exit-code 2\nrc=$?'),
+    ("rc0-放行", '[ "$rc" -eq 0 ] && exit 0'),
+    ("rc2-命中分支", 'if [ "$rc" -eq 2 ]; then'),
+    ("非零收尾", "\nexit 1"),
+)
 # bootstrap 名冊面（BL-00037②、003 刀 U10）：run_tool_test 名冊自 tracked 檔集推導（★裸 pathspec 的 `*` 跨 `/`——會撈進
 # tools/docsync/*.py 與 tools/orchestration/*.py、後者 `assemble.py test` 回 2 即 die；`:(glob)` magic 令 `*` 不跨層）；
 # 兩排除＝deploy/decrypt-secrets.py（Day-1 條件分支獨立處理）／deploy/secrets_common.py（無 `test` 子命令）。每項一句必含字面（標籤, 字面）。
@@ -262,6 +273,11 @@ def check_push_hooks(outer_text, sub_text, lib_text):
     for key, text in zip(PUSH_KEYS, (outer_text, sub_text, lib_text)):
         out += [f"{HOOKS_REL[key]} 缺「{label}」：{literal}" for label, literal in PUSH_LITERALS[key] if literal not in text]
     return out
+
+
+def check_sub_precommit(text):
+    """回 findings（字串清單）；空＝子庫 pre-commit 必含字面齊全。每條指名檔（repo 相對路徑）與字面。"""
+    return [f"{HOOKS_REL['sub-pre-commit']} 缺「{label}」：{literal}" for label, literal in SUB_PRECOMMIT_LITERALS if literal not in text]
 
 
 def real_push_texts():
@@ -463,10 +479,10 @@ class TestSubmoduleSyncPaths(unittest.TestCase):
 
 
 class TestPushHooksWiring(unittest.TestCase):
-    """pre-push 面（BL-00037①）：四檔名冊皆在檔；真三檔零 finding；刪任一字面→紅指名該檔與字面、他檔不誤紅。"""
+    """pre-push 面（BL-00037①）：五檔名冊皆在檔；真三檔零 finding；刪任一字面→紅指名該檔與字面、他檔不誤紅。"""
 
     def test_hooks_roster_files_exist(self):
-        self.assertEqual(set(HOOKS), {"pre-commit", "pre-push", "sub-pre-push", "scan-range"})
+        self.assertEqual(set(HOOKS), {"pre-commit", "sub-pre-commit", "pre-push", "sub-pre-push", "scan-range"})
         for k, path in HOOKS.items():
             self.assertTrue(os.path.isfile(path), (k, path))
 
@@ -482,6 +498,24 @@ class TestPushHooksWiring(unittest.TestCase):
                 msgs = check_push_hooks(*(mutated[k] for k in PUSH_KEYS))
                 self.assertTrue(any(m.startswith(HOOKS_REL[key] + " 缺") and literal in m for m in msgs), (key, label, msgs))
                 self.assertFalse(any(m.startswith(HOOKS_REL[o] + " 缺") for o in PUSH_KEYS if o != key for m in msgs), (key, label, msgs))
+
+
+class TestSubPrecommitWiring(unittest.TestCase):
+    """子庫 pre-commit 面（spec-compliance-003 L3-2）：真檔零 finding；刪任一字面→紅指名該檔與字面。"""
+
+    def _text(self):
+        with open(HOOKS["sub-pre-commit"], encoding="utf-8") as f:
+            return f.read()
+
+    def test_real_sub_precommit_green(self):
+        self.assertEqual(check_sub_precommit(self._text()), [])
+
+    def test_each_literal_removed_red_names_file_and_literal(self):
+        text = self._text()
+        for label, literal in SUB_PRECOMMIT_LITERALS:
+            self.assertIn(literal, text, label)
+            msgs = check_sub_precommit(text.replace(literal, "", 1))
+            self.assertTrue(any(m.startswith(".githooks-submodule/pre-commit 缺") and literal in m for m in msgs), (label, msgs))
 
 
 class TestBootstrapRoster(unittest.TestCase):
