@@ -54,7 +54,7 @@ fork260509-rev6/
 │   ├── secrets/                     明文落點說明（README＋.example；實值住 SECRETS_DIR、gitignored）
 │   ├── alloy/、grafana-provisioning/、nginx/、prometheus/   compose 掛載的服務／觀測層設定（動它＝動 runtime）
 │   └── dev-certs/                   dev TLS 憑證落點（gitignored、.gitkeep）
-├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測→rust-fmt／wire-schema／fork-delta／msg-key-gate→entity-drift（快照缺席即紅）／schema-frozen／orchestration（骨架或範例 staged 時三支範例組裝＋harness）皆條件實跑；接線字面由 docsync tests 機器守；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）
+├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測→bootstrap-roster（bootstrap.sh staged 時只跑 test_hook_wiring 單檔）→rust-fmt／wire-schema／fork-delta／msg-key-gate→submodule-sync（pin bump 時兩子庫雙側閘閘面須無未 commit 改動、含未追蹤新檔）→entity-drift（快照缺席即紅）／schema-frozen／orchestration（骨架或範例 staged 時三支範例組裝＋harness）皆條件實跑；接線字面由 docsync tests 機器守；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）
 │   ├── pre-commit、pre-push
 │   └── lib/                         scan-range.sh：pre-push 範圍推導（三 repo 共用）
 ├── .githooks-submodule/             兩 worktree 專用 hooks（pre-commit／pre-push；bootstrap 以絕對路徑設 hooksPath）
@@ -75,7 +75,7 @@ fork260509-rev6/
 - **三種材質**：人寫（規則與敘事、user 拍板審 diff）／事件源（`docs/ops/events.jsonl` 半自動 append）／機器生成（名冊＝`GENERATED_FILES`：`docs/generated/**`＋`tools/orchestration/_sk_rules.js`＋例外註冊 `docs/arc42/ARCHITECTURE.md`、`docs/ops/LESSONS.md`；嚴禁手改、任何檔可刪除重算）。每個事實只有一個人寫的家；鏡像不是機器生成、就是不存在。
 - **權威鏈**：constitution ＞ ADR accepted ＞ RULES.md ＞ 活書家族（arc42／c4／compliance／process）＞ generated。RULES 與 accepted ADR 衝突＝RULES 有誤、就地改 RULES。
 - **時態**：活書家族永遠現在式；未來式住 ops/；過去式住 git＋events。完成即刪、git 即史。
-- **守門**：pre-commit 一次跑完（秒級）——betterleaks 樣式層 → `docsync check`（GT-01 零漂移）＋`docsync lint`（GT-01～GT-12；GT-01 與 check 同源）→ staged 工具自測 → rust-fmt／wire-schema（雙側：base-web 或 rust-api pin bump）／fork-delta（base-web pin bump、工具本體或憲法 staged 時條件實跑；名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api 或 base-web pin bump、工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（`tools/orchestration/` 之 `*.js|*.mjs|*.py` staged 時三支入庫範例組裝＋harness）；接線字面由 `tools/docsync/tests/test_hook_wiring.py` 機器守（hook 本體 staged 時自跑）。閘名冊＝`docs/generated/GATES.md`（九欄；Day-1 豁免逐筆帶解除謂詞、到期即紅）。
+- **守門**：pre-commit 一次跑完（秒級）——betterleaks 樣式層 → `docsync check`（GT-01 零漂移）＋`docsync lint`（GT-01～GT-12；GT-01 與前項同源）→ staged 工具自測 → bootstrap-roster（`tools/bootstrap.sh` staged 時只跑 `test_hook_wiring` 單檔、秒級）→ rust-fmt／wire-schema（雙側：base-web 或 rust-api pin bump）／fork-delta（base-web pin bump、工具本體或憲法 staged 時條件實跑；名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api 或 base-web pin bump、工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ submodule-sync（rust-api 或 base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（`tools/orchestration/` 之 `*.js|*.mjs|*.py` staged 時三支入庫範例組裝＋harness）；接線字面由 `tools/docsync/tests/test_hook_wiring.py` 機器守（hook 本體 staged 時自跑）。閘名冊＝`docs/generated/GATES.md`（九欄；Day-1 豁免逐筆帶解除謂詞、到期即紅）。
 - **規則進 prompt**：`python3 tools/docsync rules emit --scope <implementer|review|fix|主線|人>` 產出規則塊＋`RULES-VERSION`；Workflow script 一律必帶、PreToolUse hook 對賬。
 
 ## 第一次來，照這個順序讀

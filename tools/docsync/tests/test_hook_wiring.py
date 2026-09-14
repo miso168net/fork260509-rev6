@@ -1,14 +1,21 @@
 """語料面：hook 接線機器守衛（BL-00023；承 rev5:tools/docs-sync.py TestGateWiring 乾跑案形）——讀真四檔（HOOKS 名冊＝.githooks/pre-commit／
-.githooks/pre-push／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）與真 tools/bootstrap.sh，三支純函式各守一面：
+.githooks/pre-push／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）、真 tools/bootstrap.sh、真 README.md 與兩支雙側閘工具常數，五支純函式各守一面：
 ①pre-commit 面 check_hook_wiring(text, codegate_tools, non_gate_tools) 逐段斷言：固定鏈（betterleaks→docsync check＋lint→staged 取得→pc_join→雙錨常數）、
-八條件段（selftest-docsync／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
+十條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
+submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
 與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
 一正（真檔零 finding）多反（刪段／改觸發字面／抽名冊一支／改命令子命令／幽靈段／刪 pc_join→紅指名）。
 ②pre-push 面 check_push_hooks(outer, sub, lib)（BL-00037①；憲法 §I.8 並列為機器閘）：外層／子庫 pre-push 各三字面（source lib 相對路徑形／SCAN_CONFIG／
 scan_push_ranges || exit 1）＋lib 之 betterleaks 呼叫與四種範圍推導字面；一正多反（刪任一字面→紅指名檔與字面、他檔不誤紅）。
 ③bootstrap 名冊面 check_bootstrap_roster(text, tracked)（BL-00037②）：推導行（含 `:(glob)` 與兩排除）／執行期非空守衛與迴圈行／docsync 三段／閘數斷言／vendored-check／Day-1 分支字面
 ＋推導行套 tracked 清單只得頂層檔（去 `:(glob)` 即跨層命中 tools/orchestration/assemble.py→紅）。
-★hook 本體 staged 時 pre-commit 自跑 docsync test（本案隨之）；bootstrap 體檢亦跑；接線不再只靠人記得（002 刀 U0 變異實測：刪三段 lint 仍綠）。"""
+④段序枚舉鏡像面 check_mirror_words(hook, readme)（BL-00055）：段名冊 MIRROR_LABELS（FIXED 之 pc_run 固定段＋SEGMENTS；hook 靜態 pc_run 標籤須 ⊆ 之）每段之字樣（MIRROR_WORDS）
+須在三處人寫鏡像行（pre-commit 檔頭段序／README 樹 `.githooks/` 列／README 守門條目）各恰出現一次（ASCII 詞界計數）；一正多反（逐面×逐段刪該一處→恰一條紅指名檔、面與段／
+他段夾帶→紅／路徑內嵌不計／鏡像行缺席／段未宣告字樣／hook 段未入名冊）。
+⑤跨子庫同步律段閘面路徑對賬 check_sync_paths(hook, want)（BL-00057）：submodule-sync 段路徑字面集 ⇔ msg-key-gate DEFAULT_RUST／DEFAULT_LOCALES
+∪ wire-schema TYPINGS_PATHSPECS／SNAPSHOT_PATHSPECS（正規化為 repo 根相對）；一正多反（hook 少一／多一／常數多一／段缺席）。
+★hook 本體 staged 時 pre-commit 自跑 docsync test（本案隨之）；tools/bootstrap.sh staged 時 bootstrap-roster 段只跑本檔（BL-00059）；bootstrap 體檢亦跑；接線不再只靠人記得（002 刀 U0 變異實測：刪三段 lint 仍綠）。"""
+import importlib.util
 import os
 import re
 import subprocess
@@ -40,15 +47,53 @@ FIXED = (
 # 條件段：(pc_run 標籤, 觸發字面清單〔皆須在同段 `if echo "$staged" | grep` 行〕, 命令字面〔須在 pc_run 行〕)
 SEGMENTS = (
     ("selftest-docsync", ["'^tools/docsync/\\|^\\.githooks/\\|^\\.githooks-submodule/'"], 'python3 "$HOOK_DIR/../tools/docsync" test'),
+    ("bootstrap-roster", ["grep -qxF -e 'tools/bootstrap.sh'"], 'python3 -m unittest discover -s "$HOOK_DIR/../tools/docsync/tests" -t "$HOOK_DIR/../tools" -p test_hook_wiring.py'),
     ("rust-fmt", ["-e 'rust-api'", "-e 'tools/rust-fmt-gate.py'"], 'python3 "$HOOK_DIR/../tools/rust-fmt-gate.py" check'),
     ("wire-schema", ["-e 'base-web'", "-e 'rust-api'"], 'python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate'),
     ("fork-delta", ["-e 'base-web'", "-e 'tools/fork-delta-lint.py'", "-e '.specify/memory/constitution.md'"], 'python3 "$HOOK_DIR/../tools/fork-delta-lint.py"'),
     ("msg-key-gate", ["-e 'rust-api'", "-e 'base-web'", "-e 'tools/msg-key-gate.py'"], 'python3 "$HOOK_DIR/../tools/msg-key-gate.py" check'),
+    # 命令字面同時釘 LL-00012 環境剝除（unset 本機 GIT_* 名冊）與唯讀（--no-optional-locks）兩要件
+    ("submodule-sync", ["-e 'rust-api'", "-e 'base-web'"], 'unset $(git rev-parse --local-env-vars); git --no-optional-locks -C "$h/../$s" status --porcelain --untracked-files=all -- $ps'),
     ("entity-drift", ["-e 'rust-api'", "-e 'docs/ops/reference-src/schema-snapshot.json'"], 'python3 "$HOOK_DIR/../tools/entity-drift-gate.py" check'),
     ("schema-frozen", ["'^(specs/001-schema-baseline/(fixtures/|data-model\\.md$)|docs/ops/reference-src/schema-definition\\.md$)'"], 'python3 "$HOOK_DIR/../tools/schema-gate.py" test'),
     ("orchestration", ["'^tools/orchestration/.*\\.(js|mjs|py)$'"], "tools/orchestration/assemble.py"),
 )
 ORCH_EXAMPLES = ("EXAMPLE-tdd-unitdef", "EXAMPLE-review-unitdef", "EXAMPLE-review-verify-unitdef")
+# 段序枚舉鏡像面（BL-00055）：固定鏈 pc_run 段（docsync check／lint）與 SEGMENTS 每段各宣告一個「段序枚舉字樣」，須在 MIRRORS 三處人寫鏡像行各恰出現一次。
+# ★字樣取法＝每段一個、三處共用（不按鏡像面分列），理由：①按面分列＝把三處散文逐字抄進本檔、成無對賬之第四份鏡像（RL-0049），
+#   三處改寫措辭而段仍在時亦誤紅；②條件段字樣＝pc_run 標籤本身（三處皆逐字引用、辨識度高）；③docsync-check／docsync-lint／
+#   selftest-docsync 三處措辭本不一（檔頭「docsync check」「staged 工具自測」、README 樹列「check＋lint」「條件自測」），取三處皆命中之
+#   公共字樣 check／lint／自測。本腿所防＝新段落地時鏡像漏補（003 刀 U9 msg-key-gate 三處各漏一次）。
+# ★恰一次、非「在場」：字樣可被他處夾帶而代為命中＝該段條目被刪仍綠（審查 r1 實證：守門條目 lint 條目內「GT-01 與 check 同源」夾帶 check；
+#   檔頭 orchestration 條目內路徑 tools/orchestration/ 夾帶 orchestration）。故以 ASCII 詞界計數（mirror_word_re：前後不緊鄰 ASCII 英數／
+#   `_`／`.`／`/`／`-`＝路徑與識別字內嵌不計；中文字樣前後恆非 ASCII、不受影響）並斷言恰 1——夾帶＝≥2 即紅、條目缺＝0 即紅。
+#   殘餘射程：同一顆改動既刪某段條目、又在他段敘述夾帶其字樣（計數仍 1）＝substring 比對之固有邊界，由人審承接。
+MIRROR_WORDS = {
+    "docsync-check": "check",
+    "docsync-lint": "lint",
+    "selftest-docsync": "自測",
+    "bootstrap-roster": "bootstrap-roster",
+    "rust-fmt": "rust-fmt",
+    "wire-schema": "wire-schema",
+    "fork-delta": "fork-delta",
+    "msg-key-gate": "msg-key-gate",
+    "submodule-sync": "submodule-sync",
+    "entity-drift": "entity-drift",
+    "schema-frozen": "schema-frozen",
+    "orchestration": "orchestration",
+}
+# 三處人寫鏡像：(面名, repo 相對路徑, 鏡像行起首字面)——各取首個以該字面起首之行為比對面；行缺席＝紅（掃描面空集合；RL-0051）。
+MIRRORS = (
+    ("檔頭段序", ".githooks/pre-commit", "# rev6 pre-commit："),
+    ("樹列", "README.md", "├── .githooks/"),
+    ("守門條目", "README.md", "- **守門**："),
+)
+# 跨子庫同步律段之閘面路徑對賬（BL-00057；閘面路徑不得成無對賬之第三份鏡像＝RL-0049）：hook submodule-sync 段 pc_run 行之單引號路徑字面集
+# ⇔ 兩支雙側閘常數。★兩工具路徑基準不同、須正規化後比：msg-key-gate 之 DEFAULT_RUST／DEFAULT_LOCALES 以 os.path.join 組、相對 repo 根
+# （含子庫名）；wire-schema 之 TYPINGS_PATHSPECS／SNAPSHOT_PATHSPECS 相對子庫根（`git -C <子庫>` 之 pathspec）——前者換 `/` 分隔、
+# 後者前綴子庫名；hook 段字面取 repo 根相對形（段內自拆子庫名與子庫相對 pathspec）。
+SYNC_LABEL = "submodule-sync"
+RE_SYNC_PATH = re.compile(r"'((?:rust-api|base-web)/[^']+)'")
 # pre-push 面（BL-00037①）：每檔一組必含字面（標籤, 字面）——外層／子庫 pre-push 各三（source lib 相對路徑形不同、餘同形）；
 # lib＝betterleaks 呼叫（--config 顯式帶＋--redact＋--exit-code 2＋--log-opts=）＋四種範圍推導（契約表＝lib 檔頭：一般更新／新分支首推／退階／刪除分支跳過）＋入口函式
 PUSH_LITERALS = {
@@ -110,7 +155,7 @@ def check_hook_wiring(text, codegate_tools, non_gate_tools):
         if literal not in text:
             out.append(f"固定鏈缺「{label}」：{literal}")
     labels = RE_PC_RUN.findall(text)
-    expected = {s[0] for s in SEGMENTS} | {"docsync-check", "docsync-lint"}
+    expected = set(MIRROR_LABELS)
     # for 迴圈的動態標籤 `selftest-$(basename "$t" .py)`：正則在內層引號截斷成 `selftest-$(basename `，以前綴辨識、不入未登記判定。
     for lab in sorted(set(labels) - expected):
         if lab.startswith("selftest-$("):
@@ -149,6 +194,66 @@ def check_hook_wiring(text, codegate_tools, non_gate_tools):
         if 'grep -qxF "$t"' not in text or 'python3 "$HOOK_DIR/../$t" test' not in text:
             out.append("for 自測迴圈本體缺 staged 精確比對或 test 命令字面")
     return out
+
+
+# 鏡像腿段名冊（BL-00055）＝FIXED 內 pc_run 字面之標籤（固定鏈）＋SEGMENTS 標籤：單一推導，check_mirror_words 與其測試皆讀此、不另抄標籤字面。
+FIXED_PC_LABELS = tuple(m.group(1) for m in (RE_PC_RUN.match(lit) for _, lit in FIXED) if m)
+MIRROR_LABELS = FIXED_PC_LABELS + tuple(s[0] for s in SEGMENTS)
+
+
+def mirror_word_re(word):
+    """段序枚舉字樣之 ASCII 詞界正則（取法理由見 MIRROR_WORDS 上方註）。"""
+    return re.compile(r"(?<![A-Za-z0-9_./-])" + re.escape(word) + r"(?![A-Za-z0-9_./-])")
+
+
+def check_mirror_words(hook_text, readme_text, words=MIRROR_WORDS):
+    """回 findings（字串清單）；空＝hook 靜態 pc_run 標籤 ⊆ 段名冊 MIRROR_LABELS、名冊每段皆宣告字樣、且字樣在三處鏡像行各恰出現一次。每條指名檔（repo 相對路徑）、面與段。"""
+    labels = MIRROR_LABELS
+    # hook 實際 pc_run 標籤反查段名冊：未入 FIXED／SEGMENTS 之段＝本腿不會要求其字樣、三處漏補照樣綠，故當場紅；標籤含 `$(`＝for 迴圈動態標籤、不計。
+    out = [f".githooks/pre-commit 之 pc_run 段 {lab} 不在鏡像腿段名冊（無條件段須入 FIXED、條件段須入 SEGMENTS，並同批宣告 MIRROR_WORDS）"
+           for lab in sorted(set(RE_PC_RUN.findall(hook_text)) - set(labels)) if "$(" not in lab]
+    out += [f"段 {lab} 未宣告段序枚舉字樣（新段須同批入 test_hook_wiring MIRROR_WORDS）" for lab in labels if lab not in words]
+    out += [f"MIRROR_WORDS 登記了非段 {lab}（FIXED 之 pc_run 段∪SEGMENTS 之外）" for lab in sorted(set(words) - set(labels))]
+    texts = {".githooks/pre-commit": hook_text, "README.md": readme_text}
+    for face, rel, prefix in MIRRORS:
+        line = next((ln for ln in texts[rel].split("\n") if ln.startswith(prefix)), None)
+        if line is None:
+            out.append(f"{rel} 缺鏡像行（{face}：以「{prefix}」起首）")
+            continue
+        for lab in labels:
+            if lab not in words:
+                continue
+            n = len(mirror_word_re(words[lab]).findall(line))
+            if n == 0:
+                out.append(f"{rel} 之{face}缺段 {lab}（字樣「{words[lab]}」；三處鏡像須同批補齊）")
+            elif n > 1:
+                out.append(f"{rel} 之{face}段 {lab} 字樣「{words[lab]}」出現 {n} 次（須恰 1：他段敘述夾帶該字樣＝該段條目被刪時由夾帶處代為命中之假綠；改寫夾帶處）")
+    return out
+
+
+def load_tool(name):
+    """工具檔名含連字號（CLI、不可 import）——依路徑以 spec_from_file_location 載入 tools/<name>.py，只讀其模組層常數。"""
+    spec = importlib.util.spec_from_file_location("_hook_wiring_" + name.replace("-", "_"), os.path.join(ROOT, "tools", name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def gate_face_paths(msg_key_gate, wire_schema):
+    """兩雙側閘常數 → repo 根相對、`/` 分隔之閘面路徑集（正規化理由見 SYNC_LABEL 上方註）。"""
+    return ({p.replace(os.sep, "/") for p in (msg_key_gate.DEFAULT_RUST, msg_key_gate.DEFAULT_LOCALES)}
+            | {"base-web/" + p for p in wire_schema.TYPINGS_PATHSPECS}
+            | {"rust-api/" + p for p in wire_schema.SNAPSHOT_PATHSPECS})
+
+
+def check_sync_paths(hook_text, want):
+    """回 findings（字串清單）；空＝hook submodule-sync 段路徑字面集 ＝ want（兩工具常數正規化集）。段缺席或字面集為空＝紅。"""
+    lines = [ln for ln in hook_text.split("\n") if f'pc_run "{SYNC_LABEL}"' in ln and not ln.lstrip().startswith("#")]
+    got = set(RE_SYNC_PATH.findall("\n".join(lines)))
+    if not got:
+        return [f"段 {SYNC_LABEL} 閘面路徑字面集為空（段缺席或無 '<子庫>/<路徑>' 引數；掃描面空集合即紅＝RL-0051）"]
+    return ([f"段 {SYNC_LABEL} 缺閘面路徑 {p}（兩雙側閘常數有、hook 段無）" for p in sorted(want - got)]
+            + [f"段 {SYNC_LABEL} 多閘面路徑 {p}（hook 段有、兩雙側閘常數無）" for p in sorted(got - want)])
 
 
 def check_push_hooks(outer_text, sub_text, lib_text):
@@ -253,6 +358,108 @@ class TestHookWiring(unittest.TestCase):
         self.assertIn("未登記段 ghost", " ".join(check_hook_wiring(mutated, cg, ng)))
         mutated2 = hook.replace("pc_join || exit 1", "", 1)
         self.assertIn("pc_join", " ".join(check_hook_wiring(mutated2, cg, ng)))
+
+
+def real_mirror_texts():
+    with open(HOOKS["pre-commit"], encoding="utf-8") as f:
+        hook = f.read()
+    with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as f:
+        return hook, f.read()
+
+
+class TestMirrorWords(unittest.TestCase):
+    """段序枚舉鏡像面（BL-00055）：真檔零 finding；逐面×逐段刪該唯一一處字樣→恰一條紅指名該檔、該面與該段（同檔另一面與他檔不誤紅）；
+    他段敘述夾帶字樣→紅（出現 2 次）；路徑／識別字內嵌不計；鏡像行缺席→紅；段未宣告字樣→紅指名該段；hook 有未入段名冊之 pc_run 段→紅指名。"""
+
+    def _line(self, text, prefix):
+        return next(ln for ln in text.split("\n") if ln.startswith(prefix))
+
+    def test_real_mirrors_green(self):
+        self.assertTrue(FIXED_PC_LABELS, "FIXED 推導之 pc_run 固定段為空集合（鏡像腿漏掃固定鏈；RL-0051）")
+        self.assertEqual(FIXED_PC_LABELS, tuple(lab for lab, lit in FIXED if lit.startswith("pc_run ")), "FIXED 標籤欄須＝其 pc_run 字面標籤")
+        self.assertEqual(set(MIRROR_WORDS), set(MIRROR_LABELS))
+        self.assertEqual(check_mirror_words(*real_mirror_texts()), [])
+
+    def test_each_word_removed_red_names_file_face_segment(self):
+        hook, readme = real_mirror_texts()
+        for face, rel, prefix in MIRRORS:
+            for lab, word in MIRROR_WORDS.items():
+                texts = {".githooks/pre-commit": hook, "README.md": readme}
+                line = self._line(texts[rel], prefix)
+                pat = mirror_word_re(word)
+                self.assertEqual(len(pat.findall(line)), 1, (face, lab))
+                texts[rel] = texts[rel].replace(line, pat.sub("", line, count=1), 1)   # 只刪一處（恰一次已由上行斷言）
+                msgs = check_mirror_words(texts[".githooks/pre-commit"], texts["README.md"])
+                self.assertEqual(len(msgs), 1, (face, lab, msgs))
+                self.assertTrue(msgs[0].startswith(rel + " ") and face in msgs[0] and f"缺段 {lab}" in msgs[0], (face, lab, msgs))
+
+    def test_carried_word_red(self):
+        """夾帶反例（審查 r1 實證形）：守門條目 lint 條目內寫「與 check 同源」＝刪 docsync check 條目仍由夾帶處命中之假綠——須在夾帶當下即紅。"""
+        hook, readme = real_mirror_texts()
+        carried = readme.replace("`docsync lint`（", "`docsync lint`（與 check 同源；", 1)
+        self.assertNotEqual(carried, readme)
+        msgs = check_mirror_words(hook, carried)
+        self.assertEqual(len(msgs), 1, msgs)
+        self.assertTrue(msgs[0].startswith("README.md ") and "守門條目" in msgs[0] and "段 docsync-check" in msgs[0] and "出現 2 次" in msgs[0], msgs)
+        carried2 = hook.replace("submodule-sync（", "submodule-sync（同 msg-key-gate 讀工作樹；", 1)
+        self.assertNotEqual(carried2, hook)
+        msgs2 = check_mirror_words(carried2, readme)
+        self.assertEqual(len(msgs2), 1, msgs2)
+        self.assertTrue(msgs2[0].startswith(".githooks/pre-commit ") and "檔頭段序" in msgs2[0] and "段 msg-key-gate" in msgs2[0] and "出現 2 次" in msgs2[0], msgs2)
+
+    def test_path_or_identifier_embedding_not_counted(self):
+        hook, readme = real_mirror_texts()
+        embedded = readme.replace("→條件自測→", "→條件自測（tools/msg-key-gate.py、fork-delta-lint、wire-schema.json）→", 1)
+        self.assertNotEqual(embedded, readme)
+        self.assertEqual(check_mirror_words(hook, embedded), [])
+
+    def test_unlisted_hook_segment_red(self):
+        hook, readme = real_mirror_texts()
+        mutated = hook.replace("pc_join || exit 1", 'pc_run "ghost-fixed" true\npc_join || exit 1', 1)
+        msgs = check_mirror_words(mutated, readme)
+        self.assertTrue(any(m.startswith(".githooks/pre-commit ") and "ghost-fixed" in m and "不在鏡像腿段名冊" in m for m in msgs), msgs)
+
+    def test_mirror_line_absent_red(self):
+        hook, readme = real_mirror_texts()
+        msgs = check_mirror_words(hook.replace("# rev6 pre-commit：", "# rev6 hook：", 1), readme)
+        self.assertTrue(any(m.startswith(".githooks/pre-commit ") and "檔頭段序" in m and "缺鏡像行" in m for m in msgs), msgs)
+        msgs2 = check_mirror_words(hook, readme.replace("- **守門**：", "- **守衛**：", 1))
+        self.assertTrue(any(m.startswith("README.md ") and "守門條目" in m and "缺鏡像行" in m for m in msgs2), msgs2)
+
+    def test_undeclared_word_red(self):
+        words = {k: v for k, v in MIRROR_WORDS.items() if k != "orchestration"}
+        msgs = check_mirror_words(*real_mirror_texts(), words=words)
+        self.assertTrue(any("orchestration" in m and "未宣告" in m for m in msgs), msgs)
+
+
+class TestSubmoduleSyncPaths(unittest.TestCase):
+    """跨子庫同步律段閘面路徑對賬（BL-00057）：真 hook 段字面集 ＝ 兩雙側閘常數正規化集（一正）；hook 少一／多一／工具常數多一／段缺席→紅指名（多反）。"""
+
+    def _real(self):
+        with open(HOOKS["pre-commit"], encoding="utf-8") as f:
+            hook = f.read()
+        msg, wire = load_tool("msg-key-gate"), load_tool("wire-schema")
+        # 正規化前提實證：msg-key-gate 常數帶子庫名（repo 根相對）、wire-schema 常數不帶（子庫根相對）
+        self.assertTrue(msg.DEFAULT_RUST.startswith("rust-api" + os.sep) and msg.DEFAULT_LOCALES.startswith("base-web" + os.sep))
+        self.assertFalse(any(p.startswith(("rust-api/", "base-web/")) for p in wire.TYPINGS_PATHSPECS + wire.SNAPSHOT_PATHSPECS))
+        return hook, gate_face_paths(msg, wire)
+
+    def test_real_paths_match_tool_constants(self):
+        hook, want = self._real()
+        self.assertTrue(any(p.startswith("rust-api/") for p in want) and any(p.startswith("base-web/") for p in want), want)
+        self.assertEqual(check_sync_paths(hook, want), [])
+
+    def test_path_drift_red(self):
+        hook, want = self._real()
+        dropped = hook.replace(" 'base-web/src/typings/api'", "", 1)
+        self.assertNotEqual(dropped, hook)
+        self.assertIn(f"段 {SYNC_LABEL} 缺閘面路徑 base-web/src/typings/api（兩雙側閘常數有、hook 段無）", check_sync_paths(dropped, want))
+        extra = hook.replace(" 'rust-api/server/src/error.rs'", " 'rust-api/server/src/error.rs' 'rust-api/server/src/lib.rs'", 1)
+        self.assertIn(f"段 {SYNC_LABEL} 多閘面路徑 rust-api/server/src/lib.rs（hook 段有、兩雙側閘常數無）", check_sync_paths(extra, want))
+        self.assertIn(f"段 {SYNC_LABEL} 缺閘面路徑 base-web/src/typings/app.d.ts（兩雙側閘常數有、hook 段無）",
+                      check_sync_paths(hook, want | {"base-web/src/typings/app.d.ts"}))
+        gone = "\n".join(ln for ln in hook.split("\n") if f'pc_run "{SYNC_LABEL}"' not in ln)
+        self.assertTrue(any("字面集為空" in m for m in check_sync_paths(gone, want)))
 
 
 class TestPushHooksWiring(unittest.TestCase):

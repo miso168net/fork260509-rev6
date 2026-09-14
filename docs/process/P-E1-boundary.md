@@ -44,7 +44,7 @@ flowchart LR
 | 節點 | 類型 | 說明 |
 |---|---|---|
 | user | 人 | 拍板級親決、merge／push 當次同意 |
-| pre-commit | 機器閘 | betterleaks→docsync check（GT-01）＋lint（GT-01～GT-12）→staged 工具自測→rust-fmt／wire-schema／fork-delta（pin bump、工具本體或憲法 staged 時條件實跑）→entity-drift（pin bump／快照 staged 時條件實跑、快照缺席即紅）→schema-frozen（凍結面 staged 時條件實跑）→orchestration（骨架／範例 staged 時三支範例組裝＋harness）；接線由 test_hook_wiring 機器守 |
+| pre-commit | 機器閘 | betterleaks→docsync check（GT-01）＋lint（GT-01～GT-12）→各條件段（段序與觸發面以 `.githooks/pre-commit` 檔頭段序註為準、本表不逐段複寫；接線字面與人寫鏡像由 `tools/docsync/tests/test_hook_wiring.py` 機器守） |
 | default branch | 確定性區域 | `rev6-admin-root`；只收經兩道閘的產物 |
 
 ### 四段邊界契約
