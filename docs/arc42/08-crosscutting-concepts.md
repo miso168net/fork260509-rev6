@@ -18,7 +18,7 @@ rev5_blueprint:
 
 memo 欄家族（`user_memo`／`role_memo`／`menu_memo`／`wbip_memo` 與 `role_desc` 的分工）語意權威＝`docs/ops/reference-src/schema-definition.md` §5、UI 兌現隨對應 UI 刀。
 
-ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯關聯不建 Relation、需要即手寫 join）、`ActiveModelBehavior` 恆空（審計欄由 model/facade 顯式成對寫、憲法 §I.6 成對條款）——`rust-api/entity/` 已依此宣告，機器錨＝`rust-api/server/tests/entity_behavior_lint.rs`（承 rev5 同名形；等式形站點數＝帶 DeriveEntityModel 檔數、空體判定、合成正例必紅）。
+ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯關聯不建 Relation、需要即手寫 join）、`ActiveModelBehavior` 恆空（審計欄由 model/facade 顯式成對寫、憲法 §I.6 成對條款）——`rust-api/entity/` 已依此宣告，機器錨＝`rust-api/server/tests/entity_behavior_lint.rs`（行為層腿承 rev5 同名形：等式形站點數＝帶 DeriveEntityModel 檔數、空體判定、合成正例必紅；關聯宣告腿為 rev6 自寫：entity `belongs_to` 宣告集 ⊆ migration `ForeignKey::create()` 解出之真 FK 集、兩側字樣數＝解出數之完整性等式、未支援形與原生 SQL FK 形一律紅）。
 
 ## 8.2 API 慣例
 
