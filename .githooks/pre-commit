@@ -111,7 +111,10 @@ fi
 # ★理由：上方 wire-schema／msg-key-gate 兩支雙側閘讀的是**工作樹**（003 刀 U9 實證 pin 樹缺右源時 msg-key-gate 仍 rc 0），工作樹≠pin 樹時其綠
 # 不代表 commit 內容；「已 commit 未 bump」那一側由 GT-02（gitlink＝worktree HEAD；docsync lint 每顆必跑）擋，本段補「未 commit 的同面改動（含未追蹤新檔）」這一半。
 # ★未追蹤新檔照計（--untracked-files=all）：base-web src/typings/api 下新增而未 git add 之 .d.ts，wire-schema 重抽照樣讀入（TYPINGS_GLOB 讀檔案系統；
-# 任一側 pin 區間有變動即完整重抽）、pin 樹卻缺該檔——不計則本段與 wire-schema 同時靜默綠。閘面 pathspec 已收窄，誤紅面只剩閘面目錄內的未追蹤暫存檔（寧吵勿漏）。
+# 任一側 pin 區間有變動即完整重抽）、pin 樹卻缺該檔——不計則本段與 wire-schema 同時靜默綠。★誤紅面（寧吵勿漏）：base-web 側閘面含 `src` 全目錄
+# （msg-key-gate 前端消費點掃描根；`src/locales/langs` 等三條窄路徑已被其涵蓋、為閘面對賬腿之等式而留），src 下兩支雙側閘皆不讀之檔的任何
+# 未 commit 改動（tracked 修改與未追蹤檔皆算）同樣擋下 pin bump。rust-api 側只列 msg-key-gate 左源與 wire 快照：msg-key-gate 之 Biz 構造點守衛
+# 比對面同在 rust-api 內＝單側、不跨子庫，與 rust-fmt 同不入本段閘面。
 # 有改動＝rc 1、指名子庫與檔並給補救句；對子庫 git 失敗＝rc 2。★LL-00012：hook 期間 git 匯出外層 GIT_DIR／GIT_INDEX_FILE 等——對子庫下 git 前
 # 以 `unset $(git rev-parse --local-env-vars)` 剝除（githooks(5) 對他 repo 下 git 之慣用形；未剝＝查外層 index、恆空＝靜默綠）；
 # `--no-optional-locks`＝守上方並行 harness「各閘唯讀」（status 不順手回寫子庫 index）。閘面路徑字面 ⇔ 兩工具常數由 test_hook_wiring 對賬。

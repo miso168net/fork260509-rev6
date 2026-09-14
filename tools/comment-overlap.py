@@ -10,7 +10,7 @@ rev5 對應檔＝`../fork260509-rev5/<同相對路徑>`（凍結 worktree；本�
 的極大共同子字串，命中字元合計／本檔註解總字元＝重疊比。識別字、SQL 片段、路徑與 doctest 碼行本就兩代共用、門檻 25 字元下仍佔
 識別字密集檔 10%～12%，故預設門檻 40 字元／上限 5%：實測逐字搬運檔落 18%～45%、改寫後 ≤4.1%，兩態不相接。
 base-web 路徑（repo 根相對首段 `base-web`）三型豁免後再量——帶 fork-delta 標記之既有檔含兩代共享之強制字面、不豁免即結構性必紅而散文命中被淹沒：
-  ①含 `[rev6-inline …]` 標記之行整行（標記 token 與 rev5 同軌道同刀名、只差前綴）；
+  ①`[rev6-inline …]` 標記 token 本身（方括號整段；與 rev5 同軌道同刀名、只差前綴——同行其餘我方散文照計）；
   ②upstream 基線原有之註解行整行（源倉 `fork260509-soybean-admin-base` 之 `example` 分支同相對路徑檔、壓白後全等；基線無此檔＝我方新檔、本型不豁免）；
   ③`原行:` 起至行尾（憲法 §III 修改型契約強制逐字；其前之我方散文照計）。
   豁免字元既不入分子也不入分母、逐檔輸出附三型豁免行數；rust-api 與其餘路徑零豁免、不讀源倉。
@@ -29,13 +29,14 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REV5 = ROOT.parent / "fork260509-rev5"
-# base-web 基線座標與兩支標記 regex 同 tools/fork-delta-lint.py 之 FORK／BASELINE／MARKER／TRACK（連字檔名不可 import、此處同形宣告）。
+# base-web 基線座標與 `原行:` regex 同 tools/fork-delta-lint.py 之 FORK／BASELINE／MARKER（連字檔名不可 import、此處同形宣告）；
+# TOKEN＝標記 token 方括號整段（fork-delta-lint 之 TRACK 只錨到軌道名、豁免須剝到 `]`；未同行收 `]` 者不豁免＝照計、寧紅勿漏）。
 FORK = ROOT / "fork260509-soybean-admin-base"
 BASELINE = "example"
 BASEWEB = "base-web"
 MARKER = re.compile(r"原行:\s*(.*\S)\s*$")
-TRACK = re.compile(r"\[rev6-inline\s+([A-Z][A-Z0-9-]*)(?:\(([a-z]+)\))?")
-EXEMPT_KINDS = ("標記行", "基線原有", "原行載荷")
+TOKEN = re.compile(r"\[rev6-inline\s[^\]]*\]")
+EXEMPT_KINDS = ("標記 token", "基線原有", "原行載荷")
 DEFAULT_MIN = 40
 DEFAULT_MAX_PCT = 5.0
 WS = re.compile(r"\s+")
@@ -137,27 +138,28 @@ def read_baseline(fork, rel):
 
 
 def exempt_units(path, baseline_text):
-    """base-web 檔三型豁免 → (保留之 units, {型: 行數})。判定序＝標記行（整行）→ 基線原有（整行；壓白後全等於基線任一註解行）
-    → 原行載荷（只截 `原行:` 起至行尾、其前之我方散文照計）。`baseline_text` 為 None＝基線無此檔、第二型不豁免。"""
+    """base-web 檔三型豁免 → (保留之 units, {型: 行數})。判定序＝標記 token（只剝方括號整段、同行其餘照計；含 token 之行不比基線）
+    → 基線原有（整行；壓白後全等於基線任一註解行）→ 原行載荷（只截 `原行:` 起至行尾、其前之我方散文照計）。
+    `baseline_text` 為 None＝基線無此檔、第二型不豁免。"""
     base = set() if baseline_text is None else {WS.sub("", raw) for _, raw in comment_lines(baseline_text.splitlines())}
     kept, stats = [], dict.fromkeys(EXEMPT_KINDS, 0)
     with open(path, encoding="utf-8") as fh:
         rows = comment_lines(fh)
     for ln, raw in rows:
-        text = WS.sub("", raw)
-        if TRACK.search(raw):
-            stats["標記行"] += 1
-            continue
-        if text in base:
+        token = TOKEN.search(raw)
+        if token:
+            stats["標記 token"] += 1
+            raw = raw[:token.start()] + raw[token.end():]
+        elif WS.sub("", raw) in base:
             stats["基線原有"] += 1
             continue
         hit = MARKER.search(raw)
         if hit:
             stats["原行載荷"] += 1
-            text = WS.sub("", raw[:hit.start()])
-            if not text:
-                continue
-        kept.append((ln, text))
+            raw = raw[:hit.start()]
+        text = WS.sub("", raw)
+        if text:
+            kept.append((ln, text))
     return kept, stats
 
 
@@ -236,7 +238,8 @@ def _run_quiet(files, **roots):
 def self_test():
     """合成樣本逐案自證；任一案敗＝rc 1、指名案名與實得值。
     量尺本體：同一段散文逐字搬運須判超標、改寫後須判 ok；識別字級短片段不計。
-    base-web 三型豁免：全豁免正例一支＋「只拿掉一型之形」反例四支（其餘兩型照豁免、命中恰為被拿掉那型）；rust-api 同內容零豁免且不讀源倉；
+    base-web 三型豁免（樣本＝token＋散文＋`原行:` 同行之修改型真形）：全豁免正例一支＋「只拿掉一型之形」反例四支（其餘兩型照豁免、命中恰為
+    被拿掉那型）＋標記行同行散文與 rev5 同文照計反例一支；rust-api 同內容零豁免且不讀源倉；
     LL-00012 洩漏 env 下仍讀得到基線；源倉不可讀 rc 2。比對面為空：全 n/a／全體零可解析註解 rc 2 各配一反例；豁免後零字元不算空面。"""
     cases = []
 
@@ -255,24 +258,29 @@ def self_test():
         case("改寫樣本判零重疊（識別字級短片段不計）", pct_r == 0.0 and not hits_r, f"{pct_r:.1f}%／{len(hits_r)} 段")
 
         # ── base-web 三型豁免 ──
-        # rev6 樣本四行註解：我方散文／upstream 原註（基線有）／標記行（token 與 rev5 只差前綴）／我方散文＋`原行:` 載荷（rev5 同載荷）。
+        # rev6 樣本三行註解：我方散文／upstream 原註（基線有）／修改型標記行真形＝token＋我方散文＋`原行:` 載荷同一行（fork-delta-lint
+        # 規定 `原行:` 與 token 同行）；rev5 同位標記行帶同軌道 token、前代散文與同載荷。
         root, r5root, fork = base / "rev6", base / "rev5", base / "fork"
         up = "// when the backend response code is in modalLogoutCodes, it means the user will be logged out by a modal"
         code = "const { data: loginToken, error } = await fetchLoginWithCaptcha(userName, password, captcha);"
         tok5 = "// [rev5-inline BASE-WEB-LOGIN-CAPTCHA-WIRING+ 003-auth-session START]"
-        mine, lead = "// 我方重寫之說明：軟區附掛驗證碼欄。", "// 改呼 wrapper（我方散文）；"
-        r5 = f"{up}\n{tok5}\n// [rev5-inline BASE-WEB-LOGIN-CAPTCHA-WIRING(i) 003-auth-session] 前代說明；原行: {code}\nexport const a = 1;\n"
+        mine, lead = "// 我方重寫之說明：軟區附掛驗證碼欄。", "改呼 wrapper（我方散文）；"
+        shared = "這段標記行上的前代散文刻意寫得超過四十字元門檻、且被逐字搬進 rev6 同一標記行，收窄後的豁免須照計判超標。"
+        r5 = (f"{up}\n{tok5}\n// [rev5-inline BASE-WEB-LOGIN-CAPTCHA-WIRING(i) 003-auth-session] {shared}原行: {code}\n"
+              "export const a = 1;\n")
 
-        def rev6(track="[rev6-inline", payload="原行:"):
-            return f"{mine}\n{up}\n{tok5.replace('[rev5-inline', track)}\n{lead}{payload} {code}\nexport const a = 1;\n"
+        def rev6(track="[rev6-inline", payload="原行:", note=lead):
+            return (f"{mine}\n{up}\n// {track} BASE-WEB-LOGIN-CAPTCHA-WIRING(i) 003-auth-session] {note}{payload} {code}\n"
+                    "export const a = 1;\n")
 
         with_up = f"{up}\n{code}\n"
         variants = {  # 檔名 → (rev6 內容, 基線內容｜None＝基線無此檔)
             "pos.ts": (rev6(), with_up),
-            "neg_track.ts": (rev6(track="rev6-inline"), with_up),   # 缺 `[`＝不合 TRACK
+            "neg_track.ts": (rev6(track="rev6-inline"), with_up),   # 缺 `[`＝不合 TOKEN
             "neg_payload.ts": (rev6(payload="參照:"), with_up),     # 非 `原行:`
             "neg_base.ts": (rev6(), f"{code}\n"),                   # 基線檔無該註解行（碼行同文不算）
             "neg_nofile.ts": (rev6(), None),                        # 基線無此檔（我方新檔）
+            "neg_prose.ts": (rev6(note=shared), with_up),           # 標記行同行散文與 rev5 同文（三型照豁免）
             "allexempt.ts": (f"{up}\n{tok5.replace('[rev5-inline', '[rev6-inline')}\n", with_up),
         }
         for name, (text6, text_base) in variants.items():
@@ -291,12 +299,16 @@ def self_test():
 
         all_one = dict.fromkeys(EXEMPT_KINDS, 1)
         pct, hits, total, n_raw, stats = m("pos.ts")
-        want_total = len(WS.sub("", MARK.sub("", mine))) + len(WS.sub("", MARK.sub("", lead)))
-        case("base-web 三型全豁免→零重疊、豁免字元不入分母",
-             not hits and pct == 0.0 and total == want_total and n_raw == 4 and stats == all_one,
+        want_total = len(WS.sub("", MARK.sub("", mine))) + len(WS.sub("", lead))
+        case("base-web 三型全豁免→零重疊、豁免字元不入分母、標記行同行我方散文入分母",
+             not hits and pct == 0.0 and total == want_total and n_raw == 3 and stats == all_one,
              f"{pct:.1f}%／{len(hits)} 段／總量 {total}（應 {want_total}）／豁免前 {n_raw} 行／豁免 {stats}")
+        pct, hits, _t, _n, stats = m("neg_prose.ts")
+        case("標記行同行散文反例：與 rev5 同文→照計判超標（token 與 `原行:` 載荷照豁免）",
+             pct >= DEFAULT_MAX_PCT and hits and all("逐字搬進" in h[2] for h in hits) and stats == all_one,
+             f"{pct:.1f}%／命中 {[h[2][:48] for h in hits]}／豁免 {stats}")
         for name, kind, needle, label in (
-            ("neg_track.ts", "標記行", "BASE-WEB-LOGIN-CAPTCHA-WIRING", "標記行反例：缺 `[` 之 token 不合 TRACK→照計"),
+            ("neg_track.ts", "標記 token", "BASE-WEB-LOGIN-CAPTCHA-WIRING", "標記 token 反例：缺 `[` 之 token 不合 TOKEN→照計"),
             ("neg_payload.ts", "原行載荷", "fetchLoginWithCaptcha", "原行載荷反例：`參照:` 非 `原行:`→照計"),
             ("neg_base.ts", "基線原有", "modalLogoutCodes", "基線原有反例：基線檔無該註解行→照計"),
             ("neg_nofile.ts", "基線原有", "modalLogoutCodes", "基線原有反例：基線無此檔（我方新檔）→照計"),

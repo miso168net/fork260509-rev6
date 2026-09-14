@@ -321,7 +321,7 @@ class TestHookWiring(unittest.TestCase):
 
     def test_deleted_segment_red(self):
         hook, cg, ng = real_inputs()
-        for label in ("rust-fmt", "wire-schema", "fork-delta", "schema-frozen", "orchestration", "selftest-docsync"):
+        for label, *_ in SEGMENTS:
             mutated = "\n".join(ln for ln in hook.split("\n") if f'pc_run "{label}"' not in ln)
             msgs = " ".join(check_hook_wiring(mutated, cg, ng))
             self.assertIn(label, msgs, f"刪 {label} 段須紅指名")

@@ -460,7 +460,8 @@ def check_restore_baseline(snap):
               if snap["redis"]["prefixes"].get(p)]
     if loaded:
         raise BaselineError("基準非空、DELETE 全表會毀掉基準資料（" + "、".join(loaded) +
-                            "）——restore 只服務走查前為空基準之形；拒絕執行、零寫入")
+                            "）——restore 只服務走查前為空基準之形；拒絕執行、零寫入。補救：手上有取於空基準之較早 "
+                            "snapshot 檔＝改以該檔跑 restore；無此檔＝本工具不承載，殘列須人工清至空基準後重取 snapshot")
 
 
 def psql_json(sql, user, db, run):
@@ -1354,8 +1355,9 @@ class TestRestore(unittest.TestCase):
         self.assertEqual((len(real), real["single_session_default"]), (16, "off"))
 
     def test_main_restore_defaults_to_frozen_seed_and_honours_user_db(self):
-        """main 走預設左源＝真 repo 凍結 seed＋真 repo 演進登記檔——★本案兼作哨兵：演進帳一登記 system_settings
-        之 seed_* 即紅（rc 2、訊息指名登記 id），逼該刀同批擴充 restore 之 seed 左源合成、而非等到走查當下才撞。"""
+        """main 走預設左源＝真 repo 凍結 seed＋真 repo 演進登記檔——演進帳登記 system_settings 之 seed_* 後本案即紅
+        （rc 2、訊息指名登記 id）。★觸發面只有本檔 staged 時之 pre-commit 自測與 bash tools/bootstrap.sh 名冊：只登記演進帳之
+        commit 不跑本案，首撞點可能延到走查當下 restore rc 2（前置斷言在任何寫入之前、零寫入）。"""
         with open(os.path.join(REPO_ROOT, SEED_FIXTURE), encoding="utf-8") as fh:
             real = seed_settings(fh.read())
         stub = _restore_stub(settings=[{"setting_key": k, "setting_value": v, "stamped": False}
