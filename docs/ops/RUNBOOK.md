@@ -124,11 +124,11 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
-**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數，現＝`tools/wf-watchdog.py`、`tools/comment-overlap.py`、`tools/walkthrough-baseline.py`）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。
+**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數；成員以該常數為準、此處不鏡像）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。
 
 | 工具檔 | 守什麼 | 觸發時機（含環境缺席語意） | 根據 ADR |
 |---|---|---|---|
-| `tools/schema-gate.py` | schema 三閘：凍結 fixtures ⊕ 演進帳 vs 實庫（gate1 結構／gate2 欄序＋seed／audit archetype）＋doccheck 離線對賬 | 不進 pre-commit 常跑鏈（護雙錨）：`check` 手動／review 輪跑（需 stack）；pre-commit `schema-frozen` 段＝凍結存證或活體定稿 staged 時跑其 `test`；本體 staged 時自測 | ADR-00010（閘契約）；ADR-00016（碼面閘名冊承載於本表＋GT-12 腿） |
+| `tools/schema-gate.py` | schema 三閘：凍結 fixtures ⊕ 演進帳 vs 實庫（gate1 結構／gate2 欄序＋seed／audit archetype）＋doccheck 離線對賬 | 不進 pre-commit 常跑鏈（護雙錨）：`check` 手動／review 輪跑（需 stack）；pre-commit `schema-frozen` 段＝凍結存證或活體定稿 staged 時跑其 `test`；本體 staged 時自測 | ADR-00010（閘契約）；ADR-00032（碼面閘名冊承載於本表＋GT-12 腿） |
 | `tools/entity-drift-gate.py` | `rust-api/entity/src` vs schema 快照雙向（表／欄完整性＋型別＋可空性；零 docker） | pre-commit entity-drift 段＝`rust-api` pin bump 或快照 staged 時 `check`；★快照缺席＝hook 段 rc 2 擋下＋提示 `python3 tools/docsync refresh`（不具名跳過）；本體 staged 時自測 | ADR-00010；ADR-00018（快照缺席即紅） |
 | `tools/rust-fmt-gate.py` | rust 格式：容器內 `cargo fmt --all --check`（唯讀、絕不寫檔） | pre-commit rust-fmt 段＝`rust-api` pin bump 或本體 staged 時 `check`；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0；容器在而 cargo-fmt 缺＝rc 2 fail-loud；未格式化＝rc 1；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud；承 rev5:ADR 0057 決定 3） |
 | `tools/wire-schema.py` | wire 契約：base-web typings → JSON Schema 快照 byte 比對（快照＝`rust-api/server/tests/fixtures/wire-schema.json`；唯讀鐵則、前端 porcelain 前後皆空） | pre-commit wire-schema 段＝`base-web` **或 `rust-api`** pin bump 時 `check --staged-gate`（雙側觸發、對稱於 entity-drift：typings 側住 base-web、快照側住 rust-api worktree；兩側 pin 區間皆零變動才跳過）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0；容器在而重抽失敗、快照缺席或不一致＝rc 2；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意） |
