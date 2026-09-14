@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-14 | misc | governance｜maint-backlog-pre-004 | 輕量軌 maint-backlog-pre-004 收單（003 刀收刀後、004 刀前；四單元）：A1 rust-api 測試側補強＋JWT 兩鑰 boot 斷言（ADR-00031）；A2a pre-commit 段序鏡像腿／submodule-sync／bootstrap-roster；A2b walkthrough restore／帳號快照投影腿／comment-overlap fork-delta 豁免／msg-key-gate 前端消費點腿；A3 rust-api 註解改寫 21 檔（comment-overlap rc 0）。 | db25165 | ADR-00031 | — |
 | 2026-09-14 | feature_close | 003-auth-session | 003 auth-session 收單（rev6 第三刀）：真登入／續期 rotation＋grace／撤銷三型＋denylist 四級降級／節流三區＋captcha／替代登入 stub／i18n 跨端閘 msg-key-gate／治理六項；零 migration；憲法 1.3.0；ROUTES 16、contract 16、MSG_KEYS 13；SC-012「RULES 零改動」子句失效＝三處 RULES 改動皆 LL promotion；backlog_add 以在途 GT-03 全集為準；final review 分流見 51ab7c7。 | 0e74551 | ADR-00026、ADR-00027、ADR-00028、ADR-00029、ADR-00030 | §5、§6、§8、§10、§11、§12 |
 | 2026-09-08 | misc | governance｜maint-py313-docstring-dedent | 輕量軌 maint-py313-docstring-dedent 收單：閘區塊 regex 去掉對 docstring 縮排的依賴。Python ≥3.13 編譯期剝掉 docstring 共同縮排後 gate_id() 對 12 支閘全回 None——GATES.md 算成無列空表（GT-01 漂移）、GT-05 的 ID 存在性真源成單元素 None 集（閘號引用 322 筆假紅）、docsync 自測 10 案連坐、bootstrap exit 2。`[ \t]+` → `[ \t]*` 還原原意＋補迴歸案；LESSONS 12→14。 | 9e420a2 | — | — |
 | 2026-09-07 | misc | governance｜maint-backlog-40-39-37 | 輕量軌 maint-backlog-40-39-37 收單（003 開刀前治理維護、三條合一顆）：BL-00040 探針題庫隔離全收（否定對照表刪「真相」欄、r3 起真相烤進 grader prompt 不落 tracked）；BL-00039① 編排骨架五常數型別＋非空斷言（harness-test 十五→十八案）；BL-00037③ wire 契約閘雙側觸發（pre-commit 觸發字面＋wire-schema.py 快照側 pin 區間收窄、自測 27→31 案）。BACKLOG 15→14；閘數 12 與 RULES 未動。 | 4844b15 | — | — |
@@ -32,6 +33,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-14｜misc｜governance｜maint-backlog-pre-004
+
+單元 commit：S1 cc3a9fd（BACKLOG 檔頭「動 X」定義＝user grill Q5）；A1 rust-api 5ecdd98／外層 3a09e81；A2a 9ca8334；A2b 6f9fc1d；A3 rust-api 9e2acb3／外層 4992f7e；final holistic review 收單 e0dd22b（28 筆：修 18／轉 BL 5／駁回 5；探針三題皆找得到、開檔口徑 1 跳）。user 2026-09-14 grill 九題全裁（範圍 A1＋A2＋A3、BL-00059 新段只跑 test_hook_wiring、BL-00061 只比 JWT 兩鑰、BL-00050 射程＝扣例外①②之 21 檔、BL-00038／BL-00063 納入、BL-00039 留待 000-r3 前、BL-00051 以碼註明文收）；本批全部 agent＝opus[1m] xhigh（成品換模、骨架不動）。BL-00068 前提不成立（候選案自 002 刀 U2 即存在）、以 backlog_done 收；BL-00035 條文補子項④（事件單筆無效之下游代言）。新立 BL-00070（src 測試模組自持 oneshot 殼）／BL-00071（base-web 兩處我方散文與 rev5 同文）；final review 另立 BL-00072（main.rs 斷言接線守）／BL-00073（comment-overlap rust-api code span 豁免）／BL-00074（外層名冊⇔子庫工作樹同步面）／BL-00075（走查外殘列清理＝BL-00053 該用例移交）／BL-00076（rev6-↔rev5- 對應檔映射＝翻轉 A2b「承 rev5 之檔必有對應檔」前提）；新 LESSON LL-00021（drvfs 舊 .pyc 使變異假存活）。主線收尾裁定：submodule-sync `--untracked-files=all`＋閘面含 `base-web/src`；docs/process 兩表 pre-commit 列改指針句；envelope.rs doctest 圍欄註解行放寬改寫；comment-overlap 標記豁免收窄為只剝 token（final review）。已知態：只改 README 之 commit 不觸發鏡像腿（延遲一站）；restore 只比 setting_value（gate2 兜底）。
 
 ### 2026-09-08｜misc｜governance｜maint-py313-docstring-dedent
 
