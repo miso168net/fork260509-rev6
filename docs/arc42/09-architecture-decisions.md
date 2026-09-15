@@ -12,7 +12,7 @@ rev5_blueprint:
 
 ## 9.1 E5 AI-ADR 形制與對映表
 
-AI-ADR 不另開號空間：rev6 五碼 id＋frontmatter `rad_ai: [E5]`＋標題前綴「AI-ADR」；AI 特定考量以五個子節承載、對應 RAD-AI reference 七欄如下（欄序＝reference 七欄順序、英文名冊住 `tools/docsync/book.py` 的 E_SUBSECTIONS；「考慮過的替代案」屬 body 節、非 AI 特定子節）。目前無 AI 元件（截至 2026-09-03）、AI-ADR 零份；本層隨 AI 功能刀填入。流程層＝無獨立檔（模型分派、effort、編排形制的決策走 E5 形）。
+AI-ADR 不另開號空間：rev6 五碼 id＋frontmatter `rad_ai: [E5]`＋標題前綴「AI-ADR」；AI 特定考量以五個子節承載、對應 RAD-AI reference 七欄如下（欄序＝reference 七欄順序、英文名冊住 `tools/docsync/book.py` 的 E_SUBSECTIONS；「考慮過的替代案」屬 body 節、非 AI 特定子節）。目前無 AI 元件（截至 2026-09-03）、AI-ADR 零份；本層隨 AI 功能刀填入。流程層＝無獨立檔：模型分派、effort、編排形制等流程層決策照一般 ADR 立檔、不帶 `rad_ai`（ADR-00007 決定 2：本表射程＝系統層，流程層是類比、偏離以子節首句「類比張力：」宣告、不入本表）。
 
 | AI 特定考量子節（中文改寫） | reference 欄序 |
 |---|---|

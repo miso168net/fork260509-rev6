@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00022 -->
+<!-- next: LL-00023 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -27,3 +27,4 @@
 | LL-00019 | 允許清單「只准」限定式項把同檔的枚舉鏡像句（數量詞／段序枚舉／檔頭名冊句）排除在外——fix 輪三處各漏一次、規格審查跑滿三輪後確認輪仍有 blocker＝unresolved 回主線，品質審查整段沒跑、得再開一支續跑形（10 支 agent）補完 | RL-0022 | rules | [LL-00019-restricted-allowlist-items-exclude-same-file-mirrors-review-loop-unresolved.md](LESSONS/LL-00019-restricted-allowlist-items-exclude-same-file-mirrors-review-loop-unresolved.md) |
 | LL-00020 | CDP 走查用「單次 setTimeout 算到 access 過期」等待，在 WSL2 下短睡約 14 秒——探針落在 `exp` 之前觸發、得 0000 而非 3333，假象＝「前端沒接自動續期」或「後端 leeway 非 0」 | none：走查探針配方——守法句寫進本檔與走查腳本範本（tmp/003-u11-walk2b.mjs 形），非規則句 | none | [LL-00020-cdp-probe-single-settimeout-undersleeps-on-wsl2-poll-exp-instead.md](LESSONS/LL-00020-cdp-probe-single-settimeout-undersleeps-on-wsl2-poll-exp-instead.md) |
 | LL-00021 | drvfs 上以 subprocess 對同一 python 模組連續注入變異並重跑自測，同一秒寫入且檔長相同的兩支變異會沿用前一支的 `.pyc`——變異「假存活」（或假紅），誤判守門強度 | none：變異演練的執行環境配方——守法句寫進本檔與演練腳本，非流程規則 | none | [LL-00021-drvfs-stale-pyc-masks-mutation-result.md](LESSONS/LL-00021-drvfs-stale-pyc-masks-mutation-result.md) |
+| LL-00022 | 序列重設守衛的「殘列即拒跑」硬化，把 dev 庫一次真登入的殘列放大成會話面全量連坐紅 | none：結構解已排入 004 ip-trust-anchor（brainstorm grill 輪 G6：廢除 SequenceResetGuard、walkthrough-baseline 之 runtime-append 表序列只比存在性）；過渡防法屬操作紀律（跑真 DB 案前先 walkthrough-baseline diff），無新規則句 | code | [LL-00022-sequence-reset-guard-refusal-turns-dev-residual-rows-into-mass-red.md](LESSONS/LL-00022-sequence-reset-guard-refusal-turns-dev-residual-rows-into-mass-red.md) |
