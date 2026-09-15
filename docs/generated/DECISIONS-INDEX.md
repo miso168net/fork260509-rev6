@@ -36,3 +36,4 @@
 | ADR-00031 | accepted | 2026-09-14 | rust-api boot 期 JWT access／refresh 兩把秘鑰同值即 fail-loud（兩鍵指名、訊息不含值；射程只 JWT 兩鑰） | 輕量軌｜maint-backlog-pre-004 | — | — |
 | ADR-00032 | accepted | 2026-09-15 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表（續行 ADR-00016）——名詞定義之環境缺席語意改為逐支見表、容器依賴型具名跳過 | 輕量軌｜maint-spec-compliance-002 | ADR-00016 | — |
 | ADR-00033 | accepted | 2026-09-15 | logout 呈遞 rotated 票維持 0000 靜默 no-op——撤銷射程恆為單列、不擴撤全鏈（by-design；承 rev5:ADR 0059） | 輕量軌｜maint-spec-compliance-003 | — | — |
+| ADR-00034 | proposed | 2026-09-15 | 憲法 Amendment 1.3.0→1.4.0——§I.7 島 F 入憲＋島 E 四處細項調整＋§III.2 開 ★BASE-WEB-MANAGE-PAGE-WIRING (i)、I18N-WIRING (ii) 權威句與 (i) 對齊、五欄範圍實數化 | — | — | — |
