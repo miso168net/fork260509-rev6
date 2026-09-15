@@ -118,17 +118,30 @@
 - fail-* 方向：`last_activity` 不可讀＝**fail-open**（不 idle-reject，以 token exp 為界）。
 
 **E. 登入失敗節流（帳號維）**
-- 三區（自由／需驗證碼／鎖定）；滑動窗（PG）為**權威**、redis L1 為負快取。
+- 三區（自由／需驗證碼／鎖定）；判定於**每次登入嘗試**以滑動窗（PG）計數定案、**無快取層負快取**（redis 於本島只承載 captcha 一次性標記與解鎖標記）。
 - 軟區與鎖定 MUST 在密碼雜湊驗證**之前**擋下，且**零稽核列、零計數桶**（拒絕不得消耗受害者的額度）。
 - fail-* 方向：redis 整體不可用＝**fail-open**（軟區 captcha 要求整層停用、續驗密碼，密碼錯仍計數）；L2（PG）查詢失敗＝**fail-open ＋ 補償**（計數歸零放行並置 `captcha_forced`）；captcha 標記 SET NX 瞬斷（redis 健康）＝**fail-closed 不罰**（拒該次、零計數桶）。
 - 上列 captcha 兩層方向刻意相反之理由（記於此以免被「統一」）：整體不可用時若仍要求驗證碼＝驗不了題卻要求、把合法使用者鎖在門外，故停用軟區、密碼錯仍計數保阻力；單次標記瞬斷時若放行＝攻擊者附偽造題即可在瞬斷窗通關（降級恰好只放行對抗性流量），故拒該次；一次性標記寫不進去即無法認定該題已耗，受害者不該被罰計數。
-- 節流設定鍵缺失、或**矛盾組合**（驗證碼門檻大於鎖定門檻）＝視同不可用、退活書常數並發結構化告警（每次載入至多一筆）；門檻相等＝合法（軟區寬度零）。
+- 節流設定鍵缺失、不可解析、**越界**（超出設定 registry 宣告界值）、或**矛盾組合**（驗證碼門檻大於鎖定門檻）＝該組視同不可用、**整組**退活書常數並發結構化告警（每次載入至多一筆；帳號維與來源維各自獨立判定與告警）；門檻相等＝合法（軟區寬度零）。
+- 來源維計數之時間窗下界**恆兩源**（窗起點、解鎖標記）、**禁**「成功即重置」——帳號維取三源（含窗內最近成功）、兩維刻意不對稱（來源維鍵為攻擊者可控之位址、成功即重置＝以一組有效帳密穿插即可清零），記於此以免日後被「統一」。
+- 解鎖標記讀取故障＝**fail-closed**（視為無標記、該標的可能仍在鎖定中；至多少解鎖一次、可再解鎖自癒）。該標記為帳號維與來源維**共用**機制，故方向記於本島而非島 F。
+
+**F. IP 存取閘＋信任錨＋來源維節流**（004-ip-trust-anchor 進場；出處 `rev5:ADR 0040`／`rev5:ADR 0043`、rev5 v1.6.2 釐清後字面為底）
+- ★**本島射程**＝位址的真相面（信任錨）與存取判定面（規則集）。來源維節流的狀態機本體（三區、滑動窗、計數下界、解鎖標記）屬**島 E**；本島只約束其**位址輸入**（F4）與**跳過條件**（F5）。
+- **F1 判定序與集合語意**：存取判定序**六步固定**——①健康／觀測端點放行 ②請求上下文缺席放行 ③結構豁免段放行 ④allow any-match 放行 ⑤deny any-match 拒絕 ⑥預設放行。規則集為 **any-match 集合語意**：白＞黑＞預設放行、無優先序欄、判定結果與載入順序無關。阻擋只作用於**請求層**：不撤銷既有會話與 token、不寫 denylist（規則解除即恢復）。
+- **F2 真相分層**：資料庫為真相、記憶體判定面**每請求零外部查詢**；執行中真相暫不可讀 MUST **沿用上一份已知良好規則集、不清空**（啟動初載無「上一份」⇒ 空集＝全放行，方向同為 fail-open）。
+- **F3 fail-* 方向**：全鏈 **fail-open**；fail-closed **恰兩處**——①**寫端自鎖拒寫**（會把操作者自己鎖在門外的規則 MUST 拒寫、零落庫、零重載）★其輸入不可得時同向：判定所需的操作者來源位址取不到時 MUST 一併拒寫、不得跳過檢查放行、亦不得以佔位位址補足稽核列（往 append-only 稽核表寫編造來源＝證據代筆）——此為本項自身的降級方向、非第三條腿（同島 C denylist 讀失敗、島 E 解鎖標記讀失敗，每項不變式自帶「輸入不可得時往哪走」）②**轉發鏈跳數逾上界即拒絕**（F7）。每次降級 MUST 發結構化告警。★日後任一**降級腿**由 fail-open 翻 fail-closed 才是 §V.3 方向性反轉＝MAJOR；本島例外集由一項擴為兩項時已辨明不算反轉（新增的是原不在降級矩陣裡的判定腿）。
+- **F4 信任錨為唯一位址輸入**：來源維度一切機制（存取閘、來源維節流、稽核落列、防自鎖）的位址輸入 MUST 為信任錨結果；**受信集與跳過集 MUST 由同一 helper 導出、內容對稱**（分叉即真實來源塌縮為常數）。
+- **F5 放行與節流的分界**：命中**顯式** allow 規則者跳過來源維節流；**結構豁免段 MUST NOT 跳**——結構豁免只豁免「阻擋」、不豁免「節流」。
+- **F6 Tier-1 錨須傳輸層背書**：Tier-1 位置錨成立 MUST 附傳輸層背書——錨右鄰起、直到傳輸層對端，全屬受信基建；不成立即棄錨、退 Tier-2。受信判定 MUST 用 F4 同一 helper、不得另立第三集合。（無此背書時，攻擊者繞過 CDN 直打來源站並自帶「偽造位址, CDN 邊緣」鏈即可把任意位址寫成真實來源；「鎖定來源站僅接受 CDN 邊緣連線」自此為縱深防禦建議、非承重前提。）
+- **F7 轉發鏈跳數上界**：鏈跳數逾上界者，**於登入端點** MUST 拒絕該請求（不服務、不進密碼雜湊驗證）；**其餘端點 MUST 標記**（`ip_confidence=chain_rejected`）**但照常服務**——標記全域、拒絕限登入（逾限只有中介層算得出來，下游拿到的轉發鏈欄已是判定窗、不可重算）。逾限請求 MUST **仍落一列稽核**；該列 MUST 被**帳號維計數排除**（保護受害者：否則以受害者帳號名發敵意鏈即可無限期鎖死該帳號）、被**來源維計數納入**（來源維鍵為攻擊者自身位址）。
+- **F8 稽核轉錄的複驗性**：稽核列的轉發鏈欄 MUST **保留判定窗**且與判定軌**共用同一份取窗實作**（結構性保證的是「同一份切分、同一組欄」）；複驗性帶**兩個成立條件**、不得寫成無條件保證：(a) 真實來源由鏈推導（直連腿／回退腿／通道覆蓋的位址取自對端或訪客標頭、本就不在鏈中）(b) 窗未逾字元上限（逾限時稽核欄退為字元對齊尾段、可能切掉最左欄）。
 
 **跨島註（方向刻意不一致，記於此以免日後被「統一」）**：登入流程讀 `session_idle_timeout` 設定鍵缺失＝**fail-loud**（`5000`、不猜 TTL 值），與 E 的節流設定鍵缺失走 fail-open 退常數方向相反——前者猜錯會靜默改變所有人的會話壽命，後者猜錯只影響阻力強度。
 
 **跨島總則（設定改值的生效時點）**：每個設定鍵只在其消費事件當下讀現值；已簽發 token 的壽命與已建立的會話不追溯——single-session 於登入事件、idle 門檻與 TTL 於每次簽發（登入／換發）、節流三鍵於每次登入嘗試。
 
-**方向性反轉自此為 MAJOR**（§I.7 進場規則既有條款，此處確認其射程已涵蓋上列五島）。
+**方向性反轉自此為 MAJOR**（§I.7 進場規則既有條款，此處確認其射程已涵蓋上列六島）。
 
 **承襲指針**（user 拍板 2026-09-03：島體不預載、隨刀重新進場確認＝世代 DoD 的每刀驗收）：rev5 憲法 v1.10.0（唯讀、凍結 SHA `7eab28a`）§I.7 曾入憲十座行為島，對應域動刀時為 brainstorm 的直接輸入、依本節進場規則重新入憲——
 
@@ -139,7 +152,7 @@
 | C | denylist 撤銷 | rev5:ADR 0028（rev5 v1.3.0）；rev6 已入憲 v1.3.0（ADR-00026） |
 | D | idle 逾時 | rev5:ADR 0028（rev5 v1.3.0）；rev6 已入憲 v1.3.0（ADR-00026） |
 | E | 登入失敗節流 | rev5:ADR 0028（rev5 v1.3.0；來源維兩句隨 rev5 v1.4.0 補）；rev6 已入憲 v1.3.0（ADR-00026） |
-| F | IP 存取閘＋信任錨＋來源維節流 | rev5:ADR 0040（rev5 v1.4.0）＋rev5:ADR 0043（rev5 v1.5.0、F7／F8）；釐清至 rev5 v1.6.2 |
+| F | IP 存取閘＋信任錨＋來源維節流 | rev5:ADR 0040（rev5 v1.4.0）＋rev5:ADR 0043（rev5 v1.5.0、F7／F8）；釐清至 rev5 v1.6.2；rev6 已入憲 v1.4.0（ADR-00034） |
 | G | casbin 授權治理（含 G6 結構性封死） | rev5:ADR 0053（rev5 v1.8.0；G6＝rev5:ADR 0054、復原五腿＝rev5:ADR 0055） |
 | H | 選單域生命週期 | rev5:ADR 0048（rev5 v1.7.0） |
 | I | 使用者域治理（含 I7 no-escalation 包含規則） | rev5:ADR 0063（rev5 v1.9.0）；I5 釐清＝rev5:ADR 0068（rev5 v1.9.1） |
@@ -204,16 +217,17 @@
 | 軌道 | 用途 | 範圍（檔案） | 紀律 |
 |---|---|---|---|
 | **★BASE-WEB-AUTH-WIRING** | (a) constant routes 合併 | `src/store/modules/route/index.ts`（1 處，修改型） | 僅限 `initConstantRoute` 之 dynamic 分支；MUST 為**併入** static 常量集而非取代（seed `constant=TRUE` 為 0 列，取代會清空 login／403／404／500／iframe-page 五條 builtin）；不得擴及 route store 其他分支 |
-| **★BASE-WEB-AUTH-WIRING** | (b) 三表單 stub 化 | `src/views/_builtin/login/modules/{code-login,register,reset-pwd}.vue`（各 2 處，修改型） | 僅改 import 指向 stub wrapper＋消滅假成功 toast；不動表單欄位、驗證規則與版面 |
-| **★BASE-WEB-AUTH-WIRING** | (c) captcha hook 改打 stub | `src/hooks/business/captcha.ts`（約 4 處，修改型） | 僅改請求目標為 `/auth/sendCaptcha`＋移除假延遲與假成功 toast；hook 對外簽名不變 |
-| **★BASE-WEB-LOGIN-CAPTCHA-WIRING** | (i) 登入頁 captcha 軟區 | `src/store/modules/auth/index.ts`（修改型）／`src/views/_builtin/login/modules/pwd-login.vue`（修改型＋新增型） | auth store `login()` 改打 wrapper `fetchLoginWithCaptcha`（不改 upstream `auth.ts`）並串通失敗 msg 回傳鏈；軟區為條件渲染，登入失敗後 MUST 重取新題並清空輸入（後端提交即消耗）；**非軟區時零行為變更**；三顆快速登入鈕零 inline。★用途 (ii)（`formRules` 放寬）**不在本次授權**，延改密端點刀 |
-| **★BASE-WEB-I18N-WIRING** | (i) 後端 msg 轉譯 | `src/service/request/index.ts`（2 處修改型＋1 塊新增型） | 單一 helper `translateBackendMsg(msg)`＝`$t` 帶原文 fallback；modal `content` 與 `showErrorMsg` 鏈改走之；未命中 MUST graceful fallback，不得吞錯亦不得顯裸 key（錯誤信封 `data` 恆 null、無明細通道 ⇒ 不建 `translateDetailValue`） |
-| **★BASE-WEB-I18N-WIRING** | (ii) locale backend 樹 | `src/locales/langs/{en-us,zh-cn}.ts`（各 1 塊，新增型） | 插入錨為**獨佔一行**的 `  backend: {`；三檔（含新檔 `zh-tw.ts`、新增型不入名冊）backend 子樹鍵集 MUST 各自與後端 `MSG_KEYS` 全等（跨端閘）；譯文以 `specs/003-auth-session/contracts/msg-keys.md` 為權威 |
-| **★BASE-WEB-I18N-WIRING** | (iii) Schema backend 型節 | `src/typings/app.d.ts`（1 處，修改型） | 僅補 `App.I18n.Schema` 之 `backend` **必填**型節。★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構**不在本次授權**，延前端 UI 刀 |
-| **★BASE-WEB-LOGOUT-UX-WIRING** | (i) 登出前撤銷接線 | `src/layouts/modules/global-header/components/user-avatar.vue`（約 3 處，修改型） | `onPositiveClick` 改 async、登出前 best-effort `await` logout wrapper，**失敗不得阻斷** `resetStore()`。★用途 (ii)（reLogin toast）**不在本次授權** |
+| **★BASE-WEB-AUTH-WIRING** | (b) 三表單 stub 化 | `src/views/_builtin/login/modules/{code-login,register,reset-pwd}.vue`（各 1 處，修改型） | 僅改 import 指向 stub wrapper＋消滅假成功 toast；不動表單欄位、驗證規則與版面 |
+| **★BASE-WEB-AUTH-WIRING** | (c) captcha hook 改打 stub | `src/hooks/business/captcha.ts`（3 處修改型＋1 塊新增型） | 僅改請求目標為 `/auth/sendCaptcha`＋移除假延遲與假成功 toast；hook 對外簽名不變 |
+| **★BASE-WEB-LOGIN-CAPTCHA-WIRING** | (i) 登入頁 captcha 軟區 | `src/store/modules/auth/index.ts`（3 處，修改型）／`src/views/_builtin/login/modules/pwd-login.vue`（2 處修改型＋2 塊新增型） | auth store `login()` 改打 wrapper `fetchLoginWithCaptcha`（不改 upstream `auth.ts`）並串通失敗 msg 回傳鏈；軟區為條件渲染，登入失敗後 MUST 重取新題並清空輸入（後端提交即消耗）；**非軟區時零行為變更**；三顆快速登入鈕零 inline。★用途 (ii)（`formRules` 放寬）**不在本次授權**，延改密端點刀 |
+| **★BASE-WEB-I18N-WIRING** | (i) 後端 msg 轉譯 | `src/service/request/index.ts`（2 處修改型＋2 塊新增型） | 單一 helper `translateBackendMsg(msg)`＝`$t` 帶原文 fallback；modal `content` 與 `showErrorMsg` 鏈改走之；未命中 MUST graceful fallback，不得吞錯亦不得顯裸 key（錯誤信封 `data` 恆 null、無明細通道 ⇒ 不建 `translateDetailValue`）；同 helper 亦用於**帶信封 msg 的 HTTP 層錯誤**（如 `5003`／403、`4040`／404）之提示；無信封維持原文（`rev5:B-117` 形） |
+| **★BASE-WEB-I18N-WIRING** | (ii) locale backend 樹 | `src/locales/langs/{en-us,zh-cn}.ts`（各 1 塊，新增型） | 插入錨為**獨佔一行**的 `  backend: {`；三檔（含新檔 `zh-tw.ts`、新增型不入名冊）backend 子樹鍵集 MUST 各自與後端 `MSG_KEYS` 全等（跨端閘）；譯文之家＝三檔各自的 backend 子樹（`en-us`／`zh-cn`／`zh-tw` 各為該語譯文權威；鍵集由跨端閘對賬、不另立譯文表） |
+| **★BASE-WEB-I18N-WIRING** | (iii) Schema backend 型節 | `src/typings/app.d.ts`（1 塊，新增型） | 僅補 `App.I18n.Schema` 之 `backend` **必填**型節。★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構**不在本次授權**，延前端 UI 刀 |
+| **★BASE-WEB-LOGOUT-UX-WIRING** | (i) 登出前撤銷接線 | `src/layouts/modules/global-header/components/user-avatar.vue`（1 處，修改型） | `onPositiveClick` 改 async、登出前 best-effort `await` logout wrapper，**失敗不得阻斷** `resetStore()`。★用途 (ii)（reLogin toast）**不在本次授權** |
+| **★BASE-WEB-MANAGE-PAGE-WIRING** | (i) IP 規則管理頁進場 | `src/locales/langs/{en-us,zh-cn}.ts`（各 2 塊，新增型：`route:` 樹與 `page:` 樹）／`src/typings/app.d.ts`（1 塊，新增型：`Schema.page` 之 `manage.ipRule` 型節）／`src/router/elegant/{imports,routes,transform}.ts`＋`src/typings/elegant-router.d.ts`（產物檔 4 支） | 兩語 locale 只在 `route:`（鍵 `manage_ip-rule`）與 `page:`（`manage.ipRule` 子樹）各插一塊新增型圈界、兩語鍵集 MUST 相等；`app.d.ts` 只補 `page.manage.ipRule` 型節（★必需：`page:` 為顯式型樹、既有 (iii) 只涵蓋 `backend`）；產物四檔採**產物檔紀律**——僅由路由外掛重算產出、禁手改、驗收＝重算冪等（`tools/route-artifact-gate.py`）＋「本列產物檔集＝外掛實際產出檔集」斷言；★明文**不要求逐行原文標記**：標記於下次重算即被抹除、物理上不可維持，故以冪等檢查（連單行手改都抓得到）替代註解紀律。頁面三檔、`rev6-ip-rule.{ts,d.ts}` 為新增檔、不入本表。解鎖按鈕與其包裝**不在本次授權**（使用者管理頁刀） |
 
 **表外三項適用宣告**：
-1. 範圍欄的**處數為估值**，實作期以 `rev6-inline` 標記實數為準；**檔級名單則是硬邊界**——名單外的 base-web 既有檔一律無授權，需要動即回本節走 §V.2。
+1. 範圍欄處數以 `rev6-inline` 標記實數為準（量法＝修改型 `原行:` 數、新增型圈界數）、實作期改動同批更新；**檔級名單則是硬邊界**——名單外的 base-web 既有檔一律無授權，需要動即回本節走 §V.2。
 2. devproxy 接管面由 §III.1 `BASE-WEB-ADAPT` 以根層 `.env*` 涵蓋、**不另開軌道**；modal 治理需求隨其頁面接線軌道之用途承載、**不另開專屬軌道**（承 rev5 處置）。
 3. 新增型 `NAME+` 標記**不入名冊**（承 rev5:ADR 0021 款 1）——名冊斷言的射程僅修改型（帶 `原行:`）。
 
@@ -266,10 +280,11 @@
 
 ---
 
-**Version**: 1.3.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-08
+**Version**: 1.4.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-15
 
 **Amendment log**:
 - 1.0.0（2026-09-03）：創世初版——自 rev5 constitution v1.10.0（凍結 SHA `7eab28a`）依啟動書 §3.8 逐條表搬入：§I.1～§I.3、§I.6 承襲改字（分支名、基線 SHA、fork 標記 token、前代 ADR 引用一律 `rev5:` 前綴）；§I.4 收為方向性四句、程序細節移 RULES.md；§I.5 世代 bump（前代＝rev5、rev4 溯源、源倉 main `32c5254` 起全新寫）；§I.7 僅搬進場規則、十座行為島以承襲指針表列（rev5 入憲載體逐島註明）、島體隨刀重新進場；§I.8 新增（AI 代理產物必經人審與機器閘、review 只讀、push／merge 需 user 明確同意）；§II 三筆承襲（逐筆核 rev5 ADR 摘要無翻案）；§III fork-delta 紀律與 §III.1 三軌道承襲（token `rev6-inline`、wrapper 前綴 `rev6-`）、§III.2 僅機制骨架＋補完判準＋表外三項宣告＋空表頭、rev5 五條 ★ 軌道十七用途以承襲指針列名；§IV 九題承襲（第 2 題 token、第 5 題前代改引）；§V.1 權威鏈納 RULES.md、§V.2 第 4 步改 `python3 tools/docsync generate`、§V.3 MAJOR 款納 §I.8。user 親審 diff＋grill 三題親決（§I.4 錨定「刀」＝spec-kit feature、§I.8 人審＝merge 同意＋拍板親決、§III.2 宣告 2 改原則句）後定版（創世拍板）。ADR-00003 同 commit 轉 accepted。
 - 1.1.0（2026-09-04）：§I.5 例外清單加②資料形狀契約三件整檔拷貝（基線結構 migration＋基線 seed migration＋基線 entity 15 檔；射程鎖 rev5 rust-api `92919b9`；程式逐位元自證、檔名四碼＝ADR-00008、註解語意判準、防回歸照常、`m0003` 起不適用）；§V.3 MINOR 款補「§I 例外清單擴展」釋義。ADR-00009 同 commit accepted（user 拍板：例外射程 2026-09-03、版級 MINOR 與註解語意判準 2026-09-04、Amendment 全文核准 2026-09-04）。
 - 1.2.0（2026-09-07）：獨立輪 000-r2 三筆同批 Amendment——①§I.5 例外① 射程補「含註解」、豁免第 3 款（ADR-00022；自證腿 `vendored-check` 去註解口徑就此有權威來源；例外② 之「註解依語意判準重寫」不變）②§I.3 四保留碼「從不發出」之機器承載點自「contract test 斷言」改記為「型別層全變體窮舉＋`error.rs` 矩陣斷言雙錨」（ADR-00023；as-built 對齊、零行為變更）③§III 生成檔紀律判準句去除對空表 §III.2 的死引用、改為「與路由外掛（elegant-router）重算產出之檔同族；具體檔集隨相關 ★ 軌道 Amendment 落表」（ADR-00024）。版本取三者最高級別＝MINOR（①屬 §I 例外清單射程擴展；②③為 PATCH 級釐清）。三支 ADR 與本次憲法改動同 commit（§V.2 步 4）；user 停點① 逐題親決 2026-09-07。
 - 1.3.0（2026-09-08）：003-auth-session 首刀 Amendment（ADR-00026）——①§III.2 空表落入首批四條 ★ 軌道八用途（`BASE-WEB-AUTH-WIRING` (a)(b)(c)／`BASE-WEB-LOGIN-CAPTCHA-WIRING` (i)／`BASE-WEB-I18N-WIRING` (i)(ii)(iii)／`BASE-WEB-LOGOUT-UX-WIRING` (i)；12 支 base-web 既有檔取得修改型授權、(ii) 類三項明文不授權；哨兵句同批移除、`tools/fork-delta-lint.py` 名冊自此七名）②§I.7 首批五座行為島 A～E 入憲（rev5 v1.3.0 字面為底、rev6 增補四處＝島 B 不追溯、島 E 矛盾組合方向、跨島總則、MAJOR 射程確認；承襲指針表 A～E 列尾註）③§I.2 第三點 PATCH 級釐清（「builtin 三頁」→「builtin 常量集、現五條」）。版本取最高級別＝MINOR（§V.3「新增 ★ 軌道」與「行為島隨刀進場」兩款）。ADR-00026 同 commit accepted（§V.2 步 4）；user 親決 2026-09-08（003 刀 tasks T001）。
+- 1.4.0（2026-09-15）：004-ip-trust-anchor Amendment（ADR-00034）——①§I.7 島 F（IP 存取閘＋信任錨＋來源維節流）八條 F1～F8 入憲（rev5 v1.10.0 終態字面為底、rev6 座標改寫）＋島 E 四處細項調整（判定面每次由 PG 定案、拔除 redis L1 負快取＝BL-00066；設定壞值判準補不可解析／越界且整組退、兩維獨立告警；來源維計數下界恆兩源；解鎖標記讀取故障 fail-closed）；承襲指針表 F 列尾註、MAJOR 射程改六島 ②§III.2 新增 `BASE-WEB-MANAGE-PAGE-WIRING` (i)（7 支既有檔：兩語 locale route／page 兩樹新增型、`app.d.ts` page 型節、路由外掛產物四檔採產物檔紀律、不要求逐行標記；解鎖按鈕明文不授權；`tools/fork-delta-lint.py` 名冊自此八名）、`BASE-WEB-I18N-WIRING` (ii) 譯文權威句改三檔 backend 子樹各為該語之家、(i) 範圍 2＋2 並補帶信封 HTTP 層錯誤句、五列範圍欄處數實數化（BL-00058 之 (iii) 改 1 塊新增型）、表外宣告 1 改以標記實數為準。版本取最高級別＝MINOR（§V.3「行為島隨刀進場」「已入憲 invariant 細項調整」「新增 ★ 軌道」「軌道授權邊界擴展」四款）。ADR-00034 同 commit accepted（§V.2 步 4）；user 親決 2026-09-15（004 刀 tasks T001；I18N (ii) 之程序備忘子句不入憲法、只留 ADR）。

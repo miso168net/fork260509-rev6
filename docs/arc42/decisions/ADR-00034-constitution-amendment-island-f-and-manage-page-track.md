@@ -2,7 +2,7 @@
 id: "ADR-00034"
 title: 憲法 Amendment 1.3.0→1.4.0——§I.7 島 F 入憲＋島 E 四處細項調整＋§III.2 開 ★BASE-WEB-MANAGE-PAGE-WIRING (i)、I18N-WIRING (ii) 權威句與 (i) 對齊、五欄範圍實數化
 date: 2026-09-15
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "004-ip-trust-anchor 之 spec FR-056～FR-059（brainstorm Q1／Q3／Q6／Q7／G1／G4、§5 ①⑩；clarify 2026-09-15 Q1～Q3 無憲法面）；島 F 條文以 rev5 憲法 v1.10.0 §I.7 島 F 終態字面為底（rev5:ADR 0040 v1.4.0、rev5:ADR 0043 v1.5.0、釐清至 v1.6.2；rev5 凍結 SHA 7eab28a）；島 E 四處承 rev5 v1.4.0 補記兩句＋rev6 拍板兩處（去負快取、越界）；★軌道形制輸入＝`tools/fork-delta-lint.py` load_roster 規則（ADR-00026 前例）；五欄實數＝contracts/code-gates.md §1 量法（量測日 2026-09-15、base-web worktree＝upstream example tip 8be6f9ba）；§V.2 流程、§V.3 MINOR 判準；draft 於 plan 期落 feature branch（003 刀 Q5 前例）、user 親決於 tasks 首個主線任務"
@@ -46,7 +46,7 @@ tags: [constitution, amendment, fork-delta, behavior-island, ip-trust-anchor]
 | **★BASE-WEB-MANAGE-PAGE-WIRING** | (i) IP 規則管理頁進場 | `src/locales/langs/{en-us,zh-cn}.ts`（各 2 塊，新增型：`route:` 樹與 `page:` 樹）／`src/typings/app.d.ts`（1 塊，新增型：`Schema.page` 之 `manage.ipRule` 型節）／`src/router/elegant/{imports,routes,transform}.ts`＋`src/typings/elegant-router.d.ts`（產物檔 4 支） | 兩語 locale 只在 `route:`（鍵 `manage_ip-rule`）與 `page:`（`manage.ipRule` 子樹）各插一塊新增型圈界、兩語鍵集 MUST 相等；`app.d.ts` 只補 `page.manage.ipRule` 型節（★必需：`page:` 為顯式型樹、既有 (iii) 只涵蓋 `backend`）；產物四檔採**產物檔紀律**——僅由路由外掛重算產出、禁手改、驗收＝重算冪等（`tools/route-artifact-gate.py`）＋「本列產物檔集＝外掛實際產出檔集」斷言；★明文**不要求逐行原文標記**：標記於下次重算即被抹除、物理上不可維持，故以冪等檢查（連單行手改都抓得到）替代註解紀律。頁面三檔、`rev6-ip-rule.{ts,d.ts}` 為新增檔、不入本表。解鎖按鈕與其包裝**不在本次授權**（使用者管理頁刀） |
 
 **改寫兩列**（只改引號內句子、其餘逐字不動）：
-- `★BASE-WEB-I18N-WIRING` (ii) 紀律欄末句「譯文以 `specs/003-auth-session/contracts/msg-keys.md` 為權威」→「譯文之家＝三檔各自的 backend 子樹（`en-us`／`zh-cn`／`zh-tw` 各為該語譯文權威；鍵集由跨端閘對賬、不另立譯文表；本刀另立 ADR 翻 ADR-00029 之權威句、序號落檔時取）」。
+- `★BASE-WEB-I18N-WIRING` (ii) 紀律欄末句「譯文以 `specs/003-auth-session/contracts/msg-keys.md` 為權威」→「譯文之家＝三檔各自的 backend 子樹（`en-us`／`zh-cn`／`zh-tw` 各為該語譯文權威；鍵集由跨端閘對賬、不另立譯文表）」（翻 ADR-00029 權威句之 ADR 於落檔時取序號、此程序備忘只留本檔不入憲法；user 親決 2026-09-15）。
 - `★BASE-WEB-I18N-WIRING` (i) 範圍欄「`src/service/request/index.ts`（2 處修改型＋1 塊新增型）」→「`src/service/request/index.ts`（2 處修改型＋2 塊新增型）」；紀律欄補一句「同 helper 亦用於**帶信封 msg 的 HTTP 層錯誤**（如 `5003`／403、`4040`／404）之提示；無信封維持原文（`rev5:B-117` 形）」。
 
 **五列範圍欄實數化**（量法＝修改型以 `原行:` 標記數計、新增型以 `START]` 圈界數計；contracts/code-gates.md §1；只改括號內處數字面）：
