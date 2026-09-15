@@ -129,6 +129,8 @@ dev 掛最小信任模型（`deploy/trust-model.dev.toml`：僅 `internal_defaul
 
 ## R10 執行單元切分（tasks 的 phase 骨架；承 brainstorm §9、rev5 R10）
 
+★單元編號以 `tasks.md` 執行單元對映為準（U0～U12：本表 U5 拆為 U5 上下文與 auth 端點／U6 存取閘、U6 規則端點→U7、U9 前端→U8〔提前於節流〕、U7 節流→U9、U8 解鎖→U10、U10 治理→U11、U11 收攏→U12）；本表保留為骨架史料。
+
 | 單元 | 內容 | 相依 |
 |---|---|---|
 | **U0** ★主線 | ADR-00034 user 親決→accepted→憲法 §I.7／§III.2 改＋bump 1.4.0＋generate（獨立 commit；硬閘：accepted 前不動 base-web 既有檔）；fork-delta 名冊變異證 | — |
@@ -144,7 +146,7 @@ dev 掛最小信任模型（`deploy/trust-model.dev.toml`：僅 `internal_defaul
 | U10 | 治理：rules.yml（刪②、③b 錨）、RUNBOOK §16 實文／§9c／§12、活書 as-built、LL-00017 補述、ADR 譯文之家（supersede ADR-00029）＋已知態、BACKLOG 條文改寫；CDP 端到端走查（quickstart §1～§6、SC-010 結構清單）＋走查收尾 | U9 |
 | U11 | 收攏：全量閘＋contract 22＋DoD（FR-070）＋final holistic review 前復核 | 全部 |
 
-純後端單元 U1～U5／U7 不受 U0 硬閘；U6（locale 既有檔）、U9 對 U0 為硬序。每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、每 run 不重複 agent ≤20；發射前模型分派向 user 確認（memory 通則：implementer 與其餘角色分派、CDP 走查類另調；「暫一律 opus5 1m xhigh」為 user 2026-09-15 當前指示）。
+純後端單元 U1～U5／U7 不受 U0 硬閘；U6（locale 既有檔）、U9 對 U0 為硬序（tasks 編號：U1～U6／U9 不受閘；U7／U8／U10／U11 硬序）。每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、每 run 不重複 agent ≤20；發射前模型分派向 user 確認（memory 通則：implementer 與其餘角色分派、CDP 走查類另調；「暫一律 opus5 1m xhigh」為 user 2026-09-15 當前指示）。
 
 ## R11 棄案反例回跑（RL-0013：對所選方案跑同一反例）
 

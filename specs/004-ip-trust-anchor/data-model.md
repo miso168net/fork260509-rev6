@@ -33,10 +33,12 @@
 | 表 | `peer_ip` | `real_ip` | `ip_confidence` |
 |---|---|---|---|
 | `sys_login_attempt` | inet 可空｜**本刀開始填**（此前恆 NULL） | inet NN｜改由信任錨推導 | text 可空、無 CHECK｜`nginx_peer` 單字面→**八態** |
-| `session_event` | 同上（login／refresh／logout 寫） | 同上 | 同上 |
+| `sys_access_log` | 同上（本刀不寫該表；BL-00043 access 面＝008） | 同上 | 同上 |
+
+★`session_event` **不在**此列：該表只有 `source_ip varchar(45)`（無 `peer_ip`／`ip_confidence`、非 INET）；本刀 refresh／logout 寫入之 `source_ip` 改收信任錨 `real_ip` 字串、零欄變更。
 | `sys_operation_log` | 本刀首寫者（§1.3） | 同上 | 同上 |
 
-★既有列不遷移（append-only 表不可竄改）；查詢端容忍 `nginx_peer` 與八態並存。★`chain_rejected` 兩連帶：①語意＝「這條鏈逾上界、未被推理採信」——`sys_login_attempt` 上恆為「被拒」列、`sys_operation_log`／`session_event` 上為「標記但照服務」列，兩表同字面語意不同、報表 MUST 分表判讀；`real_ip` 在該態下**恆有值**（取自傳輸層對端）；②計數分流：帳號維查詢 `AND ip_confidence IS DISTINCT FROM 'chain_rejected'`（`<>` 對 NULL 回 NULL 會漏既有列）、來源維**不加**過濾（釘住測試守之）。
+★既有列不遷移（append-only 表不可竄改）；查詢端容忍 `nginx_peer` 與八態並存。★`chain_rejected` 兩連帶：①語意＝「這條鏈逾上界、未被推理採信」——`sys_login_attempt` 上恆為「被拒」列、`sys_operation_log` 上為「標記但照服務」列，兩表同字面語意不同、報表 MUST 分表判讀；`real_ip` 在該態下**恆有值**（取自傳輸層對端）；②計數分流：帳號維查詢 `AND ip_confidence IS DISTINCT FROM 'chain_rejected'`（`<>` 對 NULL 回 NULL 會漏既有列）、來源維**不加**過濾（釘住測試守之）。
 
 ### 1.3 `sys_operation_log`（變體 B append-only；本刀首個寫入者）
 
@@ -108,7 +110,7 @@
 |---|---|
 | 計數桶 | v4 `a.b.c.d/32`；v6 `xxxx::/64`（截斷主機位元）；IPv4-mapped 先折 v4；`unspecified`→無桶（來源維整層跳過） |
 | 快取鍵 | 兩維解鎖標記 `throttle_unlock_user_key(name)`／`throttle_unlock_ip_key(bucket)`＋既有 `throttle_captcha_used_key`；★**無**鎖定鍵族 |
-| 解鎖標記值 | unix 秒十進位字串；不可解析→視為無標記；讀取 Err→視為無標記（fail-closed）＋本次 `redis_down` |
+| 解鎖標記值 | unix 秒十進位字串；不可解析→視為無標記；讀取 Err→視為無標記（fail-closed）＋本次 `redis_down`；TTL＝最長窗上界 1440 分（標記只需活過最長窗） |
 | 計數下界 | 帳號維三源（窗起點／窗內最近成功／標記）；來源維**恰兩源**（窗起點／標記，`GREATEST` 非 strict、無標記綁 NULL） |
 | `ThrottleSettings` | 兩維各一份 `{max_fails, window_minutes, captcha_after, origin: Seed|Default}`；載入結果附「是否退常數」供 label |
 | 三區判定 | `count < captcha_after` 自由／`captcha_after ≤ count < max_fails` 軟區／`count ≥ max_fails` 鎖定；合成＝任一硬鎖→locked、任一軟區或 `captcha_forced`→captcha gate |

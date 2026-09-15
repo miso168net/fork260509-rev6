@@ -27,7 +27,7 @@
 
 **Constraints**: 零 migration／零 seed／13 碼矩陣零觸碰且零新變體／Amendment 硬序（accepted 前不動 base-web 既有檔、含 locale backend 六鍵）／§I.5 rev5 參照紀律（重打字＋註解重寫＋R3 兩份防回歸清單）／§III fork-delta 三元組（新軌道全新增型圈界＋產物檔紀律）／runtime-append 四表序列不復位／redis 鍵 uniq 前綴／review 只讀／rev5 樹唯讀、rev5 stack 絕不指向／TDD 發射前模型分派向 user 確認（當前指示＝opus5 1m xhigh）
 
-**Scale/Scope**: 22 routes（6 新）／9 AppError 變體（0 新）／19 msg keys（6 新）／6 設定鍵消費（3 新消費者）／AppState 七欄／八態信心＋六段結構豁免／降級序列 `throttle_degraded_total` 10 值＋`ip_domain_degraded_total` 8 值＋`ipgate_blocked_total`／server crate 新增約 12 檔（rev5 對應終態 IP 域約 1.5 萬行含測試、生產段約四成）／base-web ★軌道既有檔 7（3 新增型圈界＋4 產物）＋既有 I18N 3 用途 4 檔＋5 新檔／憲法 +1 軌道 +1 島 +4 細項 +5 欄實數／ADR 7／BACKLOG done 8＋改 5＋add 2／執行單元 12（U0～U11、research R10）
+**Scale/Scope**: 22 routes（6 新）／9 AppError 變體（0 新）／19 msg keys（6 新）／6 設定鍵消費（3 新消費者）／AppState 七欄／八態信心＋六段結構豁免／降級序列 `throttle_degraded_total` 10 值＋`ip_domain_degraded_total` 8 值＋`ipgate_blocked_total`／server crate 新增約 12 檔（rev5 對應終態 IP 域約 1.5 萬行含測試、生產段約四成）／base-web ★軌道既有檔 7（3 新增型圈界＋4 產物）＋既有 I18N 3 用途 4 檔＋5 新檔／憲法 +1 軌道 +1 島 +4 細項 +5 欄實數／ADR 7／BACKLOG done 8＋改 5＋add 2／執行單元 13（U0～U12；派發真源＝tasks.md 執行單元對映、承 research R10 依 US 交付面重切）
 
 ## Constitution Check
 
@@ -47,7 +47,7 @@
 
 **初檢結論**：第 1／3／4／5／6／8 題 PASS；第 2／7／9 題「涉及、授權以 Amendment 先行取得」＝條件通過。
 
-**Phase 1 複檢（設計後）**：research R1～R12／data-model §1～§8／contracts 五檔／quickstart／ADR-00034 draft 產出後重走九題——判定不變。第 2／7 題授權鏈形制已定（ADR-00034 §一 表列逐字、五欄實數＝code-gates.md §1 量法可重跑）；第 4 題由 contracts 三檔＋data-model §6 承載；第 5 題 R2 逐檔標處置、零拷貝面；第 9 題條文全文在 ADR-00034 §二。design 新增之憲法接觸面＝零（Phase 1 產物皆為既有拍板具象化）。★**GATE 狀態＝條件通過**：ADR-00034 accepted＋bump 1.4.0 為 tasks 第一個 ★ 主線任務且為硬閘，未完成前第 2／7／9 題不得視為 PASS、不得動任何 base-web 既有檔；U1～U5／U7 純後端不受該閘、可先行（R10）。
+**Phase 1 複檢（設計後）**：research R1～R12／data-model §1～§8／contracts 五檔／quickstart／ADR-00034 draft 產出後重走九題——判定不變。第 2／7 題授權鏈形制已定（ADR-00034 §一 表列逐字、五欄實數＝code-gates.md §1 量法可重跑）；第 4 題由 contracts 三檔＋data-model §6 承載；第 5 題 R2 逐檔標處置、零拷貝面；第 9 題條文全文在 ADR-00034 §二。design 新增之憲法接觸面＝零（Phase 1 產物皆為既有拍板具象化）。★**GATE 狀態＝條件通過**：ADR-00034 accepted＋bump 1.4.0 為 tasks 第一個 ★ 主線任務且為硬閘，未完成前第 2／7／9 題不得視為 PASS、不得動任何 base-web 既有檔；U1～U6／U9 純後端不受該閘、可先行（tasks 編號；U7／U8／U10／U11 對 U0 硬序）。
 
 ## Project Structure
 
@@ -116,7 +116,7 @@ docs/arc42/{05,06,08,10,11,12,01,03}-*.md(as-built、U10) / decisions/ADR-00034�
 docs/ops/BACKLOG.md(收刀：done 8／改 5／add 2)   docs/ops/NOTES.md(收刀→005)
 ```
 
-**Structure Decision**：按功能域分模組承 rev5——`trust`（純函式政策判定、零 I/O）與 `ipgate`（可變判定面＋門鈴）刻意分兩模組（可測性與生命週期不同、合併即失去離線全態矩陣邊界）；`middleware` 首次進場、只放請求層接線零政策邏輯；handler 依端點群拆檔、facade 一表一檔（執行單元允許檔案清單有圈界力）。`router.rs`＋`tests/contract.rs`＋docsync routes 真表為 U5／U6／U8 序列共用檔（逐單元加列並 bump 同一 `ROUTES_COUNT`、不可並發）。測試基建（U3）排在 AppState 擴欄（U4）與功能單元之前，使 69 處守衛廢除與七處建構點收攏獨立於功能 diff。執行單元＝research R10（U0 主線 Amendment 凍結→U1～U5 後端基座→U6～U9 交付面→U10 治理與走查→U11 收攏）；每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、每 run 不重複 agent ≤20；發射前模型分派向 user 確認。
+**Structure Decision**：按功能域分模組承 rev5——`trust`（純函式政策判定、零 I/O）與 `ipgate`（可變判定面＋門鈴）刻意分兩模組（可測性與生命週期不同、合併即失去離線全態矩陣邊界）；`middleware` 首次進場、只放請求層接線零政策邏輯；handler 依端點群拆檔、facade 一表一檔（執行單元允許檔案清單有圈界力）。`router.rs`＋`tests/contract.rs`＋docsync routes 真表為 U7／U10 序列共用檔（tasks 編號；逐單元加列並 bump 同一 `ROUTES_COUNT`、不可並發）。測試基建（U3）排在 AppState 擴欄（U4）與功能單元之前，使 69 處守衛廢除與七處建構點收攏獨立於功能 diff。執行單元＝tasks.md 對映表（承 research R10 重切：U0 主線 Amendment 凍結→U1～U4 基座→U5～U10 依 US 交付面→U11 治理與走查→U12 收攏）；每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、每 run 不重複 agent ≤20；發射前模型分派向 user 確認。
 
 ## Complexity Tracking
 
