@@ -15,7 +15,7 @@
 | `futures-util` | 0.3.34 | 0.3.34（傳遞） | 0.3.34 | **0.3.34** | `default-features = false`（唯一使用點＝watcher `StreamExt::next()`） | 門鈴訂閱串流 |
 | `toml` | 1.1.4 | 不在 lock | 1.1.6+spec-1.1.0 | **1.1.6**（G7） | default | 信任模型設定檔解析 |
 
-**API 守則**（implementer 烤入）：`ipnetwork` 經 `sea_orm::prelude::IpNetwork` 取用、不列直接依賴（rev5 同形）；redis 1.7 之 `Client::get_async_pubsub()` 由 `config::redis_url()` 另開專用 `redis::Client`（多工 `ConnectionManager` 不可用於 SUBSCRIBE）；`toml::from_str::<RawTrustModel>`、未知鍵告警走 `serde(deny_unknown_fields)` 或載入面逐鍵檢（取前者、與 rev5 同）。
+**API 守則**（implementer 烤入）：`ipnetwork` 經 `sea_orm::prelude::IpNetwork` 取用、不列直接依賴（rev5 同形）；redis 1.7 之 `Client::get_async_pubsub()` 由 `config::redis_url()` 另開專用 `redis::Client`（多工 `ConnectionManager` 不可用於 SUBSCRIBE）；`toml::from_str::<RawTrustModel>`、未知鍵告警走載入面逐鍵檢（scope `unknown_key`、載入不變；★不用 `serde(deny_unknown_fields)`——會把手誤升級成層②全空、與契約「未知鍵＝載入告警（不當機）」相違；rev5 config.rs 碼註同判；主線 2026-09-15 U1 派發前修正原「取前者、與 rev5 同」之失準）。
 
 ## R2 rev5 對應碼清單（實作單元動工前逐檔先讀；rev5 凍結 worktree＝終態、含後刀增量——先看 004 邊界 diff、再看終態）
 
