@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00024 -->
+<!-- next: LL-00025 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -29,3 +29,4 @@
 | LL-00021 | drvfs 上以 subprocess 對同一 python 模組連續注入變異並重跑自測，同一秒寫入且檔長相同的兩支變異會沿用前一支的 `.pyc`——變異「假存活」（或假紅），誤判守門強度 | none：變異演練的執行環境配方——守法句寫進本檔與演練腳本，非流程規則 | none | [LL-00021-drvfs-stale-pyc-masks-mutation-result.md](LESSONS/LL-00021-drvfs-stale-pyc-masks-mutation-result.md) |
 | LL-00022 | 序列重設守衛的「殘列即拒跑」硬化，把 dev 庫一次真登入的殘列放大成會話面全量連坐紅 | none：結構解已排入 004 ip-trust-anchor（brainstorm grill 輪 G6：廢除 SequenceResetGuard、walkthrough-baseline 之 runtime-append 表序列只比存在性）；過渡防法屬操作紀律（跑真 DB 案前先 walkthrough-baseline diff），無新規則句 | code | [LL-00022-sequence-reset-guard-refusal-turns-dev-residual-rows-into-mass-red.md](LESSONS/LL-00022-sequence-reset-guard-refusal-turns-dev-residual-rows-into-mass-red.md) |
 | LL-00023 | implementer 跑到一半被外力中止（模型限額）時，resume 原 run 會讓未完成的那支整支重跑並撞上自己留在工作樹的半成品 | RL-0010 | none | [LL-00023-implementer-killed-midrun-resume-as-zero-implementer-review-run.md](LESSONS/LL-00023-implementer-killed-midrun-resume-as-zero-implementer-review-run.md) |
+| LL-00024 | 看門狗冒煙只讀 transcript 首行；harness 在 prompt 行之前多放一行框架行後，ARMED 恆報「token 命中=0」 | RL-0016 | code | [LL-00024-wf-watchdog-first-line-smoke-blinded-by-harness-preamble-line.md](LESSONS/LL-00024-wf-watchdog-first-line-smoke-blinded-by-harness-preamble-line.md) |
