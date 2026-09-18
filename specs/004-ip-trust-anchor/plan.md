@@ -7,7 +7,7 @@
 ## Summary
 
 把「三端備好、中間沒接」的 IP 域接通：八態信任錨（三層＋兩覆蓋＋F6 硬化＋F7 溢出拒絕＋F8 判定窗轉錄）→ IP 存取閘（六步判定、any-match 白＞黑＞預設放行、ArcSwap 判定面、門鈴熱重載、keep-last-good）→ 來源維登入節流（與帳號維並列合成；★兩維皆無快取層負快取、每次嘗試讀設定現值＋PG 滑動窗定案＝BL-00066／Q7；設定壞值含越界整組退＝G4）→ IP 規則管理五端點＋管理頁（防自鎖 fail-closed、操作稽核首寫）→ 管理員解鎖端點（API-only、稽核先於生效、未鎖冪等照寫）。ROUTES 16→22、`AppState` 5→7、`MSG_KEYS` 13→19；零 migration、零 seed 變更（research R12-1）。
-技術路徑＝高度參照 `rev5:004` 終態碼（R2 逐檔清單、R3 二十二筆 rev6 差異點＋防回歸清單 B 十一筆），三支新依賴依 R1 三源表定版（G7）。同一筆 MINOR Amendment（ADR-00034 draft 已落、proposed）開 §I.7 島 F（F1～F8）＋島 E 四處細項＋§III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` (i)＋I18N-WIRING (ii) 權威句與 (i) 對齊＋五欄範圍實數化——tasks 首個主線任務 user 親決凍結、accepted 前不得動 base-web 既有檔。治理面同刀：兩支新碼面閘、走查工具三改、`SequenceResetGuard` 廢除（G6）、BL-00070 七處收攏、rules.yml 死規則刪除、boot 靜態守、契約增量三檔＋治理契約。
+技術路徑＝高度參照 `rev5:004` 終態碼（R2 逐檔清單、R3 二十三筆 rev6 差異點＋防回歸清單 B 十一筆），三支新依賴依 R1 三源表定版（G7）。同一筆 MINOR Amendment（ADR-00034 draft 已落、proposed）開 §I.7 島 F（F1～F8）＋島 E 四處細項＋§III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` (i)＋I18N-WIRING (ii) 權威句與 (i) 對齊＋五欄範圍實數化——tasks 首個主線任務 user 親決凍結、accepted 前不得動 base-web 既有檔。治理面同刀：兩支新碼面閘、走查工具三改、`SequenceResetGuard` 廢除（G6）、BL-00070 七處收攏、rules.yml 死規則刪除、boot 靜態守、契約增量三檔＋治理契約。
 
 ## Technical Context
 
@@ -39,7 +39,7 @@
 | 2 | 動 base-web inline？ | **涉及——授權以 Amendment 先行取得** | 新軌道 7 支既有檔（兩語 locale `route:`／`page:` 兩樹、`app.d.ts` page 型節——★必需非「如需」：`page:` 為顯式型樹；路由外掛產物四檔＝產物檔紀律〔禁手改＋重算冪等、明文不要求逐行標記及理由〕）；既有 I18N (ii)(iii)(i) 授權內另動 4 檔（backend 六鍵、型節、轉譯塊）；五欄範圍實數化同批（G1）。授權鏈＝ADR-00034 draft（已落、proposed）→ user 親決（tasks 首個主線任務）→ accepted＋§III.2 一列＋(ii)(i) 改寫＋五欄實數＋§I.7 島 F＋島 E 四處＋bump 1.4.0＋generate（§V.2 四步、獨立 commit）。★硬序：accepted 前不得動任何 base-web 既有檔（含 U6 之 locale backend 六鍵）；純新增檔不受此閘。驗收錨＝`tools/fork-delta-lint.py`（`load_roster` 表列變異證）＋`route-artifact-gate.py` 冪等 |
 | 3 | menu 走 Casbin enforce？ | **PASS** | `manage_ip-rule` 選單列（78）與 menu 維政策列（149）已在 seed、動態選單本就回傳；本刀只建 view 與 route；四顆按鈕碼接既有 `hasAuth`；零 seed 改動、零新政策列（143～148、157、160～163 全在） |
 | 4 | wire 對齊 §I.3？ | **PASS** | 信封三欄／`code` string／業務錯誤 HTTP 200／`PageRes` 分頁形／規則 id number＋2^53 守衛／`msg` 載穩定 key（`MSG_KEYS` 13→19）；13 碼矩陣零觸碰：阻擋與 F7 復用 `5003`（`PermissionDenied` 既有）、規則錯誤與解鎖畸形復用 `2222`；例外仍恰二；契約機器化＝contract 22 case＋wire-schema＋msg-key-gate。驗收錨＝contracts 三檔＋data-model §6 |
-| 5 | 拷貝前代 code？ | **否（重打字）＋隨遷工具改** | rust／vue／python 全程重打字、註解 rev6 語境（rev5 出處 `rev5:`；R3 二十二筆＋清單 B 十一筆烤入 prompt）；`walkthrough-baseline.py` 為既有隨遷工具之三改；兩新閘承 rev5 同名工具新寫；entity／migration 零改 |
+| 5 | 拷貝前代 code？ | **否（重打字）＋隨遷工具改** | rust／vue／python 全程重打字、註解 rev6 語境（rev5 出處 `rev5:`；R3 二十三筆＋清單 B 十一筆烤入 prompt）；`walkthrough-baseline.py` 為既有隨遷工具之三改；兩新閘承 rev5 同名工具新寫；entity／migration 零改 |
 | 6 | 抵觸 §II 拍板？ | **否** | 未知標頭忽略（XFF 外標頭不採信＝同向）、動態選單、`/api` 前綴皆不動；翻碼內舊拍板一處＝`state.rs`「恰五欄」封條（ADR supersede ADR-00027、同批改寫註解並保留域外欄邊界說明） |
 | 7 | 觸及 §III ★ 軌道？ | **涉及——授權以 Amendment 先行取得** | 新軌道屬「新能力」（新路由、新元件、跨檔）非用途補完；(ii) 權威句改寫與 (i) 範圍欄對齊同批；五欄實數化（BL-00058）；表列形受 `load_roster` 規則約束（ADR-00034 §一逐字）；i18n 三檔仍為最熱面（spec ★軌道登記表 9 列、風險判準可覆算）、產物檔 rebase 一律重算不手解 |
 | 8 | 新建業務表含 §I.6 六審計欄？ | **不適用（零 migration）** | 消費四表皆 001 基線既有：`sys_ip_rule`（變體 A、六審計欄齊、partial unique）、三稽核表（變體 B append-only、只寫入；`ip_confidence` 無 CHECK ⇒ 八態零 DDL、既有列不遷移）；來源維計數走既有索引；★連帶紀律＝runtime-append 四表序列不復位（G6；data-model §7）；DDL 冒出＝範圍翻案（BL-00042）＋RUNBOOK §10 三步 |
@@ -79,7 +79,7 @@ rust-api/                                        # worktree（rev6-admin-rust-ap
     │   ├── ipgate/mod.rs(新)                    # RuleSet／decide／STRUCTURAL_EXEMPT／would_self_lock／build_ruleset／reload_and_publish／watcher
     │   ├── middleware/mod.rs(新)                # request_context_mw（ConnectInfo→純函式→Extension）／ip_gate_mw（①②→decide→5003）
     │   ├── request_context.rs(換血)             # from_trust＋from_headers（缺席退路）；peer_ip；判定窗；模組頭回填
-    │   ├── config.rs(擴)                        # load_trust_model 三層＋B-074；扁平退路 APP_TRUSTED_PROXY_CIDRS
+    │   ├── config.rs(擴)                        # load_trust_model 三層＋`rev5:B-074`；扁平退路 APP_TRUSTED_PROXY_CIDRS
     │   ├── state.rs(5→7)                        # trust_model／ip_rules；封條改寫（ADR supersede ADR-00027）
     │   ├── main.rs(改)                          # 載信任模型→初載規則集→起 watcher；BL-00072 靜態掃描案；數量字面
     │   ├── router.rs(改)                        # ROUTES 22、ROUTES_COUNT 22；中介層掛載序

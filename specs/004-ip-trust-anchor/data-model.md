@@ -76,7 +76,7 @@
 | `my_public[]{networks, dual_role}` | 我方公開出口（`proxy_soft` 觸發①） |
 | `bindings[]{public, internal}` | 公開出口×專屬後置內網（`proxy_soft` 觸發②） |
 
-單一 helper 導出受信集＝跳過集＝六集合聯集（同源對稱、F4／F6）；預設全空＝全直連；載入三層失敗語意＋IPv4-mapped 網段字面清集合（B-074）皆不當機、皆告警。
+單一 helper 導出受信集＝跳過集＝六集合聯集（同源對稱、F4／F6）；預設全空＝全直連；載入三層失敗語意＋IPv4-mapped 網段字面清集合（`rev5:B-074`）皆不當機、皆告警。
 
 ### 2.2 `RuleSet`（判定面）
 
