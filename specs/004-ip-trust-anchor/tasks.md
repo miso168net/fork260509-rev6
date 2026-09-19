@@ -106,7 +106,7 @@ description: "Task list for 004-ip-trust-anchor"
 - [x] T025 [P] [US1] `rust-api/server/src/model/facade/sys_login_attempt.rs`：`LoginAttempt` 加 `peer_ip: Option<IpAddr>` 欄＋insert 落欄；`count_recent_failures` 加 `AND ip_confidence IS DISTINCT FROM 'chain_rejected'`（碼註：`<>` 對 NULL 漏既有列）；`session_event.rs` 之 `source_ip`（既有 varchar(45)、無 `peer_ip`／`ip_confidence` 欄、零欄變更）改收信任錨 `real_ip` 字串（refresh／logout 經上下文取值器）；★`test_kit` `LoginAttempt` fixture 補欄（無 `Default` 之純欄位字面、建構點 grep 現算）
 - [x] T026 [US1] `rust-api/server/src/router.rs` 掛 `request_context_mw` 為最外層（全路由含 `/health`／`/metrics`、先於 `enforce_mw`）；ROUTES 不變（16）；`mod tests` 之 middleware 掛載序自證（源序守：`request_context_mw` 之 `.layer(` 字面**後於** `enforce_mw` 兩處掛載、三子 router `.merge(` 與兩道 fallback 註冊——axum `Router::layer` 後掛者在外、且只包住呼叫當下已註冊者＝執行先於 `enforce_mw`）
 - [x] T027 [US1] ★主線擬稿即 accepted（既定不問 2、`rev5:ADR 0043`）：`docs/arc42/decisions/ADR-000NN-chain-overflow-rejection-and-decision-window.md`（F7 標記全域拒絕限登入＋計數分流理由、F8 兩成立條件；provenance 引 ADR-00034 §二 F7／F8）；accepted＋`generate`
-- [ ] T028 [US1] 走查 quickstart §1／§1b；★走查三步：`python3 tools/walkthrough-baseline.py snapshot tmp/walkthrough-u5.json`（rc 0）→走查→`python3 tools/walkthrough-baseline.py restore --seed`→`diff` rc 0；rust-api commit→外層 pin bump＋generate（STATE）
+- [x] T028 [US1] 走查 quickstart §1／§1b；★走查三步：`python3 tools/walkthrough-baseline.py snapshot tmp/walkthrough-u5.json`（rc 0）→走查→`python3 tools/walkthrough-baseline.py restore --seed`→`diff` rc 0；rust-api commit→外層 pin bump＋generate（STATE）
 
 **Checkpoint**: US1 完成——**MVP**：稽核列記下真實來源與來源信心；rev6 首次可見 `peer_ip`。
 
