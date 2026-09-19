@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00026 -->
+<!-- next: LL-00027 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -31,3 +31,4 @@
 | LL-00023 | implementer 跑到一半被外力中止（模型限額）時，resume 原 run 會讓未完成的那支整支重跑並撞上自己留在工作樹的半成品 | RL-0010 | none | [LL-00023-implementer-killed-midrun-resume-as-zero-implementer-review-run.md](LESSONS/LL-00023-implementer-killed-midrun-resume-as-zero-implementer-review-run.md) |
 | LL-00024 | 看門狗冒煙只讀 transcript 首行；harness 在 prompt 行之前多放一行框架行後，ARMED 恆報「token 命中=0」 | RL-0016 | code | [LL-00024-wf-watchdog-first-line-smoke-blinded-by-harness-preamble-line.md](LESSONS/LL-00024-wf-watchdog-first-line-smoke-blinded-by-harness-preamble-line.md) |
 | LL-00025 | SDD 轉述前代條文時壓掉限定語，實作照轉述施工，行為與既有拍板分岔而全鏈綠 | RL-0065 | none | [LL-00025-sdd-lossy-paraphrase-of-predecessor-clause-forks-behavior.md](LESSONS/LL-00025-sdd-lossy-paraphrase-of-predecessor-clause-forks-behavior.md) |
+| LL-00026 | handler 鎖列後以 `?` 上拋、交易只靠 drop 收場→測試斷言一失敗，清列守衛即與未釋放的列鎖互鎖、整輪卡死而不轉紅 | none：handler 交易收場形屬碼面慣例、由源碼釘測守（`handler::ip_rule` 之失敗腿 rollback 釘），無對應 RL 條目 | code | [LL-00026-drop-only-rollback-deadlocks-row-guards-in-current-thread-tests.md](LESSONS/LL-00026-drop-only-rollback-deadlocks-row-guards-in-current-thread-tests.md) |

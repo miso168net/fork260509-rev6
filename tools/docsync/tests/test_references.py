@@ -459,7 +459,7 @@ class TestRoutes(unittest.TestCase):
             references.gen_reference_routes(stub({}))
 
     # 真 repo 釘值＝ROUTES 現行列集逐列全等（002 刀 U1 兩列＋U3 之 getSystemSettings 列＋U4 之 updateSystemSetting 列＋
-    # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub；現行十六列＝data-model §12 終態）。★釘值形刻意保留——逐列全等是各單元的
+    # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub＝003 刀 data-model §12 終態十六列＋004 刀 U7 五列＝IP 規則管理五端點；現行二十一列）。★釘值形刻意保留——逐列全等是各單元的
     # 驗收面，不以「非空＋包含」弱化；日後加 route 時本測釘值須同批增列。
     # ★紅而不自明的窗口：pre-commit 只在 staged 含 tools/docsync/ 時才跑 selftest-docsync（.githooks/pre-commit 同段），
     #   而 GT-01 漂移在 U3 跑過 generate 後即消——故本測不同批改＝一路綠燈到有人跑 docsync test／bootstrap 才浮出。
@@ -480,7 +480,12 @@ class TestRoutes(unittest.TestCase):
                                 ("/auth/resetPwd", "POST", "Public", "auth-reset-pwd", False),
                                 ("/route/getConstantRoutes", "GET", "Public", "route-get-constant-routes", False),
                                 ("/route/getUserRoutes", "GET", "Authed", "route-get-user-routes", False),
-                                ("/route/isRouteExist", "GET", "Authed", "route-is-route-exist", False)])
+                                ("/route/isRouteExist", "GET", "Authed", "route-is-route-exist", False),
+                                ("/systemManage/getIpRuleList", "GET", "Policy", "get-ip-rule-list", False),
+                                ("/systemManage/addIpRule", "POST", "Policy", "add-ip-rule", False),
+                                ("/systemManage/updateIpRule", "POST", "Policy", "update-ip-rule", False),
+                                ("/systemManage/deleteIpRule", "DELETE", "Policy", "delete-ip-rule", False),
+                                ("/systemManage/restoreIpRule", "POST", "Policy", "restore-ip-rule", False)])
         out = references.gen_reference_routes(ctx)
         self.assertEqual([ln for ln in out.split("\n") if ln.startswith("| /")],
                          ["| /health | GET | Public | health | 是 |", "| /metrics | GET | Public | metrics | 是 |",
@@ -497,5 +502,10 @@ class TestRoutes(unittest.TestCase):
                           "| /auth/resetPwd | POST | Public | auth-reset-pwd | 否 |",
                           "| /route/getConstantRoutes | GET | Public | route-get-constant-routes | 否 |",
                           "| /route/getUserRoutes | GET | Authed | route-get-user-routes | 否 |",
-                          "| /route/isRouteExist | GET | Authed | route-is-route-exist | 否 |"])
+                          "| /route/isRouteExist | GET | Authed | route-is-route-exist | 否 |",
+                          "| /systemManage/getIpRuleList | GET | Policy | get-ip-rule-list | 否 |",
+                          "| /systemManage/addIpRule | POST | Policy | add-ip-rule | 否 |",
+                          "| /systemManage/updateIpRule | POST | Policy | update-ip-rule | 否 |",
+                          "| /systemManage/deleteIpRule | DELETE | Policy | delete-ip-rule | 否 |",
+                          "| /systemManage/restoreIpRule | POST | Policy | restore-ip-rule | 否 |"])
         self.assertIn("docs/generated/reference/routes.md", references.compute_generated(ctx))
