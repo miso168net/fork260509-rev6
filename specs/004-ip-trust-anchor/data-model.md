@@ -38,7 +38,7 @@
 ★`session_event` **不在**此列：該表只有 `source_ip varchar(45)`（無 `peer_ip`／`ip_confidence`、非 INET）；本刀 refresh／logout 寫入之 `source_ip` 改收信任錨 `real_ip` 字串、零欄變更。
 | `sys_operation_log` | 本刀首寫者（§1.3） | 同上 | 同上 |
 
-★既有列不遷移（append-only 表不可竄改）；查詢端容忍 `nginx_peer` 與八態並存。★`chain_rejected` 兩連帶：①語意＝「這條鏈逾上界、未被推理採信」——`sys_login_attempt` 上恆為「被拒」列、`sys_operation_log` 上為「標記但照服務」列，兩表同字面語意不同、報表 MUST 分表判讀；`real_ip` 在該態下**恆有值**（取自傳輸層對端）；②計數分流：帳號維查詢 `AND ip_confidence IS DISTINCT FROM 'chain_rejected'`（`<>` 對 NULL 回 NULL 會漏既有列）、來源維**不加**過濾（釘住測試守之）。
+★既有列不遷移（append-only 表不可竄改）；查詢端容忍 `nginx_peer` 與八態並存。★`chain_rejected` 兩連帶：①語意＝「這條鏈逾上界、未被推理採信」——`sys_login_attempt` 上恆為「被拒」列、`sys_operation_log` 上為「標記但照服務」列，兩表同字面語意不同、報表 MUST 分表判讀；`real_ip` 在該態下**恆有值**、出處視判定腿而定（層②③取自判定窗；直連腿／回退腿／通道覆蓋取對端或訪客標頭）——逾限**只改信心、不覆寫位址**（ADR-00037 決定 1；承 `rev5:ADR 0043` 終態）；②計數分流：帳號維查詢 `AND ip_confidence IS DISTINCT FROM 'chain_rejected'`（`<>` 對 NULL 回 NULL 會漏既有列）、來源維**不加**過濾（釘住測試守之）。
 
 ### 1.3 `sys_operation_log`（變體 B append-only；本刀首個寫入者）
 

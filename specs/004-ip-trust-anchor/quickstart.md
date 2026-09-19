@@ -41,7 +41,7 @@ $PG sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT ip_confidence,
 curl -s -o /dev/null -w '%{http_code}\n' "$BASE/route/getConstantRoutes" -H "X-Forwarded-For: $XFF"
 ```
 
-**預期**：登入 `403`（信封 `5003 system.forbidden`）、稽核列 `chain_rejected`、`real_ip`＝對端、轉發鏈欄為判定窗（長度 ≤1024）；非登入端點 `200` 照常服務。
+**預期**：登入 `403`（信封 `5003 system.forbidden`）、稽核列 `chain_rejected`、`real_ip`＝判定腿結論（逾限只改信心、不覆寫位址；本例經受信反向代理＝自判定窗推導之位址、**不是**反向代理容器位址）、轉發鏈欄為判定窗（長度 ≤1024）；非登入端點 `200` 照常服務。
 
 ## 2. IP 存取閘（US2／SC-014 ②）
 

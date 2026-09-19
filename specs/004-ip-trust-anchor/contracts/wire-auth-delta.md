@@ -14,7 +14,7 @@
 
 | 情境 | 碼／msg | HTTP | 說明 |
 |---|---|---|---|
-| 轉發鏈跳數 > 32（F7） | `5003 system.forbidden` | 403 | 先於節流 precheck 與密碼驗證；仍落一列 `sys_login_attempt`（`ip_confidence=chain_rejected`、`real_ip`＝傳輸層對端、`success=false`）；該列帳號維計數排除、來源維計數納入 |
+| 轉發鏈跳數 > 32（F7） | `5003 system.forbidden` | 403 | 先於節流 precheck 與密碼驗證；仍落一列 `sys_login_attempt`（`ip_confidence=chain_rejected`、`real_ip`＝判定腿結論〔逾限只改信心、不覆寫位址〕、`success=false`）；該列帳號維計數排除、來源維計數納入 |
 | 來源維硬鎖 | `2222 biz.auth.locked` | 200 | 與帳號維同鍵、不揭露維度；密碼驗證前、零稽核列 |
 | 來源維軟區 | `2222 biz.auth.captchaRequired` | 200 | 同上（合成：任一軟區即要求） |
 | 兩維設定壞值 | （無新碼） | — | 整組退常數＋告警；行為照常數 |
@@ -38,6 +38,6 @@
 
 ## 契約測試增斷言
 
-- `auth-login`：F7 拒絕（跳數 33）先於 precheck（源序守＋行為案）、`chain_rejected` 列落且 `real_ip`＝peer；缺席退路兩腿（缺 `X-Real-IP` 5000／在場轉錄 `fallback`）。
+- `auth-login`：F7 拒絕（跳數 33）先於 precheck（源序守＋行為案）、`chain_rejected` 列落且 `real_ip`＝判定腿結論（經受信代理時≠peer）；缺席退路兩腿（缺 `X-Real-IP` 5000／在場轉錄 `fallback`）。
 - `auth-refresh-token`／`auth-logout`：缺席退路轉錄腿一案；`peer_ip` 落欄一案（經 make-service 形整合測試）。
 - 既有 36 處 `X-Real-IP` 注入案零改形（缺席退路即其路徑）。

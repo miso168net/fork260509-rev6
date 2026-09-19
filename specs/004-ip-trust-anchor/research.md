@@ -87,11 +87,13 @@ rev5 004 邊界＝`git -C ../fork260509-rev5/rust-api log --oneline <004 首 com
 | R3-22 | 活書 12 無 `fallback` 撞詞處置 | 來源信心態 `fallback` 與流程層 fallback 區分句 | 工程判斷 11；FR-068 |
 | R3-23 | 層③ walk 之綁定右鄰判定巢在「該跳命中 `my_public`」分支內——binding 的 `public` 未同列 `my_public` 時**靜默不評估、零告警**（`rev5:server/src/trust/mod.rs` `Binding` 碼註自陳「設定面硬前提」） | 綁定對**任一受信跳**評估、不以同列 `my_public` 為前提；符合 rev5 前提之設定兩代**逐位元同判**，差異只在漏列 `my_public` 之設定：rev5 `proxy_clean`→rev6 `proxy_soft`（方向只降信心、不動位址）；釘住案＝`trust::tests::binding_adjacency_is_evaluated_for_any_trusted_hop` | 工程判斷（004 刀 U1、主線 2026-09-19 裁定保留）：FR-004／data-model §2.1／contracts/trust-model-config 皆把 `my_public`（觸發①）與 `bindings`（觸發②）列為**獨立**觸發、無巢狀前提；「設定存在、完全沒生效、沒人知道」＝`rev5:R2-3` 同型失敗形 |
 
+★**勘誤註記（U5 規格審查實暴、主線查證）**：本刀 SDD 初稿曾把前代條文「`real_ip` 在 `chain_rejected` 態下恆有值、出處視判定腿而定」有損轉述成「取自傳輸層對端」（本檔 R4、data-model §1.2①、tasks T007／T021、quickstart §1b、contracts/wire-auth-delta.md login 列同誤），U1 據此把 `apply_chain_overflow` 寫成逾限覆寫位址。這**不是** rev6 拍板差異點、不入上表：brainstorm 既定不問 2＝F7／F8 沿用前代終態（只改信心、不動位址；憲法 §I.7 島 F 之 F7「來源維鍵為攻擊者自身位址」只在該語意下成立）。字面已逐處更正，碼面由修單單元 U5e 兌現（教訓＝LL-00025）。
+
 **防回歸清單 B**（承 `rev5:004` research R2 十一筆 rev4→rev5 翻案，全視為已翻案、不得帶回；烤入 implementer prompt）：`rev5:R2-1` 錨右側不得盲剝（F6）／`rev5:R2-2` 鎖 origin 只是縱深防禦建議／`rev5:R2-3` dev 必掛最小信任模型／`rev5:R2-4` 信心字面單一出口（`nginx_peer` 退役）／`rev5:R2-5` region 不搬／`rev5:R2-6` 模組名 `cache`／`rev5:R2-7` 只為新端點落操作稽核／`rev5:R2-8` HLL 不搬／`rev5:R2-9` `access_log_mw` 不搬／`rev5:R2-10` 零新 AppError 變體／`rev5:R2-11` dev 可達態如實列。
 
 ## R4 信任錨判定矩陣（七態 × 三層 × 兩覆蓋 × 硬化；承 rev5 R4、rev6 沿用——唯層③綁定右鄰評估射程一處擴大＝R3-23）
 
-鏈＝`normalize(xff) ++ [peer]`，對端接在最右。層①對端閘（`peer ∉ 受信集`→peer、`direct`）；層② Tier-1 錨（最右 CDN 段、**錨右側全受信**〔F6〕、錨左第一個非 CDN 段→`cdn_anchored`；錨左無非 CDN→`fallback`；錨右含不受信跳→退層③）；層③ 最右非受信（`proxy_clean`／經 dual-role 或綁定不符→`proxy_soft`；整鏈受信→`fallback`）。覆蓋 A 通道回退（基礎 `fallback` ∧ peer ∈ tunnel ∧ 訪客標頭有值→採訪客位址、信心不升）；覆蓋 B 邊緣驗證（四前置全中→`cdn_verified`／推導不等→`cdn_mismatch`、不動位址）。★F7 溢出短路（`apply_chain_overflow`）套在矩陣**之後**、無條件：鏈原始跳數 > `MAX_XFF_TOKENS` ⇒ `chain_rejected`，`real_ip` 取自傳輸層對端（各腿皆可落此值；spec 第八態不入 SC-001「七態」射程）。硬化形式化＝`chain[anchor_idx+1..].all(is_trusted)`；合法 CDN 路徑硬化前後逐位元相同（SC-002）。
+鏈＝`normalize(xff) ++ [peer]`，對端接在最右。層①對端閘（`peer ∉ 受信集`→peer、`direct`）；層② Tier-1 錨（最右 CDN 段、**錨右側全受信**〔F6〕、錨左第一個非 CDN 段→`cdn_anchored`；錨左無非 CDN→`fallback`；錨右含不受信跳→退層③）；層③ 最右非受信（`proxy_clean`／經 dual-role 或綁定不符→`proxy_soft`；整鏈受信→`fallback`）。覆蓋 A 通道回退（基礎 `fallback` ∧ peer ∈ tunnel ∧ 訪客標頭有值→採訪客位址、信心不升）；覆蓋 B 邊緣驗證（四前置全中→`cdn_verified`／推導不等→`cdn_mismatch`、不動位址）。★F7 溢出短路（`apply_chain_overflow`）套在矩陣**之後**、無條件：鏈原始跳數 > `MAX_XFF_TOKENS` ⇒ `chain_rejected`，★只改信心、`real_ip` 沿判定腿結論不覆寫（各腿皆可落此信心；spec 第八態不入 SC-001「七態」射程）。硬化形式化＝`chain[anchor_idx+1..].all(is_trusted)`；合法 CDN 路徑硬化前後逐位元相同（SC-002）。
 
 ## R5 ipgate 與門鈴（承 rev5 R5）
 
