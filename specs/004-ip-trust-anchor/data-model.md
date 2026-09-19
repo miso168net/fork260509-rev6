@@ -152,7 +152,7 @@ XFF／CF 標頭 ──────┘                                           
 
 刪除：`redis_lock`／`redis_lock_set`（L1 已無）。
 
-**`ip_domain_degraded_total{source}`（新序列、8 值）**：`trust_model_missing`（缺席→扁平退路）／`trust_model_invalid`（整體損壞→全空）／`trust_model_set_cleared`（單集合含無效網段或 IPv4-mapped 字面→清該集合）／`ruleset_initial_load`（初載失敗→空集放行）／`ruleset_reload`（執行中重載失敗→keep-last-good）／`doorbell_publish`／`doorbell_subscribe`（含 timeout、斷線、重連補讀失敗）／`request_context_absent`（中介層對端缺席腿＋存取閘放行腿＋auth 端點退路共用；★計腿不計請求——同一請求各腿各推一格：存取閘腿落地前至多 2 格、落地後 auth 三端點 3 格／其餘端點 2 格，門檻與 `rate()` 基線按「走到降級分支的腿數」定）。
+**`ip_domain_degraded_total{source}`（新序列、8 值）**：`trust_model_missing`（缺席→扁平退路）／`trust_model_invalid`（整體損壞→全空）／`trust_model_set_cleared`（單集合含無效網段或 IPv4-mapped 字面→清該集合）／`ruleset_initial_load`（初載失敗→空集放行）／`ruleset_reload`（執行中重載失敗→keep-last-good）／`doorbell_publish`／`doorbell_subscribe`（含 timeout、斷線、重連補讀失敗）／`request_context_absent`（中介層對端缺席腿＋存取閘放行腿＋auth 端點退路共用；★計腿不計請求——同一請求各腿各推一格：不經對端之請求打 auth 三端點 3 格／其餘端點 2 格／`/health`・`/metrics` 1 格（存取閘判定序①先於②、不走缺席腿），門檻與 `rate()` 基線按「走到降級分支的腿數」定）。
 
 **`ipgate_blocked_total`**（無 label；命中網段記於結構化 warn、非降級）。
 
