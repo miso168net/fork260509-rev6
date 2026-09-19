@@ -39,3 +39,4 @@
 | ADR-00034 | accepted | 2026-09-15 | 憲法 Amendment 1.3.0→1.4.0——§I.7 島 F 入憲＋島 E 四處細項調整＋§III.2 開 ★BASE-WEB-MANAGE-PAGE-WIRING (i)、I18N-WIRING (ii) 權威句與 (i) 對齊、五欄範圍實數化 | — | — | — |
 | ADR-00035 | accepted | 2026-09-15 | 引入 IP 域依賴三支——arc-swap 1.9.2／futures-util 0.3.34（default features 關）／toml 1.1.6；ADR-00028 決定 2「明確不進」七支中三支之前提於 004 成立 | — | — | — |
 | ADR-00036 | accepted | 2026-09-19 | AppState 五欄→七欄（續行 ADR-00027）——加 trust_model／ip_rules；mailer 續留域外、開第八欄須新 ADR | — | ADR-00027 | — |
+| ADR-00037 | accepted | 2026-09-19 | 轉發鏈跳數逾上界——標記全域、拒絕限登入、計數分流；稽核轉錄保留判定窗並與判定軌共用取窗實作（島 F 之 F7／F8 落地形） | — | — | — |
