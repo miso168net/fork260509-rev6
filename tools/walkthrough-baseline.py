@@ -6,23 +6,38 @@
   snapshot <檔>   取 rev6 dev stack 實庫＋redis 現況三面、寫成 JSON 基準檔（走查**前**跑）
   diff <檔>       重取現況、與基準檔逐值比對、只列有差者＋末行摘要（走查**後**清理完跑；
                   ★rc 0 才算「環境已還原」——三閘綠不算，rev5:L-055／rev5:L-071 招牌徵狀＝三閘綠而全量紅）
+                  ★序列面例外一項：runtime-append 四表（RUNTIME_APPEND_TABLES、與 tools/schema-gate.py 同名常數同值）
+                    之 id 序列只比**存在性**、不比值——同 gate2 對其 setval 值正規化之口徑；這四支只進不退
+                    （rust-api 測試守衛只清自寫列、序列不復位），逐值比則每跑一次全量測試 diff 即恆有差
   restore <檔>    走查後清理（RUNBOOK §9c 第 3 步之順序機器化；寫面恰為下列、次序固定）：
                   ①system_settings 對凍結 seed（specs/001-schema-baseline/fixtures/seed.sql 之 COPY 段）——值≠seed
                     （含鍵缺／鍵多）即 fail-loud 指名、**不自動改值**（值還原走 002 刀寫端＝人工前置）；值＝seed 而
                     審計欄 updated_at／updated_by 非 NULL 者歸 NULL（改回值≠改回痕）；★左源未合成演進帳——
                     docs/ops/reference-src/schema-evolution.json 有 system_settings 之 seed_* 登記即拒跑、指名登記 id
                     （凍結段已非期望 seed；先擴充本工具）
-                  ②DELETE session_event／sys_token／sys_login_attempt 全表＋sys_user.session_id 歸 NULL
-                  ③三支 setval（sys_token_id_seq／session_event_id_seq／sys_login_attempt_id_seq）值自基準檔現讀
+                  ②DELETE 清理面五表（RESTORE_TABLES＝會話三表＋sys_ip_rule＋sys_operation_log）全表
+                    ＋sys_user.session_id 歸 NULL
+                  ③五支 setval（RESTORE_SEQUENCES＝上列五表之 id 序列）值自基準檔現讀
                     ——①～③ 同一交易（BEGIN…COMMIT、ON_ERROR_STOP=1；任一句敗即整筆回滾、不進④）
                   ④redis 以 `--scan --pattern` 取 session:*／throttle:* 鍵、逐鍵指名 DEL（每批 ≤REDIS_DEL_BATCH
                     把；絕不 FLUSHDB、絕不以樣式刪）
                   ⑤收尾自動跑一次 diff、其 rc 即 restore 之 rc（0＝已還原）
-                  ★安全帶：基準檔三表列數或 session／throttle 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
-                    會毀掉基準資料——restore 只服務「走查前為空基準」之形）；安全帶與 seed 比對皆在任何寫入之前
+                  ★安全帶：基準檔五表列數或 session／throttle 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
+                    會毀掉基準資料——restore 只服務「走查前為空基準」之形；無空基準檔可用＝改跑 seed 模式）；
+                    安全帶與 seed 比對皆在任何寫入之前
+  restore --seed  同上清理、但無須基準檔：目標態＝凍結 seed（BL-00075；走查外殘列——被殺測試留下之列與鍵——
+                  產生時通常無空基準 snapshot 可用）。與基準檔模式之差恰三處：
+                  (a)安全帶改對凍結 seed：清理面五表之 COPY 段須在場且零列、五支序列之 setval 行須在場；演進帳
+                    拒跑判定由 system_settings 擴及清理面五表（有其 seed_* 登記＝凍結段非期望 seed、照清會毀 seed 列）
+                  (b)③只 setval sys_ip_rule_id_seq 一支（SEED_SETVAL_SEQUENCES＝清理面序列扣掉 runtime-append 者）、
+                    值自凍結 seed 之 setval 行現讀；runtime-append 四支序列**不復位**
+                  (c)⑤收尾比對之判準面＝清理面對 seed 目標值（五表 0 列、sys_ip_rule_id_seq＝seed 值、runtime-append
+                    序列在場、兩前綴 0 鍵）；清理面之外無基準可比＝不判——pg 殘留由 tools/schema-gate.py check 之
+                    gate2 逐列兜
   test            自帶 self-test（unittest、離線、零 docker；subprocess 全樁）
   選項（snapshot／diff／restore 共用）：`--user U`／`--db D`（預設同 tools/schema-gate.py 常數）。
-  `<檔>` 為必填位置引數、無隱含預設落點（契約用法落 tmp/、見 RUNBOOK §9c）。
+  `<檔>` 為必填位置引數、無隱含預設落點（契約用法落 tmp/、見 RUNBOOK §9c）；唯 restore 得以 `--seed` 取代之
+  （兩者擇一、並帶＝用法錯 rc 64）。
 
 三面（★全部現算、零手抄名冊——清單式防法已被 rev5:L-071 證偽：rev5:006 的清單擋不住 rev5:007 的組合）：
   ①表：public schema **全部**表的列數（表清單自 information_schema.tables 現算、逐表 count(*)
@@ -53,10 +68,12 @@ pg 走 `docker compose … exec -T postgres psql -U … -d … -At -F <分隔>`�
 條件觸發（要 dev stack、且走查收尾才有意義）——走查前後手動跑。stdlib-only（rev5:ADR 0010）；連字檔名＝CLI、
 不可 import。隨遷自 rev5:tools/walkthrough-baseline.py（003 刀 U10a；四型失效引用 rev6 化、其餘逐字承襲）。
 restore 子命令＝BL-00053（maint-backlog-pre-004 A2b 新增、rev5 無對應）：取代 003 刀 U6／U7／U11 各自手寫之 tmp
-清理腳本；寫面由 self-test 逐字釘住（多一句即紅）。
+清理腳本；寫面由 self-test 逐字釘住（多一句即紅）。清理面擴及 sys_ip_rule／sys_operation_log、seed 模式、
+runtime-append 序列存在性口徑＝BL-00075（004 刀 U3；rev5 同名工具無此三項）。
 """
 import contextlib
 import datetime
+import importlib.util
 import io
 import json
 import os
@@ -95,15 +112,28 @@ SQL_TABLES = ("SELECT table_name FROM information_schema.tables "
 SQL_SEQUENCES = ("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
                  "WHERE c.relkind='S' AND n.nspname='public' ORDER BY 1")
 
-# ── restore 清理面（BL-00053；次序＝RUNBOOK §9c 第 3 步）──────────────────────────
+# ── restore 清理面（BL-00053、BL-00075；次序＝RUNBOOK §9c 第 3 步）────────────────
 # seed 左源＝凍結 fixture 之 system_settings COPY 段（唯讀、REPO_ROOT 相對）
 SEED_FIXTURE = os.path.join("specs", "001-schema-baseline", "fixtures", "seed.sql")
 # 演進登記檔（形斷言權威＝tools/schema-gate.py）：期望 seed＝凍結 ⊕ 演進；本工具左源只讀凍結段、未合成演進，
-# 故帳上有 system_settings 之 seed 面登記即拒跑（check_settings_seed_evolution）
+# 故帳上有 system_settings（seed 模式另含清理面五表）之 seed 面登記即拒跑（check_seed_evolution）
 SCHEMA_EVOLUTION = os.path.join("docs", "ops", "reference-src", "schema-evolution.json")
 SEED_EVOLUTION_KINDS = ("seed_add", "seed_update", "seed_delete")
-RESTORE_TABLES = ("session_event", "sys_token", "sys_login_attempt")        # DELETE 全表；次序即語句序
-RESTORE_SEQUENCES = ("sys_token_id_seq", "session_event_id_seq", "sys_login_attempt_id_seq")
+# runtime-append 四表→其 id 序列：與 tools/schema-gate.py 之 RUNTIME_APPEND_TABLES **同值**（連字檔名 CLI 不可 import、
+# 故自帶；自測以 importlib 依路徑載入該檔、對賬兩者逐項相等）。這四支序列只進不退——rust-api 測試守衛只清自寫列、
+# 不復位（004 刀 U3 廢序列復位守衛；LL-00017／LL-00022）——故 diff 對其只比存在性、seed 模式亦不 setval。
+RUNTIME_APPEND_TABLES = {
+    "session_event": "session_event_id_seq",
+    "sys_login_attempt": "sys_login_attempt_id_seq",
+    "sys_operation_log": "sys_operation_log_id_seq",
+    "sys_token": "sys_token_id_seq",
+}
+# 清理面五表（DELETE 全表；次序即語句序）：會話三表＋sys_ip_rule（業務表、zero-seed）＋sys_operation_log
+RESTORE_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log")
+# 基準檔模式 setval 之序列（五支皆依基準檔現讀）；seed 模式只 setval 其中非 runtime-append 者
+RESTORE_SEQUENCES = ("sys_token_id_seq", "session_event_id_seq", "sys_login_attempt_id_seq",
+                     "sys_ip_rule_id_seq", "sys_operation_log_id_seq")
+SEED_SETVAL_SEQUENCES = tuple(s for s in RESTORE_SEQUENCES if s not in RUNTIME_APPEND_TABLES.values())
 RESTORE_REDIS_PREFIXES = ("session", "throttle")
 # 一次 DEL 指名的鍵數上限：逐鍵指名、分批送（免每把鍵各一次 docker exec；也免 sh -c 參數過長）
 REDIS_DEL_BATCH = 100
@@ -314,7 +344,9 @@ def _seq_text(v):
 
 
 def diff_snapshots(base, live):
-    """逐值比對 → 差異列（dict：face／name／base／live／delta）；只列有差者、忽略 taken_at。"""
+    """逐值比對 → 差異列（dict：face／name／base／live／delta）；只列有差者、忽略 taken_at。
+    ★例外一項：RUNTIME_APPEND_TABLES 之序列只比存在性（同 tools/schema-gate.py gate2 對其 setval 值正規化之口徑）
+    ——逐值比則每跑一次全量測試即恆有差、rc 0 失去判別力；一側缺席仍照報。"""
     rows = []
     absent = "（無）"
 
@@ -329,8 +361,11 @@ def diff_snapshots(base, live):
                              "delta": (l - b) if (b is not None and l is not None) else "—"})
 
     _int_rows("表", base["tables"], live["tables"])
+    existence_only = frozenset(RUNTIME_APPEND_TABLES.values())
     for name in sorted(set(base["sequences"]) | set(live["sequences"])):
         b, l = base["sequences"].get(name), live["sequences"].get(name)
+        if name in existence_only and b is not None and l is not None:
+            continue                       # runtime-append 序列：兩側皆在即等、不比值
         if b != l:
             rows.append({"face": "序列", "name": name,
                          "base": absent if b is None else _seq_text(b),
@@ -379,7 +414,10 @@ def cmd_diff(path, user, db, run=subprocess.run):
     # snapshot_live 自己塞、零表零序列已由 fetch_* fail-loud、值型別由 int()／建構過程保證），
     # 沒有任何輸入能讓它拒絕——讀起來像第二道防線、實際是空轉（變異測試殺不死）。真正的守門
     # 在 fetch_tables／fetch_sequences／fetch_redis 各自的 fail-loud，放寬那裡就是真的沒有兜底。
-    live = snapshot_live(user, db, run)
+    return _report_diff(base, snapshot_live(user, db, run))
+
+
+def _report_diff(base, live):
     rows = diff_snapshots(base, live)
     for ln in render_diff(rows, live):
         _say(ln, err=bool(rows))
@@ -395,22 +433,60 @@ def _copy_unescape(text):
     return re.sub(r"\\(.)", lambda m: {"t": "\t", "n": "\n", "r": "\r"}.get(m.group(1), m.group(1)), text)
 
 
+def _seed_copy_rows(lines, table):
+    """seed.sql 之 `COPY public.<表>` 段 → (段首欄名串, 資料列 list)；段缺席回 None。"""
+    head = re.compile(r"^COPY public\." + re.escape(table) + r" \(([^)]*)\) FROM stdin;$")
+    for i, ln in enumerate(lines):
+        m = head.match(ln)
+        if m:
+            rows = []
+            for row in lines[i + 1:]:
+                if row == "\\.":
+                    break
+                rows.append(row)
+            return m.group(1), rows
+    return None
+
+
+def seed_restore_target(seed_text):
+    """seed 模式之目標態（形同基準檔之清理面子集、供 check_restore_baseline／restore_sql 同一套判定）：
+    tables＝清理面各表於凍結 seed 之 COPY 段列數；sequences＝清理面各序列之 setval 行值。段或行缺席者不入 dict
+    （由 check_restore_baseline 指名為清理面缺席）；redis 於 seed 無載體＝兩前綴目標恆 0 鍵。"""
+    lines = seed_text.splitlines()
+    tables, seqs = {}, {}
+    for t in RESTORE_TABLES:
+        blk = _seed_copy_rows(lines, t)
+        if blk is not None:
+            tables[t] = len(blk[1])
+    for m in re.finditer(r"^SELECT pg_catalog\.setval\('public\.(\w+)', (\d+), (true|false)\);$",
+                         seed_text, re.M):
+        if m.group(1) in RESTORE_SEQUENCES:
+            seqs[m.group(1)] = {"last_value": int(m.group(2)), "is_called": m.group(3) == "true"}
+    return {"tables": tables, "sequences": seqs, "redis": {"dbsize": 0, "prefixes": {}}}
+
+
+def seed_mode_baseline(live, target):
+    """seed 模式無基準檔：以現況為底、只把清理面覆寫成 seed 目標值（五表列數、五支序列、兩前綴 0 鍵）→ 交
+    diff_snapshots 比。清理面之外恆等於現況＝不入判準（無基準可比；該面之 pg 殘留由 tools/schema-gate.py check
+    之 gate2 逐列兜）。"""
+    prefixes = {p: n for p, n in live["redis"]["prefixes"].items() if p not in RESTORE_REDIS_PREFIXES}
+    cleared = sum(live["redis"]["prefixes"].get(p, 0) for p in RESTORE_REDIS_PREFIXES)
+    return {"tables": dict(live["tables"], **target["tables"]),
+            "sequences": dict(live["sequences"], **target["sequences"]),
+            "redis": {"dbsize": live["redis"]["dbsize"] - cleared, "prefixes": prefixes}}
+
+
 def seed_settings(seed_text):
     """凍結 seed.sql 之 `COPY public.system_settings` 段 → {setting_key: setting_value}。
     段缺席／零列＝比對面為空、段首缺鍵或值欄／列欄數不符＝凍結面受損，皆 BaselineError（rc 2）。"""
-    lines = seed_text.splitlines()
-    for i, ln in enumerate(lines):
-        m = re.match(r"^COPY public\.system_settings \(([^)]*)\) FROM stdin;$", ln)
-        if not m:
-            continue
-        cols = [c.strip().strip('"') for c in m.group(1).split(",")]
+    blk = _seed_copy_rows(seed_text.splitlines(), "system_settings")
+    if blk is not None:
+        cols = [c.strip().strip('"') for c in blk[0].split(",")]
         if "setting_key" not in cols or "setting_value" not in cols:
             raise BaselineError(f"seed system_settings 段首缺 setting_key／setting_value 欄：{cols}")
         ki, vi = cols.index("setting_key"), cols.index("setting_value")
         got = {}
-        for row in lines[i + 1:]:
-            if row == "\\.":
-                break
+        for row in blk[1]:
             vals = row.split("\t")
             if len(vals) != len(cols):
                 raise BaselineError(f"seed system_settings 列欄數 {len(vals)} ≠ 段首 {len(cols)}："
@@ -422,11 +498,12 @@ def seed_settings(seed_text):
     raise BaselineError("seed 缺 COPY public.system_settings 段——比對面為空、不得靜默判綠")
 
 
-def check_settings_seed_evolution(ledger_path):
-    """演進帳有 system_settings 之 seed_* 登記＝凍結 COPY 段已非期望 seed（期望＝凍結 ⊕ 演進、同 tools/schema-gate.py
-    gate2 之 apply_seed_entries）。本工具左源未合成演進——照比會把 migration 定義的合法值誤報為值≠seed、並給出
-    「以寫端改回」的錯誤補救——故拒跑 rc 2、指名登記 id。結構性 kind（add_column 等）不擋：不改 setting_key／
-    setting_value 鍵值集。登記檔缺席／非 JSON／entries 非 list 或含非物件項＝rc 2（形之完整斷言權威在 schema-gate、
+def check_seed_evolution(ledger_path, tables):
+    """演進帳有 `tables` 任一表之 seed_* 登記＝凍結 COPY 段已非期望 seed（期望＝凍結 ⊕ 演進、同 tools/schema-gate.py
+    gate2 之 apply_seed_entries）。本工具左源未合成演進——system_settings 照比會把 migration 定義的合法值誤報為
+    值≠seed、並給出「以寫端改回」的錯誤補救；seed 模式另以凍結段為清理面目標態（tables 加傳 RESTORE_TABLES），
+    照清會把演進帳定義的 seed 列一併 DELETE——故拒跑 rc 2、指名登記 id 與表。結構性 kind（add_column 等）不擋：
+    不改列集與鍵值集。登記檔缺席／非 JSON／entries 非 list 或含非物件項＝rc 2（形之完整斷言權威在 schema-gate、
     此處只驗判定所需）。"""
     try:
         with open(ledger_path, encoding="utf-8") as fh:
@@ -440,28 +517,37 @@ def check_settings_seed_evolution(ledger_path):
     if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
         raise BaselineError(f"演進登記檔壞形：{ledger_path}（{SCHEMA_EVOLUTION}）entries 須為物件 list"
                             "——形＝specs/001-schema-baseline/contracts/schema-evolution.md §2")
-    hits = [f"{e.get('id', '?')}（{e.get('kind')}）" for e in entries
-            if e.get("table") == "system_settings" and e.get("kind") in SEED_EVOLUTION_KINDS]
+    hits = [f"{e.get('id', '?')}（{e.get('kind')}、{e.get('table')}）" for e in entries
+            if e.get("table") in tables and e.get("kind") in SEED_EVOLUTION_KINDS]
     if hits:
-        raise BaselineError(f"{SCHEMA_EVOLUTION} 有 system_settings 之 seed 演進登記：{'、'.join(hits)}——restore 之 "
-                            "seed 左源只讀凍結 COPY 段、未合成演進（期望 seed＝凍結 ⊕ 演進），照比會把合法值誤報為值≠seed；"
-                            "先擴充本工具之 seed 左源合成、再跑 restore；拒絕執行、零寫入")
+        raise BaselineError(f"{SCHEMA_EVOLUTION} 有 restore 所倚 seed 面之演進登記：{'、'.join(hits)}——restore 之 "
+                            "seed 左源只讀凍結 COPY 段、未合成演進（期望 seed＝凍結 ⊕ 演進），照比會把合法值誤報為值≠seed"
+                            "（seed 模式另會把演進帳定義之 seed 列清掉）；先擴充本工具之 seed 左源合成、再跑 restore；"
+                            "拒絕執行、零寫入")
 
 
-def check_restore_baseline(snap):
-    """安全帶：清理面之表或序列不在基準檔＝結構異常；三表列數或 session／throttle 前綴鍵數非 0＝拒跑。
-    restore 只服務「走查前為空基準」之形——DELETE 全表對非空基準會連基準資料一起毀掉、diff 還報不出來。"""
+def check_restore_baseline(snap, seed_mode=False):
+    """安全帶：清理面之表或序列不在目標態（基準檔；seed 模式＝凍結 seed）＝結構異常；清理面各表列數或
+    session／throttle 前綴鍵數非 0＝拒跑。restore 只服務「目標態之清理面為空」之形——DELETE 全表對非空目標會連
+    其資料一起毀掉、diff 還報不出來。"""
+    # zh-TW 排版：以拉丁詞收尾的 origin（`凍結 seed`）與後接中文之間須有分隔空格，純中文者不須
+    origin, sep = ("凍結 seed", " ") if seed_mode else ("基準檔", "")
     absent = [t for t in RESTORE_TABLES if t not in snap["tables"]] + \
              [s for s in RESTORE_SEQUENCES if s not in snap["sequences"]]
     if absent:
-        raise BaselineError(f"基準檔缺 restore 清理面：{'、'.join(absent)}——庫錯或基準檔非本 schema 所取")
+        why = "凍結面受損或清理面名冊與 schema 不符" if seed_mode else "庫錯或基準檔非本 schema 所取"
+        raise BaselineError(f"{origin}{sep}缺 restore 清理面：{'、'.join(absent)}——{why}")
     loaded = [f"{t} {snap['tables'][t]} 列" for t in RESTORE_TABLES if snap["tables"][t]] + \
              [f"{p} 前綴 {snap['redis']['prefixes'][p]} 鍵" for p in RESTORE_REDIS_PREFIXES
               if snap["redis"]["prefixes"].get(p)]
+    if loaded and seed_mode:
+        raise BaselineError(f"{origin}{sep}之清理面非空、DELETE 全表會毀掉 seed 資料（" + "、".join(loaded) +
+                            "）——seed 模式只服務清理面於 seed 為零列之形；拒絕執行、零寫入（先擴充本工具）")
     if loaded:
         raise BaselineError("基準非空、DELETE 全表會毀掉基準資料（" + "、".join(loaded) +
                             "）——restore 只服務走查前為空基準之形；拒絕執行、零寫入。補救：手上有取於空基準之較早 "
-                            "snapshot 檔＝改以該檔跑 restore；無此檔＝本工具不承載，殘列須人工清至空基準後重取 snapshot")
+                            f"snapshot 檔＝改以該檔跑 restore；無此檔＝改跑 `python3 {PROG} restore --seed`"
+                            "（以凍結 seed 為目標態、無須基準檔）")
 
 
 def psql_json(sql, user, db, run):
@@ -492,11 +578,12 @@ def check_settings_against_seed(live_rows, seed):
     return sum(1 for r in live_rows if r["stamped"])
 
 
-def restore_sql(snap):
-    """②③ 單交易寫句：審計欄歸 NULL → 三表 DELETE＋session_id 歸 NULL → 三支 setval（值自基準檔現讀）。"""
+def restore_sql(snap, sequences=RESTORE_SEQUENCES):
+    """②③ 單交易寫句：審計欄歸 NULL → 五表 DELETE＋session_id 歸 NULL → setval（值自目標態 snap 現讀；
+    基準檔模式＝RESTORE_SEQUENCES 五支、seed 模式＝SEED_SETVAL_SEQUENCES——runtime-append 序列不復位）。"""
     seqs = snap["sequences"]
     setvals = tuple(f"SELECT setval('{n}', {seqs[n]['last_value']}, "
-                    f"{'true' if seqs[n]['is_called'] else 'false'});" for n in RESTORE_SEQUENCES)
+                    f"{'true' if seqs[n]['is_called'] else 'false'});" for n in sequences)
     return " ".join(("BEGIN;", SQL_RESTORE_AUDIT) + SQL_RESTORE_CLEAR + setvals + ("COMMIT;",))
 
 
@@ -521,30 +608,44 @@ def redis_clear_prefixes(run):
     return found, deleted
 
 
-def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=None):
-    base = load_snapshot(path)
-    check_restore_baseline(base)
-    check_settings_seed_evolution(ledger_path or os.path.join(REPO_ROOT, SCHEMA_EVOLUTION))
-    seed_path = seed_path or os.path.join(REPO_ROOT, SEED_FIXTURE)
+def _read_seed(seed_path):
     try:
         with open(seed_path, encoding="utf-8") as fh:
-            seed = seed_settings(fh.read())
+            return fh.read()
     except OSError as ex:
         raise BaselineError(f"seed 左源讀取失敗：{seed_path}：{ex}") from None
+
+
+def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=None):
+    """path＝基準檔（目標態＝該檔、五支序列依檔 setval、收尾＝對該檔 diff）；path=None＝seed 模式（目標態＝凍結 seed
+    之清理面、只 setval SEED_SETVAL_SEQUENCES、收尾＝清理面對 seed 目標值之比對）。前置判定皆在任何寫入之前。"""
+    seed_mode = path is None
+    seed_text = _read_seed(seed_path or os.path.join(REPO_ROOT, SEED_FIXTURE))
+    base = seed_restore_target(seed_text) if seed_mode else load_snapshot(path)
+    check_restore_baseline(base, seed_mode)
+    check_seed_evolution(ledger_path or os.path.join(REPO_ROOT, SCHEMA_EVOLUTION),
+                         ("system_settings",) + (RESTORE_TABLES if seed_mode else ()))
+    sequences = SEED_SETVAL_SEQUENCES if seed_mode else RESTORE_SEQUENCES
+    seed = seed_settings(seed_text)
     stamped = check_settings_against_seed(psql_json(SQL_SETTINGS, user, db, run), seed)
     _say(f"[walkthrough-baseline] restore ①system_settings：{len(seed)} 鍵值＝seed；"
          f"審計欄非 NULL {stamped} 列（交易內歸 NULL）")
-    r = _run_docker(psql_argv(restore_sql(base), user, db), run)
+    r = _run_docker(psql_argv(restore_sql(base, sequences), user, db), run)
     if r.returncode != 0:
         raise BaselineError(f"restore 交易失敗（rc={r.returncode}、整筆回滾、未動 redis）："
                             f"{(r.stderr or '').strip()[:300]}"
                             "；補救：依上列 psql 錯誤修正（常見＝postgres 容器未起）後重跑同一 restore（交易已回滾、可安全重跑）")
-    seqs = "、".join(f"{n}（{_seq_text(base['sequences'][n])}）" for n in RESTORE_SEQUENCES)
+    seqs = "、".join(f"{n}（{_seq_text(base['sequences'][n])}）" for n in sequences)
     _say(f"[walkthrough-baseline] restore ②③pg 單交易已提交：DELETE {'／'.join(RESTORE_TABLES)}＋"
          f"sys_user.session_id 歸 NULL＋setval（{seqs}）")
     found, deleted = redis_clear_prefixes(run)
     counts = "／".join(f"{p} 前綴 {n} 鍵" for p, n in found.items())
     _say(f"[walkthrough-baseline] restore ④redis：{counts}、DEL 回報 {deleted} 鍵（逐鍵指名）")
+    if seed_mode:
+        _say("[walkthrough-baseline] restore ⑤收尾比對（seed 模式：判準面＝清理面對凍結 seed 目標值、其 rc 即 restore 之 rc；"
+             "清理面之外無基準可比＝不判，pg 殘留另跑 python3 tools/schema-gate.py check）：")
+        live = snapshot_live(user, db, run)
+        return _report_diff(seed_mode_baseline(live, base), live)
     _say("[walkthrough-baseline] restore ⑤收尾 diff（其 rc 即 restore 之 rc；0＝已還原）：")
     return cmd_diff(path, user, db, run)
 
@@ -554,10 +655,12 @@ def usage(msg=None):
         _say(f"[walkthrough-baseline] 用法錯：{msg}", err=True)
     _say(f"用法：python3 {PROG} snapshot <檔> [--user U] [--db D]\n"
          f"      python3 {PROG} diff <檔> [--user U] [--db D]\n"
-         f"      python3 {PROG} restore <檔> [--user U] [--db D]\n"
+         f"      python3 {PROG} restore <檔>｜--seed [--user U] [--db D]\n"
          f"      python3 {PROG} test\n"
-         f"  snapshot＝走查前取三面基準寫 JSON；diff＝走查後重取現況逐值比對（rc 0 才算環境已還原）；"
-         f"restore＝走查後清理（安全帶：基準須為空）＋收尾 diff（rc 即 diff 之 rc）；"
+         f"  snapshot＝走查前取三面基準寫 JSON；diff＝走查後重取現況逐值比對（rc 0 才算環境已還原；"
+         f"runtime-append 表之序列只比存在性）；"
+         f"restore <檔>＝走查後清理（安全帶：基準須為空）＋收尾 diff（rc 即 diff 之 rc）；"
+         f"restore --seed＝無基準檔、清理面還原到凍結 seed 態（runtime-append 序列不復位）；"
          f"退出碼 0 全等／1 有差／2 環境或結構異常（restore 含拒跑）／64 用法錯", err=True)
     return RC_USAGE
 
@@ -591,15 +694,18 @@ def main(argv, run=subprocess.run):
                  "前綴分組與 SCAN 去重、DBSIZE 互證、JSON 往返、基準檔缺席／壞形（含型別）、"
                  "空面與撈取截斷 rc 2、"
                  "psql 輸出不可解 rc 2、退出碼四態＋字面契約、用法、psql／redis 命令構造與 snapshot／diff 唯讀、"
-                 "目錄 SQL 與 count 腿抗窄化、密碼不出 argv、print 全 flush；restore 寫面逐字＋次序、"
+                 "目錄 SQL 與 count 腿抗窄化、密碼不出 argv、print 全 flush；runtime-append 序列只比存在性＋"
+                 "名冊對賬 schema-gate；restore 寫面逐字＋次序、清理面五表五序列、"
                  "setval 自基準現讀、安全帶拒跑零呼叫、清理面缺席、settings 值≠seed 零寫入、收尾 diff rc、"
                  "失敗即停、DEL 分批、seed 解析與空面、演進帳 system_settings seed 登記拒跑／他表與結構性登記不擋／"
-                 "登記檔缺席壞形、預設 seed 與演進帳哨兵與 --user／--db）")
+                 "登記檔缺席壞形、預設 seed 與演進帳哨兵與 --user／--db；seed 模式寫面逐字＋只 setval 非 runtime-append 序列、"
+                 "seed 模式前置拒跑零寫入、seed 模式走真凍結 seed）")
             return RC_OK
         return RC_DIFF
     if cmd in ("snapshot", "diff", "restore"):
-        if len(argv) < 3 or argv[2].startswith("--"):
-            return usage(f"{cmd} 需要 <檔> 位置引數（無隱含預設落點）")
+        seed_mode = cmd == "restore" and argv[2:3] == ["--seed"]
+        if not seed_mode and (len(argv) < 3 or argv[2].startswith("--")):
+            return usage(f"{cmd} 需要 <檔> 位置引數（無隱含預設落點；restore 另可改帶 --seed）")
         opts, err = _parse_opts(argv[3:])
         if err:
             return usage(err)
@@ -608,7 +714,7 @@ def main(argv, run=subprocess.run):
             if cmd == "snapshot":
                 return cmd_snapshot(argv[2], user, db, run)
             if cmd == "restore":
-                return cmd_restore(argv[2], user, db, run)
+                return cmd_restore(None if seed_mode else argv[2], user, db, run)
             return cmd_diff(argv[2], user, db, run)
         except BaselineError as ex:
             _say(f"[walkthrough-baseline] ✗ 環境或結構異常：{ex}", err=True)
@@ -743,6 +849,51 @@ class TestDiffPure(unittest.TestCase):
                                  "live": "last_value=4,is_called=t", "delta": 1}])
         live = _snap(sequences={"sys_user_id_seq": {"last_value": 3, "is_called": False}})
         self.assertEqual(len(diff_snapshots(_snap(), live)), 1)   # 只差 is_called 也算差
+
+    def test_runtime_append_sequences_compare_by_existence_only(self):
+        """★runtime-append 四表之 id 序列只比存在性、不比值（同 tools/schema-gate.py gate2 對其 setval 值正規化之口徑）：
+        這四支序列在測試與走查中只進不退（rust-api 測試守衛只清自寫列、序列不復位），逐值比＝每跑一次全量測試
+        diff 即恆紅、「rc 0 才算環境已還原」失去判別力。三腿：①四支值皆不同→全等 ②其一於現況或基準缺席→有差
+        ③名冊外序列（含 sys_ip_rule_id_seq＝業務表、序列值在比對面內）值不同→照報。"""
+        names = ("session_event_id_seq", "sys_login_attempt_id_seq", "sys_operation_log_id_seq",
+                 "sys_token_id_seq")
+
+        def seqs(**over):
+            got = {s: {"last_value": 1, "is_called": False} for s in names + ("sys_ip_rule_id_seq",)}
+            got.update(over)
+            return got
+
+        moved = {s: {"last_value": 100 + i, "is_called": True} for i, s in enumerate(names)}
+        self.assertEqual(diff_snapshots(_snap(sequences=seqs()), _snap(sequences=seqs(**moved))), [])
+        for gone in names:
+            short = seqs(**moved)
+            del short[gone]
+            rows = diff_snapshots(_snap(sequences=seqs()), _snap(sequences=short))
+            self.assertEqual([(r["face"], r["name"], r["base"], r["live"], r["delta"]) for r in rows],
+                             [("序列", gone, "last_value=1,is_called=f", "（無）", "—")])
+            rows = diff_snapshots(_snap(sequences=short), _snap(sequences=seqs()))   # 反向：基準缺、現況有
+            self.assertEqual([(r["name"], r["base"], r["live"]) for r in rows],
+                             [(gone, "（無）", "last_value=1,is_called=f")])
+        live = seqs(sys_ip_rule_id_seq={"last_value": 4, "is_called": True}, **moved)
+        rows = diff_snapshots(_snap(sequences=seqs()), _snap(sequences=live))
+        self.assertEqual([(r["name"], r["delta"]) for r in rows], [("sys_ip_rule_id_seq", 3)])
+
+    def test_runtime_append_roster_equals_schema_gate_constant(self):
+        """名冊對賬：本檔 RUNTIME_APPEND_TABLES 與 tools/schema-gate.py 同名常數逐項相等（連字檔名不可 import、
+        故依路徑以 importlib 載入單檔）。schema-gate 擴集而本檔未跟＝新成員序列照舊逐值比、diff 恆紅；本檔多列
+        一支＝該序列之值漂移靜默不報——兩向皆由本案指名。另釘 restore 清理面與名冊之關係：四表全在清理面、
+        清理面序列扣掉名冊恰剩 seed 模式唯一 setval 者。"""
+        path = os.path.join(REPO_ROOT, "tools", "schema-gate.py")
+        spec = importlib.util.spec_from_file_location("schema_gate_roster_source", path)
+        mod = importlib.util.module_from_spec(spec)
+        with contextlib.redirect_stdout(io.StringIO()):
+            spec.loader.exec_module(mod)
+        self.assertTrue(mod.RUNTIME_APPEND_TABLES)                     # 空名冊的相等是假綠
+        self.assertEqual(RUNTIME_APPEND_TABLES, mod.RUNTIME_APPEND_TABLES)
+        self.assertLessEqual(set(RUNTIME_APPEND_TABLES), set(RESTORE_TABLES))
+        self.assertEqual(tuple(s for s in RESTORE_SEQUENCES if s not in RUNTIME_APPEND_TABLES.values()),
+                         ("sys_ip_rule_id_seq",))
+        self.assertEqual(SEED_SETVAL_SEQUENCES, ("sys_ip_rule_id_seq",))
 
     def test_redis_prefix_and_dbsize_drift(self):
         live = _snap(redis={"dbsize": 3, "prefixes": {"session": 2, "sample": 1}})
@@ -924,7 +1075,10 @@ class TestExitCodes(unittest.TestCase):
         for argv in ([PROG], [PROG, "nope"], [PROG, "snapshot"], [PROG, "diff", "--user", "x"],
                      [PROG, "diff", "f.json", "--bogus"], [PROG, "diff", "f.json", "--user"],
                      [PROG, "restore"], [PROG, "restore", "--db", "x"],
-                     [PROG, "restore", "f.json", "--bogus"]):
+                     [PROG, "restore", "f.json", "--bogus"],
+                     [PROG, "restore", "--seed", "f.json"], [PROG, "restore", "f.json", "--seed"],
+                     [PROG, "restore", "--seed", "--user"], [PROG, "restore", "--seed", "--seed"],
+                     [PROG, "snapshot", "--seed"], [PROG, "diff", "--seed"]):
             err = io.StringIO()
             with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(main(argv, run=_StubRun()), RC_USAGE, msg=str(argv))
@@ -1058,9 +1212,11 @@ def _redis_write_offenders(cmds):
 
 
 RESTORE_FAKE_TABLES = {"sys_user": 3, "sys_token": 0, "session_event": 0, "sys_login_attempt": 0,
+                       "sys_ip_rule": 0, "sys_operation_log": 0,
                        "system_settings": 2, "seaql_migrations": 7}
 RESTORE_FAKE_SEQS = {"sys_user_id_seq": (3, "t"), "sys_token_id_seq": (1, "f"),
-                     "session_event_id_seq": (1, "f"), "sys_login_attempt_id_seq": (1, "f")}
+                     "session_event_id_seq": (1, "f"), "sys_login_attempt_id_seq": (1, "f"),
+                     "sys_ip_rule_id_seq": (1, "f"), "sys_operation_log_id_seq": (1, "f")}
 SEED_SETTINGS_TEXT = (
     "--\n-- Data for Name: system_settings; Type: TABLE DATA; Schema: public; Owner: soybean\n--\n\n"
     "COPY public.system_settings (setting_key, created_at, updated_at, updated_by, setting_type, "
@@ -1068,6 +1224,18 @@ SEED_SETTINGS_TEXT = (
     "session_idle_timeout\t2026-08-05 00:00:00+00\t\\N\t\\N\tnumber\t60\t閒置逾時\n"
     "single_session_default\t2026-08-05 00:00:00+00\t\\N\t\\N\tenum:on,off\toff\t全站單一-session 預設\n"
     "\\.\n")
+
+# 清理面五表之測試側手寫名冊（不自受測常數 RESTORE_TABLES 衍生——常數縮水時跟著縮＝套套邏輯）
+FIVE_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log")
+# seed 模式左源樁：上段＋清理面五表之零列 COPY 段＋五支 setval 行。表名與序列名字面手寫、不自受測常數衍生
+# （常數縮水時樁跟著縮＝套套邏輯）；sys_ip_rule_id_seq 刻意取非預設值、證 setval 值自 seed 現讀而非寫死。
+SEED_RESTORE_TEXT = SEED_SETTINGS_TEXT + "".join(
+    f"\nCOPY public.{t} (id, created_at) FROM stdin;\n\\.\n"
+    for t in FIVE_TABLES) + "".join(
+    f"\nSELECT pg_catalog.setval('public.{s}', {v});\n"
+    for s, v in (("session_event_id_seq", "1, false"), ("sys_ip_rule_id_seq", "7, true"),
+                 ("sys_login_attempt_id_seq", "1, false"), ("sys_operation_log_id_seq", "1, false"),
+                 ("sys_token_id_seq", "1, false")))
 
 
 def _seed_settings_rows(**value_over):
@@ -1125,12 +1293,23 @@ class TestRestore(unittest.TestCase):
             rc = cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
         return rc, out.getvalue() + err.getvalue()
 
+    def _restore_seed(self, stub, seed_text=SEED_RESTORE_TEXT):
+        """seed 模式（path=None＝無基準檔）；左源＝樁 seed 檔。"""
+        with open(self.seed, "w", encoding="utf-8") as fh:
+            fh.write(seed_text)
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = cmd_restore(None, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        return rc, out.getvalue() + err.getvalue()
+
     @staticmethod
     def _dirty(stub):
-        """模擬走查殘留：三表列＋序列推進＋session／throttle 鍵（含須引號的鍵名）＋審計欄被寫。"""
-        stub.tables.update(sys_token=2, session_event=3, sys_login_attempt=1)
+        """模擬走查殘留：五表列＋序列推進＋session／throttle 鍵（含須引號的鍵名）＋審計欄被寫。"""
+        stub.tables.update(sys_token=2, session_event=3, sys_login_attempt=1, sys_ip_rule=2,
+                           sys_operation_log=5)
         stub.seqs.update(sys_token_id_seq=(33, "t"), session_event_id_seq=(4, "t"),
-                         sys_login_attempt_id_seq=(9, "t"))
+                         sys_login_attempt_id_seq=(9, "t"), sys_ip_rule_id_seq=(3, "t"),
+                         sys_operation_log_id_seq=(6, "t"))
         stub.keys += ["session:sid-a:last_activity", "throttle:lock:user:走查 探針",
                       "session:denylist:sid-b"]
         stub.settings[1]["stamped"] = True
@@ -1149,10 +1328,13 @@ class TestRestore(unittest.TestCase):
             "UPDATE system_settings SET updated_at = NULL, updated_by = NULL "
             "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL; "
             "DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; "
+            "DELETE FROM sys_ip_rule; DELETE FROM sys_operation_log; "
             "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
             "SELECT setval('sys_token_id_seq', 5, true); "
             "SELECT setval('session_event_id_seq', 1, false); "
             "SELECT setval('sys_login_attempt_id_seq', 1, false); "
+            "SELECT setval('sys_ip_rule_id_seq', 1, false); "
+            "SELECT setval('sys_operation_log_id_seq', 1, false); "
             "COMMIT;"])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
@@ -1174,17 +1356,22 @@ class TestRestore(unittest.TestCase):
         snap = _snap(tables={t: 0 for t in RESTORE_TABLES},
                      sequences={"sys_token_id_seq": {"last_value": 9, "is_called": True},
                                 "session_event_id_seq": {"last_value": 8, "is_called": False},
-                                "sys_login_attempt_id_seq": {"last_value": 7, "is_called": True}},
+                                "sys_login_attempt_id_seq": {"last_value": 7, "is_called": True},
+                                "sys_ip_rule_id_seq": {"last_value": 6, "is_called": True},
+                                "sys_operation_log_id_seq": {"last_value": 5, "is_called": False}},
                      redis={"dbsize": 0, "prefixes": {}})
         sql = restore_sql(snap)
         self.assertTrue(sql.endswith("SELECT setval('sys_token_id_seq', 9, true); "
                                      "SELECT setval('session_event_id_seq', 8, false); "
-                                     "SELECT setval('sys_login_attempt_id_seq', 7, true); COMMIT;"),
+                                     "SELECT setval('sys_login_attempt_id_seq', 7, true); "
+                                     "SELECT setval('sys_ip_rule_id_seq', 6, true); "
+                                     "SELECT setval('sys_operation_log_id_seq', 5, false); COMMIT;"),
                         msg=sql)
-        self.assertEqual(sql.count("setval("), 3)
+        self.assertEqual(sql.count("setval("), 5)
 
     def test_nonempty_baseline_refuses_rc2_before_any_docker_call(self):
-        """★安全帶：基準檔三表任一列數或 session／throttle 前綴鍵數非 0＝rc 2、零 docker 呼叫＝零寫入。"""
+        """★安全帶：基準檔清理面任一表列數或 session／throttle 前綴鍵數非 0＝rc 2、零 docker 呼叫＝零寫入
+        （本案走會話三表與兩前綴；sys_ip_rule／sys_operation_log 兩表由擴面案走）。"""
         for over in ({"tables": dict(RESTORE_FAKE_TABLES, sys_token=2)},
                      {"tables": dict(RESTORE_FAKE_TABLES, session_event=1)},
                      {"tables": dict(RESTORE_FAKE_TABLES, sys_login_attempt=4)},
@@ -1321,6 +1508,157 @@ class TestRestore(unittest.TestCase):
                 cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
             self.assertIn("schema-evolution.json", str(ctx.exception), msg=body)
             self.assertEqual(stub.log, [], msg=body)
+
+    def test_restore_surface_is_five_tables_and_their_sequences(self):
+        """★擴面（BL-00075；004 刀 U3）：清理面＝會話三表＋sys_ip_rule＋sys_operation_log 與其 id 序列。名冊與清列句
+        逐字釘（多一表、少一表、換序皆紅）；安全帶與清理面缺席判定同步涵蓋新增之兩表兩序列；走一趟後五表歸零、
+        五支序列回到基準檔之值（基準檔模式仍依檔 setval——runtime-append 四支亦然）。"""
+        self.assertEqual(RESTORE_TABLES, FIVE_TABLES)
+        self.assertEqual(RESTORE_SEQUENCES, ("sys_token_id_seq", "session_event_id_seq",
+                                             "sys_login_attempt_id_seq", "sys_ip_rule_id_seq",
+                                             "sys_operation_log_id_seq"))
+        self.assertEqual(SQL_RESTORE_CLEAR, (
+            "DELETE FROM session_event;", "DELETE FROM sys_token;", "DELETE FROM sys_login_attempt;",
+            "DELETE FROM sys_ip_rule;", "DELETE FROM sys_operation_log;",
+            "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL;"))
+        for over in ({"tables": dict(RESTORE_FAKE_TABLES, sys_ip_rule=1)},
+                     {"tables": dict(RESTORE_FAKE_TABLES, sys_operation_log=2)}):
+            stub = _restore_stub(**over)
+            path = self._baseline(stub)
+            with self.assertRaises(BaselineError, msg=over) as ctx:
+                cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+            self.assertIn("基準非空、DELETE 全表會毀掉基準資料", str(ctx.exception), msg=over)
+            self.assertIn("restore --seed", str(ctx.exception), msg=over)     # 補救指向 seed 模式
+            self.assertEqual(stub.log, [], msg=over)
+        for over, needle in (({"tables": {k: v for k, v in RESTORE_FAKE_TABLES.items()
+                                          if k != "sys_ip_rule"}}, "sys_ip_rule"),
+                             ({"seqs": {k: v for k, v in RESTORE_FAKE_SEQS.items()
+                                        if k != "sys_operation_log_id_seq"}}, "sys_operation_log_id_seq")):
+            stub = _restore_stub(**over)
+            path = self._baseline(stub)
+            with self.assertRaises(BaselineError, msg=needle) as ctx:
+                cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+            self.assertIn(needle, str(ctx.exception))
+            self.assertEqual(stub.log, [])
+        stub = _restore_stub()
+        path = self._baseline(stub)
+        self._dirty(stub)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        self.assertEqual([stub.tables[t] for t in FIVE_TABLES], [0] * 5)
+        self.assertEqual(stub.seqs, RESTORE_FAKE_SEQS)
+
+    def test_seed_mode_clears_five_tables_and_setvals_only_the_ip_rule_sequence_from_seed(self):
+        """★seed 模式（`restore --seed`；BL-00075 候選①）：無基準檔、目標態＝凍結 seed。寫面逐字釘——清列句同基準檔
+        模式之五表；setval **只有** sys_ip_rule_id_seq 一支、值自 seed 之 setval 行現讀（樁取 7,true 非預設值）；
+        runtime-append 四支序列不復位（走完仍是髒值）而收尾比對照樣 rc 0（只比存在性）。★清理面之外不入 seed
+        模式判準（無基準檔可比；該面之 pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜）。"""
+        stub = _restore_stub()
+        self._dirty(stub)
+        stub.tables["sys_user"] = 4                 # 清理面之外：seed 模式不判
+        rc, text = self._restore_seed(stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        sqls = [a[-1] for a in stub.log if "psql" in a]
+        self.assertEqual([s for s in sqls if _pg_write_offenders([s])], [
+            "BEGIN; "
+            "UPDATE system_settings SET updated_at = NULL, updated_by = NULL "
+            "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL; "
+            "DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; "
+            "DELETE FROM sys_ip_rule; DELETE FROM sys_operation_log; "
+            "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
+            "SELECT setval('sys_ip_rule_id_seq', 7, true); "
+            "COMMIT;"])
+        redis_cmds = [a[-1] for a in stub.log if "sh" in a]
+        self.assertEqual(_redis_write_offenders(redis_cmds), [
+            f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
+            "'throttle:lock:user:走查 探針'"])
+        self.assertEqual([stub.tables[t] for t in FIVE_TABLES], [0] * 5)
+        self.assertEqual(stub.seqs, dict(RESTORE_FAKE_SEQS, sys_ip_rule_id_seq=(7, "t"),
+                                         sys_token_id_seq=(33, "t"), session_event_id_seq=(4, "t"),
+                                         sys_login_attempt_id_seq=(9, "t"),
+                                         sys_operation_log_id_seq=(6, "t")))
+        self.assertEqual(stub.keys, ["plainkey"])
+        self.assertFalse(any(s["stamped"] for s in stub.settings))
+        self.assertIn("✓ 全等", text)
+        self.assertIn("seed 模式", text)
+        # 收尾 rc 1：清理面未達 seed 目標（runtime-append 序列於現況缺席＝存在性有差）
+        stub = _restore_stub(seqs={k: v for k, v in RESTORE_FAKE_SEQS.items()
+                                   if k != "sys_operation_log_id_seq"})
+        self._dirty(stub)
+        del stub.seqs["sys_operation_log_id_seq"]
+        rc, text = self._restore_seed(stub)
+        self.assertEqual(rc, RC_DIFF, msg=text)
+        self.assertIn("序列｜sys_operation_log_id_seq｜last_value=1,is_called=f｜（無）｜—", text)
+
+    def test_seed_mode_preconditions_refuse_before_any_write(self):
+        """seed 模式之安全帶語意沿用（目標態換成凍結 seed）：①seed 於清理面任一表有列＝DELETE 全表會毀掉 seed 資料
+        ②seed 缺清理面之 COPY 段或 setval 行 ③演進帳有 system_settings 或清理面五表之 seed_* 登記（凍結段已非期望
+        seed）——皆 rc 2、零 docker 呼叫；④system_settings 值≠seed＝fail-loud 指名、只讀過 settings 一句、零寫入。"""
+        rowed = SEED_RESTORE_TEXT.replace(
+            "COPY public.sys_ip_rule (id, created_at) FROM stdin;\n",
+            "COPY public.sys_ip_rule (id, created_at) FROM stdin;\n1\t2026-08-05 00:00:00+00\n")
+        self.assertNotEqual(rowed, SEED_RESTORE_TEXT)
+        for text, needles in (
+                (rowed, ("凍結 seed 之清理面非空", "sys_ip_rule 1 列", "seed 模式只服務", "零寫入")),
+                (SEED_RESTORE_TEXT.replace("COPY public.sys_operation_log ", "COPY public.other_log "),
+                 ("凍結 seed 缺 restore 清理面", "sys_operation_log")),
+                (SEED_RESTORE_TEXT.replace("public.sys_ip_rule_id_seq'", "public.other_id_seq'"),
+                 ("凍結 seed 缺 restore 清理面", "sys_ip_rule_id_seq"))):
+            stub = _restore_stub()
+            self._dirty(stub)
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+                self._restore_seed(stub, text)
+            for needle in needles:
+                self.assertIn(needle, str(ctx.exception), msg=needles)
+            self.assertNotIn("restore --seed", str(ctx.exception), msg=needles)   # 補救不得指回自己
+            self.assertEqual(stub.log, [], msg=needles)
+        other = _ledger_entry("E-001", "seed_update", "sys_user",
+                              {"pk": {"id": 3}, "set": {"nick_name": "User01"}})
+        for eid, table in (("E-002", "sys_ip_rule"), ("E-003", "system_settings")):
+            self._write_ledger(other, _ledger_entry(eid, "seed_add", table, {"pk": ["id"], "values": {"id": 1}}))
+            stub = _restore_stub()
+            self._dirty(stub)
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+                self._restore_seed(stub)
+            for needle in (eid, table, "先擴充本工具", "零寫入"):
+                self.assertIn(needle, str(ctx.exception), msg=table)
+            self.assertNotIn("E-001", str(ctx.exception), msg=table)
+            self.assertEqual(stub.log, [], msg=table)
+        self._write_ledger(other)                   # 他表登記不擋
+        stub = _restore_stub()
+        self._dirty(stub)
+        rc, text = self._restore_seed(stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        self._write_ledger()
+        stub = _restore_stub(settings=_seed_settings_rows(single_session_default="on"))
+        self._dirty(stub)
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+            self._restore_seed(stub)
+        for needle in ("single_session_default", "'on'", "'off'", "002 刀"):
+            self.assertIn(needle, str(ctx.exception))
+        self.assertEqual([a[-1] for a in stub.log], [SQL_SETTINGS])
+
+    def test_main_restore_seed_reads_the_real_frozen_seed_and_honours_user_db(self):
+        """main 之 `restore --seed` 走預設左源＝真 repo 凍結 seed＋真 repo 演進登記檔、零基準檔引數；setval 值＝該檔
+        sys_ip_rule_id_seq 之 setval 行現值（本案以獨立 regex 自真檔另讀一次對賬、不寫死數字）。"""
+        with open(os.path.join(REPO_ROOT, SEED_FIXTURE), encoding="utf-8") as fh:
+            real_text = fh.read()
+        m = re.search(r"setval\('public\.sys_ip_rule_id_seq', (\d+), (true|false)\)", real_text)
+        self.assertIsNotNone(m)
+        stub = _restore_stub(settings=[{"setting_key": k, "setting_value": v, "stamped": False}
+                                       for k, v in sorted(seed_settings(real_text).items())])
+        self._dirty(stub)
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = main([PROG, "restore", "--seed", "--user", "u9", "--db", "d9"], run=stub)
+        self.assertEqual(rc, RC_OK, msg=err.getvalue())
+        writes = [a[-1] for a in stub.log if "psql" in a and _pg_write_offenders([a[-1]])]
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(re.findall(r"SELECT setval\([^)]*\);", writes[0]),
+                         [f"SELECT setval('sys_ip_rule_id_seq', {m.group(1)}, {m.group(2)});"])
+        psqls = [a for a in stub.log if "psql" in a]
+        self.assertTrue(psqls and all(a[a.index("-U") + 1] == "u9" and a[a.index("-d") + 1] == "d9"
+                                      for a in psqls))
 
     def test_del_is_named_keys_in_bounded_batches_and_skipped_when_none(self):
         stub = _restore_stub()
