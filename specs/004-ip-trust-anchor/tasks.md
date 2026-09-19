@@ -126,7 +126,7 @@ description: "Task list for 004-ip-trust-anchor"
 
 - [x] T030 [US2] `rust-api/server/src/middleware/mod.rs` 加 `ip_gate_mw`：①路徑 ∈ {`/health`, `/metrics`} 放行 ②extensions 無上下文放行（＋`request_context_absent`）③`state.ip_rules.load()`→`ipgate::decide(real_ip)`→Deny 即 `AppError::PermissionDenied`（5003／HTTP 403、零新碼）＋`ipgate_blocked_total`＋warn（`target: "security.ipgate"`、`matched_cidr`、`real_ip`、`ip_confidence`）；★不動會話、不寫 denylist（Q1 碼註）；★同批回填（RL-0015）：本檔檔頭「★預告（回填單元＝004 刀 U6 T030）」句改寫為現況、`obs.rs` 名冊註與 `request_context_mw` 缺席腿碼註之「存取閘腿落地後 3 格」改述現況；中介層缺席腿之 warn 訊息字面「不注入請求上下文」為 `router::tests` 掛載面探針之錨、不得改動或撞字
 - [x] T031 [US2] `rust-api/server/src/router.rs` 掛載序：`request_context_mw`（最外）→`ip_gate_mw`→`enforce_mw`（Authed 路由）；`mod tests` 源序守擴為三支相對次序；ROUTES 不變
-- [ ] T032 [US2] 走查 quickstart §2（psql 直插 deny＋`PUBLISH ipgate:invalidate`＋curl 403／200／health＋Q1 token 案）；★走查三步（snapshot→走查→`restore --seed`＋手動 PUBLISH→`diff` rc 0）；rust-api commit→外層 pin bump＋generate
+- [x] T032 [US2] 走查 quickstart §2（psql 直插 deny＋`PUBLISH ipgate:invalidate`＋curl 403／200／health＋Q1 token 案）；★走查三步（snapshot→走查→`restore --seed`＋手動 PUBLISH→`diff` rc 0）；rust-api commit→外層 pin bump＋generate
 
 **Checkpoint**: US1＋US2 獨立可用——閘門擋得住、放得開、熱重載。
 
