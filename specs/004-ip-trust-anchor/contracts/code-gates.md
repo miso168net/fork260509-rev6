@@ -21,7 +21,7 @@
 ## §2 兩支新碼面閘（各附 self-test、植入反例必紅；RUNBOOK §12 碼面閘表登記、不計 GT-12 治理閘預算）
 
 ① `tools/view-render-guard.py`（承 `rev5:tools/view-render-guard.py` 282 行、新寫）：射程 `base-web/src/views/manage/**`；零 `v-html`／`innerHTML`／`outerHTML` 用法；環境缺席語意＝base-web 工作樹缺席即 fail-loud（ADR-00019 形）。
-② `tools/route-artifact-gate.py`（承 `rev5:tools/route-artifact-gate.py` 605 行、新寫）：容器外以 `pnpm` 重跑路由外掛重算（或等價乾跑）後 `git diff --quiet` 產物四檔＝冪等；斷言「憲法 §III.2 該軌道列所列產物檔集＝外掛實際產出檔集」（雙向差集即紅）；環境缺席（無 node）＝具名跳過（pre-commit 條件段）。
+② `tools/route-artifact-gate.py`（承 `rev5:tools/route-artifact-gate.py` 605 行、新寫）：於 base-web 容器內**沙盒**重跑路由外掛重算（不就地改工作樹＝pre-commit 各閘唯讀）後與版控產物四檔 byte 比對＝冪等，另以上游基線為種重算一腿承擔「手改一行即紅」（外掛對 `routes.ts` 為增量合併、版控為種時手改行存活；★勘誤 2026-09-20：原文「容器外以 `pnpm` 重跑…後 `git diff --quiet`」——`node_modules` 住容器、`pnpm gen-route` 為互動腳手架非重算指令〔`rev5:L-053`〕）；斷言「憲法 §III.2 該軌道列所列產物檔集＝外掛實際產出檔集」（雙向差集即紅）；環境缺席（無 node）＝具名跳過（pre-commit 條件段）。
 四處名冊同批：RUNBOOK §12 碼面閘表（兩列）／README 工具樹／`tools/bootstrap.sh` `run_tool_test`／`.githooks/pre-commit` 段＋`tools/docsync/tests/test_hook_wiring.py` SEGMENTS（msg-key-gate 前例）。
 
 ## §3 走查基準工具 `tools/walkthrough-baseline.py`（隨遷工具、`NON_GATE_TOOLS`；BL-00075、G6）
