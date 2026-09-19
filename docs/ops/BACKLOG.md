@@ -1,4 +1,4 @@
-<!-- next: BL-00081 -->
+<!-- next: BL-00084 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -32,3 +32,6 @@
 - BL-00078｜governance｜`deploy/grafana-provisioning/alerting/rules.yml` ② `obs016-throttle-suppressed` 在 rev6 零發射點：註解事件錨指向 `throttle/mod.rs` 之 `warn!(…suppressed=N…)`、窗長依據引 `suppressed_breadcrumb`，而 003 刀依 `rev5:R3-3` 判不做（research 防回歸清單 B、spec Out of Scope）、rust-api src 對 `suppressed` 零命中＝規則結構上永不觸發、註解指針指錯（創世拷入；spec-compliance-003 P1-P3）；候選＝004 決定帶入 suppressed 事件或刪除該規則（刪除為預設候選），同批以 `python3 tools/docsync errata suppressed_breadcrumb` 枚舉處置｜觸發＝004 ip-trust-anchor brainstorm 起手前
 - BL-00079｜governance｜Workflow 看門狗免重掛形：Monitor 工具單次上限 30 分鐘（harness 硬上限）而 TDD 單元 run 為 2～3 小時⇒每支 run 重掛約 6 次、每次一回合主線；004 刀 U1 後已收「重掛靜默（`--rearm`）＋冒煙掃前數行＋run 結束自動 DONE」三項、每 30 分鐘一次重掛仍在。徹底形＝Monitor 只掛前 30 分鐘（冒煙＋早期故障）、長尾改 Bash 背景任務版看門狗（2026-09-19 探針實證背景任務存活逾 30 分鐘且完成有通知）；代價＝CLAUDE.md §2「launch 與 Monitor 原子成對」字面與 PostToolUse(Workflow) hook 提醒文字須改、長尾模式之 RUNAWAY 須由「告警不退出」改「告警即退出由主線判後重掛」（背景任務只有退出才通知）→ 屬流程規則變更、待 user 裁定｜user 裁定去留時；最遲 004 刀收刀之 final holistic review 前收斂（不做即刪列）
 - BL-00080｜governance｜`tools/comment-overlap.py` 註解解析只認 `//`／`///`／`//!`／`/*`／`<!--` 形，`.py` 檔一律回「註解總量 0」＝RL-0076 量尺對承 rev5 之 python 隨遷工具為 vacuous（rc 0 不代表量過）；004 刀 U3 `tools/walkthrough-baseline.py` 三改即此形（該次為 rev5 無對應之新設計、無逐字重疊風險；碼品質審查 notes 指出）；候選＝補 `#` 形與 docstring 解析、或於工具對不支援之副檔名 fail-loud 指名｜觸發＝下次以 RL-0076 量測任一 `.py`／`.sh` 檔時，或下次動 `tools/comment-overlap.py` 之可執行碼時（先到者）
+- BL-00081｜product｜`throttle::integration_tests::sliding_window_resets_on_success` 偶發紅（004 刀 U4 實測：同一最終態四次全量紅一次、單跑 8/8 綠；「成功後第 2 敗」期望 2222 實得 1000＝計數少 1）：未驗證假說＝WSL2 牆鐘回撥使第 1 敗列 `created_at` 不晚於成功列、不入 reset-on-success 下界；連帶＝該案 panic 路徑不清 redis 會話鍵（案末 `purge_session_keys` 非 RAII）→留 `session:<sid>:last_activity` 孤兒鍵、walkthrough diff rc 1｜觸發＝004 刀 U9 重寫 `precheck` 與其測試時（一併把該案清理改 RAII、時序斷言改不依賴牆鐘單調），或該案再紅一次（先到者）
+- BL-00082｜product｜rev5 boot 有「訪客位址標頭名可用性體檢」（`unusable_header_name`：信任模型 `connecting_ip_header` 若非合法 HTTP 標頭名，`HeaderMap::get` 恆回缺席＝通道回退／邊緣驗證兩覆蓋層靜默失效、零告警），rev6 之 004 刀 spec／tasks 無承載、U4 未帶入（implementer-2 升級）；quickstart §0 之 grep 樣式尚含 `connecting_ip_header`＝rev5 形殘留｜觸發＝004 刀 final holistic review 前裁定（帶入載入面告警、或立已知態）
+- BL-00083｜governance｜`ipgate` 門鈴測試之隱性次序相依：四支案各 spawn 一支永不結束的 watcher 背景任務，其後諸案對 `doorbell_subscribe` 計數的**精確等值**斷言靠 libtest 名稱字典序恰好排在遺留點之前才成立（004 刀 U4 碼品質審查 notes；30/30 實跑綠）；U5～U7 新增 `doorbell_*` 精確等值斷言即可能踩到｜觸發＝下次於 `ipgate/mod.rs` 測試模組新增或改名任一計數斷言案時（改不等式或給 watcher 可停機之測試句柄）

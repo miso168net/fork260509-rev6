@@ -39,7 +39,7 @@
 
 ## §5 boot 靜態掃描（BL-00072）
 
-`tests/`（或 `main.rs` 內 `#[cfg(test)]`）以 `include_str!("../src/main.rs")` 斷言：`assert_jwt_secrets_distinct` 恰一處、位於 `captcha_secret()` 之後、`Database::connect` 之前；`cache::connect` 同形；附合成反例（文字變異）自證；`main.rs` 模組 doc 與 `config.rs` 檔頭「七支／七鍵」數量字面同批改對（RL-0011）。★`tests/serve_connect_info_lint.rs`（B-075）另守 `axum::serve` 實參形。
+`main.rs` 內 `#[cfg(test)]` 以 `include_str!("main.rs")`（只掃測試模組分界之前的 production 段、去註解）斷言三條位序：`assert_jwt_secrets_distinct` 恰一處、位於 `captcha_secret()` 之後、`Database::connect` 之前；`cache::connect` 恰一處、位於 `Database::connect` 之後、`spawn_ipgate_watcher` 之前（watcher 之 URL 不可解析腿在 production 不可達、靠的是 cache 已先 fail-loud 驗過同一 URL）；`spawn_ipgate_watcher` 恰一處（as-built＝004 刀 U4）；附合成反例（文字變異）自證；`main.rs` 模組 doc 與 `config.rs` 檔頭「七支／七鍵」數量字面同批改對（RL-0011）。★`tests/serve_connect_info_lint.rs`（B-075）另守 `axum::serve` 實參形。
 
 ## §6 msg key 跨端閘（既有 `tools/msg-key-gate.py`）
 
