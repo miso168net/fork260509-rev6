@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/orchestration/assemble.py — Workflow script 組裝器（BL-00001 單一骨架；BL-00006 自 tmp/001-assemble.py 入庫並加 review 模式）。
+"""tools/orchestration/assemble.py — Workflow script 組裝器（BL-00001 單一骨架；BL-00006 自 001 刀 U1 的組裝器入庫並加 review 模式）。
 用法：python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>
 
 unitdef.py＝python 模組，以字串常數給各變動段的 JS 原文：

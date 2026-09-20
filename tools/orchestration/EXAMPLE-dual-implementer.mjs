@@ -1,4 +1,4 @@
-// 本檔＝001-schema-baseline U1 組裝成品原樣（rev6 首個 Workflow 單元、雙 implementer serial；tmp/001-assemble.py 拼接
+// 本檔＝001-schema-baseline U1 組裝成品原樣（rev6 首個 Workflow 單元、雙 implementer serial；以當時的組裝器拼接
 // vars+head+allowed+rules+context+prompts+cycle+main、harness spec｜quality 雙模式全綠後發射；run 結果＝12 支 agent、
 // spec 2 輪／quality 4 輪收斂）。供組裝法參考、勿照抄執行：事實接地為發射當時的主線實查，後經 fix／review 更正者
 // （adapter 程式面差三行、entity 需改註解 9 檔）以該單元 rust-api commit 訊息為準。

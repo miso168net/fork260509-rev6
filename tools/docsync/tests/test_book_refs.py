@@ -42,6 +42,19 @@ class TestGt06(unittest.TestCase):
         self.assertEqual(errs(self._run({"docs/brainstorms/x.md": "下一步\n", "docs/ops/NOTES.md": "下一步\n"})), [])
         self.assertEqual(errs(self._run({"docs/arc42/decisions/ADR-00001-x.md": "下一步\n"})), [])
 
+    def test_tmp_named_path(self):
+        """RL-0077 腿：現在式面禁 tmp 具名路徑；形制句／史料面／凍結面不入射程。"""
+        fs = errs(self._run({"docs/ops/a.md": "見 `tmp/003-u11-walk2b.mjs` 形\n", "tools/x.py": "# 自 tmp/001-assemble.py 入庫\n"}))
+        self.assertEqual(len(fs), 2, fs)
+        self.assertTrue(all("tmp/ 具名路徑" in f[3] for f in fs), fs)
+        self.assertEqual(errs(self._run({"docs/ops/b.md": "`tmp/walkthrough-<刀>.json`；`tmp/004-u*`；/tmp/commit-msg.txt；工件住 tmp/\n"})), [])
+        self.assertEqual(errs(self._run({
+            "docs/brainstorms/x.md": "`tmp/rev5-adr-digest.md`\n",
+            "specs/001-a/tasks.md": "`tmp/001-u1.py`\n",
+            "docs/arc42/decisions/ADR-00001-x.md": "`tmp/constitution-1.0.0.diff`\n",
+            "docs/ops/events.jsonl": '{"notes": "tmp/check-backlog.md"}\n',
+            "docs/generated/MILESTONES.md": "`tmp/001-assemble.py`\n"})), [])
+
     def test_book_absent_skip(self):
         fs = book.gt_06(stub({"docs/ops/a.md": "a\n"}))
         self.assertTrue(any(f[0] == "ERROR" and "活書家族" in f[3] and "缺席" in f[3] and "空集合" in f[3] for f in fs), fs)

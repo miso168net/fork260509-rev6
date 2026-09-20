@@ -5,7 +5,7 @@ promotion_surface: none
 ---
 LL-00021｜drvfs 上以 subprocess 對同一 python 模組連續注入變異並重跑自測，同一秒寫入且檔長相同的兩支變異會沿用前一支的 `.pyc`——變異「假存活」（或假紅），誤判守門強度
 
-**徵狀**：maint-backlog-pre-004 A2b implementer-1 對 `tools/docsync/snapshot.py` 逐支變異（`tmp/maint-a2b-impl1-mutate-snapshot.py`），M4「findings 不擋」首跑全綠＝看似守門未抓到；同批 A2a 規格審查對 `tools/wire-schema.py` 常數做 M6b 變異，首跑亦出現與改動不符的結果。兩者改用獨立 bytecode 快取重跑後即如預期轉紅。
+**徵狀**：maint-backlog-pre-004 A2b implementer-1 對 `tools/docsync/snapshot.py` 逐支變異，M4「findings 不擋」首跑全綠＝看似守門未抓到；同批 A2a 規格審查對 `tools/wire-schema.py` 常數做 M6b 變異，首跑亦出現與改動不符的結果。兩者改用獨立 bytecode 快取重跑後即如預期轉紅。
 
 **成因**：CPython 預設以「時間戳形」`.pyc`（PEP 552）驗證快取——檔頭只記來源檔 mtime（秒）與檔長，兩者相符即直接載入舊 bytecode。變異腳本在同一秒內寫出第二支、且字元替換前後檔長不變時，import 到的是上一支的編譯結果；drvfs（9p）上 mtime 解析度與寫入時序更容易湊齊這個條件。
 
