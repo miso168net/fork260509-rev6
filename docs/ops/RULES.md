@@ -83,7 +83,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0073 | review findings 一律三分流（修／轉 BL-NNNNN／won't-fix 立 ADR）；承載處三類：①不定期獨立輪落 `docs/reviews/` 報告＋review 事件 ②附屬某刀而由 user 臨時發起的對照輪同樣落報告＋review 事件、以其 `feature` 欄標所屬刀 ③feature 收刀之 final holistic review 不落報告、以收單 commit 訊息逐項列處置。 | 主線,review | checklist | rev5:ADR 0075 |
 | RL-0074 | ADR 一決策一檔 `docs/arc42/decisions/ADR-NNNNN-<slug>.md`；accepted 後 body 不可變、翻案＝新檔帶 `supersedes: [舊號]`、`superseded_by` 由 generate 回填；ADR 檔永不刪除、編號永不重用；won't-fix／by-design 亦立 ADR。 | 主線,人 | lint | ADR-00003 |
 | RL-0075 | 改動屬拍板級判準（user／operator 可見行為變更、schema／migration、feature scope 邊界、破紀律例外）者，縱使檔在允許清單內亦一律 `done_with_escalation`＋`escalatedFindings` 指名、不得落地；審查員標「拍板級／超出權限」之 finding 只落據實碼註那一半。 | implementer,fix | prompt | LL-00015 |
-| RL-0076 | 承 rev5 對應碼之新建或改寫檔，交付前跑 `python3 tools/comment-overlap.py <檔…>` 須 rc 0、逐檔百分比入回報；限定式（只准）項之既有超標不動、回報指名。 | implementer | prompt | LL-00016 |
+| RL-0076 | 承 rev5 對應碼之新建或改寫檔，交付前跑 `python3 tools/comment-overlap.py <檔…>` 須 rc 0、逐檔百分比入回報；★「隨遷工具」（名詞段）逐字承襲允許、不適用本條 rc 0 要求，量到高重疊屬預期；限定式（只准）項之既有超標不動、回報指名。 | implementer | prompt | LL-00016 |
 | RL-0077 | 現在式面（活書家族、ops 帳本、RULES、入庫工具與其 README）禁寫 `tmp/` 具名路徑——tmp 為 gitignored 工作區、他人 clone 與清理後皆無此檔；指範本改指入庫落點或寫成不綁路徑的描述、形制句用佔位形，既有違規一律拿掉路徑而非更新路徑。 | 主線,implementer | lint | LL-00030 |
 
 ## 名詞

@@ -294,7 +294,8 @@ def regenerate(root, box, seeds):
     payload = pack_tar({f"{name}/{rel}": data for name in names for rel, data in seeds[name].items()})
     r = _sh(compose_argv("exec", "-T", SERVICE, "sh", "-c", REGEN_SH, "sh", box, *names), root, stdin=payload)
     if r.returncode != 0:
-        raise GateError(f"容器在跑而沙盒重算失敗（rc {r.returncode}）：{_text(r.stderr)}")
+        raise GateError(f"容器在跑而沙盒重算失敗（rc {r.returncode}）：{_text(r.stderr)}"
+                        "｜★訊息若為「產出未在期限內靜止」：慢碟（drvfs）上屬暫態、重跑一次多半即過")
     try:
         files = unpack_tar(r.stdout)
     except tarfile.TarError as ex:
@@ -307,7 +308,7 @@ def regenerate(root, box, seeds):
 
 
 def _assertions(root, constitution_path):
-    """三道斷言 → (problems, notes, 產出支數)。憲法列先於任何沙盒動作解析；沙盒於重算段收場自清、未走到重算即在此清。"""
+    """三道斷言 → (problems, notes, 產出支數, 實際跑過的種子腿名冊)。憲法列先於任何沙盒動作解析；沙盒於重算段收場自清、未走到重算即在此清。"""
     declared, artifacts, claimed = load_declared(constitution_path)
     worktree = os.path.join(root, BASE_WEB_REL)
     header_set = scan_generated(worktree)
@@ -354,15 +355,16 @@ def _assertions(root, constitution_path):
                 if os.path.isfile(path):
                     with open(path, "rb") as fh:
                         seeds[name][rel] = fh.read()
-        box_live = False
         regen = regenerate(root, box, seeds)
+        box_live = False   # 重算段收場自清——★只在**成功**路徑卸下（BL-00088②：失敗時仍須由 finally 補清，
+                           # 否則容器層在 OBSERVE 之後、重算收場之前失敗時沙盒殘留）
     finally:
         if box_live:
             _sh(compose_argv("exec", "-T", SERVICE, "sh", "-c", CLEAN_SH, "sh", box), root)
     for name, _seed_rel, title, fix in SEEDED:
         if name in regen:
             problems += [f"{title}：{rel}\n    → {fix}\n{detail}" for rel, detail in compare_regenerated(regen[name], produced, worktree)]
-    return problems, notes, len(produced)
+    return problems, notes, len(produced), sorted(seeds)
 
 
 def run_check(root, constitution_path):
@@ -374,12 +376,13 @@ def run_check(root, constitution_path):
         return 0, [f"{TAG} ⤳ 跳過：base-web 容器未在跑——起 stack 後自動恢復實跑：{START_HINT}"]
     t0 = time.perf_counter()
     try:
-        problems, notes, count = _assertions(root, constitution_path)
+        problems, notes, count, ran_seeds = _assertions(root, constitution_path)
     except GateError as ex:
         return 2, [f"{TAG} ✗ 環境或結構異常：{ex}"]
     if problems:
         return 1, notes + [f"{TAG} ✗ 路由外掛產物檔守門不通過："] + ["  " + p.replace("\n", "\n  ") for p in problems]
-    ran = "②重算冪等" + ("" if notes else "與③零手改兩道")
+    # BL-00088①：綠訊息由**實際跑過的種子腿**推導，不再以 notes 是否為空反推（notes 一有新來源即誤述）
+    ran = "②重算冪等與③零手改兩道" if "baseline" in ran_seeds else "②重算冪等一道（③已具名跳過）"
     return 0, notes + [f"{TAG} ✓ 產出檔集 {count} 支＝產物檔頭集＝憲法列產物檔組（雙向）；{ran}皆 byte 相等（{time.perf_counter() - t0:.1f}s）"]
 
 
@@ -550,6 +553,37 @@ class TestRunCheck(unittest.TestCase):
         self.assertEqual(rc, 0, text)
         self.assertIn("✓", text)
         self.assertNotIn("跳過", text)
+
+    def test_green_message_derives_from_ran_legs_not_notes(self):
+        """BL-00088①：綠訊息的「②／②③」字樣須由**實際跑過的種子腿**推導。
+        舊形以 `notes` 是否為空反推——notes 目前唯一來源是基線跳過，日後一有新來源即誤述為只跑一道。"""
+        mod = sys.modules[__name__]
+        with _FakeRepo() as root:
+            with unittest.mock.patch.object(
+                    mod, "_assertions",
+                    return_value=([], [f"{TAG} ⤳ 與腿數無關的註記"], len(ARTIFACTS), ["baseline", "worktree"])):
+                rc, lines = _check(root)
+        text = "\n".join(lines)
+        self.assertEqual(rc, 0, text)
+        self.assertIn("與腿數無關的註記", text)
+        self.assertIn("②重算冪等與③零手改兩道", text)   # notes 非空但兩腿都跑過＝仍須說兩道
+        with _FakeRepo() as root:
+            with unittest.mock.patch.object(
+                    mod, "_assertions", return_value=([], [], len(ARTIFACTS), ["worktree"])):
+                rc, lines = _check(root)
+        self.assertIn("②重算冪等一道", "\n".join(lines))  # 反面：基線未跑＝一道（且不靠 notes）
+
+    def test_sandbox_is_cleaned_when_regen_fails(self):
+        """BL-00088②：容器層於 OBSERVE 之後、重算收場自清之前失敗時，沙盒須由 finally 補清。
+        舊形在呼叫 regenerate 之前就卸下 box_live，失敗路徑因此零清理、沙盒殘留在容器內。"""
+        log = []
+        with _FakeRepo() as root:
+            rc, lines = _check(root, regen_rc=3, log=log)
+        text = "\n".join(lines)
+        self.assertEqual(rc, 2, text)
+        self.assertTrue(any(CLEAN_SH in argv for argv, _ in log), "重算失敗後未下清理＝沙盒殘留")
+        boxes = {argv[argv.index(s) + 2] for argv, _ in log for s in (OBSERVE_SH, REGEN_SH, CLEAN_SH) if s in argv}
+        self.assertEqual(len(boxes), 1, f"清理對象須為同一沙盒：{boxes}")
 
     def test_hand_edit_of_merged_file_survives_worktree_seed_but_baseline_seed_catches_it(self):
         """③存在的理由：routes.ts 增量合併＝以工作樹為種時手改存活（②綠），只有基線為種那道紅。"""
