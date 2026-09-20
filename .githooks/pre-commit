@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → bootstrap-roster（tools/bootstrap.sh staged 時只跑 test_hook_wiring 單檔、秒級）→ rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ submodule-sync（rust-api／base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → bootstrap-roster（tools/bootstrap.sh staged 時只跑 test_hook_wiring 單檔、秒級）→ rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ view-render-guard（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——工作樹或射程缺席＝rc 2）→ route-artifact-gate（base-web pin bump、工具本體或憲法 staged 時條件實跑；docker 缺或 base-web 容器未起＝工具內具名跳過）→ submodule-sync（rust-api／base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -60,7 +60,7 @@ staged=$(git diff --cached --name-only)
 if echo "$staged" | grep -q '^tools/docsync/\|^\.githooks/\|^\.githooks-submodule/'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
-for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
+for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py tools/view-render-guard.py tools/route-artifact-gate.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
   if echo "$staged" | grep -qxF "$t"; then
     pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
   fi
@@ -71,7 +71,7 @@ done
 if echo "$staged" | grep -qxF -e 'tools/bootstrap.sh'; then
   pc_run "bootstrap-roster" python3 -m unittest discover -s "$HOOK_DIR/../tools/docsync/tests" -t "$HOOK_DIR/../tools" -p test_hook_wiring.py
 fi
-# ── 四支碼面閘（rust-fmt／wire-schema／fork-delta 隨 002 刀 U0 隨遷自 rev5:.githooks/pre-commit 同段形、msg-key-gate 隨 003 刀 U9；名冊＝RUNBOOK §12 碼面閘表、GT-12 腿對賬；皆入上方 for 自測迴圈）──
+# ── 六支碼面閘（rust-fmt／wire-schema／fork-delta 隨 002 刀 U0 隨遷自 rev5:.githooks/pre-commit 同段形、msg-key-gate 隨 003 刀 U9、view-render-guard／route-artifact-gate 隨 004 刀 U8；名冊＝RUNBOOK §12 碼面閘表、GT-12 腿對賬；皆入上方 for 自測迴圈）──
 # rust 格式閘（承 rev5:B-112／rev5:ADR 0057 決定 3）：rust-api gitlink 變動（pin bump）或本工具本體 staged 時，於 rust-api 容器內跑
 # `cargo fmt --all --check`（唯讀、設定＝rust-api/rustfmt.toml）。★本段刻意零條件判斷：跳過邏輯住工具內——docker 不在 PATH／
 # compose 兩檔缺／rust-api 容器未在跑＝工具具名跳過 rc 0（「stack 沒起時 pre-commit MUST 可用」紀律不變）；容器在跑而 cargo-fmt 缺
@@ -104,6 +104,21 @@ fi
 # 名冊解析失敗／前端掃描面為空）皆擋；本段不設跳過分支（左右源皆 tracked 檔、無環境依賴）。self-test 走上方 for 迴圈形。
 if echo "$staged" | grep -qxF -e 'rust-api' -e 'base-web' -e 'tools/msg-key-gate.py'; then
   pc_run "msg-key-gate" python3 "$HOOK_DIR/../tools/msg-key-gate.py" check
+fi
+# 管理頁原始 HTML 注入寫法閘（004 刀 U8；spec FR-052、contracts/code-gates.md §2①；承 rev5:.githooks/pre-commit 同段形）：base-web gitlink 變動（pin bump）
+# 或工具本體 staged 時跑 `check`——逐行掃 base-web/src/views/manage/** 之被禁字面（不分註解與碼）；零 docker、毫秒級。
+# ★本段零條件判斷、不設跳過分支（ADR-00019 決定 3／4：tracked 面缺席方向不類推環境缺席）：base-web 工作樹或射程目錄缺席＝工具 rc 2 fail-loud
+# ——與上方 fork-delta 段同理，bootstrap 已斷言工作樹在場。self-test 不隨 check 連帶跑、故本體走 for 迴圈形。
+if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/view-render-guard.py'; then
+  pc_run "view-render-guard" python3 "$HOOK_DIR/../tools/view-render-guard.py" check
+fi
+# 路由外掛產物檔閘（004 刀 U8；憲法 §III.2 ★BASE-WEB-MANAGE-PAGE-WIRING (i) 列之產物檔紀律、contracts/code-gates.md §2②）：base-web gitlink 變動（pin bump）、
+# 工具本體或憲法（該列範圍欄＝產出檔集對賬之名冊來源）staged 時跑 `check`——於 base-web 容器內 /tmp 沙盒重跑路由外掛（空沙盒觀測產出集／工作樹為種／
+# 上游基線為種）、比對在 host 做、對工作樹唯讀（守上方並行 harness「各閘唯讀」）。★本段零條件判斷：跳過邏輯住工具內（ADR-00019）——docker 不在 PATH／
+# compose 兩檔缺／base-web 容器未起＝具名跳過 rc 0；容器在而重算失敗＝rc 2；基線源倉缺席＝只第③道具名跳過並警告。單趟數秒、與他閘並行。
+# self-test 不隨 check 連帶跑、故本體走 for 迴圈形。
+if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/route-artifact-gate.py' -e '.specify/memory/constitution.md'; then
+  pc_run "route-artifact-gate" python3 "$HOOK_DIR/../tools/route-artifact-gate.py" check
 fi
 # 跨子庫同步律段（BL-00057 粗判形；非碼面閘、無工具本體、不入 RUNBOOK §12 碼面閘表）：rust-api **或** base-web gitlink 變動（pin bump）時，
 # 兩子庫工作樹之「雙側閘閘面路徑」須無未 commit 改動（含未追蹤新檔）——rust-api 側 server/src/error.rs（msg-key-gate 左源）＋server/tests/fixtures/wire-schema.json

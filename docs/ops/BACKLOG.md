@@ -1,4 +1,4 @@
-<!-- next: BL-00087 -->
+<!-- next: BL-00089 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -38,3 +38,5 @@
 - BL-00084｜product｜IP 存取閘每次阻擋皆發一則結構化 warn、無節流無抑制：被擋來源可用請求速率直接驅動日誌寫入量（`middleware::ip_gate_mw` fn doc 已記此代價；004 刀 U6 碼品質審查 notes）。要壓＝改 004 刀 spec FR-024「每次阻擋 MUST 可見」之粒度或替 `ipgate_blocked_total` 補 label，屬拍板級｜觸發＝可觀測性整刀開刀時、或 dev／prod 日誌量因阻擋告警出現實際問題時（先到者）
 - BL-00085｜governance｜IP 存取閘測試面兩處無回歸錨（004 刀 U6 碼品質審查 notes）：①`obs::ipgate_blocked` doc 稱「發射點恰一處」而無機器守（同形前例＝`obs.rs` 之發射字面靜態掃描）②`chain_rejected` 來源仍以判定腿 `real_ip` 過閘（ADR-00037 決定 1）只有 fn doc 敘述、各案上下文一律 `proxy_clean`——補一發 `Confidence::ChainRejected` 之被擋案｜觸發＝下一支動 `middleware/mod.rs` 或 `obs.rs` 可執行碼的單元或刀
 - BL-00086｜product｜分頁回應形 `PageRes<T>` 暫寄居 `rust-api/server/src/handler/ip_rule.rs`（004 刀 U7：rev6 首個分頁端點、形承前代「恰一消費者時寄居、第二消費者時上移」之時序）；第二個分頁端點落地時整段上移 `envelope.rs`、欄形與 serde 屬性逐字不動，並同批改寫 `envelope.rs` 檔頭與 `handler::ip_rule` 兩處互指句｜觸發＝第二個分頁端點落地之刀（角色／選單／使用者管理任一清單端點）、或下次動 `envelope.rs` 信封型可執行碼時（先到者）
+- BL-00087｜governance｜`tools/comment-overlap.py` 不解析 Python `#` 註解（只認 `//`、`/* */`、`.vue` 之 `<!-- -->`）：對承前代改寫的 `.py` 工具回「比對面為空」rc 2、量不到逐字重疊（004 刀 U8 兩支新碼面閘以同判準 40 字元之替代量測入單元報告）；補 `.py`／`.sh` 之 `#` 行註解與 docstring 解析＋自測｜觸發＝下一支承前代改寫之 `.py`／`.sh` 工具進場之刀或維護批，先到者
+- BL-00088｜governance｜`tools/route-artifact-gate.py` 兩處微形（004 刀 U8 碼品質審查留帳、不影響判定正確性）：①`run_check` 以 `notes` 是否為空推導綠訊息之「②／②③」字樣、與 notes 目前唯一來源（基線跳過）隱性耦合，日後新增任何 note 即誤述 ②容器於 OBSERVE 段後、REGEN 段前在 docker 層失敗時，容器內 `/tmp/route-artifact-gate.*` 沙盒不會被清｜觸發＝該工具下次被修改之刀或維護批；或沙盒殘留實際被觀測到時
