@@ -1,8 +1,8 @@
 """語料面：hook 接線機器守衛（BL-00023；承 rev5:tools/docs-sync.py TestGateWiring 乾跑案形）——讀真五檔（HOOKS 名冊＝.githooks/pre-commit／
 .githooks/pre-push／.githooks-submodule/pre-commit／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）、真 tools/bootstrap.sh、真 README.md 與兩支雙側閘工具常數，六支純函式各守一面：
 ①pre-commit 面 check_hook_wiring(text, codegate_tools, non_gate_tools) 逐段斷言：固定鏈（betterleaks→docsync check＋lint→staged 取得→pc_join→雙錨常數）、
-十條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
-submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
+十二條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
+view-render-guard〔零條件段：工作樹或射程缺席＝工具 rc 2、不設跳過分支（ADR-00019 決定 3／4）〕／route-artifact-gate〔第三觸發源＝憲法〕／submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
 與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
 一正（真檔零 finding）多反（刪段／改觸發字面／抽名冊一支／改命令子命令／幽靈段／刪 pc_join→紅指名）。
 ②pre-push 面 check_push_hooks(outer, sub, lib)（BL-00037①；憲法 §I.8 並列為機器閘）：外層／子庫 pre-push 各三字面（source lib 相對路徑形／SCAN_CONFIG／
@@ -55,6 +55,8 @@ SEGMENTS = (
     ("wire-schema", ["-e 'base-web'", "-e 'rust-api'"], 'python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate'),
     ("fork-delta", ["-e 'base-web'", "-e 'tools/fork-delta-lint.py'", "-e '.specify/memory/constitution.md'"], 'python3 "$HOOK_DIR/../tools/fork-delta-lint.py"'),
     ("msg-key-gate", ["-e 'rust-api'", "-e 'base-web'", "-e 'tools/msg-key-gate.py'"], 'python3 "$HOOK_DIR/../tools/msg-key-gate.py" check'),
+    ("view-render-guard", ["-e 'base-web'", "-e 'tools/view-render-guard.py'"], 'python3 "$HOOK_DIR/../tools/view-render-guard.py" check'),
+    ("route-artifact-gate", ["-e 'base-web'", "-e 'tools/route-artifact-gate.py'", "-e '.specify/memory/constitution.md'"], 'python3 "$HOOK_DIR/../tools/route-artifact-gate.py" check'),
     # 命令字面同時釘 LL-00012 環境剝除（unset 本機 GIT_* 名冊）與唯讀（--no-optional-locks）兩要件
     ("submodule-sync", ["-e 'rust-api'", "-e 'base-web'"], 'unset $(git rev-parse --local-env-vars); git --no-optional-locks -C "$h/../$s" status --porcelain --untracked-files=all -- $ps'),
     ("entity-drift", ["-e 'rust-api'", "-e 'docs/ops/reference-src/schema-snapshot.json'"], 'python3 "$HOOK_DIR/../tools/entity-drift-gate.py" check'),
@@ -80,6 +82,8 @@ MIRROR_WORDS = {
     "wire-schema": "wire-schema",
     "fork-delta": "fork-delta",
     "msg-key-gate": "msg-key-gate",
+    "view-render-guard": "view-render-guard",
+    "route-artifact-gate": "route-artifact-gate",
     "submodule-sync": "submodule-sync",
     "entity-drift": "entity-drift",
     "schema-frozen": "schema-frozen",

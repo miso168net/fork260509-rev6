@@ -2,9 +2,9 @@
 id: "ADR-00027"
 title: AppState 恰兩欄封條翻案→五欄——加 jwt／cache／captcha_secret；ip_rules／trust_model／mailer 續留域外
 date: 2026-09-08
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00036]
 provenance: "003-auth-session clarify 2026-09-08 Q1（user 親決：A 五欄承 rev5；棄案＝三欄 auth 子結構打包／四欄 captcha 密鑰併 jwt 設定）；spec FR-032、data-model §10；被翻案的拍板住 rust-api/server/src/state.rs 檔頭 doc（002 刀 U1 落地、其 data-model §5 為由）、無 ADR 承載故 supersedes 留空；rev5 同位＝rev5:ADR 0029（兩欄→五欄、後由 rev5:ADR 0041 五→七欄）；主線擬稿即 accepted（tasks T003、user 於 clarify 已拍板）"
 tags: [rust-api, state, decision-reversal, auth]
 ---

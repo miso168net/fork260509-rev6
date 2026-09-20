@@ -208,9 +208,9 @@ GATE_COUNT="$(cd "$ROOT/tools" && python3 -c 'from docsync import gates; print(l
 #   ★`:(glob)` magic 不可省——git pathspec 的裸 `*` 會跨 `/`，裸 'tools/*.py' 會撈進 tools/docsync/*.py 與 tools/orchestration/*.py
 #   （後者 `assemble.py test` 回 2 即 die）；`:(glob)` 令 `*` 不跨層＝只取 tools/／deploy/ 頂層檔。
 #   兩排除：deploy/decrypt-secrets.py＝下方 Day-1 條件分支獨立處理（自測要密文檔在場）；deploy/secrets_common.py＝共用模組、無 `test` 子命令。
-#   四支碼面閘（rust-fmt／wire-schema／fork-delta／msg-key-gate）在此只接 test：rust-fmt／wire-schema 的 check 要 dev stack（工具自身在 stack
-#   未起時具名跳過 rc 0、體檢節跑一支恆跳過的 check 零資訊量）；fork-delta 的 test 只跑 self-test、不掃 base-web 不碰源倉——bootstrap MUST
-#   離線可用；msg-key-gate 零 docker、check 離線跑得動，只接 test 純為不重複——實跑面皆由 pre-commit 條件觸發段承擔（名冊＝RUNBOOK §12 碼面閘表）。
+#   六支碼面閘（rust-fmt／wire-schema／fork-delta／msg-key-gate／view-render-guard／route-artifact-gate）在此只接 test：rust-fmt／wire-schema／
+#   route-artifact-gate 的 check 要 dev stack（工具自身在 stack 未起時具名跳過 rc 0、體檢節跑一支恆跳過的 check 零資訊量）；fork-delta 的 test 只跑 self-test、不掃 base-web 不碰源倉——bootstrap MUST
+#   離線可用；msg-key-gate／view-render-guard 零 docker、check 離線跑得動，只接 test 純為不重複——實跑面皆由 pre-commit 條件觸發段承擔（名冊＝RUNBOOK §12 碼面閘表）。
 #   ★名冊先落變數再斷言非空才進迴圈——`set -euo pipefail` 下，for 字詞表內的命令替換失敗不觸發 set -e：
 #   pathspec 打錯、`:(glob)` 被誤刪成不匹配形、或 git 在該環境失敗時，迴圈零圈、無任何訊息、bootstrap 仍 rc 0，
 #   而 CLAUDE.md §6 正拿這個 rc 當「掃描防線就位」判準＝就位可在零自測下成立（改形前的逐列硬編不可能靜默零跑）。
