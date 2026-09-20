@@ -193,7 +193,8 @@ def redis_argv(command):
 
 
 def redis_out(command, run):
-    """跑一個 redis 讀命令 → stdout 原文；非零＝rc 2。"""
+    """跑一個 redis 命令 → stdout 原文；非零＝rc 2。★射程含 restore 的三種寫命令（DEL 與 ④b 門鈴之
+    PUBLISH）——唯讀判準由 `_redis_write_offenders` 逐命令判，不由本函式名擔保。"""
     r = _run_docker(redis_argv(command), run)
     if r.returncode != 0:
         raise BaselineError(f"redis-cli 失敗（rc={r.returncode}）："
@@ -609,7 +610,8 @@ def redis_clear_prefixes(run):
             deleted += int(raw)
         except ValueError:
             raise BaselineError(f"redis DEL 回非整數：{raw[:80]!r}——pg 交易已提交、redis 殘鍵未必清完；"
-                                "補救：確認 redis 容器可用後重跑同一 restore（冪等：pg 面已空、只剩前綴鍵待清）") from None
+                                "補救：確認 redis 容器可用後重跑同一 restore（冪等：pg 面已空、只剩前綴鍵待清；"
+                                "★④b 門鈴已排在本步之前、不受影響）") from None
     return found, deleted
 
 
@@ -619,6 +621,34 @@ def _read_seed(seed_path):
             return fh.read()
     except OSError as ex:
         raise BaselineError(f"seed 左源讀取失敗：{seed_path}：{ex}") from None
+
+
+def doorbell_cli():
+    """人工補按門鈴的完整命令（工具自己按不到時、輸出給人照抄）。"""
+    return (f"docker compose {' '.join('-f ' + f for f in COMPOSE_FILES)} exec -T {REDIS_SERVICE} "
+            f"sh -lc 'redis-cli -a \"$(cat {REDIS_PASSWORD_FILE})\" --no-auth-warning "
+            f"PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}'")
+
+
+def ring_doorbell(ip_rows, run):
+    """④b門鈴（BL-00094）：清前 sys_ip_rule 有列＝規則集已被本次 restore 清掉⇒判定面必須換版。
+    清前 0 列＝規則集本就是空的、判定面與庫一致，不按（避免無謂喚醒）。
+    ★PUBLISH 失敗＝pg 已提交而門鈴未響：拋出並附可照抄的人工命令（重跑 restore 補不回來——屆時清前已 0 列）。"""
+    if not ip_rows:
+        _say("[walkthrough-baseline] restore ④b門鈴：清前 sys_ip_rule 0 列＝該表本就是空的、"
+             "判定面與庫一致，不按（避免無謂喚醒）")
+        return 0
+    raw = redis_out(f"PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}", run).strip()
+    try:
+        subs = int(raw)
+    except ValueError:
+        raise BaselineError(f"redis PUBLISH 回非整數：{raw[:80]!r}——pg 交易已提交（規則列已清）而門鈴未響、"
+                            "執行中的 rust-api 判定面仍持舊規則集；★重跑 restore 補不回來（屆時清前已 0 列）、"
+                            f"請手按一次：{doorbell_cli()}") from None
+    tail = "" if subs else "（★0＝無 watcher 在訂：rust-api 未起或 watcher 未啟；其判定面於下次啟動時才換版）"
+    _say(f"[walkthrough-baseline] restore ④b門鈴：清前 sys_ip_rule {ip_rows} 列⇒"
+         f"PUBLISH {IPGATE_CHANNEL} 已送、訂閱者 {subs}{tail}")
+    return subs
 
 
 def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=None):
@@ -632,9 +662,9 @@ def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=
                          ("system_settings",) + (RESTORE_TABLES if seed_mode else ()))
     sequences = SEED_SETVAL_SEQUENCES if seed_mode else RESTORE_SEQUENCES
     seed = seed_settings(seed_text)
-    # 門鈴判準（BL-00094）：清前列數須在任何寫入之前取——DELETE 之後就再也問不到「規則集有沒有變」
-    ip_rows = int((psql_json(SQL_IP_RULE_ROWS, user, db, run) or [{"n": 0}])[0]["n"]) \
-        if "sys_ip_rule" in RESTORE_TABLES else 0
+    # 門鈴判準（BL-00094）：清前列數須在任何寫入之前取——DELETE 之後就再也問不到「規則集有沒有變」。
+    # ★`sys_ip_rule` 在 RESTORE_TABLES 內由 test_restore_tables_roster 釘住，此處不再寫常真守衛（mb4t review L1-10）。
+    ip_rows = int((psql_json(SQL_IP_RULE_ROWS, user, db, run) or [{"n": 0}])[0]["n"])
     stamped = check_settings_against_seed(psql_json(SQL_SETTINGS, user, db, run), seed)
     _say(f"[walkthrough-baseline] restore ①system_settings：{len(seed)} 鍵值＝seed；"
          f"審計欄非 NULL {stamped} 列（交易內歸 NULL）")
@@ -646,23 +676,12 @@ def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=
     seqs = "、".join(f"{n}（{_seq_text(base['sequences'][n])}）" for n in sequences)
     _say(f"[walkthrough-baseline] restore ②③pg 單交易已提交：DELETE {'／'.join(RESTORE_TABLES)}＋"
          f"sys_user.session_id 歸 NULL＋setval（{seqs}）")
+    # ★門鈴排在 pg 交易之後、redis 清理之前（mb4t review L1-1）：規則列此刻已從庫裡消失，判定面必須換版；
+    # 排在 redis 清理之後會被「DEL 失敗即拋」吃掉，而依其補救訊息重跑時清前列數已是 0＝永遠補不回來。
+    ring_doorbell(ip_rows, run)
     found, deleted = redis_clear_prefixes(run)
     counts = "／".join(f"{p} 前綴 {n} 鍵" for p, n in found.items())
     _say(f"[walkthrough-baseline] restore ④redis：{counts}、DEL 回報 {deleted} 鍵（逐鍵指名）")
-    if ip_rows:
-        raw = redis_out(f"PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}", run).strip()
-        try:
-            subs = int(raw)
-        except ValueError:
-            raise BaselineError(f"redis PUBLISH 回非整數：{raw[:80]!r}——pg 與 redis 清理已完成、"
-                                "只差門鈴；補救：確認 redis 可用後手按一次 "
-                                f"PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}") from None
-        tail = "" if subs else "（★0＝無 watcher 在訂：rust-api 未起或 watcher 未啟；其判定面於下次啟動時才換版）"
-        _say(f"[walkthrough-baseline] restore ④b門鈴：清前 sys_ip_rule {ip_rows} 列⇒"
-             f"PUBLISH {IPGATE_CHANNEL} 已送、訂閱者 {subs}{tail}")
-    else:
-        _say("[walkthrough-baseline] restore ④b門鈴：清前 sys_ip_rule 0 列＝規則集未變、不按"
-             "（避免無謂喚醒；判定面本就與資料庫一致）")
     if seed_mode:
         _say("[walkthrough-baseline] restore ⑤收尾比對（seed 模式：判準面＝清理面對凍結 seed 目標值、其 rc 即 restore 之 rc；"
              "清理面之外無基準可比＝不判，pg 殘留另跑 python3 tools/schema-gate.py check）：")
@@ -1364,12 +1383,23 @@ class TestRestore(unittest.TestCase):
         self.assertIn("訂閱者 0", text)
         self.assertIn("無 watcher 在訂", text)
 
+        # ★L1-1：redis 清理失敗時門鈴仍已按過（門鈴排在 pg 交易之後、DEL 之前）——
+        # 舊形把門鈴排在 DEL 之後，DEL 一失敗即拋，而依其補救訊息重跑時清前已 0 列＝永遠補不回來。
+        stub = _restore_stub()
+        path = self._baseline(stub)
+        self._dirty(stub)
+        stub.fail = "del"
+        with self.assertRaises(BaselineError) as ctx:
+            self._restore(path, stub)
+        self.assertIn("門鈴已排在本步之前", str(ctx.exception))
+        self.assertEqual(len([c for c in (a[-1] for a in stub.log if "sh" in a) if " PUBLISH " in c]), 1)
+
         stub = _restore_stub()                              # ③清前 0 列（走查沒動過 IP 規則）＝不按
         path = self._baseline(stub)
         rc, text = self._restore(path, stub)
         self.assertEqual(rc, RC_OK, msg=text)
         self.assertEqual([c for c in (a[-1] for a in stub.log if "sh" in a) if " PUBLISH " in c], [])
-        self.assertIn("0 列＝規則集未變、不按", text)
+        self.assertIn("0 列＝該表本就是空的", text)
 
     def test_write_statements_are_exactly_the_enumerated_transaction_and_del(self):
         """★寫面逐字釘死（多一句、少一句、換序皆紅）；其餘 pg 句與 redis 命令一律過唯讀判準。"""
@@ -1395,9 +1425,9 @@ class TestRestore(unittest.TestCase):
             "COMMIT;"])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
+            f"{REDIS_CLI} PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}",   # ★門鈴排在 DEL 之前（L1-1）
             f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
-            "'throttle:unlock:user:走查 探針'",
-            f"{REDIS_CLI} PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}"])   # BL-00094 門鈴（清前有列）
+            "'throttle:unlock:user:走查 探針'"])
         self.assertFalse(any("FLUSH" in c.upper() for c in redis_cmds))
         self.assertEqual(stub.keys, ["plainkey"])                      # 非清理前綴之鍵不動
         self.assertFalse(any(s["stamped"] for s in stub.settings))     # 審計欄已歸 NULL
@@ -1628,9 +1658,9 @@ class TestRestore(unittest.TestCase):
             "COMMIT;"])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
+            f"{REDIS_CLI} PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}",   # ★門鈴排在 DEL 之前（L1-1）
             f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
-            "'throttle:unlock:user:走查 探針'",
-            f"{REDIS_CLI} PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}"])   # BL-00094 門鈴（清前有列）
+            "'throttle:unlock:user:走查 探針'"])
         self.assertEqual([stub.tables[t] for t in FIVE_TABLES], [0] * 5)
         self.assertEqual(stub.seqs, dict(RESTORE_FAKE_SEQS, sys_ip_rule_id_seq=(7, "t"),
                                          sys_token_id_seq=(33, "t"), session_event_id_seq=(4, "t"),

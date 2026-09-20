@@ -3,7 +3,7 @@
 
 用法：
   python3 tools/comment-overlap.py [--min N] [--max-pct P] <rev6 檔 …>   逐檔對 rev5 對應檔比對；任一檔超標＝rc 1
-  python3 tools/comment-overlap.py test                                  合成樣本自證（搬運判超標／改寫判零重疊／解析三形正例與射程外反例／
+  python3 tools/comment-overlap.py test                                  合成樣本自證（搬運判超標／改寫判零重疊／解析四形正例與射程外反例／
                                                                          `rev6-`↔`rev5-` 映射一正二反／base-web 三型豁免各一正一反〔含落在塊註解與
                                                                          HTML 註解內〕／碼面豁免 span 與圍欄各正反〔span 含 base-web 路徑與三型豁免
                                                                          同檔〕／rust-api 零三型豁免不讀源倉／
@@ -12,7 +12,7 @@
   rev5 整檔搬運者）逐字承襲本就允許、不適用 RL-0076 的 rc 0 要求——對它們量到高重疊是預期、不是違紀。
 rev5 對應檔＝`../fork260509-rev5/<同相對路徑>`（凍結 worktree；本工具只讀、絕不寫入）；同相對路徑缺席且檔名 `rev6-` 起首者，改找同目錄
   `rev5-` 接其後同名之檔（承 rev5-* 改名而來之 rev6-* 檔；輸出行明示映射來源）；仍缺席＝該檔無可比、報 n/a 不計超標；非 `rev6-` 起首之檔不映射。
-解析（單一解析器：rev6 檔、rev5 對應檔、源倉基線一律同一套，副檔名以受比 rev6 路徑為準）＝三形聯集：
+解析（單一解析器：rev6 檔、rev5 對應檔、源倉基線一律同一套，副檔名以受比 rev6 路徑為準）＝四形聯集：
   ①lstrip 後 `//`／`///`／`//!` 起首之行；②lstrip 後 `/*` 起首之塊註解至 `*/` 止（含單行 `/** … */`；首行與續行剝一個前導 `*` 與其後一個空白）；
   ③`.vue` 檔 lstrip 後 `<!--` 起首之 HTML 註解至 `-->` 止（其他副檔名不解析 `<!--`——`.ts` 之模板字面可含之）。
   射程外：碼行之行尾 `//`、行中 `/* */` 與行中 `<!-- -->`、`*/` 或 `-->` 之後同行之碼；巢狀塊註解（`/* … /* … */ … */`）於第一個 `*/` 收尾、其後續行不量。
@@ -32,9 +32,10 @@ base-web 路徑（repo 根相對首段 `base-web`）三型豁免後再量——�
     下一個同形行關閉——標記行與其間各行整行豁免；到註解邊界仍未關閉＝未閉合、該開啟行起照計（寧紅勿漏）並於輸出指名開啟行號。
   兩者皆不入分子也不入分母、逐檔輸出附 code span 段數／圍欄行數。
 退出碼：0 綠／1 任一檔超標／2 rev6 檔缺席或不在 repo、base-web 路徑之源倉或 `example` 分支不可讀、比對面為空（本次引數之 rev5 對應檔
-  全缺席〔映射後仍缺席者同計〕，或受比檔全體零可解析註解〔以三形解析、豁免前計：豁免後零字元是判定結果、非掃描面空〕）；argparse 用法錯亦 2。
+  全缺席〔映射後仍缺席者同計〕，或受比檔全體零可解析註解〔以四形解析、豁免前計：豁免後零字元是判定結果、非掃描面空〕）；argparse 用法錯亦 2。
 """
 import argparse
+import ast
 import contextlib
 import io
 import os
@@ -43,6 +44,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import tokenize
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REV5 = ROOT.parent / "fork260509-rev5"
@@ -63,7 +65,8 @@ MARK = re.compile(r"^\s*(///|//!|//)\s?")
 BLOCK_LEAD = re.compile(r"^\s*\*\s?")
 # `#` 行註解與 docstring 解析面（BL-00080）：承 rev5 之 python／shell 隨遷工具以此形寫註解，
 # 不解析＝RL-0076 的量尺對它們恆回「比對面為空」rc 2、量不到逐字重疊。
-HASH_SUFFIX = {".py", ".sh", ".bash"}
+PY_SUFFIX = {".py"}
+SH_SUFFIX = {".sh", ".bash"}
 DOCSTR = re.compile(r"^[rRbBuUfF]{0,2}(\"{3}|'{3})")
 # 碼面豁免：SPAN＝同一註解行內成對反引號包夾之非空段（不成圍欄之 ``` 行不當空 span）；SEP＝span 移除處之切斷符（原始碼文本不含 NUL＝
 # 命中不得跨越）；FENCE＝圍欄記號。
@@ -78,17 +81,73 @@ class OverlapError(Exception):
 
 def kind_of(path):
     """解析方言（副檔名一律取受比〔rev6〕路徑）：vue＝另解 `<!--` HTML 註解（`.ts` 等之模板字面可含 `<!--` 起首行、故不通用）；
-    hash＝`.py`／`.sh`／`.bash`，另解 `#` 行註解與 docstring（BL-00080）；其餘＝空字串，只解 `//` 家族與 `/* */`。"""
+    py＝`.py`，以 `tokenize`＋`ast` 取 `#` 行註解與**真** docstring（模組／類別／函式的首個字串陳述）；
+    sh＝`.sh`／`.bash`，只取行首 `#`；其餘＝空字串，只解 `//` 家族與 `/* */`。"""
     suffix = pathlib.PurePath(path).suffix
-    return "vue" if suffix == ".vue" else ("hash" if suffix in HASH_SUFFIX else "")
+    if suffix == ".vue":
+        return "vue"
+    return "py" if suffix in PY_SUFFIX else ("sh" if suffix in SH_SUFFIX else "")
+
+
+def _py_rows(src):
+    """`.py` 專用：`#` 行註解取自 tokenize 的 COMMENT token（只取整行即註解者，同「行首」契約）、
+    docstring 取自 ast（模組／類別／函式的首個字串陳述）——★不以「行首三引號」猜，否則一般三引號字串的
+    **收尾行**會被當成 docstring 開啟、其後碼行整段吞進量測面（mb4t review L1-2 實測：一支工具 97.4% 的
+    重疊裡 40% 是碼）。語法不合本直譯器＝回 None，由呼叫端退回只取 `#`（寧漏勿吞）。"""
+    try:
+        tree = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return None
+    lines = src.split("\n")
+    rows = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        body = getattr(node, "body", None)
+        if not body or not isinstance(body[0], ast.Expr):
+            continue
+        val = body[0].value
+        if not (isinstance(val, ast.Constant) and isinstance(val.value, str)):
+            continue
+        for i in range(val.lineno, (val.end_lineno or val.lineno) + 1):
+            raw = lines[i - 1]
+            if i == val.lineno:
+                mk = DOCSTR.match(raw.lstrip())
+                raw = raw.lstrip()[mk.end():] if mk else raw
+            if i == (val.end_lineno or val.lineno):
+                stripped = raw.rstrip()
+                for q in ('"' * 3, "'" * 3):
+                    if stripped.endswith(q):
+                        raw = stripped[:-3]
+                        break
+            rows.append((i, raw, True))
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+            if tok.type != tokenize.COMMENT:
+                continue
+            ln = tok.start[0]
+            if not lines[ln - 1].lstrip().startswith("#"):
+                continue                      # 行尾註解不收（同 `//` 之「行首」契約）
+            if ln == 1 and tok.string.startswith("#!"):
+                continue                      # shebang：兩代恆同字面、計入只會虛增重疊
+            rows.append((ln, tok.string[1:], False))
+    except (tokenize.TokenError, IndentationError):
+        return None
+    return sorted(rows, key=lambda r: r[0])
 
 
 def comment_rows(lines, kind=""):
-    """單一解析器 → [(行號, 去註解標記之原文, 是否 doc 註或塊註解)]，含去標記後空白之註解行（圍欄以行號連續之註解行定註解邊界）。三形聯集：
+    """單一解析器 → [(行號, 去註解標記之原文, 是否 doc 註或塊註解)]，含去標記後空白之註解行（圍欄以行號連續之註解行定註解邊界）。四形聯集：
     ①lstrip 後 `//`／`///`／`//!` 起首之行（`///`／`//!`＝doc 註）；②lstrip 後 `/*` 起首之塊註解至 `*/` 止（單行 `/** … */` 同收；首行與
-    續行剝一個前導 `*` 與其後一個空白）；③kind＝vue 時，lstrip 後 `<!--` 起首之 HTML 註解至 `-->` 止；④kind＝hash 時，lstrip 後 `#` 起首之行
-    （★首行 shebang 不收——兩代恆同字面、計入只會虛增重疊）與 docstring 至同界符止（BL-00080）。
+    續行剝一個前導 `*` 與其後一個空白）；③kind＝vue 時，lstrip 後 `<!--` 起首之 HTML 註解至 `-->` 止；④kind＝sh 時，lstrip 後 `#` 起首之行
+    （★首行 shebang 不收——兩代恆同字面、計入只會虛增重疊）。★kind＝py 走 [`_py_rows`]（tokenize＋ast），不入本迴圈。
     收尾記號之後同行之碼不收；註解內之行不再判起首。"""
+    if kind == "py":
+        src = "".join(l if l.endswith("\n") else l + "\n" for l in lines)
+        rows = _py_rows(src)
+        if rows is not None:
+            return rows
+        kind = "sh"        # 語法不合＝退回只取行首 `#`（寧漏勿吞：絕不把碼行當註解）
     out, close = [], None  # close＝跨行註解之收尾記號（None＝不在塊／HTML 註解內）
     for i, line in enumerate(lines, 1):
         line = line.rstrip("\n")
@@ -102,14 +161,11 @@ def comment_rows(lines, kind=""):
                 close, body = "*/", s[2:]
             elif kind == "vue" and s.startswith("<!--"):
                 close, body = "-->", s[4:]
-            elif kind == "hash" and s.startswith("#"):
+            elif kind == "sh" and s.startswith("#"):
                 if i == 1 and s.startswith("#!"):
                     continue                      # shebang：兩代恆同字面、非重疊訊號
                 out.append((i, s[1:], False))
                 continue
-            elif kind == "hash" and DOCSTR.match(s):
-                mk = DOCSTR.match(s)
-                close, body = mk.group(1), s[mk.end():]
             else:
                 continue
         else:
@@ -323,7 +379,7 @@ def run(files, minlen, max_pct, root=ROOT, rev5=REV5, fork=FORK):
             print(f"   L{ln}（{length} 字元）：{frag[:110]}", flush=True)
         if pct >= max_pct:
             rc = 1
-    # RL-0051：掃描面空集合即紅——量不到任何東西的「全 ok」是假綠（引數錯檔、或檔型不在本工具之三形解析面〔行首 `//` 類／行首 `/*` 塊註解／`.vue` 行首 `<!--`〕）。
+    # RL-0051：掃描面空集合即紅——量不到任何東西的「全 ok」是假綠（引數錯檔、或檔型不在本工具之四形解析面〔行首 `//` 類／行首 `/*` 塊註解／`.vue` 行首 `<!--`〕）。
     if compared == 0:
         print(f"!! 比對面為空：本次 {len(files)} 檔之 rev5 對應檔全缺席（全 n/a）——無一檔可比、不得回綠", flush=True)
         return 2
@@ -359,7 +415,7 @@ def self_test():
     base-web 三型豁免（樣本＝token＋散文＋`原行:` 同行之修改型真形）：全豁免正例一支＋「只拿掉一型之形」反例四支（其餘兩型照豁免、命中恰為
     被拿掉那型）＋標記行同行散文與 rev5 同文照計反例一支＋三型落在塊註解／HTML 註解內仍生效各一支；rust-api 同內容零三型豁免、碼面豁免照套
     且不讀源倉；LL-00012 洩漏 env 下仍讀得到基線；源倉不可讀 rc 2。比對面為空：全 n/a／全體零可解析註解 rc 2 各配一反例；豁免後零字元不算空面。
-    解析三形：塊註解搬運超標／改寫 ok、單行 `/** */`、`.vue` HTML 註解搬運超標；反例＝`.ts` 之 `<!--` 起首行、碼行內行中 `/*`。
+    解析四形：塊註解搬運超標／改寫 ok、單行 `/** */`、`.vue` HTML 註解搬運超標、`.py` 之 `#` 與真 docstring（BL-00080）；反例＝`.ts` 之 `<!--` 起首行、碼行內行中 `/*`。
     映射：`rev6-x`↔`rev5-x` 量得；反例＝無 `rev5-` 對應檔 n/a、非 `rev6-` 起首不映射（樣本剝前綴後恰對上在場之 `rev5-` 檔）。
     碼面豁免：span 豁免 ok／去反引號超標、span 不跨接、圍欄豁免（`///`／`//!` 與 JSDoc）、一般 `//` 與 `.vue` HTML 註解不成圍欄、未閉合圍欄照計並指名行號
     （其後另有註解行／檔內末段註解兩落點各一）；
@@ -533,8 +589,27 @@ def self_test():
         _write(root / "tools/hashb.py", py6b)
         _write(r5root / "tools/hashb.py", py5b)
         rc, out = rc_of("tools/hashb.py")
-        case("BL-00080 反例：首行 shebang 不收（兩代同字面亦不算重疊）→rc 0",
-             rc == 0 and "比對面為空" not in out, out.strip())
+        # ★判準打在唯一會動的量：shebang（24 字元）若被收入，註解總字元會多 24（mb4t review L1-3）
+        units = comment_units(str(root / "tools/hashb.py"), "py")
+        total = sum(len(t) for _, t in units)
+        case("BL-00080 反例：首行 shebang 不收（註解總字元不含 shebang；收入即多 24 字元）",
+             rc == 0 and "比對面為空" not in out and total == 37 and
+             all("usr/bin/env" not in t for _, t in units), f"rc {rc}／總字元 {total}／{units}")
+
+        # ★吞碼反例（mb4t review L1-2）：一般三引號字串的**收尾行**不得被當 docstring 開啟，
+        # 否則其後碼行整段被吞入量測面直到下一個三引號或檔尾（實測曾使一支工具虛報 97.4%）
+        swallow = ['SQL = ' + '"' * 3, 'SELECT 1', '"' * 3, 'TOKEN = 1', 'def f(): pass']
+        case("BL-00080 反例：非 docstring 之三引號收尾行不開啟註解、其後碼行不入量測面",
+             comment_rows(swallow, "py") == [], repr(comment_rows(swallow, "py")))
+        # 正例：真 docstring（模組／函式首個字串陳述）照收
+        real_doc = ['"' * 3 + '模組說明' + '"' * 3, 'def f():', '    ' + '"' * 3 + '函式說明' + '"' * 3, '    return 1']
+        got = [(ln, t) for ln, t, _ in comment_rows(real_doc, "py")]
+        case("BL-00080 正例：模組與函式的真 docstring 照收（行號與去界符後文字）",
+             got == [(1, "模組說明"), (3, "函式說明")], repr(got))   # 前導空白同 `//` 家族一併剝除
+        # 語法不合本直譯器＝退回只取行首 `#`（寧漏勿吞）
+        broken = ['# 說明行', 'def f(:', '    ' + '"' * 3 + '不該被吞' + '"' * 3]
+        case("BL-00080：`.py` 語法不合時退回只取行首 `#`（絕不把碼行當註解）",
+             comment_rows(broken, "py") == [(1, " 說明行", False)], repr(comment_rows(broken, "py")))
 
         # 方言隔離：非 .py／.sh 之 `#` 起首行不當註解
         ts6 = "# " + shared + "\nexport const a = 1;\n"
@@ -572,7 +647,7 @@ def self_test():
         def z(text):
             return WS.sub("", text)
 
-        # ── 解析面三形：塊註解（含單行 `/** */`）／`.vue` HTML 註解；射程外反例 ──
+        # ── 解析面四形之前三形：塊註解（含單行 `/** */`）／`.vue` HTML 註解；射程外反例（第四形＝`.py`／`.sh` 之 `#` 與 docstring，見下段）──
         blk = ("這段塊註解散文刻意寫得超過四十字元門檻，跨兩行以星號續寫，", "逐字搬運時須被量尺當場抓到判超標、不得因星號續行而漏量。")
         blk5 = f"/**\n * {blk[0]}\n * {blk[1]}\n */\nexport const a = 1;\n"
 

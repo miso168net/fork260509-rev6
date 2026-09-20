@@ -1,7 +1,7 @@
 {
   "uid": "obs-backend-msg-dict",
-  "title": "拒因字典 (backend-msg-dict)",
-  "description": "承 rev5:tools/docs-sync.py generate 之快照原樣；rev6 尚無對應生成器、本檔人維護（不在 GENERATED_FILES）",
+  "title": "拒因鍵指針 (backend-msg-dict)",
+  "description": "拒因鍵指針面板（BL-00099）：鍵名左源＝rust-api MSG_KEYS、譯文之家＝三檔 locale 的 backend 區塊、機器對賬＝tools/msg-key-gate.py；本檔人維護、不在 GENERATED_FILES，刻意不收鍵表與譯文快照",
   "tags": [
     "obs",
     "rev6-admin",

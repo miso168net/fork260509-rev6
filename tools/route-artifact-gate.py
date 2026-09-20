@@ -308,7 +308,7 @@ def regenerate(root, box, seeds):
 
 
 def _assertions(root, constitution_path):
-    """三道斷言 → (problems, notes, 產出支數)。憲法列先於任何沙盒動作解析；沙盒於重算段收場自清、未走到重算即在此清。"""
+    """三道斷言 → (problems, notes, 產出支數, 實際跑過的種子腿名冊)。憲法列先於任何沙盒動作解析；沙盒於重算段收場自清、未走到重算即在此清。"""
     declared, artifacts, claimed = load_declared(constitution_path)
     worktree = os.path.join(root, BASE_WEB_REL)
     header_set = scan_generated(worktree)
