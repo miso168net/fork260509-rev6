@@ -16,13 +16,13 @@
 - RULES：77 條／上限 92（implementer 41/48、review 14/18、fix 16/19、主線 44/52、人 10/12）
 - BACKLOG 開放：32｜滯後：4
 - LESSONS：30 筆
-- events：72 筆（erratum 2、feature_close 4、misc 26、perf 34、review 6）
+- events：73 筆（erratum 2、feature_close 4、misc 27、perf 34、review 6）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 6.5 | ≤1 | 超標 |
+| 治理批對 feature 比 | 6.75 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.1 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 21 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
@@ -40,6 +40,6 @@
 | docsync 行數 | 3804 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-21｜misc｜governance｜maint-backlog-80-88-94-99｜005 前維護批第 4／7 支：三支 python 工具微修＋msg 面板指針形——BL-00080 量尺補 .py／.sh 面（tokenize＋ast 取…
 - 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 18.21 秒 rc=0
 - 2026-09-21｜misc｜governance｜maint-backlog-42｜005 前維護批第 3／7 支：跨刀活體契約自 spec 目錄抽至 docs/ops/reference-src/（BL-00042、ADR-00041）——…
-- 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 23.31 秒 rc=0

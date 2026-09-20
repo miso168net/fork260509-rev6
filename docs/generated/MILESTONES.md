@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-21 | misc | governance｜maint-backlog-80-88-94-99 | 005 前維護批第 4／7 支：三支 python 工具微修＋msg 面板指針形——BL-00080 量尺補 .py／.sh 面（tokenize＋ast 取 # 與真 docstring）、BL-00088 綠訊息改由實跑腿推導與沙盒失敗路徑補清、BL-00094 restore 清前有列即自動 PUBLISH ipgate:invalidate（排在 pg 交易之後）、BL-00099 Grafana 拒因字典改指針形。四條刪列。 | f91ba0d | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-42 | 005 前維護批第 3／7 支：跨刀活體契約自 spec 目錄抽至 docs/ops/reference-src/（BL-00042、ADR-00041）——五份新家（四份整檔搬＋一份六節併入）、specs 原檔零改動留凍結存證、四十二處引用改指新家；GT-06 加腿同時守絕對形與裸相對形（後者為 repo 主流寫法、首版漏掃＝該腿原本 vacuous）。 | fdf181f | ADR-00041 | — |
 | 2026-09-21 | misc | governance｜maint-backlog-35 | 005 前維護批第 2／7 支：事件帳守衛兩腿（BL-00035②④）——GT-02 加 append-only HEAD 對比腿（HEAD 版須為現版逐行前綴；刪列／改寫／疑中間插入三態各自指名，形制承 GT-04），GT-03 改為「有無效列即指名首列並中止下游判讀」（原本無效列被丟棄⇒在途與完整性腿對不存在的事件續判＝整片假報）。自測 280→282 案、閘數維持 12/12。 | 9b932d8 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-79 | 005 前維護批第 1／7 支：Workflow 看門狗改雙掛形——`wf-watchdog.py` 加 `--bg` 背景任務模式（RUNAWAY 由告警不退出改告警即退出，因背景任務只有退出才通知主線；rev5:B-069 契約的具名例外），CLAUDE.md §2／RL-0016／RL-0017／RL-0061／PostToolUse hook 提醒文字同步雙掛分工；自測 35→38 案。BL-00064／BL-00067 依 user 裁定移滯後卷。 | fd682da | — | — |
@@ -43,6 +44,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-21｜misc｜governance｜maint-backlog-80-88-94-99
+
+2 顆：實作 4fd9122＋final review 收單 754989b（run wf_05f10455-5af、6 支 agent、19 筆 findings＝修 18／駁回 1〔兩鏡 refuted〕）。★review 兩處要害：①BL-00080 首版以行首三引號猜 docstring，會把一般三引號字串收尾行之後的碼行整段吞進量測面（實測虛報 97.4%／40% 字元是碼），改 tokenize＋ast 後 83.5%；②BL-00094 首版把門鈴排在 redis DEL 之後，DEL 失敗即拋、重跑時清前已 0 列＝永遠補不回來，改排在 pg 交易之後。三支工具自測合計 +11 案；RULES RL-0076 補隨遷工具豁免字面（原只住工具檔頭、不在 emit 進 prompt 的條文）。
 
 ### 2026-09-21｜misc｜governance｜maint-backlog-42
 
