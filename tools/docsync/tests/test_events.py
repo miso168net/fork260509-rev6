@@ -188,21 +188,30 @@ class TestGt02(unittest.TestCase):
 
     def test_append_only_vs_head(self):
         """BL-00035②：events.jsonl 自稱 append 型單一事實源，既有列卻可被靜默改寫＝erratum 機制
-        的整個前提在機器面零守。形制承 GT-04 的 HEAD 對比腿：HEAD 版須為現版的逐行前綴。"""
+        的整個前提在機器面零守。形制承 GT-04 的 HEAD 對比腿：HEAD 版須為現版的逐行前綴。
+        ★五案釘死「逐行前綴」而非「包含」：對調與中間插入在包含判準下全綠（mb35 review L1-3）。"""
         rel = "docs/ops/events.jsonl"
-        write(self.root, rel, MISC + "\n" + self._fc() + "\n")
+        fc = self._fc()
+        write(self.root, rel, MISC + "\n" + fc + "\n")
         _git(self.root, "add", rel)
         _git(self.root, "commit", "-qm", "events")
+        only = lambda: [f for f in events.gt_02(common.Ctx(self.root)) if "append-only" in f[3]]
         later = ev(type="misc", date="2026-09-04", summary="t", category="governance", backlog_add=[])
-        write(self.root, rel, MISC + "\n" + self._fc() + "\n" + later + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if "append-only" in f[3]], [])
+        write(self.root, rel, MISC + "\n" + fc + "\n" + later + "\n")
+        self.assertEqual(only(), [])                                   # 案1 尾端 append＝綠
         rewritten = ev(type="misc", date="2026-09-03", summary="被改過", category="governance", backlog_add=[])
-        write(self.root, rel, rewritten + "\n" + self._fc() + "\n")
-        fs = [f for f in events.gt_02(common.Ctx(self.root)) if "append-only" in f[3]]
-        self.assertTrue(fs and fs[0][0] == "ERROR" and fs[0][2].endswith(":1"), fs)
+        write(self.root, rel, rewritten + "\n" + fc + "\n")
+        fs = only()
+        self.assertTrue(fs and fs[0][0] == "ERROR" and fs[0][2].endswith(":1") and "改寫" in fs[0][3], fs)
         write(self.root, rel, MISC + "\n")
-        fs = [f for f in events.gt_02(common.Ctx(self.root)) if "append-only" in f[3]]
-        self.assertTrue(fs and "被刪" in fs[0][3], fs)
+        fs = only()
+        self.assertTrue(fs and "刪列" in fs[0][3], fs)                  # 案3 刪列
+        write(self.root, rel, fc + "\n" + MISC + "\n")                 # 案4 既有兩列對調（等長、包含判準會漏）
+        fs = only()
+        self.assertTrue(fs and fs[0][2].endswith(":1") and "改寫" in fs[0][3], fs)
+        write(self.root, rel, MISC + "\n" + later + "\n" + fc + "\n")  # 案5 中間插入（包含判準會漏）
+        fs = only()
+        self.assertTrue(fs and fs[0][2].endswith(":2") and "插入" in fs[0][3], fs)
 
     def test_pin_drift_red(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
@@ -249,7 +258,10 @@ class TestGt03(unittest.TestCase):
         """BL-00035④：單筆事件未過 schema 時，GT-03 只以該筆指名並中止下游判讀——
         否則 parse_events 把無效列丟棄、在途與完整性腿對「不存在的事件」續判＝整片假報
         （003 刀簿記實證：summary 超 300 字使整筆無效、GT-03 隨之假報在途 27 筆）。"""
-        bad = '{"type": "misc", "date": "2026-09-04"}'
+        # ★樣本取 003 刀實況形＝一列恰一錯（summary 超上限）：舊樣本缺三個必填欄＝一列三錯，
+        # 會讓「錯誤筆數 ≥2 才中止」這種假判準存活（mb35 review L1-2）。
+        bad = ev(type="misc", date="2026-09-04", summary="長" * (events.SUMMARY_CHAR_LIMIT + 1),
+                 category="governance", backlog_add=[])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + bad + "\n")
         fs = events.gt_03(common.Ctx(self.root))
         self.assertEqual(len(fs), 1, fs)

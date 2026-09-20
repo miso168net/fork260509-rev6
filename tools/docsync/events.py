@@ -315,21 +315,30 @@ def _append_only_leg(ctx, text):
     """BL-00035②：events.jsonl 自稱 append 型單一事實源，但既有列可被靜默改寫——erratum 機制
     （更正只能新增一筆 erratum、不得回頭改）的整個前提在機器面原本零守。
     形制承 GT-04 的 HEAD 對比腿：HEAD 版須為現版的逐行前綴，只准在尾端新增。
-    檔尚未入 HEAD（創世首顆、或該檔剛被建）＝無可對比、不報。"""
+    ★三態分流（mb35 review L1-1）：現版較長且前綴不符＝插入（其後所有 erratum 的 target_line
+    會整體位移，補救是把該列移到尾端、不是 append erratum）／等長＝改寫／較短＝刪列。
+    ★HEAD 版缺席或空（創世首顆、檔剛建）＝無可對比、不報；同形前例＝GT-04 對無 HEAD 亦靜默。"""
     head = ctx.head_text(EVENTS)
-    if head is None:
+    if not head or not head.strip():
         return []
     hl = head.rstrip("\n").split("\n")
     cl = text.rstrip("\n").split("\n")
+    undo = ("；若該列係**尚未推送之本地 commit** 所 append，補救＝`git reset --soft HEAD^` 後改再 commit"
+            "（`git commit --amend` 會以被改寫的那顆為基準、本腿恆紅；`--no-verify` 為 CLAUDE.md §6 硬禁令）")
     if len(cl) < len(hl):
         return [finding(ERROR, "GT-02", EVENTS,
-                        f"append-only 違反：HEAD 版 {len(hl)} 列、現版 {len(cl)} 列＝既有列被刪"
-                        "——本帳只准尾端新增，更正一律 append 一筆 erratum 事件")]
+                        f"append-only 違反（刪列）：HEAD 版 {len(hl)} 列、現版 {len(cl)} 列"
+                        f"——本帳只准尾端新增{undo}")]
     for i, (h, c) in enumerate(zip(hl, cl), 1):
         if h != c:
+            if len(cl) > len(hl):
+                return [finding(ERROR, "GT-02", f"{EVENTS}:{i}",
+                                f"append-only 違反（疑中間插入）：第 {i} 列起與 HEAD 版不同、現版多 {len(cl) - len(hl)} 列"
+                                "——事件一律尾端 append（遲到的 perf 事件亦然）；插入會讓其後所有 erratum 的 "
+                                "`target_line` 整體位移。補救＝把插入的列移到檔尾，不是 append erratum")]
             return [finding(ERROR, "GT-02", f"{EVENTS}:{i}",
-                            f"append-only 違反：第 {i} 列與 HEAD 版不同——本帳既有列不得改寫"
-                            "（erratum 機制的前提），更正一律 append 一筆 erratum 事件")]
+                            f"append-only 違反（改寫）：第 {i} 列與 HEAD 版不同——既有列不得改寫"
+                            f"（erratum 機制的前提），更正一律 append 一筆 erratum 事件{undo}")]
     return []
 
 

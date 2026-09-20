@@ -14,7 +14,7 @@
 ## 帳面統計
 - ADR：40（proposed 0、accepted 36、superseded 4）
 - RULES：77 條／上限 92（implementer 41/48、review 14/18、fix 16/19、主線 44/52、人 10/12）
-- BACKLOG 開放：34｜滯後：4
+- BACKLOG 開放：36｜滯後：4
 - LESSONS：30 筆
 - events：68 筆（erratum 2、feature_close 4、misc 24、perf 32、review 6）
 - CLAUDE.md 行數：162（只報表、不擋）
@@ -37,7 +37,7 @@
 | RULES fix | 16 | 19 | 內 |
 | RULES 主線 | 44 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 3769 | 4000 | 內 |
+| docsync 行數 | 3778 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 17.57 秒 rc=0
