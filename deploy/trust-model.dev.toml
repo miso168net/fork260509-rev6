@@ -1,5 +1,5 @@
 # ── rev6 dev 信任模型（承 rev5:004-ip-trust-anchor T006；契約＝specs/004-ip-trust-anchor/
-#    contracts/trust-model-config.md 之「dev 交付形」）──
+#    `docs/ops/reference-src/trust-model-config.md` 之「dev 交付形」）──
 #
 # ★本檔存在的理由（不是驗收便利、是拓樸正確性）：
 #   後端的傳輸層對端**恆為反向代理容器**。它若不在受信集，信任錨判定的第一層（對端閘）

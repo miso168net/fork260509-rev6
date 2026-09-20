@@ -15,8 +15,8 @@
         fixtures 機器對賬（承 rev5:B-010；離線零 docker、不讀庫；★不入 pre-commit 常跑鏈——
         手動／review 輪跑）。
 
-契約＝specs/001-schema-baseline/contracts/gates.md（行為）＋contracts/schema-evolution.md
-（登記檔形＋啟動斷言七條）＋contracts/fixtures.md（凍結面）。零容差語意：一切比對＝全等，
+契約＝docs/ops/reference-src/schema-gates.md（行為）＋`docs/ops/reference-src/schema-evolution-contract.md`
+（登記檔形＋啟動斷言七條）＋`docs/ops/reference-src/schema-fixtures-contract.md`（凍結面）。零容差語意：一切比對＝全等，
 「容差」合法形恰兩種＝①演進帳登記（docs/ops/reference-src/schema-evolution.json）
 ②rev5:B-065 表級收窄（RUNTIME_APPEND_TABLES 寫死本檔、配 seed 必空斷言；見下 gate2 seed 段）；
 除此之外一律全等。
@@ -50,7 +50,7 @@
 schema-definition.md §4 UTC+0 拍板）；輸出不含 deploy 機密值（seed 定稿值〔含 PHC 常數〕本在
 版控、gate2 seed diff 可回顯——非洩密面）。
 
-雙源互證（rev6 pristine 萃取之 fixtures vs rev5 同名檔逐位元全等；contracts/gates.md §2）＝
+雙源互證（rev6 pristine 萃取之 fixtures vs rev5 同名檔逐位元全等；`docs/ops/reference-src/schema-gates.md` §2）＝
 fixtures 產製之一次性驗證（紀錄住 fixtures/provenance.md）、非三閘常態比對面；工具不內建
 rename 映射（rev5 有、供其 rev4 血緣對賬；rev6 無此場景、research R6）。
 """
@@ -82,10 +82,10 @@ COMPOSE_EXEC = ["docker", "compose", "-f", "docker-compose.yml",
 COL_KEYS = frozenset({"table", "column", "ordinal", "type", "nullable", "default"})
 DEF_KEYS = frozenset({"table", "name", "definition"})
 
-# 登記檔（contracts/schema-evolution.md）：kind 枚舉恰八值；id／knife／date 格式
+# 登記檔（`docs/ops/reference-src/schema-evolution-contract.md`）：kind 枚舉恰八值；id／knife／date 格式
 KINDS = ("add_table", "add_column", "alter_column", "add_index", "add_constraint",
          "seed_add", "seed_update", "seed_delete")
-# 斷言⑦（rev5:B-006；contracts/schema-evolution.md §2 第 7 條）：kind×detail 必備鍵表——八 kind
+# 斷言⑦（rev5:B-006；`docs/ops/reference-src/schema-evolution-contract.md` §2 第 7 條）：kind×detail 必備鍵表——八 kind
 # 逐 kind 定形、load_ledger 啟動即驗（原合成期 _need 臨時檢查升格為啟動斷言；_need 留作
 # 直呼合成路徑的兜底）。需比對面在場的值域斷言（pk 欄名 ⊆ COPY 欄集、同名 index/
 # constraint 重複登記攔）歸合成期驗、同樣 GateError→rc 2。
@@ -258,7 +258,7 @@ def _load_json(path, what):
 
 def _assert_detail(e):
     """斷言⑦：kind×detail 必備鍵（表＝DETAIL_KEYS）＋逐 kind 值形檢——任一敗＝GateError
-    （呼叫端轉 rc 2）；contracts/schema-evolution.md §2 第 7 條。"""
+    （呼叫端轉 rc 2）；`docs/ops/reference-src/schema-evolution-contract.md` §2 第 7 條。"""
     kind, d, eid = e["kind"], e["detail"], e["id"]
     for k in DETAIL_KEYS[kind]:
         if k not in d:
@@ -309,7 +309,7 @@ def _assert_detail(e):
 
 
 def load_ledger(root):
-    """演進登記檔＋啟動斷言七條（contracts/schema-evolution.md §2）；任一敗＝GateError。"""
+    """演進登記檔＋啟動斷言七條（`docs/ops/reference-src/schema-evolution-contract.md` §2）；任一敗＝GateError。"""
     path = os.path.join(root, LEDGER)
     data = _load_json(path, "演進登記檔 schema-evolution.json")
     # ① 頂層鍵恰集＋型別
@@ -375,7 +375,7 @@ def _assert_rows(rows, keys, what):
 def load_fixtures(root):
     """凍結面四件（三 json＋seed.sql）；缺席＝GateError 附補救提示（rc 2）。"""
     remedy = ("——補救：fixtures＝凍結面（specs/001-schema-baseline/fixtures/、"
-              "contracts/fixtures.md）；未產製→依 §2 產製程序（pristine 重放＋三驗後照相"
+              "`docs/ops/reference-src/schema-fixtures-contract.md`）；未產製→依 §2 產製程序（pristine 重放＋三驗後照相"
               "落檔）；已凍結卻缺檔＝repo 受損，自 git 還原、絕不重產")
     fx = {}
     for name, keys in (("columns", COL_KEYS), ("indexes", DEF_KEYS),
@@ -1689,7 +1689,7 @@ class TestNegativeInjection(unittest.TestCase):
         self.assertEqual(f, [])
 
     def test_5_fake_delta_synth_real_fixtures(self):
-        """第五案（contracts/gates.md §4 ⑤、spec FR-009、research R7）：對**真凍結 fixtures**
+        """第五案（`docs/ops/reference-src/schema-gates.md` §4 ⑤、spec FR-009、research R7）：對**真凍結 fixtures**
         登記一筆假 add_column（sys_user.tmp_x text 可空、末位）——合成期望值必與「注入後實庫
         照相」全等（結構面＋欄序面＋seed 面三面皆綠）；同一注入未登記則三面皆紅、指名
         sys_user／tmp_x。rev5 終態登記零筆、此為合成邏輯對真凍結面的首次實證。"""
@@ -1727,7 +1727,7 @@ class TestNegativeInjection(unittest.TestCase):
 
 
 class TestLedgerAssertions(unittest.TestCase):
-    """登記檔啟動斷言七條（contracts/schema-evolution.md §2）＝rc 2 fail-loud。"""
+    """登記檔啟動斷言七條（`docs/ops/reference-src/schema-evolution-contract.md` §2）＝rc 2 fail-loud。"""
 
     def _load(self, data):
         with tempfile.TemporaryDirectory() as d:
@@ -2404,7 +2404,7 @@ class TestMapAssertions(unittest.TestCase):
 
 
 class TestAuditArchetypeNegative(unittest.TestCase):
-    """audit 變體判準的負向覆蓋（RL-0051「變異要打在判準上」；contracts/gates.md §4 negative 第六類）。
+    """audit 變體判準的負向覆蓋（RL-0051「變異要打在判準上」；`docs/ops/reference-src/schema-gates.md` §4 negative 第六類）。
     右源＝真凍結 fixtures ⊕ 真 archetype-map，離線注入假漂移逐條必紅：判準面任一腿被拿掉即有案轉紅。
     ★不同於本檔其餘 negative 組：那些注入的是「實庫漂移」、本組注入的是「變體驗則會不會抓」。"""
 

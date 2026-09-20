@@ -18,7 +18,7 @@ fork260509-rev6/
 ├── docs/ops/BACKLOG.md、BACKLOG-DEFERRED.md   待辦兩卷 BL-NNNNN（開放／滯後；配號只在主檔；完成即刪、git 即史）
 ├── docs/ops/LESSONS.md、LESSONS/    教訓索引（機器生成、例外註冊、檔頭 next-id）與一坑一檔 LL-NNNNN（`LESSONS/` 首條 LL 落地時出現）
 ├── docs/ops/RUNBOOK.md              操作手冊：章節編號承 rev5；章節現況以本檔檔頭句為準（唯一人寫的家）
-├── docs/ops/reference-src/         人寫／照相真源：`schema-snapshot.json`／`accounts-snapshot.json`（`python3 tools/docsync refresh` 照相）＋`archetype-map.json`＋`schema-evolution.json`（演進帳）＋`schema-definition.md`（欄語意權威、ADR-00012）
+├── docs/ops/reference-src/         人寫／照相真源：`schema-snapshot.json`／`accounts-snapshot.json`（`python3 tools/docsync refresh` 照相）＋`archetype-map.json`＋`schema-evolution.json`（演進帳）＋`schema-definition.md`（欄語意權威、ADR-00012）＋跨刀活體契約五份（ADR-00041）：`schema-gates.md`／`schema-evolution-contract.md`／`schema-fixtures-contract.md`／`code-gate-contracts.md`／`trust-model-config.md`
 ├── docs/arc42/decisions/            ADR 一決策一檔 ADR-NNNNN-<slug>.md（accepted 後 body 不可變、翻案走 supersedes）
 ├── docs/arc42/、docs/c4/、docs/compliance/、docs/process/   活書家族（索引＝docs/arc42/ARCHITECTURE.md；永遠現在式）
 ├── docs/generated/                  機器生成、嚴禁手改：STATE／MILESTONES／DECISIONS-INDEX／GATES／RAD-AI-MAP／reference/{ports,perf,rev5-blueprint-map,agents,schema,accounts,routes}

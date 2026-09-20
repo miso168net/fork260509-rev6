@@ -25,7 +25,7 @@ GENERATED_FILES = (
     "docs/arc42/ARCHITECTURE.md", "docs/ops/LESSONS.md",  # 例外註冊兩件（啟動書 §3.1；ADR-00005）
     "docs/generated/reference/rev5-blueprint-map.md", "docs/generated/reference/agents.md",  # 波 3（ADR-00006；啟動書 §3.2 P-E2）
     "docs/generated/reference/schema.md", "docs/generated/reference/accounts.md",  # 001-schema-baseline（ADR-00010；真源＝reference-src 快照＋archetype-map）
-    "docs/generated/reference/routes.md",  # 002 刀 U1（contracts/code-gates.md §4；真源＝rust-api/server/src/router.rs ROUTES const、無 Day-1 豁免）
+    "docs/generated/reference/routes.md",  # 002 刀 U1（`docs/ops/reference-src/code-gate-contracts.md` §6；真源＝rust-api/server/src/router.rs ROUTES const、無 Day-1 豁免）
 )
 RE_CHAPTER = re.compile(r"^docs/arc42/(\d{2})-[a-z0-9-]+\.md$")
 RE_H1 = re.compile(r"^#\s+(?:§\s*\d+\s+)?(.+?)\s*$", re.M)
@@ -372,7 +372,7 @@ def gen_reference_agents(ctx):
     return "\n".join(lines) + "\n"
 
 
-# ─── reference/routes：rust-api/server/src/router.rs 之 ROUTES const 全量表（002 刀 U1；契約＝contracts/code-gates.md §4） ───
+# ─── reference/routes：rust-api/server/src/router.rs 之 ROUTES const 全量表（002 刀 U1；契約＝`docs/ops/reference-src/code-gate-contracts.md` §6） ───
 # 窄假設行級解析（標準庫、不 parse Rust）＝data-model §4 機器契約：只認 router.rs 現行實際使用的字面形；任一偏離
 # 即 RouterRoutesError（fail-loud、generate 非零、GT-01 連帶紅）——寧可擋下、絕不靜默漏列一條 route。
 ROUTER_SOURCE = "rust-api/server/src/router.rs"

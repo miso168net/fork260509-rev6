@@ -516,7 +516,7 @@ def check_seed_evolution(ledger_path, tables):
     entries = ledger.get("entries") if isinstance(ledger, dict) else None
     if not isinstance(entries, list) or not all(isinstance(e, dict) for e in entries):
         raise BaselineError(f"演進登記檔壞形：{ledger_path}（{SCHEMA_EVOLUTION}）entries 須為物件 list"
-                            "——形＝specs/001-schema-baseline/contracts/schema-evolution.md §2")
+                            "——形＝docs/ops/reference-src/schema-evolution-contract.md §2")
     hits = [f"{e.get('id', '?')}（{e.get('kind')}、{e.get('table')}）" for e in entries
             if e.get("table") in tables and e.get("kind") in SEED_EVOLUTION_KINDS]
     if hits:
@@ -1255,7 +1255,7 @@ def _restore_stub(**over):
 
 
 def _ledger_entry(eid, kind, table, detail):
-    """合成演進登記項（欄位齊同 specs/001-schema-baseline/contracts/schema-evolution.md §2）。"""
+    """合成演進登記項（欄位齊同 docs/ops/reference-src/schema-evolution-contract.md §2）。"""
     return {"id": eid, "knife": "001-schema-baseline", "kind": kind, "table": table,
             "detail": detail, "date": "2026-09-14"}
 

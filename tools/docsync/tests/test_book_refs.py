@@ -55,6 +55,37 @@ class TestGt06(unittest.TestCase):
             "docs/ops/events.jsonl": '{"notes": "tmp/check-backlog.md"}\n',
             "docs/generated/MILESTONES.md": "`tmp/001-assemble.py`\n"})), [])
 
+    def test_spec_contract_ref(self):
+        """ADR-00041 腿：現在式面禁引 specs/**/contracts/**；史料面與 ADR／generated／events 豁免。"""
+        fs = errs(self._run({"docs/ops/a.md": "契約＝`specs/001-schema-baseline/contracts/gates.md` §5\n",
+                             "tools/x.py": "# 形＝specs/002-system-settings/contracts/wire-settings.md §4\n"}))
+        self.assertEqual(len(fs), 2, fs)
+        self.assertTrue(all("spec 契約檔" in f[3] for f in fs), fs)
+        self.assertEqual(errs(self._run({
+            "docs/brainstorms/x.md": "`specs/001-a/contracts/gates.md`\n",
+            "specs/001-a/tasks.md": "`specs/001-a/contracts/gates.md`\n",
+            "docs/arc42/decisions/ADR-00001-x.md": "provenance 引 `specs/001-a/contracts/gates.md`\n",
+            "docs/generated/MILESTONES.md": "`specs/001-a/contracts/gates.md`\n",
+            "docs/ops/events.jsonl": '{"notes": "specs/001-a/contracts/gates.md"}\n'})), [])
+        self.assertEqual(errs(self._run({"docs/ops/b.md": "活體契約＝`docs/ops/reference-src/schema-gates.md`\n"})), [])
+        # 裸相對形（repo 主流寫法）同樣入射程——只認絕對形＝該腿在最常見書寫形上 vacuous
+        fs = errs(self._run({"tools/g.py": "# 契約＝contracts/gates.md §5\n",
+                             "docs/ops/c.md": "形＝contracts/schema-evolution.md §2\n"}))
+        self.assertEqual(len(fs), 2, fs)
+        self.assertTrue(all("裸相對形" in f[3] for f in fs), fs)
+        # 前代引用與非名冊內檔名不入射程
+        self.assertEqual(errs(self._run({"docs/ops/d.md": "承 `rev5:contracts/gates.md` 改座標；另見 contracts/other.md\n"})), [])
+        # 具名豁免：唯有 reference-src 的活體檔、以 `> 凍結存證＝` 起首之行
+        self.assertEqual(errs(self._run({
+            "docs/ops/reference-src/x.md": "> 凍結存證＝`specs/001-a/contracts/gates.md`（不再前進）\n"})), [])
+        self.assertTrue(errs(self._run({
+            "docs/ops/reference-src/y.md": "> 權威＝`specs/001-a/contracts/gates.md`\n"})))
+        # 濫用形：同行寫「凍結存證」但不在 reference-src／不是引言行起首＝不豁免
+        self.assertTrue(errs(self._run({
+            "docs/ops/z.md": "凍結存證 見 `specs/001-a/contracts/gates.md` §5\n"})), "非 reference-src 不得豁免")
+        self.assertTrue(errs(self._run({
+            "docs/ops/reference-src/w.md": "權威＝`specs/001-a/contracts/gates.md`（凍結存證另存）\n"})), "非引言行起首不得豁免")
+
     def test_book_absent_skip(self):
         fs = book.gt_06(stub({"docs/ops/a.md": "a\n"}))
         self.assertTrue(any(f[0] == "ERROR" and "活書家族" in f[3] and "缺席" in f[3] and "空集合" in f[3] for f in fs), fs)
