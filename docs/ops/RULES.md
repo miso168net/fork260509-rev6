@@ -68,7 +68,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0058 | Workflow script 的 agent prompt 全數烤進 script 本體；script 一律不接受 args（非 undefined／null 即零派發 throw）、一切邊界與清單寫死 script 常數，`_vars`／`_plan` 段常數由首段逐欄斷言型別與非空、不符零派發即 throw。 | 主線 | prompt | ADR-00004 |
 | RL-0059 | 派發前斷言渲染後 prompt 非空、長度合理、開頭無「undefined」／「null」字面、必含「zh-TW」字面與冒煙 token。 | 主線 | prompt | ADR-00004 |
 | RL-0060 | 一切邊界寫死 script 常數不取自 args：fix 迴圈上限 ≤3、TDD 執行單元 agent 保險絲 ≤20、review 形每 run ≤24（wf-watchdog runaway 底線 25 減 1）；fix agent 允許檔清單寫死常數、次輪只縮不擴。 | 主線 | prompt | ADR-00004 |
-| RL-0061 | Workflow launch 與 Monitor 看門狗同一回合原子成對發射、兩 call 間零其他動作；完成通知＋Monitor 雙訊號全覆蓋、毋需輪詢。 | 主線 | checklist | ADR-00004 |
+| RL-0061 | Workflow launch 與看門狗同一回合原子成對發射、call 間零其他動作；看門狗雙掛＝Monitor 前 30 分鐘（即時推播、到期不重掛）＋Bash 背景任務長尾腿（`--bg`、退出即通知）；完成通知與兩腿三訊號全覆蓋、毋需輪詢。 | 主線 | checklist | ADR-00004 |
 | RL-0062 | 保險絲值由同檔 script 常數推導並自我斷言，MUST ≥ 結構最壞值、不得手挑；runaway 判準數不重複 agent key、非 journal 行數。 | 主線 | prompt | rev5:L-068 |
 | RL-0063 | agent 絕不 push／merge／git commit／git checkout；只改工作樹，git 操作由主線負責。 | implementer,fix,review | prompt | ADR-00004 |
 | RL-0064 | 絕不寫入 `../fork260509-rev5/`（含子庫與源倉；凍結 SHA 由 bootstrap 斷言）；讀取允許且必要；rev5 stack（埠 2xxxx）不做 schema／seed／設定變更或 `down -v`，rev6 走 3xxxx。 | implementer,fix,主線 | prompt | ADR-00002 |
