@@ -726,7 +726,7 @@ def main(argv, run=subprocess.run):
 
 FAKE_TABLES = {"sys_user": 3, "sys_token": 0, "seaql_migrations": 7}
 FAKE_SEQS = {"sys_user_id_seq": (3, "t"), "sys_token_id_seq": (1, "f")}
-FAKE_KEYS = ["session:sid-a:last_activity", "session:denylist:sid-b", "throttle:lock:user:x",
+FAKE_KEYS = ["session:sid-a:last_activity", "session:denylist:sid-b", "throttle:unlock:user:x",
              "plainkey"]
 
 
@@ -914,7 +914,7 @@ class TestDiffPure(unittest.TestCase):
 
 class TestPrefixGrouping(unittest.TestCase):
     def test_prefix_is_segment_before_first_colon_and_colonless_goes_to_no_prefix(self):
-        got = group_prefixes(["session:a:b", "session:c", "throttle:lock:user:x", "plain",
+        got = group_prefixes(["session:a:b", "session:c", "throttle:unlock:user:x", "plain",
                               "", "  ", "sample:7"])
         self.assertEqual(got, {"session": 2, "throttle": 1, "sample": 1, NO_PREFIX: 1})
         self.assertEqual(group_prefixes([]), {})
@@ -1310,7 +1310,7 @@ class TestRestore(unittest.TestCase):
         stub.seqs.update(sys_token_id_seq=(33, "t"), session_event_id_seq=(4, "t"),
                          sys_login_attempt_id_seq=(9, "t"), sys_ip_rule_id_seq=(3, "t"),
                          sys_operation_log_id_seq=(6, "t"))
-        stub.keys += ["session:sid-a:last_activity", "throttle:lock:user:走查 探針",
+        stub.keys += ["session:sid-a:last_activity", "throttle:unlock:user:走查 探針",
                       "session:denylist:sid-b"]
         stub.settings[1]["stamped"] = True
 
@@ -1339,7 +1339,7 @@ class TestRestore(unittest.TestCase):
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
             f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
-            "'throttle:lock:user:走查 探針'"])
+            "'throttle:unlock:user:走查 探針'"])
         self.assertFalse(any("FLUSH" in c.upper() for c in redis_cmds))
         self.assertEqual(stub.keys, ["plainkey"])                      # 非清理前綴之鍵不動
         self.assertFalse(any(s["stamped"] for s in stub.settings))     # 審計欄已歸 NULL
@@ -1376,7 +1376,7 @@ class TestRestore(unittest.TestCase):
                      {"tables": dict(RESTORE_FAKE_TABLES, session_event=1)},
                      {"tables": dict(RESTORE_FAKE_TABLES, sys_login_attempt=4)},
                      {"keys": ["plainkey", "session:sid-x"]},
-                     {"keys": ["throttle:lock:ip:203.0.113.9"]}):
+                     {"keys": ["throttle:unlock:ip:203.0.113.9"]}):
             stub = _restore_stub(**over)
             path = self._baseline(stub)
             err = io.StringIO()
@@ -1571,7 +1571,7 @@ class TestRestore(unittest.TestCase):
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
             f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
-            "'throttle:lock:user:走查 探針'"])
+            "'throttle:unlock:user:走查 探針'"])
         self.assertEqual([stub.tables[t] for t in FIVE_TABLES], [0] * 5)
         self.assertEqual(stub.seqs, dict(RESTORE_FAKE_SEQS, sys_ip_rule_id_seq=(7, "t"),
                                          sys_token_id_seq=(33, "t"), session_event_id_seq=(4, "t"),
