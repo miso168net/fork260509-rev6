@@ -207,7 +207,7 @@ description: "Task list for 004-ip-trust-anchor"
 - [x] T057 [US5] `rust-api/server/src/handler/throttle.rs` 新建（`handler/mod.rs` 加 `pub mod throttle;`）：`UnlockReq{dimension, userName, target}`＋`resolve_unlock_target`（`user`→帳號名原文、`ip`→`throttle::ip_bucket`；畸形→`invalidUnlockTarget`、先於一切）→上下文缺席→5000→`sys_operation_log::write`（`entity_table=login_throttle`、`entity_id=NULL`、`payload_after={dimension,userName,target}`；失敗→5000 中止）→該維標記 `set_ex(unix 秒十進位, 1440*60)`→`0000`；★不查鎖態、不 DEL 任何鍵（無 L1）；帳號維三件補齊之讀取端已於 T049 落、本 task 只核
 - [x] T058 [US5] `rust-api/server/src/router.rs` 加 `/systemManage/unlockLogin`（POST／Authed＋政策）＋`ROUTES_COUNT` 21→**22**＋`mod tests` 釘值 22＋`tools/docsync/tests/test_references.py` 真 repo 釘列 22；主線 generate 後 `routes.md` 恰 22 列
 - [x] T059 [US5] `MSG_KEYS` 18→**19**：`error.rs` 加 `BIZ_THROTTLE_INVALID_UNLOCK_TARGET`＋名冊釘值 19；★base-web 三檔 locale backend 子樹＋`app.d.ts` backend 型節各補第 19 鍵（既有圈界內）；`python3 tools/msg-key-gate.py check` 綠；`tests/contract.rs` 之 `msg_roster_every_key_has_an_emitter` 六鍵發出點齊（U7 五＋本刀一）
-- [ ] T060 [US5] 走查 quickstart §5；★走查三步（`restore --seed`→`diff` rc 0；redis 零 `*lock:*`）；兩子庫 commit→外層一顆雙 pin bump（★msg-key-gate 兩側同批）＋generate（routes.md 22 列）
+- [x] T060 [US5] 走查 quickstart §5；★走查三步（`restore --seed`→`diff` rc 0；redis 零 `*lock:*`）；兩子庫 commit→外層一顆雙 pin bump（★msg-key-gate 兩側同批）＋generate（routes.md 22 列）
 
 **Checkpoint**: 全部功能 US 獨立可用——本刀功能面完成。
 
