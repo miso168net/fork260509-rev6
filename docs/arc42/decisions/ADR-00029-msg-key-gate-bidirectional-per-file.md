@@ -2,9 +2,9 @@
 id: "ADR-00029"
 title: msg key 跨端閘形制＝後端名冊與三檔 locale backend 子樹逐檔雙向全等、無白名單、Biz 構造點守衛兩形（tools/msg-key-gate.py）
 date: 2026-09-13
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00039]
 provenance: "003-auth-session clarify Q2（2026-09-08、user 拍板「A 逐檔雙向全等＋立 ADR」）；spec FR-025／FR-027；research R9；contracts/code-gates.md §2（閘契約逐列）與 §7 ADR ⑤；contracts/msg-keys.md（13 鍵三語譯文表＝譯文唯一權威）；ADR-00017 決定 3「跨端閘延至首個接 i18n 的前端刀」＝本 ADR 兌現、不翻案；rev5:Lint24（後端字面 ⊆ 前端 zh-tw.ts 字典＋九鍵白名單＝三向）翻案為逐檔雙向；主線擬稿即 accepted（tasks T068）"
 tags: [i18n, contract, code-gate, base-web, rust-api]
 ---

@@ -31,7 +31,7 @@
 | ADR-00026 | accepted | 2026-09-08 | 憲法 Amendment 1.2.0→1.3.0——§III.2 首批四條 ★ 軌道八用途授權＋§I.7 首批五座行為島 A～E 入憲 | 003-auth-session | — | — |
 | ADR-00027 | superseded | 2026-09-08 | AppState 恰兩欄封條翻案→五欄——加 jwt／cache／captcha_secret；ip_rules／trust_model／mailer 續留域外 | 003-auth-session | — | ADR-00036 |
 | ADR-00028 | accepted | 2026-09-08 | root Cargo.toml「不引 argon2」翻案——引入 auth 依賴八支（六支 auth＋log＋getrandom）、全域版本紀律雙源核對 D1～D6 | 003-auth-session | — | — |
-| ADR-00029 | accepted | 2026-09-13 | msg key 跨端閘形制＝後端名冊與三檔 locale backend 子樹逐檔雙向全等、無白名單、Biz 構造點守衛兩形（tools/msg-key-gate.py） | 003-auth-session | — | — |
+| ADR-00029 | superseded | 2026-09-13 | msg key 跨端閘形制＝後端名冊與三檔 locale backend 子樹逐檔雙向全等、無白名單、Biz 構造點守衛兩形（tools/msg-key-gate.py） | 003-auth-session | — | ADR-00039 |
 | ADR-00030 | accepted | 2026-09-13 | 登入頁三顆快速登入鈕與表單預填密碼＝已知態「保留＋記帳」（零 inline、UI 對照零差異；帳＝滯後卷 BL-00049、觸發綁 RUNBOOK §16 prod 硬化拍板） | 003-auth-session | — | — |
 | ADR-00031 | accepted | 2026-09-14 | rust-api boot 期 JWT access／refresh 兩把秘鑰同值即 fail-loud（兩鍵指名、訊息不含值；射程只 JWT 兩鑰） | 輕量軌｜maint-backlog-pre-004 | — | — |
 | ADR-00032 | accepted | 2026-09-15 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表（續行 ADR-00016）——名詞定義之環境缺席語意改為逐支見表、容器依賴型具名跳過 | 輕量軌｜maint-spec-compliance-002 | ADR-00016 | — |
@@ -41,3 +41,5 @@
 | ADR-00036 | accepted | 2026-09-19 | AppState 五欄→七欄（續行 ADR-00027）——加 trust_model／ip_rules；mailer 續留域外、開第八欄須新 ADR | — | ADR-00027 | — |
 | ADR-00037 | accepted | 2026-09-19 | 轉發鏈跳數逾上界——標記全域、拒絕限登入、計數分流；稽核轉錄保留判定窗並與判定軌共用取窗實作（島 F 之 F7／F8 落地形） | — | — | — |
 | ADR-00038 | accepted | 2026-09-20 | 登入節流判定面——兩維皆於每次嘗試讀設定現值並由 PG 滑動窗定案、不設快取層負快取；快取可用性改由解鎖標記讀取判定 | — | — | — |
+| ADR-00039 | accepted | 2026-09-20 | msg key 譯文之家＝三檔 locale backend 子樹各為該語權威（續行 ADR-00029）——不另立譯文表、鍵數以跨端閘為準 | — | ADR-00029 | — |
+| ADR-00040 | accepted | 2026-09-20 | 004 ip-trust-anchor 已知態集——解鎖無 UI 按鈕／dev 經反向代理可達二態／操作稽核覆蓋不對稱／logout 故障窗弱 oracle／redis 不開持久化／wire 裁判面不開嚴格模式（六款皆 by-design、各附翻案觸發器） | — | — | — |
