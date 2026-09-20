@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-21 | misc | governance｜maint-backlog-35 | 005 前維護批第 2／7 支：事件帳守衛兩腿（BL-00035②④）——GT-02 加 append-only HEAD 對比腿（HEAD 版須為現版逐行前綴；刪列／改寫／疑中間插入三態各自指名，形制承 GT-04），GT-03 改為「有無效列即指名首列並中止下游判讀」（原本無效列被丟棄⇒在途與完整性腿對不存在的事件續判＝整片假報）。自測 280→282 案、閘數維持 12/12。 | 9b932d8 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-79 | 005 前維護批第 1／7 支：Workflow 看門狗改雙掛形——`wf-watchdog.py` 加 `--bg` 背景任務模式（RUNAWAY 由告警不退出改告警即退出，因背景任務只有退出才通知主線；rev5:B-069 契約的具名例外），CLAUDE.md §2／RL-0016／RL-0017／RL-0061／PostToolUse hook 提醒文字同步雙掛分工；自測 35→38 案。BL-00064／BL-00067 依 user 裁定移滯後卷。 | fd682da | — | — |
 | 2026-09-20 | misc | governance｜maint-no-tmp-refs | 受版控文件禁寫 tmp 具名路徑（user 2026-09-20 指示、射程裁定＝只綁現在式面）：立 RL-0077、GT-06 加 `_tmp_refs` 腿（不新增閘、閘數仍 12/12；佔位／glob 與 OS /tmp/ 不入射程，史料面與 ADR body／events／generated 豁免）、LL-00030 一坑一檔、CLAUDE.md §4 指針行；現在式面十處修正（LESSONS 三筆、tools/orchestration 三處、deploy/sops.sh 用法例）。 | 119f1d4 | — | — |
 | 2026-09-20 | feature_close | 004-ip-trust-anchor | 004 ip-trust-anchor 收單（rev6 第四刀）：信任錨真實來源還原／請求上下文／IP 存取閘／IP 規則五端點＋防自鎖＋操作稽核首寫／來源維登入節流（兩維、每次由 PG 定案、拔負快取）／管理員解鎖端點／IP 規則管理頁＋★軌道 BASE-WEB-MANAGE-PAGE-WIRING／兩支新碼面閘／RUNBOOK §16；零 migration；憲法 1.4.0；ROUTES 22、contract 24、MSG_KEYS 19、後端全量 679 passed。 | 990c4a7 | ADR-00034、ADR-00035、ADR-00036、ADR-00037、ADR-00038、ADR-00039、ADR-00040 | §3、§5、§6、§8、§10、§11、§12 |
@@ -41,6 +42,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-21｜misc｜governance｜maint-backlog-35
+
+2 顆：實作 3d7e4e0＋final review 收單 f48c279（run wf_ef82d105-eec、6 支 agent、14 筆 findings 三分流＝修 10／轉 BL-00102〔閘取值面與 HEAD 缺席口徑〕＋BL-00103〔perf 渲染依 date 排序〕／駁回 2〔兩鏡皆 refuted〕）。BL-00035 改列：②④ 收、①③ 留、子項編號不重排（碼面註解與測試 docstring 已引 BL-00035②／BL-00035④）。review 指出的兩個存活變異（逐行前綴→包含判準、有任何無效列→錯誤筆數≥2）在補案後雙雙轉紅。RUNBOOK §12c 補「一律尾端 append、不按日期插入」與 `git reset --soft HEAD^` 出路。
 
 ### 2026-09-21｜misc｜governance｜maint-backlog-79
 
