@@ -1,4 +1,4 @@
-<!-- next: BL-00089 -->
+<!-- next: BL-00091 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -40,3 +40,5 @@
 - BL-00086｜product｜分頁回應形 `PageRes<T>` 暫寄居 `rust-api/server/src/handler/ip_rule.rs`（004 刀 U7：rev6 首個分頁端點、形承前代「恰一消費者時寄居、第二消費者時上移」之時序）；第二個分頁端點落地時整段上移 `envelope.rs`、欄形與 serde 屬性逐字不動，並同批改寫 `envelope.rs` 檔頭與 `handler::ip_rule` 兩處互指句｜觸發＝第二個分頁端點落地之刀（角色／選單／使用者管理任一清單端點）、或下次動 `envelope.rs` 信封型可執行碼時（先到者）
 - BL-00087｜governance｜`tools/comment-overlap.py` 不解析 Python `#` 註解（只認 `//`、`/* */`、`.vue` 之 `<!-- -->`）：對承前代改寫的 `.py` 工具回「比對面為空」rc 2、量不到逐字重疊（004 刀 U8 兩支新碼面閘以同判準 40 字元之替代量測入單元報告）；補 `.py`／`.sh` 之 `#` 行註解與 docstring 解析＋自測｜觸發＝下一支承前代改寫之 `.py`／`.sh` 工具進場之刀或維護批，先到者
 - BL-00088｜governance｜`tools/route-artifact-gate.py` 兩處微形（004 刀 U8 碼品質審查留帳、不影響判定正確性）：①`run_check` 以 `notes` 是否為空推導綠訊息之「②／②③」字樣、與 notes 目前唯一來源（基線跳過）隱性耦合，日後新增任何 note 即誤述 ②容器於 OBSERVE 段後、REGEN 段前在 docker 層失敗時，容器內 `/tmp/route-artifact-gate.*` 沙盒不會被清｜觸發＝該工具下次被修改之刀或維護批；或沙盒殘留實際被觀測到時
+- BL-00089｜governance｜`rust-api/server/tests/common/mod.rs` 測試清理面兩項（004 刀 U10 碼品質審查留帳）：①三支守衛（`LoginAttemptGuard`／`IpRuleWriteGuard`／`UnlockWriteGuard`）各持一份同形 Drop 還原執行殼且細節已分岔——收攏為一支共用殼、三支 Drop 全部委派、doc 與 src 側 `test_kit::run_restore_stmts` 互指 ②`tests/contract.rs` 之 `observed_msgs_real_db` 把會話鍵縮 TTL 排在帶斷言段之後、中途 panic 即在 redis 留 `session:<sid>:last_activity` 鍵（TTL 3900 秒）致走查基準比對報差——兩個 sid 改掛 RAII 清鍵守衛｜觸發＝下一個動 `tests/common` 守衛或 `observed_msgs_real_db` 之刀或維護批；或該殘鍵再被觀測到一次，先到者
+- BL-00090｜product｜handler 就地共用件之收攏時點（004 刀 U10 留帳）：`handler::ip_rule` 與 `handler::throttle` 各持同形一份之 body 收斂（`Json` rejection→預設值再交畸形守門）與操作者組裝 `operator_from`（上下文缺席→`5000`）＝第二份、依前代收攏時序（第三份出現時）未達收攏點；測試側 `table_state`／`audit_table_state` 同族兩份刻意不合併（窗界謂詞不同、合併後配置多於邏輯）。第三個帶操作稽核之寫端 handler 進場時，前兩件收攏為 `handler/common.rs`（前代終態形）、測試側同族件同批重評｜觸發＝第三個需操作者上下文與 body 收斂之寫端 handler 落地之刀

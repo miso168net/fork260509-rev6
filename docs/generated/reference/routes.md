@@ -26,3 +26,4 @@
 | /systemManage/updateIpRule | POST | Policy | update-ip-rule | 否 |
 | /systemManage/deleteIpRule | DELETE | Policy | delete-ip-rule | 否 |
 | /systemManage/restoreIpRule | POST | Policy | restore-ip-rule | 否 |
+| /systemManage/unlockLogin | POST | Policy | unlock-login | 否 |
