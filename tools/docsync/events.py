@@ -311,21 +311,44 @@ def _erratum_view(rows):
     return sorted(by_line.items()), errs
 
 
+def _append_only_leg(ctx, text):
+    """BL-00035②：events.jsonl 自稱 append 型單一事實源，但既有列可被靜默改寫——erratum 機制
+    （更正只能新增一筆 erratum、不得回頭改）的整個前提在機器面原本零守。
+    形制承 GT-04 的 HEAD 對比腿：HEAD 版須為現版的逐行前綴，只准在尾端新增。
+    檔尚未入 HEAD（創世首顆、或該檔剛被建）＝無可對比、不報。"""
+    head = ctx.head_text(EVENTS)
+    if head is None:
+        return []
+    hl = head.rstrip("\n").split("\n")
+    cl = text.rstrip("\n").split("\n")
+    if len(cl) < len(hl):
+        return [finding(ERROR, "GT-02", EVENTS,
+                        f"append-only 違反：HEAD 版 {len(hl)} 列、現版 {len(cl)} 列＝既有列被刪"
+                        "——本帳只准尾端新增，更正一律 append 一筆 erratum 事件")]
+    for i, (h, c) in enumerate(zip(hl, cl), 1):
+        if h != c:
+            return [finding(ERROR, "GT-02", f"{EVENTS}:{i}",
+                            f"append-only 違反：第 {i} 列與 HEAD 版不同——本帳既有列不得改寫"
+                            "（erratum 機制的前提），更正一律 append 一筆 erratum 事件")]
+    return []
+
+
 def gt_02(ctx):
     """GATE:
       id=GT-02
       rule=RL-0055
       source=rev5:ADR 0012
-      drift=事件帳形制、SHA 實證、pin↔worktree
+      drift=事件帳形制、SHA 實證、pin↔worktree、既有列被改寫
       face=docs/ops/events.jsonl；外層 index gitlink；兩 worktree HEAD
       trigger=pre-commit
       rc=1
-      breaks-if-removed=事件帳可寫入任意形、假 SHA 入帳不察、pin 漂移靜默
+      breaks-if-removed=事件帳可寫入任意形、假 SHA 入帳不察、pin 漂移靜默、既有列可被靜默改寫（erratum 機制前提失守）
     """
     out = []
     text = ctx.text(EVENTS)
     if not text or not text.strip():
         return [finding(ERROR, "GT-02", EVENTS, "掃描面空集合：events.jsonl 缺席或空檔——創世 misc 事件必須存在")]
+    out += _append_only_leg(ctx, text)
     rows = _parse_lines(text)
     for ln, _, errs in rows:
         for m in errs:
@@ -462,14 +485,23 @@ def gt_03(ctx):
       id=GT-03
       rule=RL-0055
       source=rev5:ADR 0075
-      drift=收刀與 review 事件完整性、BL 引用存在性
+      drift=收刀與 review 事件完整性、BL 引用存在性、無效事件被續判
       face=docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews；docs/ops/BACKLOG.md；docs/ops/BACKLOG-DEFERRED.md
       trigger=pre-commit
       rc=1
-      breaks-if-removed=收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現
+      breaks-if-removed=收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現、無效事件觸發整片假在途
     """
     out = []
-    evs, _ = parse_events(ctx.text(EVENTS))
+    evs, perrs = parse_events(ctx.text(EVENTS))
+    if perrs:
+        # BL-00035④：無效列被 parse_events 丟棄⇒下游對「不存在的事件」續判會產生整片假報
+        # （003 刀簿記實證：summary 超 300 字使整筆無效、GT-03 隨之假報在途 27 筆）。
+        # 指名該筆、當場中止；根因由 GT-02 的 schema 腿逐筆報。
+        lns = "／".join(str(ln) for ln, _ in perrs[:5])
+        more = f"（另 {len(perrs) - 5} 筆）" if len(perrs) > 5 else ""
+        return [finding(ERROR, "GT-03", f"{EVENTS}:{perrs[0][0]}",
+                        f"下游判讀中止：第 {lns} 列未過 schema{more}（逐筆原因見 GT-02）"
+                        "——無效事件不入帳，對其續作在途／完整性判讀＝整片假報；先修該筆再看本閘")]
     out += _bl_existence(ctx, evs)
     closes = [e for e in evs if e["type"] in ("feature_close", "review")]
     if not closes:
