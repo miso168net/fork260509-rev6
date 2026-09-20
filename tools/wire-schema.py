@@ -22,7 +22,7 @@ package.json／pnpm lock；前端 porcelain 前後皆空。用法錯誤走 exit 
 
 lineage：rev4:003-wire-foundation（契約＝contracts/contract-machinery.md §1、機器基準＝data-model.md §3、
 抽取工具實測與釘版＝research.md R1）→ rev5:002-system-settings U7（`--strictNullChecks`）→ rev6 002 刀
-（specs/002-system-settings/contracts/code-gates.md §1.2、wire-settings.md §4；rc 慣例＝RUNBOOK §12）。
+（docs/ops/reference-src/code-gate-contracts.md §1、§2；rc 慣例＝RUNBOOK §12）。
 """
 import contextlib
 import io
@@ -58,7 +58,7 @@ TSJS_FLAGS = ["--ignoreErrors", "--required", "--strictNullChecks"]
 COMPOSE = ["docker", "compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml"]
 BASE_WEB_EXEC = COMPOSE + ["exec", "-T", "-w", "/app", "base-web"]
 
-# 快照輸出路徑（追蹤、隨 rust-api worktree；rev6 002 刀 contracts/wire-settings.md §4；
+# 快照輸出路徑（追蹤、隨 rust-api worktree；rev6 002 刀 `docs/ops/reference-src/code-gate-contracts.md` §2；
 # 首抽已隨 002 刀 U3 之 base-web typings 新檔落地；base-web 容器可用而快照缺席時 check 走 rc 2 fail-loud——
 # 容器不可用先具名跳過 rc 0、不讀快照＝ADR-00019 決定 2）。
 OUTPUT_PATH = os.path.join("rust-api", "server", "tests", "fixtures", "wire-schema.json")

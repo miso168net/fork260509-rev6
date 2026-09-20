@@ -259,7 +259,7 @@ def seed_account_projection(seed_text, entries):
     """凍結 seed ⊕ seed_* 登記 → {快照節: [投影列（COPY 文字）]}。合成語意同 tools/schema-gate.py apply_seed_entries
     （登記檔形斷言權威在該閘、此處只驗合成所需）；三表以外或非 seed_* 之登記不動本面；登記 pk 只回顯投影鍵之值。"""
     if not isinstance(entries, list):
-        raise SnapshotError(f"{SCHEMA_EVOLUTION} entries 須為 list——登記檔壞形（形＝specs/001-schema-baseline/contracts/schema-evolution.md §2）")
+        raise SnapshotError(f"{SCHEMA_EVOLUTION} entries 須為 list——登記檔壞形（形＝docs/ops/reference-src/schema-evolution-contract.md §2）")
     rows = {table: _seed_copy_rows(seed_text, table, keys) for _, table, keys, _ in ACCOUNT_SECTIONS}
     shown = {table: keys for _, table, keys, _ in ACCOUNT_SECTIONS}
     for e in entries:
@@ -344,7 +344,7 @@ def gen_reference_accounts(ctx):
     seed_text = ctx.text(SEED_FIXTURE)
     if seed_text is None:
         raise SnapshotError(f"{SEED_FIXTURE} 缺席——帳號快照投影對賬之左源（凍結 fixture）不在場＝比對面為空；凍結面受損自 git 還原、絕不重產")
-    ledger = _load_json(ctx, SCHEMA_EVOLUTION, "人寫演進登記檔（形＝specs/001-schema-baseline/contracts/schema-evolution.md §2）")
+    ledger = _load_json(ctx, SCHEMA_EVOLUTION, "人寫演進登記檔（形＝docs/ops/reference-src/schema-evolution-contract.md §2）")
     findings = accounts_seed_findings(snap, seed_text, ledger.get("entries"))
     if findings:
         raise SnapshotError(f"{ACCOUNTS_SNAPSHOT} ⇔ {SEED_FIXTURE} 投影不等（{len(findings)} 項未登記差額）：" + "；".join(findings) +

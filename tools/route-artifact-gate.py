@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """tools/route-artifact-gate.py — 路由外掛產物檔碼面閘（004 刀 U8；憲法 §III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` (i) 列之產物檔紀律、
-contracts/code-gates.md §2②；承 rev5:tools/route-artifact-gate.py 新寫；名冊＝RUNBOOK §12 碼面閘表）
+`docs/ops/reference-src/code-gate-contracts.md` §3②；承 rev5:tools/route-artifact-gate.py 新寫；名冊＝RUNBOOK §12 碼面閘表）
 
 子命令：
   check [--constitution <path>]   （預設）三道斷言；`--constitution` 只供本閘自身的變異驗證、日常一律預設憲法路徑

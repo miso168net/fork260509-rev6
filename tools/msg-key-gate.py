@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""msg key 跨端閘（003 刀 U9；spec FR-027、contracts/code-gates.md §2、research R9；碼面閘＝RUNBOOK §12 碼面閘表列、GT-12 腿對賬）。
+"""msg key 跨端閘（003 刀 U9；spec FR-027、`docs/ops/reference-src/code-gate-contracts.md` §5、research R9；碼面閘＝RUNBOOK §12 碼面閘表列、GT-12 腿對賬）。
 
 用法：
   python3 tools/msg-key-gate.py [check] [--rust <error.rs>] [--locales <dir>] [--src <dir>]   左源 ⇔ 三檔 backend 子樹逐檔雙向全等＋Biz 構造點守衛＋前端 msg 字面消費點名冊

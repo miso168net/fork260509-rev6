@@ -351,6 +351,17 @@ RE_TMP_REF = re.compile(r"(?<![\w./-])tmp/([A-Za-z0-9_][\w.-]*)")
 TMP_PLACEHOLDER = ("<", "*", "{", "?")  # tmp/walkthrough-<刀>.json、tmp/004-u* 等形制句不入射程
 # 豁免面：accepted ADR body 不可變（GT-04）、events 為 append-only 事件源、generated 由真源重算
 TMP_REF_EXEMPT = (ADR_DIR + "/", "docs/generated/")
+# spec 契約檔腿（ADR-00041）：跨刀活體契約住 docs/ops/reference-src/，spec 目錄為凍結存證。
+# 豁免同上（ADR body 引 spec 契約為 provenance 屬正當、generated 由真源重算、events 為史述）。
+RE_SPEC_CONTRACT = re.compile(r"specs/\d{3}-[a-z0-9-]+/contracts/[A-Za-z0-9_.-]+")
+# 裸相對形（repo 主流寫法；mb42 review L1-2／L2-1：只認絕對形＝該腿在最常見書寫形上 vacuous）。
+# 名冊＝已抽出的六個來源檔名，寫死常數；`rev5:contracts/…`（前代引用）與絕對形皆由界外字元排除。
+RE_MOVED_CONTRACT = re.compile(
+    r"(?<![\w/:-])contracts/(gates|fixtures|schema-evolution|trust-model-config|wire-settings|code-gates)\.md")
+# 具名豁免（ADR-00041 決定 3）：唯有 reference-src 的活體檔、以引言行宣告自己的凍結存證出處者。
+# 解除謂詞＝該行不再以 `> 凍結存證＝` 起首，或該檔不在 reference-src（mb42 review L1-7／L2-7 收窄）。
+SPEC_CONTRACT_EXEMPT_DIR = "docs/ops/reference-src/"
+SPEC_CONTRACT_EXEMPT_PREFIX = "> 凍結存證＝"
 TENSE_ERR = ("待決", "TBD", "⏳", "已完成", "下一步")
 TENSE_WARN = ("屆時", "日後", "將由")
 RE_SHEBANG_SH = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:/bin/|/usr/bin/)?(?:ba)?sh\b")
@@ -363,8 +374,13 @@ def strip_code(text):
     return INLINE.sub("", FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), text or ""))
 
 
-def _tmp_refs(ctx):
-    """RL-0077 腿：現在式面（任何副檔名）不得寫 tmp/ 具名路徑；史料面（brainstorms／specs／reviews）不在射程。
+def _forbidden_refs(ctx):
+    """現在式面（任何副檔名）的兩道引用禁令；史料面（brainstorms／specs／reviews）不在射程。
+    ①RL-0077：不得寫 tmp/ 具名路徑（gitignored 工作區、他人 clone 無此檔）。
+    ②ADR-00041：不得引用 `specs/**/contracts/**`——跨刀活體契約住 `docs/ops/reference-src/`，
+      spec 目錄是該刀收刀當下的凍結存證、不再前進，被現在式面當權威引用即死指針。
+      ★兩形皆掃：絕對形 `specs/NNN-…/contracts/…` 與裸相對形 `contracts/<已抽出檔名>.md`。
+      ★具名豁免：reference-src 的活體檔、以 `> 凍結存證＝` 起首之行——活體檔須能指出自己的凍結對照（ADR-00041 決定 3）。
     掃描面空集合由 gt_06 的活書缺席腿兜底（活書面 ⊂ 現在式面）。"""
     out = []
     for rel in ctx.tracked:
@@ -379,6 +395,16 @@ def _tmp_refs(ctx):
                     continue
                 out.append(finding(ERROR, "GT-06", f"{rel}:{i}",
                                    f"tmp/ 具名路徑「{m.group(0)}」——tmp 為 gitignored 工作區、他人 clone 無此檔（RL-0077）；改指入庫落點或不綁路徑的描述"))
+            exempt = (rel.startswith(SPEC_CONTRACT_EXEMPT_DIR)
+                      and line.lstrip().startswith(SPEC_CONTRACT_EXEMPT_PREFIX))
+            for m in (() if exempt else RE_SPEC_CONTRACT.finditer(line)):
+                out.append(finding(ERROR, "GT-06", f"{rel}:{i}",
+                                   f"現在式面引用 spec 契約檔「{m.group(0)}」——跨刀活體契約住 docs/ops/reference-src/（ADR-00041）；"
+                                   "spec 目錄為該刀凍結存證、不再前進，被當權威引用即死指針"))
+            for m in (() if exempt else RE_MOVED_CONTRACT.finditer(line)):
+                out.append(finding(ERROR, "GT-06", f"{rel}:{i}",
+                                   f"裸相對形 spec 契約引用「{m.group(0)}」——該契約已抽為跨刀活體（ADR-00041）；"
+                                   "改指 docs/ops/reference-src/ 的對應檔與節（相對形自現在式面各落點皆解析不到）"))
     return out
 
 
@@ -387,11 +413,11 @@ def gt_06(ctx):
       id=GT-06
       rule=RL-0048
       source=rev5:ADR 0012
-      drift=引用斷鏈、時態混入、tmp 具名路徑
-      face=tracked *.md；活書家族；現在式面全副檔名（tmp 腿）
+      drift=引用斷鏈、時態混入、tmp 具名路徑、spec 契約檔引用
+      face=tracked *.md；活書家族；現在式面全副檔名（tmp 腿與 spec 契約腿）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針
+      breaks-if-removed=死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針、跨刀活體契約回流 spec 目錄
     """
     out = []
     book_seen = False
@@ -426,7 +452,7 @@ def gt_06(ctx):
                 for w in TENSE_WARN:
                     if w in line:
                         out.append(finding(WARN, "GT-06", where, f"活書家族預告詞「{w}」——預告必標成預告並附回填義務"))
-    out += _tmp_refs(ctx)
+    out += _forbidden_refs(ctx)
     if not book_seen:
         out.append(finding(ERROR, "GT-06", "docs/arc42", "活書家族缺席（現在式面必在；RL-0051 掃描面空集合即紅）——連結／行號／路徑腿照跑"))
     return out

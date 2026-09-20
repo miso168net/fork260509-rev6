@@ -43,3 +43,4 @@
 | ADR-00038 | accepted | 2026-09-20 | 登入節流判定面——兩維皆於每次嘗試讀設定現值並由 PG 滑動窗定案、不設快取層負快取；快取可用性改由解鎖標記讀取判定 | 004-ip-trust-anchor | — | — |
 | ADR-00039 | accepted | 2026-09-20 | msg key 譯文之家＝三檔 locale backend 子樹各為該語權威（續行 ADR-00029）——不另立譯文表、鍵數以跨端閘為準 | 004-ip-trust-anchor | ADR-00029 | — |
 | ADR-00040 | accepted | 2026-09-20 | 004 ip-trust-anchor 已知態集——解鎖無 UI 按鈕／dev 經反向代理可達二態／操作稽核覆蓋不對稱／logout 故障窗弱 oracle／redis 不開持久化／wire 裁判面不開嚴格模式（六款皆 by-design、各附翻案觸發器） | 004-ip-trust-anchor | — | — |
+| ADR-00041 | accepted | 2026-09-21 | 跨刀活體契約自 spec 目錄抽出至 reference-src——五份新家、spec 原檔留凍結存證、現在式面改指新家（兩種書寫形皆機器守） | — | — | — |

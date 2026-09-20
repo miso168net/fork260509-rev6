@@ -12,11 +12,11 @@
 - 版本：1.4.0
 
 ## 帳面統計
-- ADR：40（proposed 0、accepted 36、superseded 4）
+- ADR：41（proposed 0、accepted 37、superseded 4）
 - RULES：77 條／上限 92（implementer 41/48、review 14/18、fix 16/19、主線 44/52、人 10/12）
 - BACKLOG 開放：36｜滯後：4
 - LESSONS：30 筆
-- events：69 筆（erratum 2、feature_close 4、misc 25、perf 32、review 6）
+- events：70 筆（erratum 2、feature_close 4、misc 25、perf 33、review 6）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -37,9 +37,9 @@
 | RULES fix | 16 | 19 | 內 |
 | RULES 主線 | 44 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 3778 | 4000 | 內 |
+| docsync 行數 | 3804 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 23.31 秒 rc=0
 - 2026-09-21｜misc｜governance｜maint-backlog-35｜005 前維護批第 2／7 支：事件帳守衛兩腿（BL-00035②④）——GT-02 加 append-only HEAD 對比腿（HEAD 版須為現版逐行前…
 - 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 17.57 秒 rc=0
-- 2026-09-21｜misc｜governance｜maint-backlog-79｜005 前維護批第 1／7 支：Workflow 看門狗改雙掛形——`wf-watchdog.py` 加 `--bg` 背景任務模式（RUNAWAY 由告警不…

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""tools/view-render-guard.py — 碼面閘：管理頁目錄零原始 HTML 注入寫法（004 刀 U8；spec FR-052、contracts/code-gates.md §2①；
+"""tools/view-render-guard.py — 碼面閘：管理頁目錄零原始 HTML 注入寫法（004 刀 U8；spec FR-052、`docs/ops/reference-src/code-gate-contracts.md` §3①；
 承 rev5:tools/view-render-guard.py 新寫；名冊＝RUNBOOK §12 碼面閘表）
 
 子命令：
