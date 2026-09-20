@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-21 | misc | governance｜maint-backlog-42 | 005 前維護批第 3／7 支：跨刀活體契約自 spec 目錄抽至 docs/ops/reference-src/（BL-00042、ADR-00041）——五份新家（四份整檔搬＋一份六節併入）、specs 原檔零改動留凍結存證、四十二處引用改指新家；GT-06 加腿同時守絕對形與裸相對形（後者為 repo 主流寫法、首版漏掃＝該腿原本 vacuous）。 | fdf181f | ADR-00041 | — |
 | 2026-09-21 | misc | governance｜maint-backlog-35 | 005 前維護批第 2／7 支：事件帳守衛兩腿（BL-00035②④）——GT-02 加 append-only HEAD 對比腿（HEAD 版須為現版逐行前綴；刪列／改寫／疑中間插入三態各自指名，形制承 GT-04），GT-03 改為「有無效列即指名首列並中止下游判讀」（原本無效列被丟棄⇒在途與完整性腿對不存在的事件續判＝整片假報）。自測 280→282 案、閘數維持 12/12。 | 9b932d8 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-79 | 005 前維護批第 1／7 支：Workflow 看門狗改雙掛形——`wf-watchdog.py` 加 `--bg` 背景任務模式（RUNAWAY 由告警不退出改告警即退出，因背景任務只有退出才通知主線；rev5:B-069 契約的具名例外），CLAUDE.md §2／RL-0016／RL-0017／RL-0061／PostToolUse hook 提醒文字同步雙掛分工；自測 35→38 案。BL-00064／BL-00067 依 user 裁定移滯後卷。 | fd682da | — | — |
 | 2026-09-20 | misc | governance｜maint-no-tmp-refs | 受版控文件禁寫 tmp 具名路徑（user 2026-09-20 指示、射程裁定＝只綁現在式面）：立 RL-0077、GT-06 加 `_tmp_refs` 腿（不新增閘、閘數仍 12/12；佔位／glob 與 OS /tmp/ 不入射程，史料面與 ADR body／events／generated 豁免）、LL-00030 一坑一檔、CLAUDE.md §4 指針行；現在式面十處修正（LESSONS 三筆、tools/orchestration 三處、deploy/sops.sh 用法例）。 | 119f1d4 | — | — |
@@ -42,6 +43,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-21｜misc｜governance｜maint-backlog-42
+
+1 顆 6652be5（實作＋final review 收單合一：review 指出 ADR-00041 三處失準，GT-04 禁 accepted ADR body 變更、該顆尚未 merge，依 review L1-8 提案以 git reset --soft HEAD^ 重打）。review run wf_7e59fecf-b26、6 支 agent、20 筆 findings 兩鏡 17 confirmed／2 refuted／1 uncertain → 修 18／轉 BL-00104／駁回 2。★根因：首版枚舉只掃絕對形，漏掉十七處裸相對形消費者與四個同樣跨刀常設的契約（001 fixtures、002 §1.3／§4、003 §2），射程自六份修正為七份來源檔。變異自證三層（拔腿／改回絕對形／改回裸相對形）皆紅、還原綠。
 
 ### 2026-09-21｜misc｜governance｜maint-backlog-35
 
