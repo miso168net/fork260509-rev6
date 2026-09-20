@@ -6,8 +6,8 @@
 | 閘 | 守哪條 RULES／ADR | 監測哪一面的漂移 | 真源 | 掃描面 | 觸發時機 | 紅時 rc | Day-1 豁免狀態 | 拿掉會壞什麼 |
 |---|---|---|---|---|---|---|---|---|
 | GT-01 | RL-0049 | generated↔真源；真源掃描面存在性 | rev5:ADR 0052 | GENERATED_FILES（docs/generated/**＋tools/orchestration/_sk_rules.js＋例外註冊 docs/arc42/ARCHITECTURE.md、docs/ops/LESSONS.md）＋agents.md 之真源掃描面（tracked tools/orchestration 之 *.js／*.mjs 的 *_OPTS 字面；空集合＝WARN） | pre-commit | 1 | — | 鏡像可手改、生成檔與真源靜默分叉、*_OPTS 字面形改動可靜默縮小掃描面而不察 |
-| GT-02 | RL-0055 | 事件帳形制、SHA 實證、pin↔worktree | rev5:ADR 0012 | docs/ops/events.jsonl；外層 index gitlink；兩 worktree HEAD | pre-commit | 1 | — | 事件帳可寫入任意形、假 SHA 入帳不察、pin 漂移靜默 |
-| GT-03 | RL-0055 | 收刀與 review 事件完整性、BL 引用存在性 | rev5:ADR 0075 | docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews；docs/ops/BACKLOG.md；docs/ops/BACKLOG-DEFERRED.md | pre-commit | 1 | — | 收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現 |
+| GT-02 | RL-0055 | 事件帳形制、SHA 實證、pin↔worktree、既有列被改寫 | rev5:ADR 0012 | docs/ops/events.jsonl；外層 index gitlink；兩 worktree HEAD | pre-commit | 1 | — | 事件帳可寫入任意形、假 SHA 入帳不察、pin 漂移靜默、既有列可被靜默改寫（erratum 機制前提失守） |
+| GT-03 | RL-0055 | 收刀與 review 事件完整性、BL 引用存在性、無效事件被續判 | rev5:ADR 0075 | docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews；docs/ops/BACKLOG.md；docs/ops/BACKLOG-DEFERRED.md | pre-commit | 1 | — | 收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現、無效事件觸發整片假在途 |
 | GT-04 | RL-0074 | ADR 不可變與 supersede 對稱 | rev5:ADR 0012 | docs/arc42/decisions/*.md | pre-commit | 1 | — | 拍板全文可被改寫、翻案可單向 |
 | GT-05 | RL-0050 | 配號唯一單調、跨代裸編號、ID 引用存在性與書寫形 | rev5:ADR 0012 | docs/ops 三帳＋現在式面＋兩子庫 pin 樹＋ID 引用面（現在式面之 *.md〔含憲法〕 ∪ tools/**、去生成鏡像與 vendored、ADR body 存量豁免） | pre-commit | 1 | — | 號碼可回收、rev5 編號走私入 rev6 現在式文件、引用可指向不存在的 ID、縮寫形讓全字枚舉漏抓 |
 | GT-06 | RL-0048 | 引用斷鏈、時態混入、tmp 具名路徑 | rev5:ADR 0012 | tracked *.md；活書家族；現在式面全副檔名（tmp 腿） | pre-commit | 1 | — | 死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針 |

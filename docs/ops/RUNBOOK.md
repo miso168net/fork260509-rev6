@@ -173,6 +173,10 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 `docs/ops/events.jsonl` 是 **append 型單一事實源：既有列永不改**。寫錯不回頭編輯，改為 append 一筆 `erratum` 事件；人讀面（MILESTONES／STATE／DECISIONS-INDEX／perf）吃的是套用更正後的視圖。
 
+★機器守＝GT-02 的 HEAD 對比腿：HEAD 版須為現版的**逐行前綴**，改寫／刪列／疑中間插入三態各自指名行號（BL-00035②）。紀律兩句：
+- **一律尾端 append、不按日期插入**——遲到的 `close_bookkeeping` perf 事件亦然；插入會讓其後所有 `erratum` 的 `target_line` 整體位移。
+- 已 commit 的列寫錯、而該顆**尚未推送**：`git reset --soft HEAD^` 後改再 commit；`git commit --amend` 會以被改寫的那顆為基準、本腿恆紅，`--no-verify` 為 CLAUDE.md §6 硬禁令。
+
 - **可更正欄**（`ERRATUM_FIELDS`）：`merge`／`pins.web`／`pins.api`／`commit`／`adrs`／`probe`。前四者之 `corrected` 須為 40 位 hex SHA；`adrs` 須為 `ADR-NNNNN` 字串 list；`probe` 須為完整欄物件（形檢同 GT-02）。
 - **不可更正欄**：`summary`／`reason`／`notes` 等自由文字——寫錯只能在後續事件的 notes 說明，故落帳前務必看過一遍。
 - **形**：`{"type":"erratum","date":"YYYY-MM-DD","target_line":<events.jsonl 行號>,"field":"<欄>","corrected":<新值>,"reason":"<單行理由>"}`；`target_line` 指向被更正那一列的行號。
