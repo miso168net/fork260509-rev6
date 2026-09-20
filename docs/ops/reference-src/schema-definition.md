@@ -613,9 +613,9 @@ entity-drift 比對豁免本表。
 - `hide_in_menu` 6 列 true（id 6 manage_user-detail／16 user-center／22 function_multi-tab／
   58·59·60 function_hide-child_*）＝upstream route meta 原樣、非 §I.2 隱藏治理——釋義與
   白名單承 `rev5:ADR 0005`（rev6 對應釋義隨 menu 域刀重審）。
-- 4 列選單之 `component` 指向 view 於 rev6 base-web（upstream `example` 基線）尚缺（manage_system-settings／
-  manage_policy-archive／manage_audit／manage_ip-rule）——選單與政策隨基線先行、view 由
-  對應 UI 刀補齊（rev5 由 `rev5:B-008` 承載；rev6 由 BL-00045 承載）。
+- 3 列選單之 `component` 指向 view 於 rev6 base-web（upstream `example` 基線）尚缺（manage_system-settings／
+  manage_policy-archive／manage_audit）——選單與政策隨基線先行、view 由
+  對應 UI 刀補齊（rev5 由 `rev5:B-008` 承載；rev6 由 BL-00045 承載）；同批之 manage_ip-rule 其 view 已在位。
 
 ## 9. sequences 落值（m0002 收尾 setval；gate2／SC-002 比對面含此）
 

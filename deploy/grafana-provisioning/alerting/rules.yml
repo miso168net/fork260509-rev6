@@ -1,7 +1,8 @@
 # rev4:016-observability rev4:T011 起造：告警 as-code（契約＝specs/rev4:016-observability/contracts/alerting-delivery.md）。
-# 現況＝告警六組 13 條：rev4:016 五組 11 條＋rev4:017-audit-retention rev4:T010 第六組 2 條（⑥/⑥b 新增、
-# ⑤/⑤b expr 收斂 reaper_job matcher；契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
-# 母版＝rev3 as-built baseline 三條（rustapi-down／exporter-down／high-5xx）＋rev4:016 新增八條。
+# 現況＝告警五組 12 條（組號①③④⑤⑥；②空號、不回收）：rev4:016 四組 10 條＋rev4:017-audit-retention rev4:T010
+# 一組 2 條（⑥/⑥b 新增、⑤/⑤b expr 收斂 reaper_job matcher；契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
+# 母版＝rev3 as-built baseline 三條（rustapi-down／exporter-down／high-5xx）＋rev4:016 新增八條之七
+# （其②節流壓制規則不在本檔：rev6 節流鏈路沒有壓制量級事件的發射點、規則掛著也永不觸發）。
 #
 # 通則：
 # - 評估鏈一律 A（datasource instant query）→ B（reduce last）→ C（threshold、condition）——
@@ -12,8 +13,8 @@
 #   （prometheus／loki）；prometheus job 名（rust-api/postgres/redis）＝up selector 錨、不可漂。
 # - ★annotation 契約（rev4:FR-011／rev4:US1-AC6）：僅規則名／計數（$values.B）／時戳類——絕不內嵌
 #   原始 log 行、不含個資（loki 類 query 全為 count_over_time 數值聚合、結構上不可能帶出 log 行）。
-# - LogQL 形（②③b③d）：rust-api 為 tracing-subscriber JSON log（rev4:T006）——loki `| json` 攤平後
-#   事件欄位以 fields_ 前綴露出（fields_suppressed／fields_degraded）、target 頂層露出；
+# - LogQL 形（③b③d）：rust-api 為 tracing-subscriber JSON log（rev4:T006）——loki `| json` 攤平後
+#   事件欄位以 fields_ 前綴露出（fields_degraded）、target 頂層露出；
 #   `__error__=""` 守門排除攤平失敗行。selector 錨＝{service="rust-api", compose_project="rev6-admin"}
 #   （alloy relabel KEEP rev6-admin、rev4:T010 as-built 實查 stream label）。
 apiVersion: 1
@@ -186,66 +187,6 @@ groups:
                     params: []
                   type: query
 
-      # ══ ② throttle-suppressed 節流壓制中：loki、security.throttle suppressed 量級事件、
-      #    評估窗內任一即紅（spec Clarifications 拍板）══
-      # ★窗長＝5m（rev4:T014 施工冒煙定值；定值依據：①壓制麵包屑節奏 ≤1 warn/60s/key（throttle/mod.rs
-      #   suppressed_breadcrumb）＋rule 評估 interval 1m＋alloy→loki 攝取延遲、5m 窗保證事件不落隙；
-      #   ②轉紅後維持紅 ≥4m、維運者可見窗充足；③query 嚴格 >0 判紅、idle 空向量走 noDataState=OK
-      #   ＝零誤紅。冒煙實測：事件落 loki 後下一輪評估即 Firing（延遲 <1m）。）
-      # 事件錨＝rust-api/server/src/throttle/mod.rs 之 warn!(target:"security.throttle", suppressed=N, reason)（不用行號、防同檔插入漂移）。
-      - uid: obs016-throttle-suppressed
-        title: throttle-suppressed
-        condition: C
-        for: 0s
-        noDataState: OK
-        execErrState: Alerting
-        labels:
-          severity: warning
-        annotations:
-          summary: 'throttle-suppressed：登入節流壓制中（評估窗 5m 內壓制量級事件 {{ $values.B }} 筆、判準 > 0）'
-        data:
-          - refId: A
-            relativeTimeRange:
-              from: 300
-              to: 0
-            datasourceUid: loki
-            model:
-              refId: A
-              editorMode: code
-              expr: 'sum(count_over_time({service="rust-api", compose_project="rev6-admin"} | json | __error__="" | target="security.throttle" | fields_suppressed > 0 [5m]))'
-              queryType: instant
-              instant: true
-              range: false
-              intervalMs: 1000
-              maxDataPoints: 43200
-          - refId: B
-            datasourceUid: __expr__
-            model:
-              refId: B
-              type: reduce
-              expression: A
-              reducer: last
-          - refId: C
-            datasourceUid: __expr__
-            model:
-              refId: C
-              type: threshold
-              expression: B
-              conditions:
-                - evaluator:
-                    type: gt
-                    params:
-                      - 0
-                  operator:
-                    type: and
-                  query:
-                    params:
-                      - C
-                  reducer:
-                    type: last
-                    params: []
-                  type: query
-
       # ══ ③a throttle-degraded 節流降級：throttle_degraded_total 任一 label 增長即紅（島 E1）══
       # ★label 值集＝rust-api/server/src/obs.rs 之 THROTTLE_DEGRADED_SOURCES（以該常數為準、全數預註冊 0）；本 rule 不設
       #   source selector＝任何值（含未來新增）增長皆命中；sum by (source) 保留降級源維度。
@@ -301,9 +242,19 @@ groups:
                     params: []
                   type: query
 
-      # ══ ③b ipgate-degraded：loki、security.ipgate degraded 事件（島 F3、純 log 訊號）══
-      # 事件錨＝rust-api/server/src/ipgate/mod.rs（degraded ∈ reload_failed/publish_failed/
-      #   publish_unavailable/watcher_disabled）——fields_degraded 任一值即紅。
+      # ══ ③b ipgate-degraded：loki、IP 域降級事件——target security.ipgate／security.trust 且帶 degraded 欄（島 F3）══
+      # ★degraded 值集＝rust-api/server/src/obs.rs 之 IP_DOMAIN_DEGRADED_SOURCES（以該常數為準；各發射點的 warn! 與
+      #   ip_domain_degraded_total{source} 計數取同一字面）；本 rule 不列舉值＝fields_degraded 任一非空值即紅。
+      # 事件錨（不用行號、防同檔插入漂移）：
+      #   target="security.ipgate"＝rust-api/server/src/ipgate/mod.rs 之規則集初載／重載、門鈴 PUBLISH／訂閱各降級腿
+      #     ＋rust-api/server/src/middleware/mod.rs 之 ip_gate_mw 上下文缺席放行腿；
+      #   target="security.trust"＝rust-api/server/src/middleware/mod.rs 之 request_context_mw 對端缺席腿、
+      #     rust-api/server/src/handler/auth/login.rs 之 context_or_header_fallback（auth 端點缺席退路）、
+      #     ★boot 端 rust-api/server/src/main.rs 之 report_trust_load_warnings（信任模型載入的三種降級；不算降級的
+      #     載入告警不帶 degraded 欄＝不命中）。
+      # ★同 target 而不帶 degraded 欄者皆非降級、不命中：存取閘阻擋、規則列類型未知而跳過、轉發鏈逾限拒絕登入、
+      #   規則寫端拒寫（欄名 refused）、規則端點庫面故障（欄名 step／error、回 5000）。
+      # ★boot 端事件每次啟動只發一次＝本 rule 紅一個評估窗（5m）即復歸、不持續紅。
       - uid: obs016-ipgate-degraded
         title: ipgate-degraded
         condition: C
@@ -313,7 +264,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'ipgate-degraded：IP 閘降級（評估窗 5m 內 degraded 事件 {{ $values.B }} 筆、判準 > 0）'
+          summary: 'ipgate-degraded：IP 域降級（評估窗 5m 內 degraded 事件 {{ $values.B }} 筆、判準 > 0）'
         data:
           - refId: A
             relativeTimeRange:
@@ -323,7 +274,7 @@ groups:
             model:
               refId: A
               editorMode: code
-              expr: 'sum(count_over_time({service="rust-api", compose_project="rev6-admin"} | json | __error__="" | target="security.ipgate" | fields_degraded=~".+" [5m]))'
+              expr: 'sum(count_over_time({service="rust-api", compose_project="rev6-admin"} | json | __error__="" | target=~"security[.](ipgate|trust)" | fields_degraded=~".+" [5m]))'
               queryType: instant
               instant: true
               range: false
@@ -412,8 +363,9 @@ groups:
                   type: query
 
       # ══ ③d accesslog-write-fail：loki、存取軌跡寫入故障事件（島 J2）══
-      # 事件錨＝rust-api/server/src/middleware/mod.rs 之 access_log_mw insert Err 分支
-      #   warn!(target:"audit.access_log", degraded="access_log_write")——target 與 degraded 字面雙錨。
+      # ★現況＝無事件源：rev6 尚無存取軌跡中介層（`access_log_mw`／target `audit.access_log` 於 rust-api 零發射點；
+      #   島 J 未進場），本規則恆無資料（noDataState=OK＝不誤紅）。雙錨字面（target＋degraded="access_log_write"）
+      #   承母版留位；存取軌跡刀進場時依 as-built 重錨、或屆時判定不需而刪（承載＝BACKLOG 之 rules.yml 稽核條目）。
       - uid: obs016-accesslog-write-fail
         title: accesslog-write-fail
         condition: C
