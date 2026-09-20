@@ -14,17 +14,17 @@
 ## 帳面統計
 - ADR：40（proposed 0、accepted 36、superseded 4）
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
-- BACKLOG 開放：46｜滯後：2
+- BACKLOG 開放：36｜滯後：2
 - LESSONS：29 筆
-- events：62 筆（erratum 2、feature_close 3、misc 22、perf 29、review 6）
+- events：63 筆（erratum 2、feature_close 4、misc 22、perf 29、review 6）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 7.33 | ≤1 | 超標 |
+| 治理批對 feature 比 | 5.5 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.1 | 0 | 超標 |
-| BACKLOG 淨流量（rolling 3 刀） | 37 | ≤0 | 超標 |
+| BACKLOG 淨流量（rolling 3 刀） | 21 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
 
 ## 數量預算對賬（D8；ADR-00011：超限只警告、不擋）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-20｜feature_close｜004-ip-trust-anchor｜004 ip-trust-anchor 收單（rev6 第四刀）：信任錨真實來源還原／請求上下文／IP 存取閘／IP 規則五端點＋防自鎖＋操作稽核首寫／來源維…
 - 2026-09-20｜perf｜precommit_chain｜precommit_chain 50 秒 rc=0
 - 2026-09-15｜perf｜close_bookkeeping｜close_bookkeeping 15.29 秒 rc=0
-- 2026-09-15｜misc｜governance｜maint-spec-compliance-003｜003 刀附屬規格對照審查輪（spec-compliance-003）修單收單：login／refresh／route 六處測試保護補案（⑥TTL 兩腿、la…

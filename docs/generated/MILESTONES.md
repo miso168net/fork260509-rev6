@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-20 | feature_close | 004-ip-trust-anchor | 004 ip-trust-anchor 收單（rev6 第四刀）：信任錨真實來源還原／請求上下文／IP 存取閘／IP 規則五端點＋防自鎖＋操作稽核首寫／來源維登入節流（兩維、每次由 PG 定案、拔負快取）／管理員解鎖端點／IP 規則管理頁＋★軌道 BASE-WEB-MANAGE-PAGE-WIRING／兩支新碼面閘／RUNBOOK §16；零 migration；憲法 1.4.0；ROUTES 22、contract 24、MSG_KEYS 19、後端全量 679 passed。 | 990c4a7 | ADR-00034、ADR-00035、ADR-00036、ADR-00037、ADR-00038、ADR-00039、ADR-00040 | §3、§5、§6、§8、§10、§11、§12 |
 | 2026-09-15 | misc | governance｜maint-spec-compliance-003 | 003 刀附屬規格對照審查輪（spec-compliance-003）修單收單：login／refresh／route 六處測試保護補案（⑥TTL 兩腿、last_activity 兩寫端 TTL、驗章前擋與⑩臂源序守、idle 門檻隨現值、home 兜底）；msg-key-gate 斷言 2 同義構造形、fork-delta-lint template 形與樓地板守、hook 守衛補子庫 pre-commit；活書 08 §8.4 標記定形與四處現在式勘誤；ADR-00033 logout 舊票 no-op by-design。 | 8df3efd | ADR-00033 | — |
 | 2026-09-15 | review | 003-auth-session | findings 21（修 16／BL 4／ADR 1）；BL-00042、BL-00066、BL-00077、BL-00078、ADR-00033 | — | — | — |
 | 2026-09-15 | misc | governance｜maint-spec-compliance-002 | 002 刀附屬規格對照審查輪（spec-compliance-002）修單收單：facade 同值更新審計欄成對純測、description 型別不符 rust 側拒收案、contract 覆蓋閘判準自證；wire-schema.py 兩處註解、RUNBOOK §12 名冊現值鏡像改指針、arc42 05 真 DB 端點案住所改現在式；RULES 名詞段碼面閘環境缺席語意改逐支見表（ADR-00032 supersedes ADR-00016）；BL-00028 條文併入 seed 值↔REGISTRY 界值零守。 | 37461af | ADR-00032 | — |
@@ -38,6 +39,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-20｜feature_close｜004-ip-trust-anchor
+
+backlog_add 以在途 GT-03 全集為準（BL-00081／BL-00100 為刀內新增並兌現、兩欄同列；BL-00087 併入 BL-00080、未誕生）；BL-00079 依 user 2026-09-20 裁定緩裁；三層判定＋兩覆蓋＋轉發鏈逾限拒絕、存取閘熱重載與 keep-last-good、HTTP 層錯誤轉譯、rules.yml 12 條；final review 分流見 d8cff6a、finishing 停點 user 三項裁定兌現見 b15b96d。
 
 ### 2026-09-15｜misc｜governance｜maint-spec-compliance-003
 
