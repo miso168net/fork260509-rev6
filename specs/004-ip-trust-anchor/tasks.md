@@ -185,7 +185,7 @@ description: "Task list for 004-ip-trust-anchor"
 - [x] T051 [US4] `rust-api/server/src/handler/auth/login.rs` 步驟②改呼新 `precheck`：`source`＝`ctx_absent`（U5 就地記下之 `_ctx_absent` 於本任務改名啟用）或無桶→`None`；`explicit_allow`＝`state.ip_rules.load().allow` 直讀 `contains(real_ip)`（★絕不經 `decide`）；fn doc 次序表改寫；`obs.rs` 引用之 `warn_degraded` 呼叫點對齊新名冊
 - [x] T052 [US4] `rust-api/server/src/obs.rs` `THROTTLE_DEGRADED_SOURCES` 7→10（data-model §5 逐字：刪 `redis_lock`／`redis_lock_set`；加 `ip_settings_default`／`ip_settings_invalid`／`unlock_marker_user`／`unlock_marker_ip`／`ip_db_count`）＋pre-register 測試「恰十」＋doc「七值」→「十值」。**DoD：render 文本組合恰十、先紅後綠**
 - [x] T053 [US4] ★主線擬稿即 accepted（BL-00066／Q7 user 拍板）：`docs/arc42/decisions/ADR-00038-throttle-decided-by-pg-every-attempt-no-negative-cache.md`（決定＝兩維無 L1、每次嘗試讀現值＋PG 定案、`redis_down` 由標記讀取立、越界整組退；棄案＝Amendment MAJOR、保留 L1 後備；provenance 引 `rev5:004` FR-028 翻案、ADR-00034 §二 島 E）；accepted＋`generate`
-- [ ] T054 [US4] 走查 quickstart §4（含 metrics 序列）；★走查三步（`restore --seed`→`diff` rc 0；redis `throttle*` 零鎖定鍵）；rust-api commit→外層 pin bump＋generate
+- [x] T054 [US4] 走查 quickstart §4（含 metrics 序列）；★走查三步（`restore --seed`→`diff` rc 0；redis `throttle*` 零鎖定鍵）；rust-api commit→外層 pin bump＋generate
 
 **Checkpoint**: US1～US4 獨立可用——輪換帳號名的撞庫被來源維擋下；節流全由 PG 定案。
 
