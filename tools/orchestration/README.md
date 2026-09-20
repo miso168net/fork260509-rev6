@@ -42,7 +42,7 @@ vars + plan + head + rules + context + review      （★plan 先於 head＝保�
 
 `rules` 段＝`tools/orchestration/_sk_rules.js` 原樣（generate 產物；RULES.md 改動後先 `python3 tools/docsync generate` 再重組，否則 PreToolUse hook 以 RULES-VERSION 不符擋下）。
 
-組裝一律 `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>`，它替你跑三道：①RULES-VERSION 對賬＋`zh-TW`＋前單元字樣殘留（`RESIDUE`＝`U2 執行單元`／`u2-…` 冒煙 token 等）②`node --check`（包進 async fn、`export const meta`→`const meta`）③對應 harness 全綠；任一紅即不留產物。發射＝`Workflow scriptPath=<out.mjs>` 與 `python3 tools/wf-watchdog.py <冒煙token>` 同回合原子成對（CLAUDE.md §2）。★pre-commit 於 `tools/orchestration/` 之 `*.js|*.mjs|*.py` staged 時自動以三支入庫範例組裝到暫存目錄並跑對應 harness（BL-00023；改壞骨架或範例的 commit 當場紅），接線字面由 `tools/docsync/tests/test_hook_wiring.py` 機器守。
+組裝一律 `python3 tools/orchestration/assemble.py <unitdef.py> <out.mjs>`，它替你跑三道：①RULES-VERSION 對賬＋`zh-TW`＋前單元字樣殘留（`RESIDUE`＝`U2 執行單元`／`u2-…` 冒煙 token 等）②`node --check`（包進 async fn、`export const meta`→`const meta`）③對應 harness 全綠；任一紅即不留產物。發射＝`Workflow scriptPath=<out.mjs>` 與 `python3 tools/wf-watchdog.py <冒煙token>`（Monitor 腿、`timeout_ms: 1800000`）與同一支腳本帶 `--bg` 的 Bash `run_in_background`（長尾腿）**三 call 同回合原子成對**＝雙掛形（CLAUDE.md §2）。★pre-commit 於 `tools/orchestration/` 之 `*.js|*.mjs|*.py` staged 時自動以三支入庫範例組裝到暫存目錄並跑對應 harness（BL-00023；改壞骨架或範例的 commit 當場紅），接線字面由 `tools/docsync/tests/test_hook_wiring.py` 機器守。
 
 ## 十八案（TDD 形）在守什麼
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """PostToolUse(Workflow) 提醒：Workflow 剛發射 → 注入看門狗原子成對提醒（rev4:L-112）。
 
-hook 無從查驗同回合是否已有 Monitor call（無 harness 狀態可見性），故為提醒層；
-硬規則住 CLAUDE.md §2（launch 與 Monitor 同一回合原子成對）。additionalContext
+hook 無從查驗同回合是否已有看門狗 call（無 harness 狀態可見性），故為提醒層；
+硬規則住 CLAUDE.md §2（launch 與看門狗雙掛、同一回合原子成對）。additionalContext
 會隨工具結果注入主線 context——正好落在失誤點。
 """
 import json
@@ -17,11 +17,11 @@ def main() -> int:
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
             "additionalContext": (
-                "⚠️ Workflow 已發射——看門狗 Monitor 必須與 launch 同一回合原子成對"
-                "（CLAUDE.md §2、rev4:L-112）。若本回合尚未掛：立即以 Monitor"
-                "（command: python3 tools/wf-watchdog.py <冒煙token> [wf目錄|runId]）補掛、"
-                "再做其他事。"
-                "完成通知一到→TaskStop 該 Monitor。"
+                "⚠️ Workflow 已發射——看門狗必須與 launch 同一回合原子成對、且為**雙掛**"
+                "（CLAUDE.md §2、rev4:L-112）：①Monitor（command: python3 tools/wf-watchdog.py"
+                " <冒煙token> [wf目錄|runId]；前 30 分鐘、到期不重掛）②Bash run_in_background"
+                "（同一支腳本帶 --bg；長尾、零重掛）。若本回合尚未掛：立即補掛、再做其他事。"
+                "完成通知一到→TaskStop 該 Monitor；長尾腿自行退出。"
             ),
         }
     }, ensure_ascii=False))

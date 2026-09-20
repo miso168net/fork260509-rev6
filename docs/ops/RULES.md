@@ -23,8 +23,8 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0013 | 棄案論證寫完必回頭對所選方案跑同一反例；寫「結構性保證」前先找一條讓它不成立的輸入；雙上限設計必寫「只滿足其一時會怎樣」。 | 人,主線 | checklist | rev5:L-037 |
 | RL-0014 | 允許檔清單答「碰得到什麼」而非 task 寫了什麼：對實碼查值域／建構點／下游消費者，另納會因本單元改動而連動的釘值測所在檔、寧可多列。 | 主線 | checklist | rev5:L-042 |
 | RL-0015 | 預告必標成預告並附回填義務（該刀 tasks 同批加回填條）；活書家族零未來式，覆核把「屆時／日後／將由／隨…刀進場／尚無…」當同義集掃；落地某能力的單元必以其名掃「隨…進場」形改現在式。 | implementer,review | lint | rev5:L-043 |
-| RL-0016 | Workflow launch 被擋即 TaskStop 已 armed 的看門狗，重發後帶明確 runId 重掛；ARMED 行冒煙命中 0 或 run id 不對＝鎖錯標的。 | 主線 | checklist | rev5:L-049 |
-| RL-0017 | 完成通知一到立即 TaskStop 該看門狗（run 後 journal 永不再動＝必誤報 stall）；stall 閾值語意＝agent 邊界間隔上限。 | 主線 | checklist | rev5:L-051 |
+| RL-0016 | Workflow launch 被擋即收掉已 armed 的兩腿（Monitor 腿 TaskStop、長尾腿 TaskStop 其背景任務），重發後帶明確 runId 重掛；ARMED 行冒煙命中 0 或 run id 不對＝鎖錯標的。 | 主線 | checklist | rev5:L-049 |
+| RL-0017 | 完成通知一到立即 TaskStop Monitor 腿（run 後 journal 永不再動＝必誤報 stall）；長尾腿不由 TaskStop 收、待其 DONE 自行退出；stall 閾值語意＝agent 邊界間隔上限。 | 主線 | checklist | rev5:L-051 |
 | RL-0018 | 冒煙 token 置於所有 agent prompt 共用段，與「zh-TW」字面同列渲染斷言一併檢查，不得只烤在 implementer prompt。 | 主線 | checklist | rev5:L-057 |
 | RL-0019 | 暫改真檔驗紅後以存原文寫回還原、禁 `git checkout` 整檔還原（會丟該檔其它未 commit 改動）；還原後 `git diff --name-only` 證零殘留。 | implementer,fix | prompt | rev5:L-060 |
 | RL-0020 | 提及刀號／單元輪次寫「本刀 U2」形、不寫裸刀號；★跨刀存活面（BACKLOG／LESSONS／工具與 hook 註解）改寫刀名形「001 刀 U2」——「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；新建 ops 檔先 `git add` 再驗 lint 才進掃描面。 | implementer,主線 | prompt | rev5:L-067 |
@@ -68,7 +68,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0058 | Workflow script 的 agent prompt 全數烤進 script 本體；script 一律不接受 args（非 undefined／null 即零派發 throw）、一切邊界與清單寫死 script 常數，`_vars`／`_plan` 段常數由首段逐欄斷言型別與非空、不符零派發即 throw。 | 主線 | prompt | ADR-00004 |
 | RL-0059 | 派發前斷言渲染後 prompt 非空、長度合理、開頭無「undefined」／「null」字面、必含「zh-TW」字面與冒煙 token。 | 主線 | prompt | ADR-00004 |
 | RL-0060 | 一切邊界寫死 script 常數不取自 args：fix 迴圈上限 ≤3、TDD 執行單元 agent 保險絲 ≤20、review 形每 run ≤24（wf-watchdog runaway 底線 25 減 1）；fix agent 允許檔清單寫死常數、次輪只縮不擴。 | 主線 | prompt | ADR-00004 |
-| RL-0061 | Workflow launch 與 Monitor 看門狗同一回合原子成對發射、兩 call 間零其他動作；完成通知＋Monitor 雙訊號全覆蓋、毋需輪詢。 | 主線 | checklist | ADR-00004 |
+| RL-0061 | Workflow launch 與看門狗同一回合原子成對發射、call 間零其他動作；看門狗雙掛＝Monitor 前 30 分鐘（即時推播、到期不重掛）＋Bash 背景任務長尾腿（`--bg`、退出即通知）；完成通知與兩腿三訊號全覆蓋、毋需輪詢。 | 主線 | checklist | ADR-00004 |
 | RL-0062 | 保險絲值由同檔 script 常數推導並自我斷言，MUST ≥ 結構最壞值、不得手挑；runaway 判準數不重複 agent key、非 journal 行數。 | 主線 | prompt | rev5:L-068 |
 | RL-0063 | agent 絕不 push／merge／git commit／git checkout；只改工作樹，git 操作由主線負責。 | implementer,fix,review | prompt | ADR-00004 |
 | RL-0064 | 絕不寫入 `../fork260509-rev5/`（含子庫與源倉；凍結 SHA 由 bootstrap 斷言）；讀取允許且必要；rev5 stack（埠 2xxxx）不做 schema／seed／設定變更或 `down -v`，rev6 走 3xxxx。 | implementer,fix,主線 | prompt | ADR-00002 |
