@@ -1,4 +1,4 @@
-<!-- next: BL-00101 -->
+<!-- next: BL-00102 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -38,3 +38,4 @@
 - BL-00097｜product｜wire 快照已收 `Api.IpRule` 之三支寫端請求型與 `IpRuleListQuery`，但 `tests/wire_schema.rs` 只裁判 `IpRuleRecord` 一支：前端請求形與後端請求 DTO 之間零機器錨（002 刀已立「寫端請求型亦入裁判」之先例；004 刀 final holistic review）｜觸發＝下一支動 IP 規則 wire 形或 `tests/wire_schema.rs` 之刀或維護批
 - BL-00098｜governance｜管理員解鎖端點之兩條方向性不變式（操作稽核先於解鎖標記寫入；操作者上下文缺席即拒寫 `5000`）於憲法 §I.7 島 E 無條文——現由 contracts、源序守測試與活書承載、凍結面缺席（004 刀 final holistic review）｜觸發＝下一次憲法 §V.2 Amendment 提案時併入（不單獨為此開 Amendment）
 - BL-00099｜governance｜`deploy/grafana-provisioning/dashboards/json/backend-msg-dict.json` 為人維護之 msg 譯文字典面板：與 ADR-00039 決定 2「不另立譯文表」相牴觸、無機器對賬（004 刀六新鍵之 zh-TW 欄即漂移、final holistic review 修單已改抄現值），且含前代遺留而 rev6 名冊無之鍵五十餘列；處置候選＝面板只留鍵名並指向三檔 locale、或改由 locale 生成並入 GENERATED_FILES｜觸發＝rev6 觀測 profile 首次起動之刀或維護批；或下一次新增 msg key 之刀，先到者
+- BL-00101｜governance｜RULES 檔頭宣稱規則句三項（命令句、不帶刀名、≤2 行）由 GT-08 機器強制，實作只有「≤2 行」一腿且恆不成立——`RE_ROW` 以 `re.M` 逐行錨定、rule 欄為 `(.+?)` 無 `re.S`⇒`len(rule.splitlines()) > 2` 永不為真＝該腿空轉；命令句與不帶刀名兩項全 repo 零機器腿；該腿亦無正反自證（RL-0051 未達）。處置二選一＝①補實三腿並各附一正一反自證 ②檔頭字面改為誠實敘述（哪幾項機器強制、哪幾項人檢核）——屬拍板級、動工前先問（maint-backlog-79 之 final holistic review L2-7 轉入；兩鏡皆 confirmed）｜觸發：下一次動 GT-08 實作或 RULES 檔頭紀律句時

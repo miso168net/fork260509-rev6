@@ -19,17 +19,20 @@
     最新 agent-*.jsonl（mtime 是否剛剛＋grep 本輪新字串）、一次性查核不輪詢（rev5:L-023）。
   ★冒煙 token 不可取字面 test（會被當自測子命令）。
   ★--bg＝Bash 背景任務模式：唯一差異＝RUNAWAY 由「告警不退出」改為「告警即退出」
-    （背景任務只有退出才通知主線；其餘三個出口本就是告警即退出）。ARMED 行照印進輸出檔。
-  ★--rearm＝Monitor 到期（harness 上限 30 分鐘）後重掛同一支 run 專用：不印 ARMED 行
-    （冒煙已於首掛驗過、重掛再印＝每 30 分鐘一則雜訊事件）；必帶第二參數（重掛必知 runId、
-    不做自動發現）；發射失敗／參數錯誤訊息照印。
+    （背景任務只有退出才通知主線；其餘四個出口本就是告警即退出）。ARMED 行照印進輸出檔。
+  ★--rearm＝**例外**重發專用（雙掛形下 Monitor 到期不重掛；此旗標留給「長尾腿因 RUNAWAY
+    退出、主線判形態後補回覆蓋」這類重發）：不印 ARMED 行（冒煙已於首掛驗過、重掛再印＝
+    一則雜訊事件）；必帶第二參數（重掛必知 runId、不做自動發現）；發射失敗／參數錯誤訊息
+    照印。★與 --bg 互斥（--bg 腿的 ARMED 是其唯一冒煙記錄、被吞＝外觀同發射失敗）。
 
 行為：ARMED 一行（夾帶冒煙：最早 agent transcript 前 SMOKE_SCAN_LINES 行內第一個含冒煙
   token 的行＝prompt 行之行號與 byte 數＋命中數；harness 會在 prompt 行之前置框架行、
   只讀首行＝恆報 命中=0）→ 靜默迴圈（60s），stall／判準失效告警時輸出並退出；runaway
   告警一次後★不退出、續行監看（rev5:B-069：run 還活著時退出＝看門狗自我卸除、stall
-  覆蓋歸零）；★run 結束（持久 json 於 ARMED 之後落地或更新）→ 印 DONE 一行並退出。
-完成通知一到仍可 TaskStop 本 Monitor（已自行退出者 TaskStop 無害）；DONE 腿＝兜底，
+  覆蓋歸零）——★`--bg` 為此契約的具名例外：背景腿改告警即退出（見上）；★run 結束（持久
+  json 於 ARMED 之後落地或更新）→ 印 DONE 一行並退出。
+完成通知一到 TaskStop Monitor 腿（已自行退出者 TaskStop 無害；長尾腿不由 TaskStop 收、
+  待其 DONE 自行退出）；DONE 腿＝兜底，
   使「忘了 TaskStop→正常完成 ~13min 後誤觸 stall」不再發生。
 自測：python3 tools/wf-watchdog.py test（離線、合成 fixtures、stdlib-only）。
 
@@ -340,8 +343,8 @@ def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_u
     """靜默迴圈：60s 一輪；判準失效／STALL 告警即輸出並退出；RUNAWAY 只告警一次且
     ★不退出（rev5:B-069：run 還活著時 return＝看門狗自我卸除、stall 覆蓋歸零）。
     ★bg＝背景任務模式（BL-00079）：背景任務只有「退出」才通知主線，告警留在輸出檔等於沒人
-    看見⇒此模式下 RUNAWAY 改為告警即退出、由主線判形態後決定 TaskStop 或重掛。其餘三個
-    出口本來就是告警即退出、行為不變。
+    看見⇒此模式下 RUNAWAY 改為告警即退出、由主線判形態後決定 TaskStop 或重掛。其餘四個
+    出口（目錄不可讀／判準失效／DONE／STALL）本來就是告警即退出、行為不變。
     ★DONE 腿：持久 json 於 run 結束時才落地（resume 沿用原 runId＝結束時更新既有檔）⇒
     「迴圈起點之後 json 新出現或 mtime 前進」＝本 run 已結束→印一行並退出。鎖到**早已完成**
     的 run（json 在起點即存在且不再變）不觸 DONE、行為同舊（由 STALL 收）。次序＝RUNAWAY
@@ -422,6 +425,10 @@ def main(argv):
     bg = "--bg" in flags
     token = args[0] if args else ""
     target = args[1] if len(args) > 1 else ""
+    if rearm and bg:
+        _say("看門狗 參數無法解析：--bg 與 --rearm 互斥——背景腿例行零重掛，"
+             "且 ARMED 行是該腿唯一的冒煙記錄（--rearm 會把它吞掉＝外觀同發射失敗）")
+        return 2
     if rearm and not target:
         _say("看門狗 參數無法解析：--rearm 必帶第二參數（wf 目錄或 runId）——重掛不做自動發現")
         return 2
@@ -465,7 +472,7 @@ def main(argv):
              f"{smoke_text(wf_dir, token)}（stall>{STALL}s／{runaway_txt}；"
              "run 結束自動 DONE 退出；"
              + ("背景模式：runaway 亦告警即退出；本行只進背景任務輸出檔、不推播）"
-                if bg else "Monitor 到期重掛請加 --rearm）"))
+                if bg else "Monitor 到期不重掛、長尾覆蓋由 --bg 背景腿承擔）"))
     return watch_loop(wf_dir, bg=bg)
 
 
@@ -1029,6 +1036,36 @@ class TestMainWiring(unittest.TestCase):
             _rc, out = run(["wf-watchdog.py", "tokX", wf])
             self.assertIs(seen.get("bg"), False)      # 預設不入背景模式
             self.assertNotIn("背景模式", out)
+
+    def test_bg_without_target_and_bg_rearm_mutex(self):
+        """mb79 review 補臂（L1-5／L1-2）：①`--bg` 走自動發現路徑仍印 ARMED 且 bg=True
+        （雙掛實際用法＝兩腿皆不帶目標）②`--bg` 與 `--rearm` 互斥＝rc 2——ARMED 是背景腿唯一的
+        冒煙記錄，被 --rearm 吞掉時輸出檔全程空白、外觀同發射失敗。"""
+        with tempfile.TemporaryDirectory() as d:
+            wf = os.path.join(d, "wf_auto")
+            os.makedirs(wf)
+            seen = {}
+            mod = sys.modules[__name__]
+
+            def fake_watch(wf_dir, **kw):
+                seen["bg"] = kw.get("bg")
+                seen["watched"] = wf_dir
+                return 0
+            buf = io.StringIO()
+            with unittest.mock.patch.object(mod, "watch_loop", fake_watch), \
+                    unittest.mock.patch.object(mod, "smoke_text", lambda *_a: "冒煙樁"), \
+                    unittest.mock.patch.object(mod, "discover_latest_wf", lambda _p: wf), \
+                    unittest.mock.patch.object(mod, "DISCOVER_SLEEP", 0), \
+                    contextlib.redirect_stdout(buf):
+                rc = main(["wf-watchdog.py", "tokX", "--bg"])
+            out = buf.getvalue()
+            self.assertEqual((rc, seen.get("bg"), seen.get("watched")), (0, True, wf))
+            self.assertIn("ARMED", out)
+            self.assertIn("背景模式", out)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                self.assertEqual(main(["wf-watchdog.py", "tokX", wf, "--bg", "--rearm"]), 2)
+            self.assertIn("互斥", buf.getvalue())
 
     def test_armed_line_reports_effective_runaway_ceiling(self):
         """★rev5:B-069 射程限縮揭露釘死：ARMED 行印「當下實際生效值」而非公式——
