@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-21 | misc | governance｜maint-backlog-79 | 005 前維護批第 1／7 支：Workflow 看門狗改雙掛形——`wf-watchdog.py` 加 `--bg` 背景任務模式（RUNAWAY 由告警不退出改告警即退出，因背景任務只有退出才通知主線；rev5:B-069 契約的具名例外），CLAUDE.md §2／RL-0016／RL-0017／RL-0061／PostToolUse hook 提醒文字同步雙掛分工；自測 35→38 案。BL-00064／BL-00067 依 user 裁定移滯後卷。 | fd682da | — | — |
 | 2026-09-20 | misc | governance｜maint-no-tmp-refs | 受版控文件禁寫 tmp 具名路徑（user 2026-09-20 指示、射程裁定＝只綁現在式面）：立 RL-0077、GT-06 加 `_tmp_refs` 腿（不新增閘、閘數仍 12/12；佔位／glob 與 OS /tmp/ 不入射程，史料面與 ADR body／events／generated 豁免）、LL-00030 一坑一檔、CLAUDE.md §4 指針行；現在式面十處修正（LESSONS 三筆、tools/orchestration 三處、deploy/sops.sh 用法例）。 | 119f1d4 | — | — |
 | 2026-09-20 | feature_close | 004-ip-trust-anchor | 004 ip-trust-anchor 收單（rev6 第四刀）：信任錨真實來源還原／請求上下文／IP 存取閘／IP 規則五端點＋防自鎖＋操作稽核首寫／來源維登入節流（兩維、每次由 PG 定案、拔負快取）／管理員解鎖端點／IP 規則管理頁＋★軌道 BASE-WEB-MANAGE-PAGE-WIRING／兩支新碼面閘／RUNBOOK §16；零 migration；憲法 1.4.0；ROUTES 22、contract 24、MSG_KEYS 19、後端全量 679 passed。 | 990c4a7 | ADR-00034、ADR-00035、ADR-00036、ADR-00037、ADR-00038、ADR-00039、ADR-00040 | §3、§5、§6、§8、§10、§11、§12 |
 | 2026-09-15 | misc | governance｜maint-spec-compliance-003 | 003 刀附屬規格對照審查輪（spec-compliance-003）修單收單：login／refresh／route 六處測試保護補案（⑥TTL 兩腿、last_activity 兩寫端 TTL、驗章前擋與⑩臂源序守、idle 門檻隨現值、home 兜底）；msg-key-gate 斷言 2 同義構造形、fork-delta-lint template 形與樓地板守、hook 守衛補子庫 pre-commit；活書 08 §8.4 標記定形與四處現在式勘誤；ADR-00033 logout 舊票 no-op by-design。 | 8df3efd | ADR-00033 | — |
@@ -40,6 +41,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-21｜misc｜governance｜maint-backlog-79
+
+2 顆：實作 64d633a＋final review 收單 c74179b（review run wf_314bbaac-867、6 支 agent、16 筆 findings 三分流＝修 14／轉 BL-00101／駁回 1〔兩鏡 decided 判 refuted〕）。BL-00064／BL-00067 移入 BACKLOG-DEFERRED（滯後 2→4、開放 36→34）。雙掛形於本支 review run 實跑驗證：三 call 原子成對、Monitor 腿推播 ARMED、背景長尾腿 DONE 自行退出。RULES-VERSION a040f612a18a→27645c71f1e0。user 2026-09-21 grilling 十三題裁定見該輪計畫（tmp、gitignored）。
 
 ### 2026-09-20｜misc｜governance｜maint-no-tmp-refs
 

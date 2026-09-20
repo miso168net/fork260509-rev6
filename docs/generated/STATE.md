@@ -16,13 +16,13 @@
 - RULES：77 條／上限 92（implementer 41/48、review 14/18、fix 16/19、主線 44/52、人 10/12）
 - BACKLOG 開放：34｜滯後：4
 - LESSONS：30 筆
-- events：66 筆（erratum 2、feature_close 4、misc 23、perf 31、review 6）
+- events：67 筆（erratum 2、feature_close 4、misc 24、perf 31、review 6）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 5.75 | ≤1 | 超標 |
+| 治理批對 feature 比 | 6.0 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.1 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 21 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
@@ -40,6 +40,6 @@
 | docsync 行數 | 3737 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-21｜misc｜governance｜maint-backlog-79｜005 前維護批第 1／7 支：Workflow 看門狗改雙掛形——`wf-watchdog.py` 加 `--bg` 背景任務模式（RUNAWAY 由告警不…
 - 2026-09-20｜perf｜close_bookkeeping｜close_bookkeeping 21.47 秒 rc=0
 - 2026-09-20｜misc｜governance｜maint-no-tmp-refs｜受版控文件禁寫 tmp 具名路徑（user 2026-09-20 指示、射程裁定＝只綁現在式面）：立 RL-0077、GT-06 加 `_tmp_refs` …
-- 2026-09-20｜perf｜close_bookkeeping｜close_bookkeeping 18.16 秒 rc=0
