@@ -16,7 +16,7 @@
 - RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
 - BACKLOG 開放：36｜滯後：2
 - LESSONS：29 筆
-- events：63 筆（erratum 2、feature_close 4、misc 22、perf 29、review 6）
+- events：64 筆（erratum 2、feature_close 4、misc 22、perf 30、review 6）
 - CLAUDE.md 行數：160（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3711 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-20｜perf｜close_bookkeeping｜close_bookkeeping 18.16 秒 rc=0
 - 2026-09-20｜feature_close｜004-ip-trust-anchor｜004 ip-trust-anchor 收單（rev6 第四刀）：信任錨真實來源還原／請求上下文／IP 存取閘／IP 規則五端點＋防自鎖＋操作稽核首寫／來源維…
 - 2026-09-20｜perf｜precommit_chain｜precommit_chain 50 秒 rc=0
-- 2026-09-15｜perf｜close_bookkeeping｜close_bookkeeping 15.29 秒 rc=0
