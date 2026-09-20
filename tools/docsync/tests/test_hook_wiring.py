@@ -2,7 +2,7 @@
 .githooks/pre-push／.githooks-submodule/pre-commit／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）、真 tools/bootstrap.sh、真 README.md 與兩支雙側閘工具常數，六支純函式各守一面：
 ①pre-commit 面 check_hook_wiring(text, codegate_tools, non_gate_tools) 逐段斷言：固定鏈（betterleaks→docsync check＋lint→staged 取得→pc_join→雙錨常數）、
 十二條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
-view-render-guard〔外層以 base-web/src 在位與否具名跳過〕／route-artifact-gate〔第三觸發源＝憲法〕／submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
+view-render-guard〔零條件段：工作樹或射程缺席＝工具 rc 2、不設跳過分支（ADR-00019 決定 3／4）〕／route-artifact-gate〔第三觸發源＝憲法〕／submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
 與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
 一正（真檔零 finding）多反（刪段／改觸發字面／抽名冊一支／改命令子命令／幽靈段／刪 pc_join→紅指名）。
 ②pre-push 面 check_push_hooks(outer, sub, lib)（BL-00037①；憲法 §I.8 並列為機器閘）：外層／子庫 pre-push 各三字面（source lib 相對路徑形／SCAN_CONFIG／

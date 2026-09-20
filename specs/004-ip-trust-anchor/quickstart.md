@@ -83,7 +83,7 @@ $PG sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT operation, ent
 $RD sh -lc 'redis-cli -a "$(cat /run/secrets/redis_password)" --no-auth-warning KEYS "*unlock*"'
 ```
 
-**預期**：`0000`／自由區／`0000`（未鎖標的照寫稽核與標記）／`biz.throttle.invalidUnlockTarget`（零稽核列）；稽核表恰兩列 `unlock`；redis 只有 `*unlock*` 標記鍵、**無** `*lock:*` 鎖定鍵（L1 已無）。
+**預期**：`0000`／自由區／`0000`（未鎖標的照寫稽核與標記）／`biz.throttle.invalidUnlockTarget`（零稽核列）；稽核表恰兩列 `unlock`；redis 只有 `throttle:unlock:*` 標記鍵、**無**鎖定鍵（L1 已無；判法＝`KEYS "throttle:*"` 之結果全數以 `throttle:unlock:` 或 captcha 消耗標記前綴起頭——★勿以 `*lock:*` glob 判：它恆命中 `throttle:unlock:*`）。
 
 ## 6. 管理頁走查（US3／SC-010；CDP 對照 22080）
 

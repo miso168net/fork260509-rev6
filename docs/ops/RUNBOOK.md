@@ -2,7 +2,7 @@
 
 本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
 本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
-創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§12c／§14／§16 為已補實文章、§15 為指針章；§9 僅補 DB 直連一句、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
+創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§12c／§14／§16 為已補實文章、§15 為指針章；§9 已補 DB 直連與管理員解鎖、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
 
 ## 1. 快速啟動（新機五步）
 
@@ -51,7 +51,20 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 ## 9. 維運端點與 DB 直連
 
-DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。其餘維運端點隨對應刀補實文。
+DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。
+
+管理員解鎖登入節流（`POST /systemManage/unlockLogin`；API-only、限 `R_SUPER`；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥，無 UI 按鈕＝ADR-00040 款 1）。先以超管帳號登入取票，再擇一維度：
+
+```bash
+BASE=http://127.0.0.1:32080/api
+TOKEN=$(curl -s "$BASE/auth/login" -H 'content-type: application/json' -d '{"userName":"<超管帳號>","password":"<密碼>"}' | jq -r .data.token)
+# 來源維（位址字面；v6 由後端聚合為 /64 桶）
+curl -s "$BASE/systemManage/unlockLogin" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"dimension":"ip","target":"<來源位址>"}' | jq -r .code
+# 帳號維（帳號名原文）
+curl -s "$BASE/systemManage/unlockLogin" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"dimension":"user","userName":"<帳號名>"}' | jq -r .code
+```
+
+`0000`＝已解鎖、下一次登入嘗試即自該時刻重新計數（未鎖標的亦回 `0000`）；`2222 biz.throttle.invalidUnlockTarget`＝維度或標的畸形（零稽核零狀態）。每次解鎖落一列操作稽核，查核：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust -c "SELECT operation, entity_table, payload_after, real_ip, created_at FROM sys_operation_log WHERE operation='unlock' ORDER BY id DESC LIMIT 5"`。其餘維運端點隨對應刀補實文。
 
 ## 9c. CDP 真登入走查的環境還原契約
 
@@ -170,6 +183,8 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 索引→`docs/ops/LESSONS.md`、全文→`docs/ops/LESSONS/`；本表只指路。前代候選＝rev5 `docs/ops/LESSONS.md`（唯讀、引用帶 `rev5:`）。
 
+症狀「回應 403」的分診（只給座標、事實住活書）：`5003` 的發出面與彼此在 wire 上不可分辨＝活書 §8.2；IP 存取閘阻擋的可觀測面（豁免路徑、`ipgate_blocked_total`、`security.ipgate` 阻擋告警之命中網段欄）＝活書 §6.1「信任錨與 IP 存取閘——島 F」④；登入端點轉發鏈逾限拒絕（落一列 `chain_rejected` 登入稽核）＝同情境②。★Grafana `ipgate-degraded` 只看降級事件、不涵蓋阻擋（阻擋告警不帶 `degraded` 欄）——告警沒響不等於不是閘擋的。誤擋的解法＝IP 規則管理頁改規則（不重啟即生效）；來源被登入節流鎖住＝§9 管理員解鎖。
+
 ## 14. 埠與帳號
 
 - 真相源：埠全表→`docs/generated/reference/ports.md`（機器生成；配號紀律＝ADR-00001、世代 3xxxx）；帳號／角色→`docs/generated/reference/accounts.md`（generate 產；真源＝`docs/ops/reference-src/accounts-snapshot.json`、`python3 tools/docsync refresh` 自實庫照相；dev 三帳 Super／Admin／User 之角色綁定承 rev5 對照基準、全表見該檔）。
@@ -219,7 +234,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
    - ②的 `warnings` 含兩類不算降級的告警（設定檔有不認得的鍵、載入完成但零受信網段）；這兩類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
    - ③看印出的數、不看 rc：`grep -c` 零命中時印 `0` 而 rc 為 1。③橫跨容器 log 內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`（如 `--since 24h`）。
    - 告警規則 `ipgate-degraded`（`deploy/grafana-provisioning/alerting/rules.yml`）也涵蓋載入降級，但啟動端事件每次啟動只發一次、紅一個評估窗即復歸——部署當下以②③④為準、不等告警。
-5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的只有來源信心態 `fallback` 與 `proxy_clean` 二態，其餘信心態由整合測試覆蓋（已知態＝ADR-00040）。要在 dev 追加可達態＝加設定、不改判定碼。
+5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的只有來源信心態 `fallback` 與 `proxy_clean` 二態，其餘信心態由整合測試覆蓋（已知態＝ADR-00040）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
 
 ### 16.2 CDN 邊緣網段：兩處各存一份、必須同步更新
 
@@ -228,6 +243,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | `deploy/nginx/nginx.conf` 的 `geo $cf_edge` 區塊 | **傳輸層對端**是不是 CDN 邊緣——決定 `X-CF-Verified`／`CF-Connecting-IP` 兩標頭注入還是移除 | 每個網段一行 `<CIDR> 1;`（區塊內附註解樣例）；dev 留空 |
 | 信任模型檔 `[[cdn]]` 的 `networks` | **轉發鏈裡**哪一跳是 CDN 邊緣（位置錨） | CIDR 字串陣列；`connecting_ip_header` 填該 CDN 的訪客位址標頭名 |
 
+- ★訪客位址標頭（信任模型 `[[cdn]]`／`[tunnel]` 的 `connecting_ip_header`）的前置層義務：該名 MUST 由前置層**無條件覆寫或移除**——`deploy/nginx/conf.d/_locations.inc` 只對固定一組標頭名 `proxy_set_header`（含預設的 `CF-Connecting-IP`），宣告成別的名字而 nginx 沒有同步為它加一行（非 CDN／非通道流量給空值＝移除）時，請求端可自帶該標頭原樣穿透：`[[cdn]]` 側扭曲來源信心，`[tunnel]` 側在通道回退成立時直接改寫真實來源（連帶影響存取閘判定、來源維計數桶與稽核列）。另該名須為合法 HTTP 標頭名——非法名使兩層覆蓋靜默失效、載入面現無告警（承載＝BACKLOG BL-00082）。
 - 兩份用途不同、內容必須一致。來源＝CDN 供應商公告的邊緣網段表（Cloudflare＝`https://www.cloudflare.com/ips/`，IPv4 與 IPv6 兩份都要）；它是部署參數、會變——**更新節奏跟供應商公告走**，每次變更**兩處同一批改**，改完 nginx 重載設定、rust-api 重啟（信任模型只在啟動時載入）。
 - ★只改一邊的表徵：
   - 只改 nginx、漏改信任模型：新邊緣位址在轉發鏈上不被認得是 CDN、被當成真實來源（多個訪客塌成同一個邊緣位址）；同時邊緣驗證標記為真、訪客標頭與它對不上 ⇒ 來源信心大量落 `cdn_mismatch`（前提＝`cf_gate_egress` 已填）。

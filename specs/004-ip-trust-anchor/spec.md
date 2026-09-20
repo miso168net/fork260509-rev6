@@ -397,7 +397,7 @@ dev 走查留下的殘列不再讓全量測試大片變紅。
 - **FR-068**: 活書 MUST 於 feature branch 內改為現在式 as-built：§5 模組（trust／ipgate／middleware）、§6 新增「信任錨與 IP 存取閘——島 F」情境並改寫「登入失敗節流——島 E」情境（兩維、無 L1）、§8 API 慣例（ROUTES 22、msg 名冊權威）與 fork-delta 軌道、
   §11 `auth_limit` 已知態列之「來源維與信任錨還原不在本 crate」句、§12 詞彙（信任錨、來源信心〔與 AI「信心規格」區分〕、來源信心態 `fallback`〔與流程層「fallback」區分、兩詞不互用〕、來源維、結構豁免、判定窗、計數桶、顯式放行、解鎖標記、防自鎖；
   「節流三區」列刪 L1 負快取、「鎖定」列改寫 L1 句與「無解鎖端點」句）、§01／§03／§10 之 L1 敘述；C4-L2 拓樸不變零改。
-- **FR-069**: 帳本 MUST 於收刀兌現：`backlog_done`＝BL-00058／00062／00066／00070／00072／00075／00077／00078；條文改寫＝BL-00028（刪 `throttle::load_settings` 半句）／BL-00031（刪 `ip_*` 臂）／
+- **FR-069**: 帳本 MUST 於收刀兌現：`backlog_done`＝BL-00058／00062／00066／00070／00072／00075／00077／00078（★勘誤 2026-09-20：另加 BL-00081＝本刀 U4 新增、U9 兌現之刀內條目，收刀事件之 `backlog_add` 與 `backlog_done` 兩欄同列、BACKLOG 同批刪列——final holistic review）；條文改寫＝BL-00028（刪 `throttle::load_settings` 半句）／BL-00031（刪 `ip_*` 臂）／
   BL-00042（刪②）／BL-00043（只剩 access 面）／BL-00045（刪 ip-rule 頁）；`backlog_add` 兩條＝「解鎖按鈕＋前端包裝待使用者管理頁刀」「全域 wire i64 守衛 lint（`rev5:B-111` 同形）」；
   NOTES「下一步」specify 起手後改 004 進行中、收刀改 005；`feature_close.adrs` 列全。
 - **FR-070**: 收刀 DoD MUST 全綠：容器內 `cargo test --workspace -- --test-threads=1`（全程 serial）＋contract 22 case＋`pnpm typecheck`＋`fork-delta-lint`（新軌道列名冊載入變異自證）＋msg-key-gate＋
