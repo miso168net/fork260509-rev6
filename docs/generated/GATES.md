@@ -10,7 +10,7 @@
 | GT-03 | RL-0055 | 收刀與 review 事件完整性、BL 引用存在性 | rev5:ADR 0075 | docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews；docs/ops/BACKLOG.md；docs/ops/BACKLOG-DEFERRED.md | pre-commit | 1 | — | 收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現 |
 | GT-04 | RL-0074 | ADR 不可變與 supersede 對稱 | rev5:ADR 0012 | docs/arc42/decisions/*.md | pre-commit | 1 | — | 拍板全文可被改寫、翻案可單向 |
 | GT-05 | RL-0050 | 配號唯一單調、跨代裸編號、ID 引用存在性與書寫形 | rev5:ADR 0012 | docs/ops 三帳＋現在式面＋兩子庫 pin 樹＋ID 引用面（現在式面之 *.md〔含憲法〕 ∪ tools/**、去生成鏡像與 vendored、ADR body 存量豁免） | pre-commit | 1 | — | 號碼可回收、rev5 編號走私入 rev6 現在式文件、引用可指向不存在的 ID、縮寫形讓全字枚舉漏抓 |
-| GT-06 | RL-0048 | 引用斷鏈、時態混入 | rev5:ADR 0012 | tracked *.md；活書家族 | pre-commit | 1 | — | 死連結與未來式靜默入書 |
+| GT-06 | RL-0048 | 引用斷鏈、時態混入、tmp 具名路徑 | rev5:ADR 0012 | tracked *.md；活書家族；現在式面全副檔名（tmp 腿） | pre-commit | 1 | — | 死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針 |
 | GT-07 | RL-0054 | 機密入版控 | rev5:ADR 0003 | tracked 文字檔＋SECRETS_DIR 實值 | pre-commit | 1 | — | 機密實值或樣式進 git 歷史、不可逆 |
 | GT-08 | RL-0049 | RULES↔LESSONS 對賬 | rev5:ADR 0024 | docs/ops/RULES.md；docs/ops/LESSONS/*.md | pre-commit | 1 | — | 規則層可無來源、教訓可不指向規則 |
 | GT-09 | RL-0057 | 接線與實檔集（含編排骨架子名冊） | rev5:L-061 | README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED、tools/orchestration/README.md 檔表（⇔ tools/orchestration/ tracked 檔集；ADR-00020） | pre-commit | 1 | — | hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉 |

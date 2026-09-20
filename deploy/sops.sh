@@ -2,7 +2,7 @@
 # deploy/sops.sh — sops 官方容器 wrapper（rev4:019-secrets-sops；契約＝contracts/secret-pipeline.md rev4:§P1）
 #
 # 用法：自 repo 根執行 ./deploy/sops.sh <sops 參數...>
-#   例：./deploy/sops.sh -e --filename-override deploy/secrets.dev.enc.yaml tmp/plain.yaml
+#   例：./deploy/sops.sh -e --filename-override deploy/secrets.dev.enc.yaml tmp/<明文>.yaml
 #       ./deploy/sops.sh -d deploy/secrets.dev.enc.yaml
 #
 # 契約要點（rev4:P1.1~rev4:P1.7）：

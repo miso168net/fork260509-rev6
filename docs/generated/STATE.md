@@ -13,11 +13,11 @@
 
 ## 帳面統計
 - ADR：40（proposed 0、accepted 36、superseded 4）
-- RULES：76 條／上限 92（implementer 40/48、review 14/18、fix 16/19、主線 43/52、人 10/12）
+- RULES：77 條／上限 92（implementer 41/48、review 14/18、fix 16/19、主線 44/52、人 10/12）
 - BACKLOG 開放：36｜滯後：2
-- LESSONS：29 筆
+- LESSONS：30 筆
 - events：64 筆（erratum 2、feature_close 4、misc 22、perf 30、review 6）
-- CLAUDE.md 行數：160（只報表、不擋）
+- CLAUDE.md 行數：161（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
@@ -31,13 +31,13 @@
 | 項目 | 現值 | 上限 | 狀態 |
 |---|---|---|---|
 | 閘數 | 12 | 12 | 內 |
-| RULES 總 | 76 | 92 | 內 |
-| RULES implementer | 40 | 48 | 內 |
+| RULES 總 | 77 | 92 | 內 |
+| RULES implementer | 41 | 48 | 內 |
 | RULES review | 14 | 18 | 內 |
 | RULES fix | 16 | 19 | 內 |
-| RULES 主線 | 43 | 52 | 內 |
+| RULES 主線 | 44 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 3711 | 4000 | 內 |
+| docsync 行數 | 3737 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-09-20｜perf｜close_bookkeeping｜close_bookkeeping 18.16 秒 rc=0

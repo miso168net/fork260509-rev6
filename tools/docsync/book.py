@@ -345,6 +345,12 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 RE_LINENO = re.compile(r"\S+\.md:\d+")
 RE_DEEP = re.compile(r"(BACKLOG(-[A-Za-z0-9-]+)?|NOTES|STATE)\.md#")
 RE_HOME = re.compile(r"(~|/home/[^/\s]+|/Users/[^/\s]+)/\.claude/")
+# tmp/ 具名路徑腿（RL-0077）：tmp 為 gitignored 工作區，他人 clone 與 tmp-clean 後皆無此檔＝死指針。
+# ★本腿看原文、不剝程式碼——反引號內的 `tmp/<檔>.py` 正是違規形（與連結／行號腿的提及原則相反）。
+RE_TMP_REF = re.compile(r"(?<![\w./-])tmp/([A-Za-z0-9_][\w.-]*)")
+TMP_PLACEHOLDER = ("<", "*", "{", "?")  # tmp/walkthrough-<刀>.json、tmp/004-u* 等形制句不入射程
+# 豁免面：accepted ADR body 不可變（GT-04）、events 為 append-only 事件源、generated 由真源重算
+TMP_REF_EXEMPT = (ADR_DIR + "/", "docs/generated/")
 TENSE_ERR = ("待決", "TBD", "⏳", "已完成", "下一步")
 TENSE_WARN = ("屆時", "日後", "將由")
 RE_SHEBANG_SH = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:/bin/|/usr/bin/)?(?:ba)?sh\b")
@@ -357,16 +363,35 @@ def strip_code(text):
     return INLINE.sub("", FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), text or ""))
 
 
+def _tmp_refs(ctx):
+    """RL-0077 腿：現在式面（任何副檔名）不得寫 tmp/ 具名路徑；史料面（brainstorms／specs／reviews）不在射程。
+    掃描面空集合由 gt_06 的活書缺席腿兜底（活書面 ⊂ 現在式面）。"""
+    out = []
+    for rel in ctx.tracked:
+        if face_of(rel) != "present" or rel.startswith(TMP_REF_EXEMPT) or rel == EVENTS:
+            continue
+        text = ctx.text(rel)
+        if text is None:
+            continue
+        for i, line in enumerate(text.split("\n"), 1):
+            for m in RE_TMP_REF.finditer(line):
+                if line[m.end():m.end() + 1] in TMP_PLACEHOLDER:
+                    continue
+                out.append(finding(ERROR, "GT-06", f"{rel}:{i}",
+                                   f"tmp/ 具名路徑「{m.group(0)}」——tmp 為 gitignored 工作區、他人 clone 無此檔（RL-0077）；改指入庫落點或不綁路徑的描述"))
+    return out
+
+
 def gt_06(ctx):
     """GATE:
       id=GT-06
       rule=RL-0048
       source=rev5:ADR 0012
-      drift=引用斷鏈、時態混入
-      face=tracked *.md；活書家族
+      drift=引用斷鏈、時態混入、tmp 具名路徑
+      face=tracked *.md；活書家族；現在式面全副檔名（tmp 腿）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=死連結與未來式靜默入書
+      breaks-if-removed=死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針
     """
     out = []
     book_seen = False
@@ -401,6 +426,7 @@ def gt_06(ctx):
                 for w in TENSE_WARN:
                     if w in line:
                         out.append(finding(WARN, "GT-06", where, f"活書家族預告詞「{w}」——預告必標成預告並附回填義務"))
+    out += _tmp_refs(ctx)
     if not book_seen:
         out.append(finding(ERROR, "GT-06", "docs/arc42", "活書家族缺席（現在式面必在；RL-0051 掃描面空集合即紅）——連結／行號／路徑腿照跑"))
     return out

@@ -116,6 +116,7 @@
 - **ID 配號**：BL／LL／RL 取檔頭 `<!-- next: -->` 後 bump、永不回收；ADR 編號＝檔名、永不重用（GT-05）。ops 帳本之跨刀存活面（BACKLOG／LESSONS）寫刀名形「001 刀 U2」；「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；一律不寫裸刀號（RL-0020）。
 - **前代編號**：一律 `rev5:`／`rev4:` 前綴；提及形（反引號或「」內）不算使用（RL-0046；GT-05）。
 - **勘誤**：`python3 tools/docsync errata <詞>` 機器枚舉全 repo（含兩子庫 pin 樹）逐處處置後才 commit（RL-0001）。
+- **tmp 工作區**：`tmp/` 為 gitignored 工作區兼跨刀資產庫（RL-0032）；**受版控文件一律不得寫 `tmp/` 具名路徑**（RL-0077、GT-06 機器守）——指範本改指入庫落點（`tools/orchestration/EXAMPLE-*.py`）或寫成不綁路徑的描述，形制句用佔位形；既有違規拿掉路徑、不是更新路徑。
 - **lint 運作模式**：pre-commit 一次跑完、秒級（雙錨門檻＝`.githooks/pre-commit` 檔頭常數）；被擋的是 Claude、同回合修復（錯誤訊息附去處）；user 僅介入 lint 抓到真決策或調規拍板。
   閘名冊＝`docs/generated/GATES.md`；Day-1 豁免逐筆具名、帶解除謂詞、到期即紅（RL-0051／RL-0052）。
 - **波標記**：`docs/ops/NOTES.md` 首行 `<!-- wave: N -->`＝現在波唯一真源；bump＝波次出口動作（GT-10／GT-12 判準）。
