@@ -1,4 +1,4 @@
-<!-- next: BL-00109 -->
+<!-- next: BL-00110 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -39,3 +39,4 @@
 - BL-00106｜governance｜`rust-api/server/tests/wire_i64_guard_lint.rs` 的三個**靜默逃逸面**（既不入未守衛集合、也不落 Nested 絆線；檔頭「已知不抓的邊界」已逐則誠實記載、現況真樹皆零筆）：①泛型 wire 型的**實例化**面（`Res<i64>`／`PageRes<i64>`——i64 不是任何 `derive(Serialize)` 型的欄，以「型的欄」為單位的判準掃不到）②手寫 `impl Serialize for X`（不經 derive 錨）③巨集展開生成的 wire 型（`macro_rules!` 本體內的 `#[derive(Serialize)]`，展開後的真型別不在源碼文字裡）。前代形＝rev5 以泛型型名冊＋實例化掃描守之｜觸發＝全樹首次出現任一形時（`Res<i64>`／`PageRes<i64>` 實例化、手寫 `impl Serialize`、或巨集生成 `Serialize` 型），或 `PageRes` 上移 `envelope.rs`（BL-00086）時（先到者）
 - BL-00107｜governance｜`rust-api/server/tests/wire_i64_guard_lint.rs` 無**型級解析普查案**（RL-0067 vacuous 面）：現況只有檔級 `scan_is_non_empty` 與六筆具名已守衛欄；若某型的 `parse_item` 日後失手（回 `None` 即整項放棄）且該型剛好新增未守衛 i64 欄，該欄不入 `got`、名冊亦無、主守恆恰等比對照綠＝無聲。候選＝補一支「每個 `derive(… Serialize …)` 錨都須解析成功」的案（不釘型數、釘錨數與解析成功數相等）｜觸發＝下次動該檔判準本體之刀或維護批
 - BL-00108｜governance｜char 級源碼解析工具組已有**第二份**且已分岔：`rust-api/server/tests/entity_behavior_lint.rs` 持 `skip_ws`／`ident_at`／`close_of`／`split_top`／`peel_attrs`／`attr_spans`／`token_positions` 七支，`wire_i64_guard_lint.rs` 另持同形一組（後者多了 `r#` 前綴、可見性剝除、箭號守衛與角括號深度；前者以 `step()` 逐步跳常值而非預先換白）——`tests/common/mod.rs` 自己就為 Drop 守衛的「第三份手抄」寫過同一段警語｜觸發＝第三份出現時，或下一支同時動這兩支 lint 之刀或維護批（先到者）
+- BL-00109｜governance｜前端查詢串序列化設定與後端抽取器錨之間零機器守：`rust-api/server/tests/wire_schema.rs` 之 `FRONTEND_FIRST_SCREEN_QUERY` 以**手抄常數**承載「前端真送得出來的查詢串形」，而該形的成立前提住 `base-web/packages/axios/src/options.ts` 的 `paramsSerializer`（`qs.stringify`、qs 預設 `strictNullHandling: false` ⇒ null 渲染成 `k=`）與 `base-web/packages/axios/package.json` 的 qs 版本——前提一改（改傳 `{strictNullHandling: true}`、或拿掉 `paramsSerializer` 回 axios 預設＝null 欄整個被丟掉），該常數即從「真串」變成「前端不送的串」而全檔照綠、敘述靜默成假。同 repo 已有跨子庫機器錨前例（`tools/msg-key-gate.py` 讀 base-web `src/`、`tools/wire-schema.py` 讀 base-web typings）｜觸發＝下次動 `base-web/packages/axios/src/options.ts` 或其 qs 版本時，或下一支新增帶查詢串 query 型之刀（005 role-menu-crud 的角色／選單清單端點必到）（先到者）
