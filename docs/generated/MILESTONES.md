@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-21 | misc | governance｜maint-backlog-92-97 | 005 前維護批第 5／7 支（rust 三支之首）：wire i64 守衛 lint 進場＋wire 裁判補 IP 規則請求型錨——BL-00092 新增 tests/wire_i64_guard_lint.rs（29 案、全樹靜態掃描，封住快照裁判對 2^53 守衛掛沒掛結構性無感的盲區；未掃出漏掛故 src 零改）、BL-00097 wire_schema.rs 24→44 案收 Api.IpRule 三支寫端請求型與清單 query（後者走查詢串真路徑）。兩條刪列。 | d4f33b7 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-80-88-94-99 | 005 前維護批第 4／7 支：三支 python 工具微修＋msg 面板指針形——BL-00080 量尺補 .py／.sh 面（tokenize＋ast 取 # 與真 docstring）、BL-00088 綠訊息改由實跑腿推導與沙盒失敗路徑補清、BL-00094 restore 清前有列即自動 PUBLISH ipgate:invalidate（排在 pg 交易之後）、BL-00099 Grafana 拒因字典改指針形。四條刪列。 | f91ba0d | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-42 | 005 前維護批第 3／7 支：跨刀活體契約自 spec 目錄抽至 docs/ops/reference-src/（BL-00042、ADR-00041）——五份新家（四份整檔搬＋一份六節併入）、specs 原檔零改動留凍結存證、四十二處引用改指新家；GT-06 加腿同時守絕對形與裸相對形（後者為 repo 主流寫法、首版漏掃＝該腿原本 vacuous）。 | fdf181f | ADR-00041 | — |
 | 2026-09-21 | misc | governance｜maint-backlog-35 | 005 前維護批第 2／7 支：事件帳守衛兩腿（BL-00035②④）——GT-02 加 append-only HEAD 對比腿（HEAD 版須為現版逐行前綴；刪列／改寫／疑中間插入三態各自指名，形制承 GT-04），GT-03 改為「有無效列即指名首列並中止下游判讀」（原本無效列被丟棄⇒在途與完整性腿對不存在的事件續判＝整片假報）。自測 280→282 案、閘數維持 12/12。 | 9b932d8 | — | — |
@@ -44,6 +45,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-21｜misc｜governance｜maint-backlog-92-97
+
+真全樹掃描結論（主線與兩位審查員各自獨立重算、三方一致）：derive(Serialize) 型 16／i64 與 Option<i64> 欄 10＝已守衛 6・具名豁免 4（JWT 與 captcha 票 payload）・名冊外未守衛 0・Nested 0。3 顆：U1 d453793＋U2 67d8497＋final review 收單 c329049。★U1 的 SpecReview 在首個 run（wf_69f9709c-aa2）被 prompt 污染整段落空——agent 把 context 內轉述的 user 進度提問當成優先指令、刻意不執行審查即回 agentStatus=failed 且 blockers 空（空 blockers 與審查通過在回傳形狀上不可分辨、只有 reason 分得出來），以續跑形補跑兩次（wf_e9646b9b-a78 規格 4 輪／wf_69c55fde-c1d 確認輪＋碼品質 4 輪）才收斂；立 LL-00031＋RL-0078（agent 那一半）＋RL-0079（主線那一半，同批修 RL-0004 與 CLAUDE.md §2 的「空 blocker 即收斂」字面）。findings 合計 32 筆＝修 21／轉 BL 5／駁回 6。ADR-00040 款 6 additionalProperties 全域開啟同批重評＝維持不開不翻 ADR（翻案觸發器皆未踩到），附帶查到的 as-built 落差轉 BL-00105。活書 05 契約測試面枚舉補列本 lint、08 契約機器化四件→五件且②句擴寫並各補裁判力邊界。RULES-VERSION a040f612a18a→0bbc9765d102。
 
 ### 2026-09-21｜misc｜governance｜maint-backlog-80-88-94-99
 
