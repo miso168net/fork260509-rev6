@@ -16,13 +16,13 @@
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：34｜滯後：4
 - LESSONS：31 筆
-- events：76 筆（erratum 2、feature_close 4、misc 28、perf 36、review 6）
+- events：77 筆（erratum 2、feature_close 4、misc 29、perf 36、review 6）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 7.0 | ≤1 | 超標 |
+| 治理批對 feature 比 | 7.25 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.1 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 21 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
@@ -40,6 +40,6 @@
 | docsync 行數 | 3804 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-22｜misc｜governance｜maint-backlog-89-83-85｜005 前維護批第 6／7 支：測試清理面收攏＋門鈴量測去全域相依＋IP 閘兩處回歸錨——BL-00089 ①② 三支守衛 Drop 還原殼收攏為一支 run…
 - 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 17.99 秒 rc=0
 - 2026-09-21｜misc｜governance｜maint-backlog-92-97｜005 前維護批第 5／7 支（rust 三支之首）：wire i64 守衛 lint 進場＋wire 裁判補 IP 規則請求型錨——BL-00092 新增 …
-- 2026-09-21｜perf｜close_bookkeeping｜close_bookkeeping 18.42 秒 rc=0

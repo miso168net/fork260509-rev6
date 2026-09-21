@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-22 | misc | governance｜maint-backlog-89-83-85 | 005 前維護批第 6／7 支：測試清理面收攏＋門鈴量測去全域相依＋IP 閘兩處回歸錨——BL-00089 ①② 三支守衛 Drop 還原殼收攏為一支 run_restore（還原計畫抽成純資料、等價性由純資料斷言釘死）＋observed_msgs_real_db 兩 sid 改掛 RAII 清鍵；BL-00083 精確等值量測改走區域量表＋兩支守門；BL-00085 ①ipgate_blocked 發射點恰一處之靜態掃描腿 ②ChainRejected 來源被閘擋之案。三條刪列。 | dc32264 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-92-97 | 005 前維護批第 5／7 支（rust 三支之首）：wire i64 守衛 lint 進場＋wire 裁判補 IP 規則請求型錨——BL-00092 新增 tests/wire_i64_guard_lint.rs（29 案、全樹靜態掃描，封住快照裁判對 2^53 守衛掛沒掛結構性無感的盲區；未掃出漏掛故 src 零改）、BL-00097 wire_schema.rs 24→44 案收 Api.IpRule 三支寫端請求型與清單 query（後者走查詢串真路徑）。兩條刪列。 | d4f33b7 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-80-88-94-99 | 005 前維護批第 4／7 支：三支 python 工具微修＋msg 面板指針形——BL-00080 量尺補 .py／.sh 面（tokenize＋ast 取 # 與真 docstring）、BL-00088 綠訊息改由實跑腿推導與沙盒失敗路徑補清、BL-00094 restore 清前有列即自動 PUBLISH ipgate:invalidate（排在 pg 交易之後）、BL-00099 Grafana 拒因字典改指針形。四條刪列。 | f91ba0d | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-42 | 005 前維護批第 3／7 支：跨刀活體契約自 spec 目錄抽至 docs/ops/reference-src/（BL-00042、ADR-00041）——五份新家（四份整檔搬＋一份六節併入）、specs 原檔零改動留凍結存證、四十二處引用改指新家；GT-06 加腿同時守絕對形與裸相對形（後者為 repo 主流寫法、首版漏掃＝該腿原本 vacuous）。 | fdf181f | ADR-00041 | — |
@@ -45,6 +46,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-22｜misc｜governance｜maint-backlog-89-83-85
+
+3 顆：U1 b07435d＋U2 67e6289＋final review 收單 c1b5f03。★BL-00083 的條文成因經實測證偽：#[tokio::test] 每案自持 current_thread runtime、案尾 drop 即取消 spawn 的 watcher，跨案污染物理上不成立（主線以 agent 未用過的 shuffle seed 77／91 獨立複核）。真成因＝①同案內常駐 watcher，量測窗跨 .await 即輪得到它推格 ②libtest 預設並行。條文所列兩條修法（改不等式／給停機句柄）皆失去前提，改走第三條路。★final review 的 blocker 打的是主線自己：U2 commit 訊息抄了 agent 自述的「移除四處 watcher.abort()」而未 grep 查證，實況是全樹本就沒有 abort（四處實為 is_finished 常駐斷言）；因未推未被引用，已改寫歷史清掉（rust-api 65618a9→41aa1dd、外層 8677bd1→67e6289，內容零變動）。findings 合計 42 筆＝修 40／轉 BL 2／駁回 1。活書 §6.1 與 §10.2 兩張島 F 守門表同批補列本批四支新守。
 
 ### 2026-09-21｜misc｜governance｜maint-backlog-92-97
 
