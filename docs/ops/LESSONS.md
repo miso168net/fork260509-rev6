@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00031 -->
+<!-- next: LL-00032 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -36,3 +36,4 @@
 | LL-00028 | 主線把前代的 hook 段形烤進單元 prompt，卻與 rev6 已 accepted 的 ADR 相違；implementer 照做、靠其升級項才現形 | RL-0065 | none | [LL-00028-baking-predecessor-hook-form-against-accepted-adr.md](LESSONS/LL-00028-baking-predecessor-hook-form-against-accepted-adr.md) |
 | LL-00029 | `ArcSwap::load()` 的 Guard 寫在 async 呼叫的實參位→暫時值活到整句敘述結尾，被存進 future、跨過整段 await | none：`ArcSwap` 讀端 Guard 之生命週期屬碼面慣例、由呼叫點碼註與 code review 承載，無對應 RL 條目 | none | [LL-00029-arcswap-guard-in-async-call-argument-lives-across-awaits.md](LESSONS/LL-00029-arcswap-guard-in-async-call-argument-lives-across-awaits.md) |
 | LL-00030 | 受版控文件把範本／工件指成 `tmp/` 具名路徑——tmp 是 gitignored 工作區，他人 clone 與清理後皆無此檔，指針當場死掉且沒有任何閘會紅 | RL-0077 | rules | [LL-00030-tracked-doc-pointer-into-gitignored-tmp-is-dead-on-clone.md](LESSONS/LL-00030-tracked-doc-pointer-into-gitignored-tmp-is-dead-on-clone.md) |
+| LL-00031 | 編排 session 的 user 訊息被轉述進 subagent context，agent 把它當成優先指令而**刻意不執行被指派的工作**——防呆④擋住了下游，但該階段整個落空 | RL-0078 | rules | [LL-00031-relayed-user-message-makes-subagent-skip-its-task.md](LESSONS/LL-00031-relayed-user-message-makes-subagent-skip-its-task.md) |
