@@ -53,7 +53,7 @@
 　　★review agent 不得共用該 status 欄（agent 受阻 vs 審查有 blocker 是兩件事；rev5:L-011 變形①）。
 　　★升級分 `blocked`（立即 return）／`done_with_escalation`（照常跑完審查再連同升級項回；rev5:L-035）；徵狀＝完成通知 agent_count=1。
 　⑤收斂偵測：review 連兩輪 blocker 集合（file×summary 結構化比較）相同、或 fix 連兩輪零改動→判不收斂；unresolved 一律帶 findings 回主線。
-　　★fix 迴圈跑滿上限後必有確認輪（再 review 一次、空 blocker 即判收斂；rev5:L-011 變形②）。
+　　★fix 迴圈跑滿上限後必有確認輪（再 review 一次、空 blocker **且該輪審查確有執行**即判收斂；rev5:L-011 變形②。★空 blockers≠審查通過、判準＝RL-0079）。
 　⑥空間邊界：fix agent prompt 烤進允許檔案清單（＝該單元 tasks 涉檔＋review findings 指涉檔的聯集、寫死 script 常數）；清單外檔案需要動→絕不擅改、依④分值升級；
 　　次輪清單只縮不擴；清單另納連動釘值測所在檔、答「碰得到什麼」而非 task 寫了什麼（RL-0014／RL-0022）。
 ★主線看門狗（非終止型故障不會有完成通知；RL-0016／RL-0017／RL-0061／RL-0062）：★Workflow launch 與看門狗**雙掛**
