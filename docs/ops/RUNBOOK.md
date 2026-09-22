@@ -16,7 +16,8 @@
 
 ## 2. 日常起停
 
-`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait`／`stop`／`ps`；host 埠世代 3xxxx（ADR-00001；真表＝`docs/generated/reference/ports.md`）。rev5 對照 stack 常駐 2xxxx、兩 stack 併行是預期形（CLAUDE.md §7）。其餘隨對應刀補實文。
+`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait`／`stop`／`ps`；host 埠世代 3xxxx（ADR-00001；真表＝`docs/generated/reference/ports.md`）。rev5 對照 stack 常駐 2xxxx、兩 stack 併行是預期形（CLAUDE.md §7）。
+★pull／checkout 動到 `deploy/trust-model.dev.toml`（含純註解改動）後，rust-api 容器**必重建**：`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api`——該檔為單檔 bind mount、git 換檔即懸空，watchexec 重啟與 `restart` 皆不重掛；徵狀不紅、只在 boot 日誌現 `信任模型載入告警 kind=Missing` 與 `internal_default:0`（LL-00033；secrets 檔同口徑＝`deploy/secrets/README.md`）。其餘隨對應刀補實文。
 
 ## 3. 觀測層 profiles（obs／metrics／jobs）
 
