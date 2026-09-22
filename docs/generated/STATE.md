@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=3fb3ea3｜rust-api=af9b2ec
+- pins：base-web=3fb3ea3｜rust-api=246d5ff
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -14,9 +14,9 @@
 ## 帳面統計
 - ADR：41（proposed 0、accepted 37、superseded 4）
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
-- BACKLOG 開放：34｜滯後：4
+- BACKLOG 開放：46｜滯後：4
 - LESSONS：32 筆
-- events：79 筆（erratum 2、feature_close 4、misc 30、perf 37、review 6）
+- events：80 筆（erratum 2、feature_close 4、misc 30、perf 38、review 6）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3804 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 21.2 秒 rc=0
 - 2026-09-22｜misc｜governance｜maint-backlog-86-90｜005 前維護批第 7／7 支（末支、本輪唯一真改 production 碼者）：PageRes<T> 上移 envelope.rs（欄形與 serde 屬性…
 - 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 22.04 秒 rc=0
-- 2026-09-22｜misc｜governance｜maint-backlog-89-83-85｜005 前維護批第 6／7 支：測試清理面收攏＋門鈴量測去全域相依＋IP 閘兩處回歸錨——BL-00089 ①② 三支守衛 Drop 還原殼收攏為一支 run…

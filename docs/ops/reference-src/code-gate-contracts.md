@@ -17,7 +17,7 @@
 
 ## §2 wire 快照與覆蓋閘契約
 
-> 凍結存證＝`specs/002-system-settings/contracts/wire-settings.md` §4；★「受審 definitions」與「本刀 case 集」兩項為 002 當下的枚舉、隨刀前進（現況查 `rust-api/server/tests/fixtures/wire-schema.json` 與 `server/tests/contract.rs`）。
+> 凍結存證＝`specs/002-system-settings/contracts/wire-settings.md` §4；★「受審 definitions」與「002 刀 case 集」兩項為 002 當下的枚舉、隨刀前進（現況查 `rust-api/server/tests/fixtures/wire-schema.json` 與 `server/tests/contract.rs`）。
 
 
 - 快照產製：`python3 tools/wire-schema.py extract`（base-web 容器內 `npx typescript-json-schema@0.67.4` 唯讀抽取、`--strictNullChecks`、原子替換寫入
@@ -33,8 +33,8 @@
 > 凍結存證＝`specs/004-ip-trust-anchor/contracts/code-gates.md` §2。
 
 
-① `tools/view-render-guard.py`（承 `rev5:tools/view-render-guard.py` 282 行、新寫）：射程 `base-web/src/views/manage/**`；零 `v-html`／`innerHTML`／`outerHTML` 用法；環境缺席語意＝base-web 工作樹缺席即 fail-loud（ADR-00019 形）。
-② `tools/route-artifact-gate.py`（承 `rev5:tools/route-artifact-gate.py` 605 行、新寫）：於 base-web 容器內**沙盒**重跑路由外掛重算（不就地改工作樹＝pre-commit 各閘唯讀）後與版控產物四檔 byte 比對＝冪等，另以上游基線為種重算一腿承擔「手改一行即紅」（外掛對 `routes.ts` 為增量合併、版控為種時手改行存活；★勘誤 2026-09-20：原文「容器外以 `pnpm` 重跑…後 `git diff --quiet`」——`node_modules` 住容器、`pnpm gen-route` 為互動腳手架非重算指令〔`rev5:L-053`〕）；斷言「憲法 §III.2 該軌道列所列產物檔集＝外掛實際產出檔集」（雙向差集即紅）；環境缺席（無 node）＝具名跳過（pre-commit 條件段）。
+① `tools/view-render-guard.py`（承 `rev5:tools/view-render-guard.py` 282 行、新寫）：射程 `base-web/src/views/manage/**`；零 `v-html`／`innerHTML`／`outerHTML`／`insertAdjacentHTML`／`document.write`（含 `writeln`）用法（禁用字面集＝工具常數 `FORBIDDEN`，以該常數為準、本檔不另釘值）；環境缺席語意＝base-web 工作樹缺席即 fail-loud（ADR-00019 形）。
+② `tools/route-artifact-gate.py`（承 `rev5:tools/route-artifact-gate.py` 605 行、新寫）：於 base-web 容器內**沙盒**重跑路由外掛重算（不就地改工作樹＝pre-commit 各閘唯讀）後與版控產物四檔 byte 比對＝冪等，另以上游基線為種重算一腿承擔「手改一行即紅」（外掛對 `routes.ts` 為增量合併、版控為種時手改行存活；★勘誤 2026-09-20：原文「容器外以 `pnpm` 重跑…後 `git diff --quiet`」——`node_modules` 住容器、`pnpm gen-route` 為互動腳手架非重算指令〔`rev5:L-053`〕）；斷言「憲法 §III.2 該軌道列所列產物檔集＝外掛實際產出檔集」（雙向差集即紅）；環境缺席＝具名跳過 rc 0，判準三項（工具 `observe` 段；ADR-00019）：`docker` 不在 PATH／compose 兩檔任一缺／base-web 容器未起；容器在而憲法列或基線種子不完整＝rc 2，基線源倉缺席＝只第三腿具名跳過並警告。
 ★接線與名冊落點屬各刀施工面、不收進本檔（ADR-00041 決定 2）；現況真源＝RUNBOOK §12 碼面閘表與 `tools/docsync/tests/test_hook_wiring.py` 的 SEGMENTS。
 
 ## §4 `tools/fork-delta-lint.py` 行為契約
@@ -42,8 +42,8 @@
 > 凍結存證＝`specs/002-system-settings/contracts/code-gates.md` §1.3。
 
 - 掃描面：base-web `src/` 之 .ts／.vue＋`build/` 之 .ts＋根層 `.env*`；基線＝源倉 `fork260509-soybean-admin-base/` @ `example` tip（bootstrap 斷言在場）。
-- 兩腿：修改型缺「原行:」（002 刀 vacuous——零 inline）；新增型缺圈界標記（本刀兩新檔）。授權判定＝憲法 §III.2 ★軌道（軌道×用途×檔案）三元組硬邊界＋§III.1 三軌道範圍收窄（ADAPT 修改型限根層 `.env*`；WRAPPER 掃描面內不可修改型）；新增檔標記所稱軌道與檔路徑不符＝紅。
-- ★標記字面（新增型檔頭一行、契約定形）：`// [rev6-inline <軌道名>+ <刀名>] <一句話理由>`——token `rev6-inline`（CLAUDE.md §1）、`+` 尾綴＝新增型、軌道名 ∈ 憲法 §III.1 表首欄字面（`BASE-WEB-ADAPT`／`BASE-WEB-WRAPPER`）、刀名＝`002-system-settings`。
+- 兩腿：修改型缺「原行:」；新增型缺圈界標記。★兩腿之現況實數不在本檔釘值，以 `grep -rc '原行:' base-web/src base-web/build` 與 `grep -rhoE '\[rev6-inline [A-Z0-9-]+\+' base-web/src` 現算（002 刀進場當時修改型為零＝該腿彼時 vacuous，003／004 兩刀落地後已非）。授權判定＝憲法 §III.2 ★軌道（軌道×用途×檔案）三元組硬邊界＋§III.1 三軌道範圍收窄（ADAPT 修改型限根層 `.env*`；WRAPPER 掃描面內不可修改型）；新增檔標記所稱軌道與檔路徑不符＝紅。
+- ★標記字面（新增型檔頭一行、契約定形）：`<註解引導> [rev6-inline <軌道名>+ <刀名>] <一句話理由>`——token `rev6-inline`（CLAUDE.md §1）、`+` 尾綴＝新增型。★**註解引導依檔型而異**：`.ts` 與 `.vue` 的 script 區為 `//`、`.vue` 的 template 區為 `<!-- … -->`（工具吃五種標記形、不限單一註解形）。★**軌道名不限於憲法 §III.1 表首欄**：工具側判準＝`TRACK` 正則之 `[A-Z][A-Z0-9-]*`，§III.2 ★ 軌道與表外宣告 3 之頁進場標記（如 `MANAGE-IP-RULE-VIEW`）同樣合法，授權由三元組另判。刀名＝該檔進場刀之 `NNN-slug`。現況軌道名集與刀名集以 `grep -rhoE '\[rev6-inline [A-Z0-9-]+\+ [0-9]{3}-[a-z-]+\]' base-web/src base-web/build | sort | uniq -c` 現算。
 - ★結構斷言改形（brainstorm Q5）：名冊載入對 §III.2 ★段——零資料列時 MUST 命中哨兵句字面「（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）」、否則 ≥1 列；§III.1 恰 3 列與其餘斷言不變＋第⑥道（as-built 2026-09-05 U0 審查補）＝§III.1 三實名列範圍欄之反引號 token 集 ⇔ 工具常數 `S1_RANGE_LITERAL`（次序不計）、不符即 rc 2——Amendment 改範圍欄即紅、與 pre-commit 憲法觸發源連動；self-test 一正一反：合成憲法文本「零列＋哨兵句」＝綠、「零列＋無哨兵句」＝紅（守不消失）。日常一律用預設憲法路徑，`--constitution` 只供自身變異驗證。
 - rc：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗）；源倉缺席或未切在 `example`＝rc 2 fail-loud（`assert_baseline` die；bootstrap 已斷言在場、正常不觸——as-built 校正 2026-09-05 U0：原句「具名跳過」與碼相反，rev5 原檔同為 die、fail-loud 方向較安全）。
 - pre-commit 觸發：staged 含 `base-web`、`tools/fork-delta-lint.py` 或 `.specify/memory/constitution.md`。
@@ -58,7 +58,7 @@
 | 左源 | `rust-api/server/src/error.rs` 兩段解析（實碼形＝常數表＋常數引用陣列、零字面）：①`pub mod msg_key { pub const NAME: &str = "字面"; … }` 建 名稱→字面 映射 ②`pub const MSG_KEYS: [&str; N] = [ msg_key::NAME, … ];` 逐元素經映射解回字面（亦容直寫字面）；元素數≠N 或任一元素解不出（含常數表缺該名）＝rc 2 |
 | 右源 | `base-web/src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 區塊（錨＝獨佔一行、允許前置空白；brace 配對取塊；剝 `//`／`/* */` 註解與字串值後攤平鍵路徑以 `.` 串接） |
 | 斷言 1 | 三檔各自 `set(backend) == set(MSG_KEYS)`；不等＝rc 1、逐檔指名「缺：…」「多：…」 |
-| 斷言 2 | Biz 構造點守衛：`rust-api/server/src/**/*.rs` 生產區間（`#[cfg(test)]` 區塊以 brace 配對排除）內每處 `AppError::Biz(` MUST 緊接 `Cow::Borrowed(` 且引數為 ①字串字面 或 ②`msg_key::NAME` 常數（經左源映射解回字面）、解出之鍵 ∈ `MSG_KEYS`；動態構造（變數／`format!`／函式回傳）＝rc 1 指名檔:行。002 既有兩處（`validation.rs`）為常數形＝合法、零改動；本刀三個新 Biz 鍵亦用常數形 |
+| 斷言 2 | Biz 構造點守衛：`rust-api/server/src/**/*.rs` 生產區間（`#[cfg(test)]` 區塊以 brace 配對排除）內每處 `AppError::Biz(` MUST 緊接 `Cow::Borrowed(` 且引數為 ①字串字面 或 ②`msg_key::NAME` 常數（經左源映射解回字面）、解出之鍵 ∈ `MSG_KEYS`；動態構造（變數／`format!`／函式回傳）＝rc 1 指名檔:行。002 既有兩處（`validation.rs`）為常數形＝合法、零改動；002 刀三個新 Biz 鍵亦用常數形 |
 | rc | 0 綠／1 違規／2 結構異常（檔缺席、`MSG_KEYS` 解析失敗、backend 節缺席或 brace 不配對、比對面為空）／64 用法錯 |
 | self-test | 合成樣本七案：三檔全等綠／某檔缺一鍵紅／某檔多一鍵紅／某檔缺 backend 節 rc 2／常數間接形解析成功／常數表缺該名 rc 2／動態 Biz 構造紅；真 repo 綠案（現行 `error.rs` 常數形） |
 | 依賴 | Python 3 標準庫、零 docker |

@@ -3,8 +3,9 @@
 
 隨遷工具（承 rev5:tools/fork-delta-lint.py 逐字承襲、座標同名：源倉 `fork260509-soybean-admin-base/` @ `example`、
 憲法 `.specify/memory/constitution.md`；RULES 名詞段「隨遷工具」）。rev6 拍板差異（002 刀；research R3-6／R10）：
-  · token `rev5-inline`→`rev6-inline`（憲法 §III 標記字面）；新增型新檔檔頭形＝`// [rev6-inline <軌道名>+ <刀名>] <理由>`
-    （軌道名 ∈ §III.1 表首欄字面、刀名＝rev6 刀名）。
+  · token `rev5-inline`→`rev6-inline`（憲法 §III 標記字面）；新增型新檔檔頭形＝`<註解引導> [rev6-inline <軌道名>+ <刀名>] <理由>`
+    （註解引導依檔型而異：`.ts` 與 `.vue` script 區 `//`、`.vue` template 區 `<!-- -->`；軌道名＝[`TRACK`] 之
+    `[A-Z][A-Z0-9-]*`，**不限** §III.1 表首欄——名冊外之名不做名冊斷言、見 [`S1_NEW_FILE_FACE`] 射程界定；刀名＝該檔進場刀）。
   · 結構斷言改形：§III.2 ★段零列時 MUST 命中哨兵句「（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）」、否則 ≥1 列
     （rev5「≥4 列」樓地板守「名冊被無聲移除」、rev6 由哨兵句承擔同一目的；哨兵句與資料列並存＝矛盾亦 die）。
   · 加 `test` 子命令（只跑 self-test、離線、不掃 base-web、不碰源倉；供 pre-commit `for t in` 自測迴圈與 bootstrap
