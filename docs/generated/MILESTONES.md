@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-22 | misc | governance｜maint-backlog-86-90 | 005 前維護批第 7／7 支（末支、本輪唯一真改 production 碼者）：PageRes<T> 上移 envelope.rs（欄形與 serde 屬性逐字不動、wire 輸出 hex 逐位元比對不變）＋handler 共用件收攏為 handler/common.rs（tracing::error! 留呼叫點、兩域 target 不併）。兩條刪列。另修掉源碼掃描腿切面法的真缺陷：非行首切點被 doc 散文提前截斷，全樹非行首形清零。 | a0b8672 | — | — |
 | 2026-09-22 | misc | governance｜maint-backlog-89-83-85 | 005 前維護批第 6／7 支：測試清理面收攏＋門鈴量測去全域相依＋IP 閘兩處回歸錨——BL-00089 ①② 三支守衛 Drop 還原殼收攏為一支 run_restore（還原計畫抽成純資料、等價性由純資料斷言釘死）＋observed_msgs_real_db 兩 sid 改掛 RAII 清鍵；BL-00083 精確等值量測改走區域量表＋兩支守門；BL-00085 ①ipgate_blocked 發射點恰一處之靜態掃描腿 ②ChainRejected 來源被閘擋之案。三條刪列。 | dc32264 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-92-97 | 005 前維護批第 5／7 支（rust 三支之首）：wire i64 守衛 lint 進場＋wire 裁判補 IP 規則請求型錨——BL-00092 新增 tests/wire_i64_guard_lint.rs（29 案、全樹靜態掃描，封住快照裁判對 2^53 守衛掛沒掛結構性無感的盲區；未掃出漏掛故 src 零改）、BL-00097 wire_schema.rs 24→44 案收 Api.IpRule 三支寫端請求型與清單 query（後者走查詢串真路徑）。兩條刪列。 | d4f33b7 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-80-88-94-99 | 005 前維護批第 4／7 支：三支 python 工具微修＋msg 面板指針形——BL-00080 量尺補 .py／.sh 面（tokenize＋ast 取 # 與真 docstring）、BL-00088 綠訊息改由實跑腿推導與沙盒失敗路徑補清、BL-00094 restore 清前有列即自動 PUBLISH ipgate:invalidate（排在 pg 交易之後）、BL-00099 Grafana 拒因字典改指針形。四條刪列。 | f91ba0d | — | — |
@@ -46,6 +47,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-22｜misc｜governance｜maint-backlog-86-90
+
+3 顆：U1 9315176＋U2 7aef314＋final review 收單 af6b890。★兩條的解除謂詞皆未到期（PageRes 全樹恰一消費者、operator_from 恰兩份），user 2026-09-21 覆蓋裁定提前執行；碼內逐字記明提前、未暗示謂詞已到。審查合計 40 筆＝修 39／駁回 1（駁回者＝「json_or_default 收攏是 155 行掃描守的唯一成因」，兩鏡查出該守的拒寫維服務的是要保留的另一半）。★被修的切面法缺陷兩處：envelope.rs（負面斷言型、恆綠無聲，被 U1 自己的 PageRes doc 散文截斷使 pub struct PageRes 掉出射程）與 router.rs／login.rs 兩支／refresh.rs 的 split( 形（正面斷言型、fail-loud，其中兩支已實際截斷）。★final review 抓到主線自己兩筆 commit 訊息假述：U1 把新增 lib 案指名為全樹零命中的 former_host_keeps_no_pub_use_re_export_of_page_res（實為 page_res_wire_bytes_frozen）、U2 把 572→575 歸因錯；本輪第二次「抄 agent 自述未查證」，取證方式已改機器形。★BL-00111① 據實重寫為十二支腿／九檔、枚舉判準改可複算 grep——前輪漏抓 split( 形正是因為以人列清單為準（RL-0002 反例）。新立 LL-00032（drvfs 下 cargo 假綠）。
 
 ### 2026-09-22｜misc｜governance｜maint-backlog-89-83-85
 
