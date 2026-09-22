@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-22 | misc | governance｜maint-trust-model-bind-mount | 輕量軌 maint-trust-model-bind-mount 收單（macOS 第二台開發機 pull 時實證、主線直改零 cargo）：LL-00033 單檔 bind mount（deploy/trust-model.dev.toml）於 git 換 inode 後在容器內懸空、信任模型照契約退零網段而零紅燈；RUNBOOK §2 補固定起手句（動到該檔→up -d --force-recreate --no-deps rust-api）。LESSONS 32→33；RULES／ADR／閘數皆未動。 | 7beaa46 | — | — |
 | 2026-09-22 | misc | governance｜maint-backlog-103-104-114-121-122 | 005 前第 8 支維護批（user 2026-09-22 依 BACKLOG 分類體檢裁定、python／doc 面五條、主線直改零 cargo）：perf 表列依 date 穩定排序；schema-definition 三行四處「本刀」改刀名形；GT-06 補折行拼接與懸空前綴兩腿；GT-12 新腿對賬走查工具與 rust-api 的門鈴頻道字面；route-artifact-gate 沙盒旗標前移。五條刪列、零新記。final review 12 筆＝修 9／駁回 3。 | 092cc52 | — | — |
 | 2026-09-22 | misc | governance｜maint-spec-compliance-004 | 004 刀附屬規格對照審查輪（spec-compliance-004）修單收單：防自鎖更新腿與來源信心八態兩支保護腿補齊（皆變異自證）；跨刀活體契約 code-gate-contracts 六處改對；trust-model.dev.toml 折行死指針、obs.rs 五處碼註、活書 08 量法與活書 10 UI 判準、RUNBOOK §13 防自鎖座標；dev 可達態三處加 ADR-00040 對沖註。零 blocker、零 wire 行為缺陷。 | 1a9db89 | — | — |
 | 2026-09-22 | review | 004-ip-trust-anchor | findings 24（修 12／BL 12／ADR 0）；BL-00114、BL-00115、BL-00116、BL-00117、BL-00118、BL-00119、BL-00120、BL-00121、BL-00122、BL-00123、BL-00124、BL-00125 | — | — | — |
@@ -50,6 +51,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-22｜misc｜governance｜maint-trust-model-bind-mount
+
+★取證：容器內 ls -la 列出檔但 link count 0、size 為舊版；讀取 ENOENT；boot 日誌 kind=Missing→NoTrustedNetwork、warnings:2 internal_default:0；重建容器後 warnings:0 internal_default:1（172.16.0.0/12）。★載入器行為與 reference-src/trust-model-config.md「檔案讀不到→扁平退路」契約一致，缺陷在 mount 不在碼、故不動碼不立閘；rule_id none、promotion_surface none。★同家族 LL-00005／LL-00032：容器對 host 檔的視圖與實況分叉、皆以綠呈現。★自驗：docsync check 零漂移／lint 0 錯 0 警 0 跳過／test 301 案 OK。實作顆 7e6437a。
 
 ### 2026-09-22｜misc｜governance｜maint-backlog-103-104-114-121-122
 
