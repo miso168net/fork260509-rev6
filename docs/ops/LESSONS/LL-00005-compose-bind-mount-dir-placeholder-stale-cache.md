@@ -13,4 +13,4 @@ LL-00005｜bind-mount 來源檔缺席時 compose 代建目錄佔位，補上真�
 
 **晉升面**：none——環境層一次性坑；RUNBOOK §1 步驟 4 已明寫「dev TLS 憑證」是前置、本檔補「跑漏了會長什麼樣、怎麼解」的徵狀鏈。
 
-**再犯面與守法**：新機或清過 `deploy/dev-certs/` 之後首次 `up` 全七件都會踩到。守法＝先 `ls deploy/dev-certs/` 看有無真檔再 `up`；看到 `file exists` 的 mount 錯誤，直接 `rm -sf` 該服務容器再 `up`，不要去改 compose。只起 postgres／redis／base-web 三件（如本刀 T002）不會觸發，因為 front-nginx 不在其中。
+**再犯面與守法**：新機或清過 `deploy/dev-certs/` 之後首次 `up` 全七件都會踩到。守法＝先 `ls deploy/dev-certs/` 看有無真檔再 `up`；看到 `file exists` 的 mount 錯誤，直接 `rm -sf` 該服務容器再 `up`，不要去改 compose。只起 postgres／redis／base-web 三件（如 002 刀 T002）不會觸發，因為 front-nginx 不在其中。

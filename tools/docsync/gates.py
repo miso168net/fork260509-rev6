@@ -108,6 +108,8 @@ ENV_SKIPS = {
                                "唯讀看碼捷徑（git submodule update --init、無源倉）或新機尚未 bootstrap：pins 的子庫側 SHA 無處實證"),
     "GT-05.submodule-absent": ("base-web／rust-api 之 .git 任一不存在",
                                "同上：子庫 pin 樹不在，碼面裸編號的 git grep 無標的"),
+    "GT-12.submodule-absent": ("rust-api 之 .git 不存在",
+                               "同 GT-05：門鈴頻道字面的子庫側常數（server/src/ipgate/mod.rs）無 HEAD 樹可讀；外層側照掃"),
     "GT-07.secrets-absent": ("SECRETS_DIR 三級解析所得路徑非目錄",
                              "新機尚未佈機密（deploy/decrypt-secrets.py 未跑）：實值比對無標的；樣式面照掃"),
 }
@@ -539,6 +541,45 @@ def _claim_legs(ctx):
     return out
 
 
+# 門鈴頻道字面同源腿（BL-00121）：外層走查工具 restore 後補按門鈴所用頻道 ⇔ rust-api 訂閱端常數。兩處常數跨子庫邊界、
+# 先前零腿對賬——rust 側改名後走查工具會靜默按錯頻道且訊息仍稱「已送」。子庫側取 HEAD 樹（GT-02 已斷言 gitlink＝worktree HEAD、
+# 未 commit 改動不入判）；工具 self-test 只在其本體 staged 時跑、承載不了此腿。兩側皆唯讀讀文＋正則取、不 import。
+WALKTHROUGH = "tools/walkthrough-baseline.py"
+DOORBELL_RUST = "server/src/ipgate/mod.rs"
+RE_DOORBELL_OUTER = re.compile(r'^IPGATE_CHANNEL\s*=\s*"([^"]+)"', re.M)
+RE_DOORBELL_RUST = re.compile(r'^pub const IPGATE_INVALIDATE_CHANNEL: &str = "([^"]+)";', re.M)
+
+
+def _doorbell_findings(outer, rust):
+    """純函式：兩側原文 → findings。錨形零命中或多命中皆 ERROR（掃描面空集合即紅、RL-0051）；恰一對一才比值。"""
+    out = []
+    o, r = RE_DOORBELL_OUTER.findall(outer or ""), RE_DOORBELL_RUST.findall(rust or "")
+    if len(o) != 1:
+        out.append(finding(ERROR, "GT-12", WALKTHROUGH, f"門鈴字面對賬：IPGATE_CHANNEL 錨形命中 {len(o)} 處（須恰一）——常數形改動須同批改本腿"))
+    if len(r) != 1:
+        out.append(finding(ERROR, "GT-12", f"rust-api/{DOORBELL_RUST}",
+                           f"門鈴字面對賬：IPGATE_INVALIDATE_CHANNEL 錨形命中 {len(r)} 處（須恰一）——rust 側改名／搬家須同批改 {WALKTHROUGH} 與本腿"))
+    if len(o) == 1 and len(r) == 1 and o[0] != r[0]:
+        out.append(finding(ERROR, "GT-12", WALKTHROUGH,
+                           f"門鈴字面對賬：外層 IPGATE_CHANNEL＝「{o[0]}」≠ rust-api IPGATE_INVALIDATE_CHANNEL＝「{r[0]}」"
+                           "（兩側之一失準；走查工具 restore 會對錯頻道按鈴、判定面不換版）"))
+    return out
+
+
+def _doorbell_leg(ctx):
+    outer = ctx.text(WALKTHROUGH)
+    if outer is None:
+        return [finding(ERROR, "GT-12", WALKTHROUGH, "門鈴字面對賬：tools/walkthrough-baseline.py 缺席——外層消費家不在，無對賬基準")]
+    sub = "rust-api"
+    if not ctx.exists(sub + "/.git"):
+        return [finding(SKIP, "GT-12", sub, f"⤳ 跳過：{sub} 不在工作樹（命中謂詞＝{sub}/.git 不存在；GT-12.submodule-absent）"
+                                            "——門鈴字面未對賬；ADR-00019 環境缺席具名跳過 rc 0")]
+    rc, rust = ctx.git_try("show", f"HEAD:{DOORBELL_RUST}", cwd=os.path.join(ctx.root, sub))
+    if rc != 0:
+        return [finding(ERROR, "GT-12", f"{sub}/{DOORBELL_RUST}", f"門鈴字面對賬：子庫 HEAD 樹取不到 {DOORBELL_RUST}（git show rc={rc}）——rust 側搬家須同批改本腿")]
+    return _doorbell_findings(outer, rust)
+
+
 # ---------------------------------------------------------------------------
 # GT-12
 # ---------------------------------------------------------------------------
@@ -582,8 +623,8 @@ def gt_12(ctx, extra_sources=None):
       id=GT-12
       rule=RL-0052
       source=rev5:ADR 0024
-      drift=名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張
-      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）
+      drift=名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源
+      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）
       trigger=pre-commit
       rc=1
       breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移
@@ -643,6 +684,7 @@ def gt_12(ctx, extra_sources=None):
             for x in sorted(s_tools - s_table):
                 out.append(finding(ERROR, "GT-12", x, f"tools/ 頂層 {x} 未列於 RUNBOOK 碼面閘表（碼面閘進場須同刀入表；非閘工具改 NON_GATE_TOOLS）"))
     out += _claim_legs(ctx)
+    out += _doorbell_leg(ctx)
     wave = book_mod.current_wave(ctx)
     if wave is None:
         out.append(finding(ERROR, "GT-12", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->"))

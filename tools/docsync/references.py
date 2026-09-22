@@ -114,9 +114,8 @@ def gen_reference_perf(events):
     lines = [GENERATED_HEADER, "# reference/perf — 收刀簿記與 pre-commit 效能資料點", "",
              "來源＝docs/ops/events.jsonl 的 perf 事件（generate 重算；kind＝close_bookkeeping／precommit_chain、量測法＝RUNBOOK §12b）。", "",
              "| date | kind | wall_s | rc | commit | notes |", "|---|---|---|---|---|---|"]
-    for e in events:
-        if e.get("type") != "perf":
-            continue
+    # BL-00103：依 date 穩定排序（同日保檔內序）——遲到的 close_bookkeeping 事件人讀面仍按時序，事件帳本身維持 append-only。
+    for e in sorted((e for e in events if e.get("type") == "perf"), key=lambda e: e["date"]):
         notes = (e.get("notes") or "").split("\n", 1)[0]
         lines.append("| " + " | ".join(_cell(x) for x in (e["date"], e["kind"], e["wall_s"], e.get("rc", "—"),
                                                           str(e.get("commit", "—"))[:7], notes)) + " |")

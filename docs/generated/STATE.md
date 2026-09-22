@@ -14,9 +14,9 @@
 ## 帳面統計
 - ADR：41（proposed 0、accepted 37、superseded 4）
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
-- BACKLOG 開放：46｜滯後：4
+- BACKLOG 開放：41｜滯後：4
 - LESSONS：32 筆
-- events：82 筆（erratum 2、feature_close 4、misc 31、perf 38、review 7）
+- events：83 筆（erratum 2、feature_close 4、misc 31、perf 39、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -37,9 +37,9 @@
 | RULES fix | 17 | 19 | 內 |
 | RULES 主線 | 45 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 3804 | 4000 | 內 |
+| docsync 行數 | 3872 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 22.72 秒 rc=0
 - 2026-09-22｜misc｜governance｜maint-spec-compliance-004｜004 刀附屬規格對照審查輪（spec-compliance-004）修單收單：防自鎖更新腿與來源信心八態兩支保護腿補齊（皆變異自證）；跨刀活體契約 code…
 - 2026-09-22｜review｜004-ip-trust-anchor｜findings 24（修 12／BL 12／ADR 0）；BL-00114、BL-00115、BL-00116、BL-00117、BL-00118、BL-0…
-- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 21.2 秒 rc=0
