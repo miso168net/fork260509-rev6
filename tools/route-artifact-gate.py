@@ -308,14 +308,15 @@ def regenerate(root, box, seeds):
 
 
 def _assertions(root, constitution_path):
-    """三道斷言 → (problems, notes, 產出支數, 實際跑過的種子腿名冊)。憲法列先於任何沙盒動作解析；沙盒於重算段收場自清、未走到重算即在此清。"""
+    """三道斷言 → (problems, notes, 產出支數, 實際跑過的種子腿名冊)。憲法列先於任何沙盒動作解析；沙盒於重算段收場自清、
+    未走到重算（含 observe 派發後之任何失敗）即由 finally 清。"""
     declared, artifacts, claimed = load_declared(constitution_path)
     worktree = os.path.join(root, BASE_WEB_REL)
     header_set = scan_generated(worktree)
     box = SANDBOX_PREFIX + f"{os.getpid()}.{secrets.token_hex(4)}"
-    produced = observe(root, box)
-    box_live = True
-    try:
+    box_live = True   # BL-00122：於派發 observe 之前即置——容器端建了沙盒而 python 側隨即拋 GateError 的窗，只有 finally 清得到；
+    try:              # observe 自身 rc≠0 時容器端 trap 已自清、此處 rm -rf 對不存在的沙盒＝零副作用
+        produced = observe(root, box)
         if not produced:
             raise GateError("外掛在空沙盒零產出——外掛設定或 view 樹異常；「沒東西可驗」不算綠")
         odd = [rel for rel in produced if not RE_REL.match(rel) or ".." in rel.split("/")]
@@ -447,7 +448,7 @@ def _stub_merge(seed, canon):
     return b"".join(kept.get(ln.split(b"=")[0], ln) + b"\n" for ln in canon.splitlines())
 
 
-def _stub_docker(running=True, produced=ARTIFACTS, observe_rc=0, regen_rc=0, log=None):
+def _stub_docker(running=True, produced=ARTIFACTS, observe_rc=0, regen_rc=0, log=None, observe_out=None):
     """樁 subprocess.run。重算模型取外掛之要害：routes.ts 走增量合併（[`_stub_merge`]）；其餘三支整份重寫＝CANON。"""
     def run(argv, **kw):
         if log is not None:
@@ -455,6 +456,8 @@ def _stub_docker(running=True, produced=ARTIFACTS, observe_rc=0, regen_rc=0, log
         if "ps" in argv:
             return _done(argv, 0, b"c0ffee\n" if running else b"")
         if OBSERVE_SH in argv:
+            if observe_out is not None:            # BL-00122：容器 rc 0 而回報不合法（無 __FILES__ 列）
+                return _done(argv, 0, observe_out)
             return _done(argv, observe_rc, b"[elegant-router] log\n__FILES__" + json.dumps(list(produced)).encode() + b"\n",
                          b"" if observe_rc == 0 else "外掛載入失敗".encode())
         if REGEN_SH in argv:
@@ -583,6 +586,18 @@ class TestRunCheck(unittest.TestCase):
         self.assertEqual(rc, 2, text)
         self.assertTrue(any(CLEAN_SH in argv for argv, _ in log), "重算失敗後未下清理＝沙盒殘留")
         boxes = {argv[argv.index(s) + 2] for argv, _ in log for s in (OBSERVE_SH, REGEN_SH, CLEAN_SH) if s in argv}
+        self.assertEqual(len(boxes), 1, f"清理對象須為同一沙盒：{boxes}")
+
+    def test_sandbox_is_cleaned_when_observe_reports_garbage(self):
+        """BL-00122：容器端 OBSERVE rc 0 而回報不合法（無 __FILES__ 列）＝沙盒已建、python 側隨即拋 GateError 的窗——
+        舊形 box_live 在 observe() 之後才置且 observe 不在 try 內，此窗零清理、重跑累積殘留沙盒。"""
+        log = []
+        with _FakeRepo() as root:
+            rc, lines = _check(root, observe_out=b"[elegant-router] log without marker\n", log=log)
+        self.assertEqual(rc, 2, lines)
+        self.assertTrue(any("未回報產出集" in l for l in lines), lines)
+        self.assertTrue(any(CLEAN_SH in argv for argv, _ in log), "observe 回報不合法後未下清理＝沙盒殘留")
+        boxes = {argv[argv.index(s) + 2] for argv, _ in log for s in (OBSERVE_SH, CLEAN_SH) if s in argv}
         self.assertEqual(len(boxes), 1, f"清理對象須為同一沙盒：{boxes}")
 
     def test_hand_edit_of_merged_file_survives_worktree_seed_but_baseline_seed_catches_it(self):

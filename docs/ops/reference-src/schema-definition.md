@@ -30,7 +30,7 @@
 
 **`*_by` 欄性質判準**（audit 閘可空性期望之左源）：語意為**變更操作者**之 `*_by`＝archetype
 審計欄、受 §I.6「*_by nullable」通則；語意為**資料擁有者／請求主體／複合 PK 成分／首建者**
-者＝domain 欄、可 NN。本刀 created_by NN 恰四表、逐表釋義：sys_access_log（B、請求主體
+者＝domain 欄、可 NN。001 刀 created_by NN 恰四表、逐表釋義：sys_access_log（B、請求主體
 紀錄、NN）／sys_token（C、擁有者欄）／sys_pwd_custody（C、複合 PK 成分）／
 sys_user_email_verify（C、首建者、NN）；其餘表之 created_by 一律可空。
 
@@ -305,7 +305,7 @@ rev5 對 rev4 終態的定稿差異屬史述、不隨刀前進——全文見凍
 user_memo／role_memo／menu_memo／wbip_memo（text 可空、可多行）：R_SUPER 備註用途；
 顯示於**管理列表**；不顯示於其它被取用處（下拉、引用、對外 API 一律不帶）。
 role_desc（upstream UI「角色描述」、使用者可見）與 role_memo 職責不同、兩欄並存不合併。
-UI 兌現不在本刀（rev5 由 `rev5:B-003` 承載、rev6 對應條目隨 UI 刀 brainstorm 立；活書資料慣例節指針隨本刀）。
+UI 兌現不在 001 刀（rev5 由 `rev5:B-003` 承載、rev6 對應條目隨 UI 刀 brainstorm 立；活書資料慣例節指針隨 001 刀）。
 
 ## 6. 索引與約束（rev5 終態、機器轉錄；gate1 比對面）
 
@@ -627,6 +627,6 @@ entity-drift 比對豁免本表。
 | sys_user_id_seq | 3 |
 | 其餘 7 支（session_event／sys_access_log／sys_casbin_policy_archive／sys_ip_rule／sys_login_attempt／sys_operation_log／sys_token） | 未動用（不 setval） |
 
-## 10. 防回歸條款（§I.5 防回歸 ＋ 本刀射程界定）
+## 10. 防回歸條款（§I.5 防回歸 ＋ 001 刀射程界定）
 
 防回歸條款與 001 刀射程界定屬該刀史料、不隨刀前進——全文見凍結存證 `specs/001-schema-baseline/data-model.md` §10。

@@ -511,3 +511,17 @@ class TestRoutes(unittest.TestCase):
                           "| /systemManage/restoreIpRule | POST | Policy | restore-ip-rule | 否 |",
                           "| /systemManage/unlockLogin | POST | Policy | unlock-login | 否 |"])
         self.assertIn("docs/generated/reference/routes.md", references.compute_generated(ctx))
+
+
+class TestPerfOrder(unittest.TestCase):
+    """BL-00103：reference/perf 表列依 date 穩定排序——遲到的 close_bookkeeping 事件（append 在後、date 在前）人讀面仍按時序，
+    從源頭消除「按日期插入既有列之間」的動機（那正是 GT-02 append-only 腿要擋的形）；純渲染面、事件帳不動；同日保檔內序。"""
+
+    def test_rows_sorted_by_date_stable(self):
+        ev = [{"type": "perf", "date": "2026-09-05", "kind": "close_bookkeeping", "wall_s": 1.0, "rc": 0, "notes": "A"},
+              {"type": "misc", "date": "2026-09-05", "summary": "s", "category": "governance", "backlog_add": []},
+              {"type": "perf", "date": "2026-09-03", "kind": "precommit_chain", "wall_s": 2.0, "rc": 0, "notes": "B"},
+              {"type": "perf", "date": "2026-09-05", "kind": "close_bookkeeping", "wall_s": 3.0, "rc": 0, "notes": "C"}]
+        rows = [l for l in references.gen_reference_perf(ev).split("\n") if l.startswith("| 2026")]
+        self.assertEqual([r.split(" | ")[-1].rstrip(" |") for r in rows], ["B", "A", "C"], rows)
+

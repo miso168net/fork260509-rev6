@@ -394,7 +394,7 @@ class TestEnvSkipRegistry(unittest.TestCase):
     GT-12 新腿斷言原始碼全部 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS。"""
 
     def test_env_skips_shape(self):
-        self.assertEqual(sorted(gates.ENV_SKIPS), ["GT-02.submodule-absent", "GT-05.submodule-absent", "GT-07.secrets-absent"])
+        self.assertEqual(sorted(gates.ENV_SKIPS), ["GT-02.submodule-absent", "GT-05.submodule-absent", "GT-07.secrets-absent", "GT-12.submodule-absent"])
         for k, v in gates.ENV_SKIPS.items():
             self.assertRegex(k, r"^GT-\d{2}\.[a-z0-9-]+$")
             self.assertEqual(len(v), 2)
@@ -622,3 +622,33 @@ class TestSkipRegistrySingleAuthority(unittest.TestCase):
             whole = gates.skip_key_of(text, m.end(), stmt_end)
             self.assertEqual(capped, whole, f"視窗截斷：錨形 @{m.start()} 之鍵落在 300 字元外（{whole}）")
         self.assertEqual(n, len(gates.ENV_SKIPS))
+
+
+class TestGt12Doorbell(unittest.TestCase):
+    """BL-00121：門鈴頻道字面跨子庫同源腿——外層走查工具 tools/walkthrough-baseline.py 之 IPGATE_CHANNEL ⇔ rust-api
+    server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL（子庫側取 HEAD 樹）。★落 GT-12（每 commit 必跑）而非該工具 self-test
+    （只在工具本體 staged 時跑、rust 側改名時不跑＝假腿）；兩側值唯讀讀文＋正則取、不 import 工具。"""
+    OUTER = 'X = 1\nIPGATE_CHANNEL = "ipgate:invalidate"\n'
+    RUST = '/// 門鈴\npub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";\n'
+
+    def test_equal_is_green(self):
+        self.assertEqual(gates._doorbell_findings(self.OUTER, self.RUST), [])
+
+    def test_mismatch_names_both_values(self):
+        fs = errs(gates._doorbell_findings(self.OUTER, self.RUST.replace("ipgate:invalidate", "ipgate:reload")))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertTrue("ipgate:invalidate" in fs[0][3] and "ipgate:reload" in fs[0][3], fs)
+
+    def test_missing_anchor_on_either_side_is_red(self):
+        self.assertTrue(any("命中 0 處" in f[3] for f in errs(gates._doorbell_findings("X = 1\n", self.RUST))))
+        self.assertTrue(any("命中 0 處" in f[3] for f in errs(gates._doorbell_findings(self.OUTER, "// moved\n"))))
+
+    def test_outer_absent_is_red_and_submodule_absent_is_named_skip(self):
+        base = {RULES: RULES_TEXT, NOTES: "<!-- wave: 6 -->\n"}
+        self.assertTrue(any("walkthrough-baseline.py 缺席" in f[3] for f in errs(gates.gt_12(stub(base)))))
+        fs = gates.gt_12(stub(dict(base, **{"tools/walkthrough-baseline.py": self.OUTER})))
+        self.assertTrue(any(f[0] == "SKIP" and "GT-12.submodule-absent" in f[3] for f in fs), fs)
+
+    def test_real_repo_doorbell_reconciles(self):
+        self.assertEqual([f for f in errs(gates.gt_12(common.Ctx(ROOT))) if "門鈴字面對賬" in f[3]], [])
+

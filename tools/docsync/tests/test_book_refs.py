@@ -124,3 +124,39 @@ class TestErrata(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGt06WrappedContractRef(unittest.TestCase):
+    """BL-00114：GT-06 spec 契約腿的折行形——目錄前綴留在行尾、檔名在下一行，兩形逐行皆漏、lint 恆綠。
+    判準＝行尾路徑尾段（以 / 收尾）＋下一行剝註解記號後的路徑首段拼接、再過同兩形；豁免與逐行同源（該行豁免即不拼）。"""
+
+    def _run(self, files):
+        files = dict(files)
+        files.setdefault(BOOK, "# 1\n\n目前無。\n")
+        return book.gt_06(stub(files))
+
+    def test_wrapped_after_contracts_dir_is_red_with_joined_path(self):
+        fs = errs(self._run({"deploy/x.toml": "# 契約＝specs/004-ip-trust-anchor/contracts/\n#    trust-model-config.md 之「dev 交付形」\n"}))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertIn("specs/004-ip-trust-anchor/contracts/trust-model-config.md", fs[0][3])
+        self.assertEqual(fs[0][2], "deploy/x.toml:1")
+
+    def test_wrapped_after_knife_dir_names_joined_absolute_form(self):
+        """spec-compliance-004 L1-1 的原形（deploy/trust-model.dev.toml 於 004 收刀時的檔頭）：逐行只有裸相對形那半紅、
+        修的人只改第二行、第一行的目錄前綴殘留無聲——拼接後須另指名完整絕對形、定位在第一行。"""
+        fs = errs(self._run({"deploy/x.toml": "# 契約＝specs/004-ip-trust-anchor/\n#    contracts/trust-model-config.md 之「dev 交付形」\n"}))
+        self.assertTrue(any("specs/004-ip-trust-anchor/contracts/trust-model-config.md" in f[3] and f[2] == "deploy/x.toml:1" for f in fs), fs)
+
+    def test_wrapped_bare_form_is_red(self):
+        fs = errs(self._run({"docs/ops/a.md": "見 contracts/\ngates.md §5\n"}))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertIn("contracts/gates.md", fs[0][3])
+
+    def test_wrapped_non_contract_and_rev5_prefixed_are_green(self):
+        self.assertEqual(errs(self._run({"docs/ops/a.md": "凍結存證住 specs/004-ip-trust-anchor/\nspec.md 與 plan.md\n",
+                                         "docs/ops/b.md": "前代 rev5:contracts/\ngates.md 不算\n",
+                                         "docs/ops/c.md": "活體 docs/ops/reference-src/\ngates.md\n"})), [])
+
+    def test_wrapped_exempt_line_is_green(self):
+        self.assertEqual(errs(self._run({"docs/ops/reference-src/x.md": "> 凍結存證＝`specs/001-a/contracts/\n> gates.md`（不再前進）\n"})), [])
+
