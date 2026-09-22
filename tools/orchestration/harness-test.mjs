@@ -18,6 +18,12 @@ if (!mImpl) {
   process.exit(2)
 }
 const N = Number(mImpl[1])
+const mDeep = src.match(/^const DEEP_THINK = '([^']+)'\s*$/m)
+if (!mDeep) {
+  console.error('script 缺 `const DEEP_THINK = \x27…\x27` 行（_sk_head.js）——implementer 首行斷言無從推導')
+  process.exit(2)
+}
+const DEEP = mDeep[1]
 const PRE = N + (TAG === 'quality' ? 1 : 0) // quality 模式：規格段一支 review 即收斂、blocker 打在品質段
 const STAGE = TAG === 'quality' ? 'CodeQualityReview' : 'SpecReview'
 const ROUNDS_KEY = TAG === 'quality' ? 'qualityReviewRounds' : 'specReviewRounds'
@@ -61,7 +67,12 @@ await run('案1 fix 迴圈跑滿→確認輪清空→判收斂（rev5:L-011 變�
   if (isRev(label)) { n1++; return n1 <= 3 ? B('缺陷' + n1) : CLEAN }
   if (isFix(label)) return OKW
   return CLEAN
-}, (o) => { noThrow(o); status(o, 'ok'); count(o, N + 8); expect(o.r[ROUNDS_KEY] === 4, ROUNDS_KEY + '=4', o.r[ROUNDS_KEY]) })
+}, (o) => {
+  noThrow(o); status(o, 'ok'); count(o, N + 8); expect(o.r[ROUNDS_KEY] === 4, ROUNDS_KEY + '=4', o.r[ROUNDS_KEY])
+  // implementer prompt 首行＝DEEP_THINK（user 2026-09-23：全角色 opus 且首行帶深思關鍵詞；_sk_main.js 烤入）
+  const implPrompts = o.prompts.filter((_, i) => o.calls[i].includes('implementer'))
+  expect(implPrompts.length === N && implPrompts.every((p) => p.split('\n')[0] === DEEP), 'implementer prompt 首行＝DEEP_THINK（' + DEEP + '）', JSON.stringify(implPrompts.map((p) => p.split('\n')[0])))
+})
 
 // 案2：review 連兩輪同一 blocker → 收斂偵測應攔
 let n2 = 0

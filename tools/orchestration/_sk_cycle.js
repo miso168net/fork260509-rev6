@@ -1,7 +1,7 @@
 // ★本段引用模板常數：UNIT（執行單元標籤，如 U2）、FEATURE（該刀 feature 分支長名）、CONTEXT、ALLOWED_BLOCK（_context／_allowed 段）、
 //   FIX_SELFCHECK（fix 修完必跑的自驗命令一句；_prompts 段）——組裝時定義，缺之即 ReferenceError；
 //   RULES_REVIEW／RULES_FIX 由 _sk_rules.js（generate 產物）供：review prompt 一律烤 RULES_REVIEW、fix prompt 一律烤 RULES_FIX（R1-080）；
-//   DEEP_THINK 由 _sk_head.js 供、烤在 review／fix prompt 首行（user 拍板 2026-09-04）。
+//   DEEP_THINK 由 _sk_head.js 供、烤在 review／fix prompt 首行（user 拍板 2026-09-04；implementer 首行由 _sk_main.js 烤入＝user 2026-09-23）。
 function rejectedBlock(rejected) {
   if (!rejected.length) return ''
   const lines = [

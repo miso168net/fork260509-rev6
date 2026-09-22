@@ -34,7 +34,7 @@ for (let i = 0; i < IMPL_STAGES.length; i++) {
   const who = 'implementer-' + (i + 1)
   phase(st.phase)
   if (i === 0) log(START_LOG)
-  const r = await spawn(st.prompt(reportsSoFar()), Object.assign({ label: st.label, phase: st.phase, schema: WORK_SCHEMA }, IMPL_OPTS))
+  const r = await spawn([DEEP_THINK, st.prompt(reportsSoFar())].join('\n'), Object.assign({ label: st.label, phase: st.phase, schema: WORK_SCHEMA }, IMPL_OPTS))
   if (!r) return { unit: UNIT, status: 'failed', stage: st.phase, reason: who + ' 回傳 null（終止型故障）', implReports: reportsSoFar(), agentsSpawned: spawned }
   if (r.status === 'blocked') {
     return { unit: UNIT, status: 'blocked', stage: st.phase, reason: who + ' 受阻', report: r.report, escalations: r.escalations || [], implReports: reportsSoFar(), agentsSpawned: spawned }
