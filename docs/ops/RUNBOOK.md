@@ -187,7 +187,7 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 索引→`docs/ops/LESSONS.md`、全文→`docs/ops/LESSONS/`；本表只指路。前代候選＝rev5 `docs/ops/LESSONS.md`（唯讀、引用帶 `rev5:`）。
 
-症狀「回應 403」的分診（只給座標、事實住活書）：`5003` 的發出面與彼此在 wire 上不可分辨＝活書 §8.2；IP 存取閘阻擋的可觀測面（豁免路徑、`ipgate_blocked_total`、`security.ipgate` 阻擋告警之命中網段欄）＝活書 §6.1「信任錨與 IP 存取閘——島 F」④；登入端點轉發鏈逾限拒絕（落一列 `chain_rejected` 登入稽核）＝同情境②。★Grafana `ipgate-degraded` 只看降級事件、不涵蓋阻擋（阻擋告警不帶 `degraded` 欄）——告警沒響不等於不是閘擋的。誤擋的解法＝IP 規則管理頁改規則（不重啟即生效）；來源被登入節流鎖住＝§9 管理員解鎖。
+症狀「回應 403」的分診（只給座標、事實住活書）：`5003` 的發出面與彼此在 wire 上不可分辨＝活書 §8.2；IP 存取閘阻擋的可觀測面（豁免路徑、`ipgate_blocked_total`、`security.ipgate` 阻擋告警之命中網段欄）＝活書 §6.1「信任錨與 IP 存取閘——島 F」④；登入端點轉發鏈逾限拒絕（落一列 `chain_rejected` 登入稽核）＝同情境②。★Grafana `ipgate-degraded` 只看降級事件、不涵蓋阻擋（阻擋告警不帶 `degraded` 欄）——告警沒響不等於不是閘擋的。誤擋的解法＝IP 規則管理頁改規則（不重啟即生效）——★該改動若涵蓋操作者自身來源會被**防自鎖**當場拒絕（`2222`／`biz.ipRule.selfLock`、規則列與稽核列皆零寫入）、須改自其他來源操作或改建不涵蓋自身之規則，事實＝活書 §6.1「信任錨與 IP 存取閘——島 F」⑤ 與 §12「防自鎖」列；來源被登入節流鎖住＝§9 管理員解鎖。
 
 ## 14. 埠與帳號
 
@@ -238,7 +238,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
    - ②的 `warnings` 含兩類不算降級的告警（設定檔有不認得的鍵、載入完成但零受信網段）；這兩類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
    - ③看印出的數、不看 rc：`grep -c` 零命中時印 `0` 而 rc 為 1。③橫跨容器 log 內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`（如 `--since 24h`）。
    - 告警規則 `ipgate-degraded`（`deploy/grafana-provisioning/alerting/rules.yml`）也涵蓋載入降級，但啟動端事件每次啟動只發一次、紅一個評估窗即復歸——部署當下以②③④為準、不等告警。
-5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的只有來源信心態 `fallback` 與 `proxy_clean` 二態，其餘信心態由整合測試覆蓋（已知態＝ADR-00040）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
+5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的只有來源信心態 `fallback` 與 `proxy_clean` 二態，其餘信心態由整合測試覆蓋（已知態＝ADR-00040）（★as-built 對沖＝BL-00125：`chain_rejected` 不依賴信任模型、經反向代理送逾上界轉發鏈即端到端可達，實為三態；ADR-00040 款 2 之「二態」為該刀當時枚舉、body 不可變故以 BACKLOG 對沖）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
 
 ### 16.2 CDN 邊緣網段：兩處各存一份、必須同步更新
 
