@@ -16,7 +16,7 @@
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：41｜滯後：4
 - LESSONS：33 筆
-- events：85 筆（erratum 2、feature_close 4、misc 33、perf 39、review 7）
+- events：87 筆（erratum 2、feature_close 4、misc 33、perf 41、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3872 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 26.49 秒 rc=0
+- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 2.19 秒 rc=0
 - 2026-09-22｜misc｜governance｜maint-trust-model-bind-mount｜輕量軌 maint-trust-model-bind-mount 收單（macOS 第二台開發機 pull 時實證、主線直改零 cargo）：LL-00033…
-- 2026-09-22｜misc｜governance｜maint-backlog-103-104-114-121-122｜005 前第 8 支維護批（user 2026-09-22 依 BACKLOG 分類體檢裁定、python／doc 面五條、主線直改零 cargo）：perf…
-- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 22.72 秒 rc=0
