@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-22 | misc | governance｜maint-backlog-103-104-114-121-122 | 005 前第 8 支維護批（user 2026-09-22 依 BACKLOG 分類體檢裁定、python／doc 面五條、主線直改零 cargo）：perf 表列依 date 穩定排序；schema-definition 三行四處「本刀」改刀名形；GT-06 補折行拼接與懸空前綴兩腿；GT-12 新腿對賬走查工具與 rust-api 的門鈴頻道字面；route-artifact-gate 沙盒旗標前移。五條刪列、零新記。final review 12 筆＝修 9／駁回 3。 | 092cc52 | — | — |
 | 2026-09-22 | misc | governance｜maint-spec-compliance-004 | 004 刀附屬規格對照審查輪（spec-compliance-004）修單收單：防自鎖更新腿與來源信心八態兩支保護腿補齊（皆變異自證）；跨刀活體契約 code-gate-contracts 六處改對；trust-model.dev.toml 折行死指針、obs.rs 五處碼註、活書 08 量法與活書 10 UI 判準、RUNBOOK §13 防自鎖座標；dev 可達態三處加 ADR-00040 對沖註。零 blocker、零 wire 行為缺陷。 | 1a9db89 | — | — |
 | 2026-09-22 | review | 004-ip-trust-anchor | findings 24（修 12／BL 12／ADR 0）；BL-00114、BL-00115、BL-00116、BL-00117、BL-00118、BL-00119、BL-00120、BL-00121、BL-00122、BL-00123、BL-00124、BL-00125 | — | — | — |
 | 2026-09-22 | misc | governance｜maint-backlog-86-90 | 005 前維護批第 7／7 支（末支、本輪唯一真改 production 碼者）：PageRes<T> 上移 envelope.rs（欄形與 serde 屬性逐字不動、wire 輸出 hex 逐位元比對不變）＋handler 共用件收攏為 handler/common.rs（tracing::error! 留呼叫點、兩域 target 不併）。兩條刪列。另修掉源碼掃描腿切面法的真缺陷：非行首切點被 doc 散文提前截斷，全樹非行首形清零。 | a0b8672 | — | — |
@@ -49,6 +50,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-22｜misc｜governance｜maint-backlog-103-104-114-121-122
+
+2 顆：直改 fbce710（含 amend：案數假述 12→11、三處→三行四處）＋final review 收單 1b14a30（run wf_5528f512-b12、6 支、36 分鐘；12 筆＝修 9／駁回 3；L1-1 兩鏡建議轉 BL、主線改判當批收＝懸空前綴腿現況零命中零假陽、嚴格形裸露前綴一律紅；駁回三筆＝L2-4「RL-0020 無機器承載」在 RULES carrier 欄有家、L2-5 NOTES 區間為 004 輪史述且 BL 引用刻意不入 GT-05、L2-6「七支」為 09-21 裁定之集合基數）。★rust-api／base-web 零改動、pins 不動。★兩顆收單訊息各數錯一次新增案數（12→11、6→7）皆未推即 amend；教訓＝案數以 git ls-tree 逐檔數 def test_ 差值現算、不手數。rust 測試側四條 BL-00107／BL-00110／BL-00123／BL-00115 與 BL-00106 同批留 005 收刀前承載體檢。淨流量：本批 −5 落 005 收刀窗（rolling-3 至該窗關帳才入帳）。
 
 ### 2026-09-22｜misc｜governance｜maint-spec-compliance-004
 
