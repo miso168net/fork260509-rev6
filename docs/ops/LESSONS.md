@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00033 -->
+<!-- next: LL-00034 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -38,3 +38,4 @@
 | LL-00030 | 受版控文件把範本／工件指成 `tmp/` 具名路徑——tmp 是 gitignored 工作區，他人 clone 與清理後皆無此檔，指針當場死掉且沒有任何閘會紅 | RL-0077 | rules | [LL-00030-tracked-doc-pointer-into-gitignored-tmp-is-dead-on-clone.md](LESSONS/LL-00030-tracked-doc-pointer-into-gitignored-tmp-is-dead-on-clone.md) |
 | LL-00031 | 編排 session 的 user 訊息被轉述進 subagent context，agent 把它當成優先指令而**刻意不執行被指派的工作**——防呆④擋住了下游，但該階段整個落空 | RL-0078 | rules | [LL-00031-relayed-user-message-makes-subagent-skip-its-task.md](LESSONS/LL-00031-relayed-user-message-makes-subagent-skip-its-task.md) |
 | LL-00032 | /mnt/d（drvfs）上 host 改檔後，容器內 `cargo build` 可能完全不重編——`Finished in 0.4s` 看起來是綠的，實際驗到的是舊碼 | none：既有紀律 CLAUDE.md §11（drvfs mtime 可能舊到產生假綠增量建置）已涵蓋判準，本則補的是 rust 容器面的具體徵狀與固定起手，不另立規則 | none | [LL-00032-drvfs-mtime-makes-cargo-skip-rebuild-and-verify-stale-code.md](LESSONS/LL-00032-drvfs-mtime-makes-cargo-skip-rebuild-and-verify-stale-code.md) |
+| LL-00033 | tracked 單檔 bind mount（`deploy/trust-model.dev.toml`）在 pull 換 inode 後於容器內懸空——信任模型靜默退成零網段、一切來源視為直連；watchexec 重啟與 `restart` 皆不重掛 | none：屬 Docker Desktop 單檔 bind mount 的環境層陷阱、非流程規則；守法＝RUNBOOK §2 固定起手句（pull 動到該檔即重建 rust-api 容器）＋本檔診斷捷徑，不另立規則 | none | [LL-00033-single-file-bind-mount-dangles-after-git-replaces-tracked-file.md](LESSONS/LL-00033-single-file-bind-mount-dangles-after-git-replaces-tracked-file.md) |
