@@ -16,13 +16,13 @@
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：46｜滯後：4
 - LESSONS：32 筆
-- events：80 筆（erratum 2、feature_close 4、misc 30、perf 38、review 6）
+- events：82 筆（erratum 2、feature_close 4、misc 31、perf 38、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 7.5 | ≤1 | 超標 |
+| 治理批對 feature 比 | 7.75 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.09 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 21 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
@@ -40,6 +40,6 @@
 | docsync 行數 | 3804 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-22｜misc｜governance｜maint-spec-compliance-004｜004 刀附屬規格對照審查輪（spec-compliance-004）修單收單：防自鎖更新腿與來源信心八態兩支保護腿補齊（皆變異自證）；跨刀活體契約 code…
+- 2026-09-22｜review｜004-ip-trust-anchor｜findings 24（修 12／BL 12／ADR 0）；BL-00114、BL-00115、BL-00116、BL-00117、BL-00118、BL-0…
 - 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 21.2 秒 rc=0
-- 2026-09-22｜misc｜governance｜maint-backlog-86-90｜005 前維護批第 7／7 支（末支、本輪唯一真改 production 碼者）：PageRes<T> 上移 envelope.rs（欄形與 serde 屬性…
-- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 22.04 秒 rc=0

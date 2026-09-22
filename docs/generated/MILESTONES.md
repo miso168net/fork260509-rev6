@@ -3,6 +3,8 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-22 | misc | governance｜maint-spec-compliance-004 | 004 刀附屬規格對照審查輪（spec-compliance-004）修單收單：防自鎖更新腿與來源信心八態兩支保護腿補齊（皆變異自證）；跨刀活體契約 code-gate-contracts 六處改對；trust-model.dev.toml 折行死指針、obs.rs 五處碼註、活書 08 量法與活書 10 UI 判準、RUNBOOK §13 防自鎖座標；dev 可達態三處加 ADR-00040 對沖註。零 blocker、零 wire 行為缺陷。 | 1a9db89 | — | — |
+| 2026-09-22 | review | 004-ip-trust-anchor | findings 24（修 12／BL 12／ADR 0）；BL-00114、BL-00115、BL-00116、BL-00117、BL-00118、BL-00119、BL-00120、BL-00121、BL-00122、BL-00123、BL-00124、BL-00125 | — | — | — |
 | 2026-09-22 | misc | governance｜maint-backlog-86-90 | 005 前維護批第 7／7 支（末支、本輪唯一真改 production 碼者）：PageRes<T> 上移 envelope.rs（欄形與 serde 屬性逐字不動、wire 輸出 hex 逐位元比對不變）＋handler 共用件收攏為 handler/common.rs（tracing::error! 留呼叫點、兩域 target 不併）。兩條刪列。另修掉源碼掃描腿切面法的真缺陷：非行首切點被 doc 散文提前截斷，全樹非行首形清零。 | a0b8672 | — | — |
 | 2026-09-22 | misc | governance｜maint-backlog-89-83-85 | 005 前維護批第 6／7 支：測試清理面收攏＋門鈴量測去全域相依＋IP 閘兩處回歸錨——BL-00089 ①② 三支守衛 Drop 還原殼收攏為一支 run_restore（還原計畫抽成純資料、等價性由純資料斷言釘死）＋observed_msgs_real_db 兩 sid 改掛 RAII 清鍵；BL-00083 精確等值量測改走區域量表＋兩支守門；BL-00085 ①ipgate_blocked 發射點恰一處之靜態掃描腿 ②ChainRejected 來源被閘擋之案。三條刪列。 | dc32264 | — | — |
 | 2026-09-21 | misc | governance｜maint-backlog-92-97 | 005 前維護批第 5／7 支（rust 三支之首）：wire i64 守衛 lint 進場＋wire 裁判補 IP 規則請求型錨——BL-00092 新增 tests/wire_i64_guard_lint.rs（29 案、全樹靜態掃描，封住快照裁判對 2^53 守衛掛沒掛結構性無感的盲區；未掃出漏掛故 src 零改）、BL-00097 wire_schema.rs 24→44 案收 Api.IpRule 三支寫端請求型與清單 query（後者走查詢串真路徑）。兩條刪列。 | d4f33b7 | — | — |
@@ -47,6 +49,14 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-22｜misc｜governance｜maint-spec-compliance-004
+
+報告 docs/reviews/20260922-spec-compliance-004.md；findings 35 筆原始、去重 30＝修 12／轉 BL 12／駁回 2／報告記載 7。兩支唯讀 Workflow：wf_b1d4020a-658（五鏡＋探針 18 支）、wf_13f0723b-e36（五鏡 15 支），皆零錯零 null。修單 commit 4a8dcc3（rust-api 246d5ff）；全量 cargo test 772 案綠 0 紅 2 ignored、走查基準前後全等。修 12 之逐項與駁回／記載理由見報告 §2；★兩筆主線改判＝dev 可達態改走對沖、rust-api 碼註引凍結 spec 依「已駁回者不得重報」駁回。★user 2026-09-22 兩題裁定：憲法 §III.2 量法與表列數、憲法 §I.7 段首計數，皆立 BL 併入下次 §V.2 Amendment、本輪不單獨開。
+
+### 2026-09-22｜review｜004-ip-trust-anchor
+
+user 2026-09-22 發起之 004 刀附屬對照輪（RL-0073 ②；HEAD fd9f99f 基準、收刀點只歸因、specs 本文不改；CONTEXT 烤入 002／003 兩輪經驗七條＋RL-0078 防污染）。兩支唯讀 Workflow：run A wf_b1d4020a-658（五鏡＋冷啟動探針、18 支、38.6 分）、run B wf_13f0723b-e36（五鏡、15 支、26.8 分），皆零錯零 null；切兩支之由＝FR 數為 003 的 1.75 倍且需專鏡核七支維護批對 004 碼面的改動。findings 35 筆原始、去重 30：修 12／轉 BL 12／駁回 2／報告記載 7（total 24 只計已處置者，駁回與記載見報告 §2）。零 blocker、零 wire 行為缺陷；七支維護批對 004 碼面之改動全部找得到承載，base-web 自 004 收刀後零改動。★兩筆主線改判：①dev 可達態由二改三之修法改為「三處加對沖註＋BL-00125」——ADR-00040 款 2 逐字寫二態、body 不可變（GT-04）；②rust-api 碼註引凍結 spec 一筆駁回——子庫面不在 ADR-00041 射程且 maint-backlog-42 final review 已兩鏡駁回。★兩支新保護腿皆變異自證：防自鎖更新腿判別案（廣義變異使既有案亦紅⇒軟刪腿另有覆蓋；改打 Update 臂則只有新案紅）、來源信心八態窮盡守（加第九態＋補 as_str arm 後僅一個 E0004，命中新守）。主線復核自查追加兩筆當批收掉（RL-0020 三處本刀、RL-0011 工具 docstring 同源假述）。探針三題皆 found、答錯 0、找不到 0，三題皆判繞路（最短兩跳），共同成因＝活書 §6.1 島 E／島 F 表格列過長；不填 probe 欄（理由同 002／003）。全量 772 案綠 0 紅 2 ignored、走查基準前後全等、rustfmt 綠且三個憲法例外面零改動自證。
 
 ### 2026-09-22｜misc｜governance｜maint-backlog-86-90
 
