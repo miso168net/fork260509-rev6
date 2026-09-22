@@ -16,7 +16,7 @@
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：41｜滯後：4
 - LESSONS：33 筆
-- events：88 筆（erratum 2、feature_close 4、misc 34、perf 41、review 7）
+- events：89 筆（erratum 2、feature_close 4、misc 34、perf 42、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3872 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-23｜perf｜close_bookkeeping｜close_bookkeeping 2.17 秒 rc=0
 - 2026-09-23｜misc｜governance｜maint-orchestration-opus-all｜輕量軌 maint-orchestration-opus-all 收單（user 2026-09-23 令、005 SDD 重做前、主線直改零 cargo）：…
 - 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 26.49 秒 rc=0
-- 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 2.19 秒 rc=0
