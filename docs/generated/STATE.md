@@ -37,7 +37,7 @@
 | RULES fix | 17 | 19 | 內 |
 | RULES 主線 | 45 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 行數 | 3861 | 4000 | 內 |
+| docsync 行數 | 3872 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-09-22｜perf｜close_bookkeeping｜close_bookkeeping 22.72 秒 rc=0

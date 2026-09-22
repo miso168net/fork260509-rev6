@@ -643,6 +643,11 @@ class TestGt12Doorbell(unittest.TestCase):
         self.assertTrue(any("命中 0 處" in f[3] for f in errs(gates._doorbell_findings("X = 1\n", self.RUST))))
         self.assertTrue(any("命中 0 處" in f[3] for f in errs(gates._doorbell_findings(self.OUTER, "// moved\n"))))
 
+    def test_multiple_anchors_on_either_side_is_red(self):
+        """「多命中皆 ERROR」那格的自證（review L1-3）：把判準削成只擋零命中，本案須紅。"""
+        self.assertTrue(any("命中 2 處" in f[3] for f in errs(gates._doorbell_findings(self.OUTER + 'IPGATE_CHANNEL = "x"\n', self.RUST))))
+        self.assertTrue(any("命中 2 處" in f[3] for f in errs(gates._doorbell_findings(self.OUTER, self.RUST * 2))))
+
     def test_outer_absent_is_red_and_submodule_absent_is_named_skip(self):
         base = {RULES: RULES_TEXT, NOTES: "<!-- wave: 6 -->\n"}
         self.assertTrue(any("walkthrough-baseline.py 缺席" in f[3] for f in errs(gates.gt_12(stub(base)))))

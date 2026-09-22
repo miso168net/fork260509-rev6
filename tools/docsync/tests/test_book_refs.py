@@ -153,10 +153,46 @@ class TestGt06WrappedContractRef(unittest.TestCase):
         self.assertIn("contracts/gates.md", fs[0][3])
 
     def test_wrapped_non_contract_and_rev5_prefixed_are_green(self):
-        self.assertEqual(errs(self._run({"docs/ops/a.md": "凍結存證住 specs/004-ip-trust-anchor/\nspec.md 與 plan.md\n",
+        self.assertEqual(errs(self._run({"docs/ops/a.md": "凍結存證住 `specs/004-ip-trust-anchor/`\n`spec.md` 與 plan.md\n",
                                          "docs/ops/b.md": "前代 rev5:contracts/\ngates.md 不算\n",
                                          "docs/ops/c.md": "活體 docs/ops/reference-src/\ngates.md\n"})), [])
 
     def test_wrapped_exempt_line_is_green(self):
         self.assertEqual(errs(self._run({"docs/ops/reference-src/x.md": "> 凍結存證＝`specs/001-a/contracts/\n> gates.md`（不再前進）\n"})), [])
+
+    def test_crlf_and_trailing_spaces_still_wrap(self):
+        """尾段的 `\\s*$` 是判準的一部分（CRLF 之 CR、markdown 硬換行的行尾雙空白）——釘住，讓拿掉它的變異有案可擋（review L1-5）。"""
+        fs = errs(self._run({"docs/ops/a.md": "見 contracts/  \r\ngates.md\r\n", "docs/ops/b.md": "見 specs/001-a/contracts/  \ngates.md\n"}))
+        self.assertEqual(sorted(f[2] for f in fs), ["docs/ops/a.md:1", "docs/ops/b.md:1"], fs)
+
+    def test_backticked_wrap_is_red(self):
+        """repo 主流寫法把路徑包在反引號裡：行尾 `/` 後接收尾反引號、下一行以反引號起首，同樣拼接（review L1-6 形 (a)）。"""
+        fs = errs(self._run({"docs/ops/a.md": "契約＝`specs/004-ip-trust-anchor/contracts/`\n`trust-model-config.md` 之「dev 交付形」\n"}))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertIn("specs/004-ip-trust-anchor/contracts/trust-model-config.md", fs[0][3])
+
+    def test_dangling_prefix_after_half_fix_is_red(self):
+        """BL-00114 立案所引的真實殘留態（review L1-1）：折行指針只改了第二行、目錄前綴懸在第一行行尾——
+        拼接腿對此零命中（下一行已不是契約名），須由懸空前綴腿另抓。"""
+        fs = errs(self._run({"deploy/x.toml": "# 契約＝specs/004-ip-trust-anchor/\n#    `docs/ops/reference-src/trust-model-config.md` 之「dev 交付形」\n",
+                             "docs/ops/a.md": "見 specs/004-ip-trust-anchor/contracts/\n（下一行是散文）\n"}))
+        self.assertEqual(sorted(f[2] for f in fs), ["deploy/x.toml:1", "docs/ops/a.md:1"], fs)
+        self.assertTrue(all("懸空" in f[3] for f in fs), fs)
+
+    def test_dangling_is_not_double_reported_when_wrap_hits(self):
+        fs = errs(self._run({"deploy/x.toml": "# 契約＝specs/004-ip-trust-anchor/\n#    contracts/trust-model-config.md 之「dev 交付形」\n"}))
+        self.assertEqual(sorted(f[2] for f in fs), ["deploy/x.toml:1", "deploy/x.toml:2"], fs)
+        self.assertFalse(any("懸空" in f[3] for f in fs), fs)
+
+    def test_raw_dangling_before_non_contract_wrap_is_still_red(self):
+        """嚴格形（刻意）：裸露的目錄前綴懸在行尾一律紅，即使下一行接的是 `spec.md` 這種非契約檔——repo 路徑一律反引號、
+        裸露前綴只在半修殘留時出現；要寫合法折行請把路徑收進反引號（上一案的綠形）。"""
+        fs = errs(self._run({"docs/ops/a.md": "凍結存證住 specs/004-ip-trust-anchor/\nspec.md 與 plan.md\n"}))
+        self.assertEqual([f[2] for f in fs], ["docs/ops/a.md:1"], fs)
+        self.assertIn("懸空", fs[0][3])
+
+    def test_dangling_negatives_are_green(self):
+        self.assertEqual(errs(self._run({"docs/ops/a.md": "凍結存證住 `specs/004-ip-trust-anchor/`\n",
+                                         "docs/ops/b.md": "見 specs/004-ip-trust-anchor/spec.md\n",
+                                         "docs/ops/reference-src/x.md": "> 凍結存證＝specs/001-a/contracts/\n"})), [])
 

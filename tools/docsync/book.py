@@ -361,9 +361,12 @@ RE_MOVED_CONTRACT = re.compile(
 # 具名豁免（ADR-00041 決定 3）：唯有 reference-src 的活體檔、以引言行宣告自己的凍結存證出處者。
 # 解除謂詞＝該行不再以 `> 凍結存證＝` 起首，或該檔不在 reference-src（mb42 review L1-7／L2-7 收窄）。
 # 折行形（BL-00114；spec-compliance-004 L1-1 原形）：目錄前綴留在行尾、檔名在下一行——兩形逐行皆漏、lint 恆綠。
-# 尾段＝行尾以 / 收尾的路徑（類含 `:`＝`rev5:contracts/` 前代形拼接後照舊被界外字元排除）；首段＝下一行剝註解／引言／清單記號後的路徑。
-RE_WRAP_TAIL = re.compile(r"([A-Za-z0-9_.:/-]+/)\s*$")
-RE_WRAP_HEAD = re.compile(r"^[\s#>*/!<-]*([A-Za-z0-9_][A-Za-z0-9_./-]*)")
+# 尾段＝行尾以 / 收尾的路徑（類含 `:`＝`rev5:contracts/` 前代形拼接後照舊被界外字元排除；容一個收尾反引號＋行尾空白／CR）；
+# 首段＝下一行剝註解／引言／清單記號與起首反引號後的路徑。★射程外（記錄在案、非缺口）：折點不在 `/` 之後（slug／檔名中段）、
+# 行尾 `/` 後接續行符 `\`。半修殘留（前綴懸在行尾、檔名那行已改指他處）拼接腿抓不到、由下方懸空前綴腿另抓（BL-00114 立案所引之 `deploy/trust-model.dev.toml` 殘留形；裸露前綴一律紅＝嚴格形，合法折行請收進反引號）。
+RE_WRAP_TAIL = re.compile(r"([A-Za-z0-9_.:/-]+/)`?\s*$")
+RE_WRAP_HEAD = re.compile(r"^[\s#>*/!<`-]*([A-Za-z0-9_][A-Za-z0-9_./-]*)")
+RE_SPEC_DIR_DANGLING = re.compile(r"specs/\d{3}-[a-z0-9-]+/(?:contracts/)?\s*$")
 SPEC_CONTRACT_EXEMPT_DIR = "docs/ops/reference-src/"
 SPEC_CONTRACT_EXEMPT_PREFIX = "> 凍結存證＝"
 TENSE_ERR = ("待決", "TBD", "⏳", "已完成", "下一步")
@@ -386,6 +389,7 @@ def _forbidden_refs(ctx):
       ★兩形皆掃：絕對形 `specs/NNN-…/contracts/…` 與裸相對形 `contracts/<已抽出檔名>.md`。
       ★具名豁免：reference-src 的活體檔、以 `> 凍結存證＝` 起首之行——活體檔須能指出自己的凍結對照（ADR-00041 決定 3）。
       ★折行形同判（BL-00114）：行尾路徑尾段＋下一行路徑首段拼接後再過兩形、定位在前一行；該行豁免即不拼。
+      ★懸空前綴腿：行尾裸露的 `specs/NNN-…/`（或其 `contracts/`）而拼接未命中＝折行指針半修後的殘留形，同樣 ERROR。
     掃描面空集合由 gt_06 的活書缺席腿兜底（活書面 ⊂ 現在式面）。"""
     out = []
     for rel in ctx.tracked:
@@ -413,14 +417,21 @@ def _forbidden_refs(ctx):
                                    "改指 docs/ops/reference-src/ 的對應檔與節（相對形自現在式面各落點皆解析不到）"))
             tm = None if exempt or i >= len(lines) else RE_WRAP_TAIL.search(line)
             hm = tm and RE_WRAP_HEAD.match(lines[i])
+            wrapped = False
             if tm and hm:
                 joined = tm.group(1) + hm.group(1)
                 for rx, what in ((RE_SPEC_CONTRACT, "現在式面引用 spec 契約檔"), (RE_MOVED_CONTRACT, "裸相對形 spec 契約引用")):
                     m = rx.search(joined)
                     if m:
+                        wrapped = True
                         out.append(finding(ERROR, "GT-06", f"{rel}:{i}",
                                            f"折行的{what}「{m.group(0)}」（目錄前綴在本行行尾、檔名在下一行）——跨刀活體契約住 docs/ops/reference-src/"
                                            "（ADR-00041）；改指其對應檔與節、兩行同批改（只改一行＝前綴殘留成死指針）"))
+            dm = None if exempt or wrapped else RE_SPEC_DIR_DANGLING.search(line)
+            if dm:
+                out.append(finding(ERROR, "GT-06", f"{rel}:{i}",
+                                   f"行尾懸空的 spec 目錄前綴「{dm.group(0).strip()}」——折行指針半修後的殘留形（檔名那行已改指他處、前綴留在行尾）；"
+                                   "補回檔名並同批改指 docs/ops/reference-src/ 的活體家，或把目錄提及收進反引號／加標點"))
     return out
 
 
