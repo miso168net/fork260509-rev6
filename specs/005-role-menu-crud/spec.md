@@ -15,6 +15,16 @@
 > 連帶面：IP 規則清單之分頁收斂至共用規則（wire 逐位元不變）、ILIKE 等共用件收攏與具型交易簽章、信任模型標頭名開機體檢（只告警）、IP 域與部分更新語意兩支 supersede ADR、
 > BACKLOG 開放 41 條中 19 條隨本刀收、目標零新增。
 
+## Clarifications
+
+### Session 2026-09-23
+
+- Q: 超管把一個常量選單改成非常量時，若它底下還有常量子選單（含停用、不含已刪），系統該怎麼回？ → A: 拒、回 `constantParent`——更新時若清除自身常量性，反查治理域全深後代（含停用、不含已刪），存任一常量後代即拒、同鍵零新鍵（承 rev5 as-built；島 H3 零繞道；超管須由下往上逐層改；FR-021、US2 場景 13、SC-004）。
+- Q: 刪除角色時的「有人掛載」判定，要不要把已停用或已軟刪使用者身上的角色指派也算進去？ → A: 算進去、不濾——掛載數＝該角色之全部指派列、不看使用者啟停與軟刪，`others = total − 操作者是否為成員`；self-role 護欄同口徑（成員身分、含停用角色）；保守、零 join（承 rev5 as-built；007 做使用者軟刪寫端時 MUST 定「軟刪是否清指派」、記入 ADR③ 翻案觸發；FR-014、US1 場景 5）。
+- Q: 批次刪除（角色或選單）的 id 清單裡若有任一 id 不存在或已刪，系統該怎麼回？ → A: 整批拒、回該域 `notFound`——查無亦屬違規，單一交易零變更零稽核；併發情境下前端重新整理列表再送（承 rev5 as-built；FR-037、US1 場景 6、US2 場景 11）。
+- Q: 批次刪除的 id 清單裡同一個 id 出現兩次時，系統該怎麼處理？ → A: 先去重再處理——例 `[5,5]` 視同 `[5]`、成功、只落一列稽核；稽核列數＝去重後標的數（承 rev5 as-built；兩域同式；FR-037、SC-003、SC-004）。
+- Q: 新增角色或新增選單時名稱送空字串，系統該怎麼回？ → A: 拒、回該域 `nameRequired`、零寫入——與更新路徑同式（brainstorm R1-Q3 之延伸；角色在代碼形制之後、活性唯一之前；選單在路由名形制之後）；翻 rev5 as-built（新增不驗名稱）、upstream 表單本即必填、UI 零差異（FR-012、FR-029、US1 場景 2）。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 超管管理角色全生命週期 (Priority: P1)
@@ -30,14 +40,14 @@
 
 1. **Given** seed 三角色，**When** 超管開啟角色列表（首屏查詢串帶空白篩選欄），**Then** 分頁顯示三列、空白篩選欄＝不篩選；可依名稱／代碼（不分大小寫之子字串，`%`／`_`／`\` 視為字面）與狀態篩選；備註欄顯示於列表。
 2. **Given** 新增抽屜，**When** 提交合形制之代碼與名稱，**Then** 回成功、列表出現新列、該角色零授權；**When** 提交與活性列重複之代碼，**Then** 拒（`biz.role.codeExists`）；
-   **When** 代碼不合形制，**Then** 拒（`biz.role.codeInvalid`）；**When** 兩個請求同時以同一代碼新增，**Then** 恰一個成功、另一個回 `codeExists`（不得落成系統錯誤）。
+   **When** 代碼不合形制，**Then** 拒（`biz.role.codeInvalid`）；**When** 名稱為空字串，**Then** 拒（`biz.role.nameRequired`、Clarifications Q5）；**When** 兩個請求同時以同一代碼新增，**Then** 恰一個成功、另一個回 `codeExists`（不得落成系統錯誤）。
 3. **Given** 既有角色，**When** 編輯只送部分欄位，**Then** 未送之欄不動；**When** 請求出現 `roleCode`（值相同亦同），**Then** 拒（`biz.role.codeImmutable`）；
    **When** 描述、備註或首頁路由名送空字串，**Then** 該欄被清空；**When** 名稱送 null 或空字串，**Then** 拒（`biz.role.nameRequired`）；**When** 除 id 外所有欄皆缺席（不可變欄亦未出現），**Then** 成功且零變更、零稽核。
 4. **Given** 操作者自身所屬之角色，**When** 將其停用，**Then** 拒（`biz.role.cannotDisableSelfRole`）；**Given** R_SUPER，**When** 非其成員之操作者將其停用，**Then** 拒（`biz.role.superCannotDisable`）；**When** R_SUPER 成員（如 Super）將其停用，**Then** 先命中 `biz.role.cannotDisableSelfRole`（固定序 self→super）；
    **Given** 他人所屬之自建角色，**When** 停用成功，**Then** 該角色成員自下一個請求起失去該角色授權、無需任何判定面同步。
-5. **Given** seed 角色（id 1／2／3），**When** 刪除，**Then** 拒（`biz.role.seededProtected`）；**Given** 測試直種之「有掛載使用者」自建角色，**When** 刪除，**Then** 拒（`biz.role.inUse`）；
+5. **Given** seed 角色（id 1／2／3），**When** 刪除，**Then** 拒（`biz.role.seededProtected`）；**Given** 測試直種之「有掛載使用者」自建角色（掛載者為停用或已軟刪使用者亦同），**When** 刪除，**Then** 拒（`biz.role.inUse`）；
    **Given** 操作者自身所屬之自建角色，**When** 刪除，**Then** 拒（`biz.role.cannotDeleteSelfRole`）——三層固定序 seeded→in-use→self-role。
-6. **Given** 批次刪除集合含任一違規項，**When** 提交，**Then** 整批拒、零變更零稽核（單一交易、id 升冪逐項全套守門）；**When** 提交空陣列，**Then** 成功且零副作用、不取選單域鎖。
+6. **Given** 批次刪除集合含任一違規項，**When** 提交，**Then** 整批拒、零變更零稽核（單一交易、id 升冪逐項全套守門）；**When** 提交空陣列，**Then** 成功且零副作用、不取選單域鎖；**When** 清單含任一不存在或已刪之 id，**Then** 整批拒（`biz.role.notFound`）、零變更零稽核。
 7. **Given** 無掛載之自建角色、其名下經測試直種三維政策列，**When** 刪除成功，**Then** 該角色全三維政策列（含 protected）同交易移入授權歸檔（reason＝`role_soft_delete`、不可復原）、同交易落操作稽核；
    角色刪除單向（無復原端點）；因實際歸檔 ≥1 列，commit 後觸發判定面同步（US4）。
 
@@ -68,8 +78,9 @@
 9. **Given** 選單 Y 存在未刪子項（不論啟停），**When** 刪除 Y，**Then** 拒（`biz.menu.hasChildren`）；**Given** 受保護選單，**When** 刪除，**Then** 拒（`biz.menu.protectedMenu`；固定序：受保護→未刪子項）。
 10. **Given** 無子項選單 Z 且測試直種跨角色選單維政策與 Z 獨有之按鈕碼政策，**When** 刪除成功，**Then** 選單維政策跨全角色歸檔＋獨有按鈕碼政策一併歸檔（兩者 reason 皆＝`menu_soft_delete`）、同交易稽核、commit 後觸發判定面同步；
     **Given** 零政策列之選單，**When** 刪除成功，**Then** 零歸檔、零同步。
-11. **Given** 批刪集合內含父子，**When** 提交，**Then** 子先於父逐項全套守門、任一違規整批拒、單一交易；**When** 提交空陣列，**Then** 成功且零副作用、不取選單域鎖。
+11. **Given** 批刪集合內含父子，**When** 提交，**Then** 子先於父逐項全套守門、任一違規整批拒、單一交易；**When** 提交空陣列，**Then** 成功且零副作用、不取選單域鎖；**When** 清單含任一不存在或已刪之 id，**Then** 整批拒（`biz.menu.notFound`）、零變更零稽核。
 12. **Given** 選單，**When** 編輯「隱藏於選單」旗標，**Then** 照常落庫（運行期由超管改值屬業務資料、非憲法 §I.2 所禁之隱藏治理手段）。
+13. **Given** 常量目錄 A 底下有常量選單 B（含停用），**When** 編輯把 A 改為非常量，**Then** 拒（`biz.menu.constantParent`）；**When** 先把 B 改為非常量再改 A，**Then** 兩步皆成功（Clarifications Q1）。
 
 ---
 
@@ -166,7 +177,7 @@
 - 絕版判定之聯集＝未刪選單（含停用）之按鈕碼、且 MUST 排除標的自身（掃描時自身仍持舊清單）。
 - 歸檔掃描 MUST 依維度（選單維／按鈕維／端點維）過濾：路由名與按鈕碼值域可能重疊，失守即跨維連坐撤除。
 - 新建選單零授權（兩步流第一步）；其新增按鈕碼與復原選單之按鈕碼於 006 前無人持有（含 R_SUPER）。
-- 批刪清單含查無 id（不存在或已刪）或重複 id 之語意 → 暫依 rev5 as-built（查無＝整批拒 `notFound`；重複＝先去重）、屬 clarify 必問（見 Assumptions）。
+- 批刪清單含查無 id（不存在或已刪）→ 整批拒 `notFound`（Clarifications Q3；兩管理員併發時後送者重新整理再送）；重複 id → 先去重再處理（Clarifications Q4；前端勾選不會送重複 id、只有直打 API 會遇到）。
 
 **判定面同步**
 
@@ -232,7 +243,7 @@
 - **FR-012**: addRole 守門固定序（多重違規取先序腿）：代碼形制 `^[A-Za-z0-9_]{1,64}$`（`codeInvalid`）→名稱非空（`nameRequired`）→活性唯一（`codeExists`；先驗顯式拒＋活性唯一索引之衝突兜底收斂為同鍵、只收該索引之衝突）；可帶描述、備註、首頁路由名、狀態（承 rev5 as-built）；成功後該角色零授權。
 - **FR-013**: updateRole 可編欄＝名稱／描述／備註／首頁路由名／狀態（承 rev5 as-built；首頁路由名同 FR-007 可空文字欄語意、亦可經 updateRoleHome 寫）；守門固定序：提前 no-op→名稱非空（`nameRequired`）→鎖列查無（`notFound`）→代碼出現（`codeImmutable`）→停用雙護欄（自身所屬→R_SUPER 恆禁）；請求出現 `roleCode`（值不比對）MUST 拒（`codeImmutable`、非靜默忽略）；停用 MUST 過雙護欄——操作者不得停用自身所屬角色（`cannotDisableSelfRole`、成員身分口徑含停用角色）、
   R_SUPER 恆禁停用（`superCannotDisable`、不因操作者身分而異）；停用即斷權沿基線（授權讀端每請求濾角色狀態），MUST NOT 以判定面同步實現。
-- **FR-014**: deleteRole MUST 依固定序三層守門：①seeded（seed 角色 id 常數集與超管代碼常數為單一宣告源；`seededProtected`）②in-use（掛載數＝該角色之指派列數〔不濾使用者啟停與軟刪；暫依 rev5 as-built、屬 clarify 必問〕、`others = total − 操作者是否為成員`、>0 即 `inUse`，
+- **FR-014**: deleteRole MUST 依固定序三層守門：①seeded（seed 角色 id 常數集與超管代碼常數為單一宣告源；`seededProtected`）②in-use（掛載數＝該角色之全部指派列數〔不濾使用者啟停與軟刪；Clarifications Q2〕、`others = total − 操作者是否為成員`、>0 即 `inUse`，
   拒因回誠實總掛載語意）③self-role（`cannotDeleteSelfRole`）；通過後同交易先掃該角色代碼之全三維政策列（含 protected）歸檔（reason＝`role_soft_delete`）、再軟刪角色列、落稽核；角色刪除單向（本刀與 006 皆無角色復原端點）。
 - **FR-015**: batchDeleteRole MUST 單一交易、id 升冪逐項全套守門、任一違規整批拒（no-partial）；空陣列＝提前 no-op 成功（零副作用、零稽核、不取選單域鎖）。
 - **FR-016**: deleteRole／batchDeleteRole MUST 進選單序列化域（FR-042）；實際歸檔 ≥1 列時 MUST 於 commit 後觸發判定面同步（FR-050／FR-051）；批刪至多一次收尾同步。
@@ -244,7 +255,7 @@
 - **FR-019**: 新增與改父 MUST 防環（上溯祖先鏈遇自身即拒；上溯上限為寫死常數、逾限同鍵拒）。
 - **FR-020**: 父驗證 MUST 三處一致（新增／改父／復原）：父存在且未刪；**停用不擋**；`parentId=0`（頂層）豁免。頂層在 wire 上恆以 `parentId=0`（getMenuTree 為 `pId=0`）表示、資料庫恆存父欄 NULL——新增與改父收到 0 MUST 正規化為 NULL、讀端 NULL MUST 映為 0；MUST NOT 把 0 寫入父欄（否則顯示域樹組裝把 0 當幽靈父、該子樹整棵不下發）。
 - **FR-021**: 常量父鏈守門：常量旗標可寫，但常量選單 MUST NOT 掛於非常量父之下——新增、改父或設為常量時驗父鏈；復原常量標的時驗其全祖先常量性（非常量標的零驗）；
-  編輯清除自身常量性而其治理域全深後代（含停用、不含已刪）存常量後代時拒（暫依 rev5 as-built、屬 clarify 必問）；違反皆 `constantParent`。
+  編輯清除自身常量性而其治理域全深後代（含停用、不含已刪）存常量後代時拒（Clarifications Q1）；違反皆 `constantParent`。
   常量選單可寫後，公開之常量路由讀端（免登入）於存在常量列時 MUST 回非空（contract 一案、由守衛清列；與既有「seed 下回空陣列」真庫案之相交處理由 plan 定）；CDP 與 quickstart 各一步（建頂層常量選單→登出狀態下該列可見、內建路由仍在、路由可達→刪除並還原）。
 - **FR-022**: 讀端 MUST 分治理域（未刪含停用；管理列表、父選擇器、按鈕碼絕版判定、授權候選之源）與顯示域（啟用且未刪；使用者路由、頁面下拉）；治理候選 MUST NOT 誤用顯示域（必配負向測試）。
 - **FR-023**: 同鍵重建零繼承（島 H2）：同路由名重建之新選單 MUST NOT 經任何路徑（現役殘留、判定面殘留、回收桶復原）繼承舊實例授權——現役無殘留（序列化域＋刪除連動歸檔掃盡）＋歸檔不可回灌（reason gate）＋判定面同步。
@@ -270,7 +281,7 @@
 - **FR-035**: getDeletedMenus MUST 回已刪集合、常規分頁（FR-054）、穩定排序（刪除時間降冪、id 降冪）；MUST NOT 帶「可復原」旗標（選單復原無 reason gate 概念、復原守門即唯一權威）。
 - **FR-036**: restoreMenu MUST 域內鎖列重驗（標的為已刪存在，否則 `notFound`→同鍵活性衝突 `restoreConflict`〔唯一索引衝突兜底同鍵〕→父未刪 `parentNotFound`→常量標的之祖先常量性 `constantParent`）→成對清空軟刪時間與軟刪者、原狀態保留；
   MUST NOT 回灌任何授權、零授權寫、零判定面同步；同交易稽核。
-- **FR-037**: 批次刪除（角色與選單兩域同式）之查無 id（不存在或已刪）＝整批拒 `notFound`、重複 id＝先去重再處理——暫依 rev5 as-built、屬 clarify 必問。
+- **FR-037**: 批次刪除（角色與選單兩域同式）之查無 id（不存在或已刪）＝整批拒、回該域 `notFound`、零變更零稽核（Clarifications Q3）；重複 id＝先去重再處理（例 `[5,5]` 視同 `[5]`；稽核列數＝去重後標的數；Clarifications Q4）；兩者各以 contract 案釘住。
 
 **E. 授權歸檔寫入面與 reason gate**
 
@@ -409,9 +420,9 @@ i18n 三檔仍是基線最熱之檔；緩解＝一律新增型圈界、不與 up
 
 - **SC-001**: 路由與授權態對賬零漂移——路由表恰 39 條且與 seed 政策列路徑×動詞逐字對齊；契約覆蓋閘無缺案無殭屍案；授權態矩陣逐端點實測（Admin 對寫端得 `5003`、對角色清單得通；一般使用者對 getAllRoles 得通）。
 - **SC-002**: 拒因碼表自證——24 支新鍵每支各至少一案實際發出、名冊雙向閘綠；13 碼矩陣可發碼與保留碼數量不變、零新錯誤變體；三檔 locale 後端子樹逐檔與名冊雙向相等、型節齊備。
-- **SC-003**: 角色守門全可驗——三層守門固定序逐腿一案（in-use 與 self-role 以直種指派構造）；停用雙護欄兩案；代碼形制、活性唯一（含併發同碼一案）、不可變各一案；批刪含違規整批零變更一案、空陣列 no-op 一案。
-- **SC-004**: 選單守門全可驗——父驗證三處、防環（含上溯逾限）、不可變兩欄、常量父鏈（新增／改父／復原第四腿）、受保護三腿（刪除／停用／改父；停用與改父各一正一反）、href 形制、按鈕碼清單形制（非 null 非陣列、成員非物件、缺碼、碼為空或非字串、超長、重複各一）、同層排序擾動案、四支寫端固定守門序之多違規取先序腿案、
-  子先於父批刪各至少一案；治理域誤用顯示域之負向測試在案。
+- **SC-003**: 角色守門全可驗——三層守門固定序逐腿一案（in-use 與 self-role 以直種指派構造）；停用雙護欄兩案；代碼形制、活性唯一（含併發同碼一案）、不可變各一案；批刪含違規整批零變更一案、含查無 id 整批拒一案、含重複 id 去重後成功一案、空陣列 no-op 一案。
+- **SC-004**: 選單守門全可驗——父驗證三處、防環（含上溯逾限）、不可變兩欄、常量父鏈（新增／改父／清除常量性之後代腿／復原第四腿）、受保護三腿（刪除／停用／改父；停用與改父各一正一反）、href 形制、按鈕碼清單形制（非 null 非陣列、成員非物件、缺碼、碼為空或非字串、超長、重複各一）、同層排序擾動案、四支寫端固定守門序之多違規取先序腿案、
+  子先於父批刪（含查無 id 整批拒、重複 id 去重各一）各至少一案；治理域誤用顯示域之負向測試在案。
 - **SC-005**: 序列化域有機器證——七支進域寫端各一案斷言併發者於 advisory 等待；不進域之三支寫端（新增角色、更新角色、首頁寫入）不取域鎖；入域寫端失敗腿之顯式回滾源碼釘逐支在案。
 - **SC-006**: 判定面同步可證——五支觸發寫端各至少一案「資料庫歸檔＋判定面零命中（未重啟）」；刪除前先斷言判定面確實命中（防恆綠）；零政策列刪除、被拒、無作用、標的不存在、無按鈕碼變更各一案零同步（同步結果計數零增）；壞連線注入下 R_SUPER 既有授權續放行且告警與計數可查、
   重試耗盡維持舊面；交錯時序案證較晚 commit 不被蓋回；三支併發同步全數完成；三道名冊守恆與「就地清空重載必轉紅」各以植入反例證非 vacuous。
@@ -437,9 +448,9 @@ i18n 三檔仍是基線最熱之檔；緩解＝一律新增型圈界、不與 up
   （授權寫面、reason gate 五值、支撐讀其餘兩支、授權回收桶、授權彈窗接真、使用者域、no-escalation、稽核頁）；翻案與新增項（判定面同步觸發擴及角色刪除、部分更新空字串語意、治理清單無 size 全取、
   已刪清單缺席 size、受保護選單兩腿、href 與按鈕碼形制、非法標頭名只告警、表頭 prop 形、getAllPages 提前且依域歸選單 handler〔前代住角色 handler、不承〕、測試守衛形〔寫死值還原→arm 當下現讀值還原〕、譯文權威〔刀內鍵表→三檔 locale 各為該語之家〕、IP 域已知態載體〔以新 ADR supersede ADR-00040〕）入 plan research 差異點表、烤入 implementer 防回歸清單。
 - **零 migration、零 seed 變更＝事實非選擇**（FR-002）；本刀非一次性遷移、Risk／Guard／Rollback 三欄表免附。
-- **clarify 必問四項**（brainstorm R1-Q1：首輪 SDD 之 clarify 已問過前三項、user 選重做時重新出題）——本 spec 暫依 rev5 as-built 形寫入、待 clarify 定案：①編輯清除自身常量性而存常量後代時是否拒（FR-021）
-  ②角色掛載計數是否含停用或已刪使用者之指派（暫不濾；FR-014）③批次刪除含查無 id 是否整批拒（FR-037）④批次內重複 id 是否先去重（FR-037）。
-- **新增路徑名稱空字串亦拒**（FR-012、FR-029）：與更新路徑同式（ADR⑥ 之延伸）；upstream 表單本即必填、UI 零差異。
+- **clarify 必問四項**（brainstorm R1-Q1：首輪 SDD 之 clarify 已問過前三項、user 選重做時重新出題）——已全數由本 spec Clarifications Q1～Q4 定案（皆同 rev5 as-built）：①編輯清除自身常量性而存常量後代時是否拒（FR-021；★已由 Clarifications Q1 定案＝拒）
+  ②角色掛載計數是否含停用或已刪使用者之指派（FR-014；★已由 Clarifications Q2 定案＝算進去、不濾）③批次刪除含查無 id 是否整批拒（FR-037；★已由 Clarifications Q3 定案＝整批拒）④批次內重複 id 是否先去重（FR-037；★已由 Clarifications Q4 定案＝先去重）。
+- **新增路徑名稱空字串亦拒**（FR-012、FR-029）：與更新路徑同式（ADR⑥ 之延伸；★已由 Clarifications Q5 定案）；upstream 表單本即必填、UI 零差異。
 - **判定面同步之單行程前提**：現行部署為單服務單實例；跨行程通知不在本刀（翻案觸發記 ADR）。
 - **原 clarify 候選已轉工程判斷、本 spec 直接採用**（brainstorm §5 所列十三項，含共用件落點、分頁 helper 與四端點改引、前端查詢串前提錨落點、i64 lint 收法、契約落點、守衛形、CDP 排除清單與模型、
   getAllPages 落點、非法標頭名形、BL-00111 lint 形、第二輪工程判斷 21～43）；其中 user 可見者皆已經 brainstorm 第二輪拍板。
