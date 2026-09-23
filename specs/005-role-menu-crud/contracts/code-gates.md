@@ -7,7 +7,7 @@
 - **檔級硬邊界恰九檔**：`src/views/manage/role/index.vue`／`src/views/manage/role/modules/role-operate-drawer.vue`／`src/views/manage/role/modules/role-search.vue`／`src/views/manage/menu/index.vue`／`src/views/manage/menu/modules/menu-operate-modal.vue`／`src/components/advanced/table-header-operation.vue`（六支，修改型＋新增型：語意改動逐行 `原行:`、純新增段走新增型圈界；處數與塊數 Amendment 時不預估、實數以標記為準）／`src/locales/langs/{en-us,zh-cn}.ts`／`src/typings/app.d.ts`（三支新增型圈界）。
 - **明文不入**：`role/modules/menu-auth-modal.vue`／`role/modules/button-auth-modal.vue`（本刀出現任何 diff＝紅；前端單元出口斷言 `git -C base-web diff <基線>..HEAD -- <兩檔>` 零輸出）；`menu/modules/shared.ts`（兩向 diff 零改）。
 - **範圍欄預估**（Amendment 時零標記、以 rev5 as-built 為預估；憲法表外宣告 1「實數以標記為準」）：兩語 locale 各 4 塊、`app.d.ts` 4 塊（僅此三支新增型檔有預估）；前端單元出口只對此三檔以 grep 逐檔斷言新增型塊數＝預估，不等即停手升級主線（user 定當刀 PATCH 或比照 BL-00118 滯後）；六支 view／元件檔之處數與塊數依表外宣告 1 以標記實數為準、於下次 Amendment 實數化（比照 BL-00118）。
-- **名冊載入變異自證**（首個動 base-web 之單元順做）：暫改新列範圍欄任一路徑為裸措辭 → `tools/fork-delta-lint.py` 當場紅 → 還原。
+- **名冊載入變異自證**（首個動 base-web 之單元順做）：暫把新列範圍欄任一反引號路徑之**反引號內**字面改為不含 `/` 之非路徑 token（例 `role-index`；觸發 `load_roster` 路徑形斷言 die）→ `tools/fork-delta-lint.py` 當場紅 → 還原（RL-0005 回基準態）；拔反引號形於用途 (ii) 標記出現前恆綠、不得作自證。
 - **各新增圈界塊「拔標記必紅」**：逐塊拔 START／END → lint 必報未圈界新增 → 還原。★插入位置不得落在物件最末項之後（research R14）。
 - **生成檔**：`src/typings/components.d.ts` 以 unplugin 重算、`git -C base-web diff` 只准出現 `NTreeSelect` 兩行增列（介面內一行、全域 const 區一行）、其餘任何差異即紅；重算檔與彈窗同 commit；路由外掛產物四檔零變動（`tools/route-artifact-gate.py` 冪等綠）。
 - **ip-rule 頁**（rev6 新檔、免授權）：模板靜態斷言 `TableHeaderOperation` 帶 `:show-add="hasAuth('ipRule:add')"` 與 `:show-delete="false"`、不再覆寫 `#default` 插槽。

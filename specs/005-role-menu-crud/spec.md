@@ -149,7 +149,7 @@
 
 **Acceptance Scenarios**:
 
-1. **Given** plan 期 ADR 草稿已落 feature branch，**When** user 親決→Amendment ADR accepted→憲法更新＋bump 1.5.0＋README 憲法版本鏡像＋generate，**Then** 以獨立 commit 落地（內容恰為憲法、該 ADR、README 憲法版本鏡像與 generate 產物）；在此之前 base-web 既有檔零 diff。
+1. **Given** plan 期 ADR 草稿已落 feature branch，**When** user 親決→Amendment ADR accepted→憲法更新＋bump 1.5.0＋README 憲法版本鏡像＋generate，**Then** 以獨立 commit 落地（內容恰為憲法、該 ADR、README 憲法版本鏡像、活書 08 §8.4 引文改字與 generate 產物）；在此之前 base-web 既有檔零 diff。
 2. **Given** IP 規則清單端點改引共用分頁規則與共用模糊搜尋件，**When** 跑既有契約案與新增之缺席／逾界／壞形案，**Then** 回應逐位元同改前（缺席→1／10、`&size=0&current=0`→(1,1)、壞形→整串預設、`current` 逾界＝上界值）。
 3. **Given** 信任模型之訪客位址標頭名寫成非法標頭名，**When** 服務啟動，**Then** 發一則指名該處並附改寫建議之結構化警告、該覆蓋層停用、不計入 IP 域降級、不觸發降級告警規則、且絕不改讀預設標頭名。
 4. **Given** IP 規則表存在直改庫之未知類型列，**When** 管理頁載入清單，**Then** 該列照原樣顯示原字串（不崩、不隱藏）、存取閘既有略過＋告警不變。
@@ -360,7 +360,7 @@
 
 **L. 治理、文件與簿記**
 
-- **FR-075**: 憲法 Amendment MUST 一次 MINOR（1.4.0→1.5.0）、獨立 commit（內容恰為憲法、ADR①、README 憲法版本鏡像與 generate 產物；②③⑥ 另起一顆）：①§I.7 島 H 五條入憲（以前代 v1.7.0 字面為底；H1 終態句以描述形＋現在式條件句寫成、不帶刀集外刀名；H3 增補受保護選單不可停用、不可改父；
+- **FR-075**: 憲法 Amendment MUST 一次 MINOR（1.4.0→1.5.0）、獨立 commit（內容恰為憲法、ADR①、README 憲法版本鏡像、活書 08 §8.4 引文改字與 generate 產物——引文隨憲法字面同顆改、否則即成假引文；②③⑥ 另起一顆）：①§I.7 島 H 五條入憲（以前代 v1.7.0 字面為底；H1 終態句以描述形＋現在式條件句寫成、不帶刀集外刀名；H3 增補受保護選單不可停用、不可改父；
   常數留活書；承襲指針表 H 列尾註；MAJOR 射程句「六島」改「七島」；依承襲指針表尾句完成之跨島重審結論載 ADR）②島 E 補兩句（解鎖端點之操作稽核先於解鎖標記寫入；操作者上下文缺席即拒寫 `5000`、不以佔位補列）
   ③§III.2 ★ 軌道加用途 (ii)「role／menu 管理頁 CRUD 接真」恰九檔（role 三檔、menu 兩檔、共用表頭元件、兩語 locale、`app.d.ts`；兩顆授權彈窗與 `menu/modules/shared.ts` 明文不入；範圍欄對三支僅新增型檔寫 rev5 as-built 預估塊數、六支 view／元件檔不預估，實數以標記為準；前端單元出口對三支僅新增型檔逐檔斷言新增型塊數等於預估，不等即停手升級主線、由 user 定當刀 PATCH 或比照 BL-00118 滯後）
   ④表外宣告 1 之量法句與既有列範圍欄數字改為與活書 08 同一量法（BL-00118）⑤§I.7 段首增補計數句改為以 Amendment log 為準（BL-00119）。Amendment accepted 前 base-web 既有檔 MUST 零 diff。
