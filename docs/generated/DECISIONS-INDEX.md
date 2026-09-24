@@ -17,7 +17,7 @@
 | ADR-00012 | accepted | 2026-09-05 | schema 定稿權威自 001 spec 目錄抽出至 reference-src——凍結存證與跨刀活體二分 | 輕量軌｜2026-09-05 | — | — |
 | ADR-00013 | accepted | 2026-09-05 | fix 清單外零改動升級不終止 run——該段收斂帶升級項、碼品質段照跑、已升級項重報過濾 | 002-system-settings | — | — |
 | ADR-00014 | accepted | 2026-09-05 | 授權拒絕語意定死為 5003＋HTTP 403＋純 i18n key，並預留空 no-escalation 掛點簽章 | 002-system-settings | — | — |
-| ADR-00015 | accepted | 2026-09-05 | 部分更新請求之 envelope 級三態約定——欄位缺席＝不動、JSON null＝顯式清空、有值＝設值 | 002-system-settings | — | — |
+| ADR-00015 | superseded | 2026-09-05 | 部分更新請求之 envelope 級三態約定——欄位缺席＝不動、JSON null＝顯式清空、有值＝設值 | 002-system-settings | — | ADR-00047 |
 | ADR-00016 | superseded | 2026-09-05 | 碼面閘名冊承載於 RUNBOOK §12 碼面閘表，由 GT-12 新腿對賬 tools/ 頂層工具檔集 | 002-system-settings | — | ADR-00032 |
 | ADR-00017 | accepted | 2026-09-05 | msg key 跨端契約延至首個接 i18n 的前端刀，002 只閉後端側 msg key 名冊 | 002-system-settings | — | — |
 | ADR-00018 | accepted | 2026-09-05 | pre-commit entity-drift 段之 schema 快照缺席由 Day-1 具名跳過改為 rc 2 擋下並提示照相 | 002-system-settings | — | — |
@@ -45,8 +45,8 @@
 | ADR-00040 | accepted | 2026-09-20 | 004 ip-trust-anchor 已知態集——解鎖無 UI 按鈕／dev 經反向代理可達二態／操作稽核覆蓋不對稱／logout 故障窗弱 oracle／redis 不開持久化／wire 裁判面不開嚴格模式（六款皆 by-design、各附翻案觸發器） | 004-ip-trust-anchor | — | — |
 | ADR-00041 | accepted | 2026-09-21 | 跨刀活體契約自 spec 目錄抽出至 reference-src——五份新家、spec 原檔留凍結存證、現在式面改指新家（兩種書寫形皆機器守） | 輕量軌｜maint-backlog-42 | — | — |
 | ADR-00042 | accepted | 2026-09-23 | 憲法 Amendment 1.4.0→1.5.0——§I.7 島 H 入憲（H3 增補受保護選單不可停用／不可改父、H2 載同步失敗保留上一份）＋島 E 補兩句＋§III.2 ★BASE-WEB-MANAGE-PAGE-WIRING 用途 (ii) 恰九檔＋表外宣告 1 量法句與 §I.7 段首計數句改對 | — | — | — |
-| ADR-00043 | proposed | 2026-09-23 | casbin 判定面同步——全新重建後一步換上、保留上一份、全程互斥、觸發恰五支移除面寫端之「實際歸檔 ≥1 列」；翻 002 刀「boot 載入即終態」宣告、兌現 ADR-00014 決定 4 之運行期重載預告 | — | — | — |
-| ADR-00044 | proposed | 2026-09-23 | 選單域與角色刪除之域行為——角色刪除家族入域且實際歸檔才同步、島 G 行為（G1 前半／G3／G4／G5）由本 ADR 承載、授權歸檔表三自由度 won't-use、受保護選單守門、隱藏於選單釋義、保留路由名守門、upstream 同 URL 型偏離帳 | — | — | — |
+| ADR-00043 | accepted | 2026-09-23 | casbin 判定面同步——全新重建後一步換上、保留上一份、全程互斥、觸發恰五支移除面寫端之「實際歸檔 ≥1 列」；翻 002 刀「boot 載入即終態」宣告、兌現 ADR-00014 決定 4 之運行期重載預告 | — | — | — |
+| ADR-00044 | accepted | 2026-09-23 | 選單域與角色刪除之域行為——角色刪除家族入域且實際歸檔才同步、島 G 行為（G1 前半／G3／G4／G5）由本 ADR 承載、授權歸檔表三自由度 won't-use、受保護選單守門、隱藏於選單釋義、保留路由名守門、upstream 同 URL 型偏離帳 | — | — | — |
 | ADR-00045 | proposed | 2026-09-23 | 角色與選單管理之已知態與 by-design——授權彈窗真樹假勾選／policy-archive 死項／新建與復原選單側欄不現／新按鈕碼無人持有／新建選單顯原始 i18n 鍵／治理清單三列路由裸鍵／getAllRoles 之既有 UI 消費者與 roleHome 零消費者／治理清單分頁列凍結與無 size 全取（各款「觀察路徑→症狀」、CDP 實際觀察後定稿） | — | — | — |
 | ADR-00046 | proposed | 2026-09-23 | IP 域已知態集（續行 ADR-00040）——六款重述（款 2 改三態、款 3 寫入者集對齊 as-built、款 6 以讀型鍵集表驅動斷言兌現）＋新款：清單端點未知規則類型照原樣上 wire、前端退顯原字串 | — | — | — |
-| ADR-00047 | proposed | 2026-09-23 | 部分更新語意（續行 ADR-00015）——envelope 級三態續行；角色與選單之可空文字欄空字串＝清空落 NULL（新增同形）、名稱欄空字串與 null 同拒；系統設定寫端「空字串＝設值」續行；提前 no-op 與不可變欄出現形 | — | — | — |
+| ADR-00047 | accepted | 2026-09-23 | 部分更新語意（續行 ADR-00015）——envelope 級三態續行；角色與選單之可空文字欄空字串＝清空落 NULL（新增同形）、名稱欄空字串與 null 同拒；系統設定寫端「空字串＝設值」續行；提前 no-op 與不可變欄出現形 | — | ADR-00015 | — |

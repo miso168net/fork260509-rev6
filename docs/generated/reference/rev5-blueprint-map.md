@@ -19,7 +19,7 @@
 | §8 橫切概念 | ## | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（四子節形制） |
 | fork-delta 接線現況（base-web） | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（指針形：規則面承 rev5 FORK-DELTA-WIRING、接線 as-built 隨 base-web 各刀重生） |
 | 資料慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（archetype 四變體與成對條款在憲法 §I.6；三閘／演進帳／歸屬帳＝ADR-00010；memo 欄與 ORM 紀律見 §8.1） |
-| API 慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（信封／碼表／i64 守衛＝憲法 §I.3；契約機器化與部分更新三態＝§8.2、ADR-00015；msg 名冊後端側閉環＝ADR-00017、跨端閘與譯文之家＝ADR-00039） |
+| API 慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（信封／碼表／i64 守衛＝憲法 §I.3；契約機器化與部分更新三態＝§8.2、ADR-00047；msg 名冊後端側閉環＝ADR-00017、跨端閘與譯文之家＝ADR-00039） |
 | 授權慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（判定單點／DB-fresh＝憲法 §I.2；拒絕語意與 no-escalation 掛點＝§8.3、ADR-00014；no-escalation 本體與三維授權治理＝憲法 §I.7 島 G／I 承襲指針） |
 | §9 架構決策 | ## | [09-architecture-decisions.md](../../arc42/09-architecture-decisions.md) | 承襲（decisions/ 一決策一檔＋DECISIONS-INDEX 指針；波 2 落地） |
 | §10 品質要求 | ## | [10-quality-requirements.md](../../arc42/10-quality-requirements.md) | 不承襲：rev5 空節；rev6 §10 自 §1.2 品質目標展開、情境隨島進場 |

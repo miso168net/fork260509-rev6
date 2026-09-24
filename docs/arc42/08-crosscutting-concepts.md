@@ -7,7 +7,7 @@ rev5_blueprint:
   §8 橫切概念: 承襲（四子節形制）
   fork-delta 接線現況（base-web）: 承襲（指針形：規則面承 rev5 FORK-DELTA-WIRING、接線 as-built 隨 base-web 各刀重生）
   資料慣例: 承襲（archetype 四變體與成對條款在憲法 §I.6；三閘／演進帳／歸屬帳＝ADR-00010；memo 欄與 ORM 紀律見 §8.1）
-  API 慣例: 承襲（信封／碼表／i64 守衛＝憲法 §I.3；契約機器化與部分更新三態＝§8.2、ADR-00015；msg 名冊後端側閉環＝ADR-00017、跨端閘與譯文之家＝ADR-00039）
+  API 慣例: 承襲（信封／碼表／i64 守衛＝憲法 §I.3；契約機器化與部分更新三態＝§8.2、ADR-00047；msg 名冊後端側閉環＝ADR-00017、跨端閘與譯文之家＝ADR-00039）
   授權慣例: 承襲（判定單點／DB-fresh＝憲法 §I.2；拒絕語意與 no-escalation 掛點＝§8.3、ADR-00014；no-escalation 本體與三維授權治理＝憲法 §I.7 島 G／I 承襲指針）
 ---
 # §8 橫切概念
@@ -26,7 +26,7 @@ ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯
 
 13 碼矩陣整組凍結的機器承載住 `rust-api/server/src/error.rs`——`code` 常量 mod 與同檔 `#[cfg(test)]` 之 table-driven 矩陣逐列同序同值斷言（碼×msg key×HTTP 對映、表長恰 13）；保留碼零發出另有雙錨＝`AppError` 無對應變體之全變體窮舉見證（cargo 型別層）＋同一矩陣斷言，`tests/contract.rs` 不重寫第三份。
 
-部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00015，後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
+部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00047，空字串語意逐域明文：系統設定寫端之空字串＝設值（落空字串）；角色與選單寫端之可空文字欄空字串＝清空落 NULL（新增同形）、名稱欄之 null 與空字串同拒；後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
 
 msg 名冊後端側閉環＝`rust-api/server/src/error.rs` 之 `MSG_KEYS` 單一常數陣列（鍵數以該陣列型別長度為準、本文不抄；發出點一律取同檔 `msg_key` 常數形、不直書字面）＋contract 雙向斷言（實發 ⊆ 名冊、名冊每鍵 ≥1 發出點）；跨端閘＝`tools/msg-key-gate.py`（現行依據＝ADR-00039：閘形制續行 ADR-00029 之原意；譯文之家＝三檔 locale 各自的 `backend` 子樹、各為該語譯文的唯一權威、不另立譯文表，鍵數一律以 `MSG_KEYS`／閘輸出為準、文件與碼註不手抄）：`MSG_KEYS` ⇔ base-web `src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 子樹逐檔雙向全等（子樹為封閉集、無白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）＋Biz 構造點守衛（字面形或 `msg_key::NAME` 常數形、動態構造即紅）＋前端 msg 字面消費點名冊（base-web `src/**/*.{ts,vue,tsx}`〔排除 `locales/`〕剝註解後之 wire 字面 ⇔ 工具內 `FRONTEND_MSG_CONSUMERS` 逐項雙向全等且每鍵 ∈ `MSG_KEYS`；安全前綴＝`MSG_KEYS` 頂層前綴 − locale 頂層鍵、程式現算；不等 rc 1 指名檔:行、掃描面空 rc 2）；接線＝pre-commit msg-key-gate 段、名冊＝RUNBOOK §12 碼面閘表。
 

@@ -2,10 +2,10 @@
 id: "ADR-00047"
 title: 部分更新語意（續行 ADR-00015）——envelope 級三態續行；角色與選單之可空文字欄空字串＝清空落 NULL（新增同形）、名稱欄空字串與 null 同拒；系統設定寫端「空字串＝設值」續行；提前 no-op 與不可變欄出現形
 date: 2026-09-23
-status: proposed
-supersedes: []
+status: accepted
+supersedes: [ADR-00015]
 superseded_by: []
-provenance: "005-role-menu-crud 之 spec FR-006／FR-007／FR-009（brainstorm R1-Q3、工程判斷 23／30；clarify 2026-09-23 Q5 新增路徑名稱空字串亦拒）；被續行面＝ADR-00015 五款（其決定 1「空字串亦為設值」與決定 5「create 不在射程」為本檔改寫面；body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例）；前代出處＝rev5:ADR 0023（rev5:002 刀三態約定）＋rev5:B-102（rev5 可空欄空字串＝清空、名稱欄空字串＝不動——名稱欄一半由本檔翻為拒）＋rev5:L-009；draft 於 plan 期落 feature branch、user 親決於 tasks T003（施工前提顆；accepted 同顆補 supersedes 並改 ADR-00015 狀態）"
+provenance: "005-role-menu-crud 之 spec FR-006／FR-007／FR-009（brainstorm R1-Q3、工程判斷 23／30；clarify 2026-09-23 Q5 新增路徑名稱空字串亦拒）；被續行面＝ADR-00015 五款（其決定 1「空字串亦為設值」與決定 5「create 不在射程」為本檔改寫面；body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例）；前代出處＝rev5:ADR 0023（rev5:002 刀三態約定）＋rev5:B-102（rev5 可空欄空字串＝清空、名稱欄空字串＝不動——名稱欄一半由本檔翻為拒）＋rev5:L-009；draft 於 plan 期落 feature branch、user 親決 2026-09-24 於 tasks T003（施工前提顆；五款逐款照文定稿；accepted 同顆補 supersedes 並改 ADR-00015 狀態）"
 tags: [wire, envelope, serde, role-menu-crud]
 ---
 

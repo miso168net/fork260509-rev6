@@ -2,10 +2,10 @@
 id: "ADR-00043"
 title: casbin 判定面同步——全新重建後一步換上、保留上一份、全程互斥、觸發恰五支移除面寫端之「實際歸檔 ≥1 列」；翻 002 刀「boot 載入即終態」宣告、兌現 ADR-00014 決定 4 之運行期重載預告
 date: 2026-09-23
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
-provenance: "005-role-menu-crud 之 spec FR-046～FR-053（brainstorm G1 既定不問 4、R1-Q2、工程判斷 12／25／26／37）；藍本＝rev5:ADR 0049（rebuild-swap／keep-last-good／硬禁令＋版本鎖／ABBA 三失效條件）＋rev5:ADR 0053 款四（rev5:B-104 觸發矩陣訂正）＋rev5:ADR 0067 款二（指派寫端同步、rev5:B-093 閉合；其被棄替代案 C＝rev6 所採）＋rev5:005 收刀 final holistic review 之 RELOAD_SERIAL 與 rev5:B-105 交錯時序 seam（rev5:932ba8c）；rev6 被翻宣告＝002 刀碼內 enforce.rs 檔頭與 init doc、main.rs、state.rs 之終態句；ADR-00014 決定 4 括號句（運行期重載屬後刀）；ADR-00036（AppState 恰七欄）；casbin 2.20.0（rust-api/Cargo.toml 釘版）；draft 於 plan 期落 feature branch、user 親決於 tasks T003（施工前提顆）"
+provenance: "005-role-menu-crud 之 spec FR-046～FR-053（brainstorm G1 既定不問 4、R1-Q2、工程判斷 12／25／26／37）；藍本＝rev5:ADR 0049（rebuild-swap／keep-last-good／硬禁令＋版本鎖／ABBA 三失效條件）＋rev5:ADR 0053 款四（rev5:B-104 觸發矩陣訂正）＋rev5:ADR 0067 款二（指派寫端同步、rev5:B-093 閉合；其被棄替代案 C＝rev6 所採）＋rev5:005 收刀 final holistic review 之 RELOAD_SERIAL 與 rev5:B-105 交錯時序 seam（rev5:932ba8c）；rev6 被翻宣告＝002 刀碼內 enforce.rs 檔頭與 init doc、main.rs、state.rs 之終態句；ADR-00014 決定 4 括號句（運行期重載屬後刀）；ADR-00036（AppState 恰七欄）；casbin 2.20.0（rust-api/Cargo.toml 釘版）；draft 於 plan 期落 feature branch、user 親決 2026-09-24（決定節於 tasks T002 親決輪逐款定稿、accepted 於 tasks T003 施工前提顆）"
 tags: [authz, casbin, enforcer, reload, role-menu-crud]
 ---
 

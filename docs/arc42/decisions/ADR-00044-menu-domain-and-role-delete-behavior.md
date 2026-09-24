@@ -2,10 +2,10 @@
 id: "ADR-00044"
 title: 選單域與角色刪除之域行為——角色刪除家族入域且實際歸檔才同步、島 G 行為（G1 前半／G3／G4／G5）由本 ADR 承載、授權歸檔表三自由度 won't-use、受保護選單守門、隱藏於選單釋義、保留路由名守門、upstream 同 URL 型偏離帳
 date: 2026-09-23
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
-provenance: "005-role-menu-crud 之 spec FR-012～FR-017、FR-024、FR-038～FR-043（brainstorm 既定不問 2／4／5、R1-Q2／R1-Q5／R2-Q1／R1-Q10、工程判斷 12／27／28；clarify 2026-09-23 Q2～Q4）；藍本＝rev5:ADR 0050（§1 deleteRole 入域、§3 島 G 行為承載、§4 歸檔表三自由度 won't-use 與前代翻案觸發條款）——其 §2 免同步論證由 R1-Q2 翻為實際歸檔才同步（ADR-00043）；rev5 憲法 v1.10.0 島 G1／G3／G4 最終字面供對照（rev6 島 G 未入憲）；憲法 §I.2（前端隱藏機制皆不啟用、釋義②）與 `docs/ops/reference-src/schema-definition.md` hide_in_menu 白名單；draft 於 plan 期落 feature branch；決定 8／9＝`/speckit-analyze` 期 user 裁定（2026-09-24）；user 親決於 tasks T003（施工前提顆）"
+provenance: "005-role-menu-crud 之 spec FR-012～FR-017、FR-024、FR-038～FR-043（brainstorm 既定不問 2／4／5、R1-Q2／R1-Q5／R2-Q1／R1-Q10、工程判斷 12／27／28；clarify 2026-09-23 Q2～Q4）；藍本＝rev5:ADR 0050（§1 deleteRole 入域、§3 島 G 行為承載、§4 歸檔表三自由度 won't-use 與前代翻案觸發條款）——其 §2 免同步論證由 R1-Q2 翻為實際歸檔才同步（ADR-00043）；rev5 憲法 v1.10.0 島 G1／G3／G4 最終字面供對照（rev6 島 G 未入憲）；憲法 §I.2（前端隱藏機制皆不啟用、釋義②）與 `docs/ops/reference-src/schema-definition.md` hide_in_menu 白名單；draft 於 plan 期落 feature branch；決定 8／9＝`/speckit-analyze` 期 user 裁定（2026-09-24）；user 親決 2026-09-24（決定 1～7 於 tasks T002 親決輪逐款定稿、決定 8／9 同輪確認字面；accepted 於 tasks T003 施工前提顆）"
 tags: [authz, role, menu, behavior-island, role-menu-crud]
 ---
 
