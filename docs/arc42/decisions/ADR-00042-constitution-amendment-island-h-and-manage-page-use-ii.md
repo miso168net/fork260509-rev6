@@ -2,7 +2,7 @@
 id: "ADR-00042"
 title: 憲法 Amendment 1.4.0→1.5.0——§I.7 島 H 入憲（H3 增補受保護選單不可停用／不可改父、H2 載同步失敗保留上一份）＋島 E 補兩句＋§III.2 ★BASE-WEB-MANAGE-PAGE-WIRING 用途 (ii) 恰九檔＋表外宣告 1 量法句與 §I.7 段首計數句改對
 date: 2026-09-23
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "005-role-menu-crud 之 spec FR-075（brainstorm Q1／Q5／R1-Q5／R2-Q1、§3 設計 §2、工程判斷 20／40；clarify 2026-09-23 Q1 之常量後代腿）；島 H 條文以 rev5 憲法 v1.7.0 §I.7 島 H 字面為底（rev5:ADR 0048；取證：H2～H5 與常數行 v1.7.0→v1.10.0 逐字不變、序言與 H1 括號於 rev5 v1.8.0 回填授權治理兌現句——不取；rev5 凍結 SHA 7eab28a）、restore 第四腿承 rev5:ADR 0051、H4 兩域消費面補列承 spec FR-022、H2 同步失敗方向句承 rev5 v1.8.0 島 G1 失敗契約之方向（rev6 島 G 未入憲、方向改由 H2 承載）；島 E 兩句＝BL-00098（前代位置＝rev5 v1.10.0 島 J5「解鎖稽核先於生效」、rev6 依 FR-075② 改落島 E）；§III.2 用途 (ii) 列形承 rev5 v1.7.0 同名列（rev5:ADR 0048 款二）、rev6 九檔（多共用表頭元件＝brainstorm Q5）；表外宣告 1＝BL-00118（活書 08 §8.4 量法家）；段首計數句＝BL-00119；§V.2 流程、§V.3 MINOR 判準；draft 於 plan 期落 feature branch（004 刀 ADR-00034 前例）、user 親決於 tasks T002（Amendment 顆）"
@@ -47,7 +47,7 @@ tags: [constitution, amendment, fork-delta, behavior-island, role-menu-crud]
 ### 二、島 E 末尾補兩點（BL-00098；前代位置＝rev5 v1.10.0 島 J5；措辭 user 親決時定稿）
 
 - 管理員解鎖端點之操作稽核 MUST **先於**解鎖標記寫入：稽核列寫不進去＝該次解鎖不生效、零標記；稽核已落而標記寫入失敗＝回 `5000`、可重試，重試多記之稽核列明文接受。
-- 解鎖端點之操作者上下文缺席 MUST 拒寫 `5000`、不得以佔位位址補足稽核列（與島 F 之 F3① 同向）。
+- 解鎖端點之操作者上下文缺席或其來源位址取不到 MUST 拒寫 `5000`、不得以佔位位址補足稽核列（與島 F 之 F3① 同向）。
 
 ### 三、新增島 H 段（置於島 F 之後、跨島註之前；逐字）
 
@@ -68,7 +68,7 @@ tags: [constitution, amendment, fork-delta, behavior-island, role-menu-crud]
 | 明文化 | H3 | 常量父鏈之寫端列舉（改父、設為常量、復原常量標的、清除自身常量性而後代存常量者） | `rev5:ADR 0051`、clarify Q1（前代 as-built） |
 | 明文化 | H4 | 治理域補「按鈕碼絕版判定」、顯示域補「頁面下拉」 | spec FR-022（前代 as-built 之消費面） |
 | 明文化 | H5 | 守門補「常量標的之父鏈常量性」 | `rev5:ADR 0051` |
-| 座標 | 序言 | 出處改 `rev5:ADR 0048`；G 位句改「島 G 未入憲、凍結位指 ADR-00043／ADR-00044」；增補與明文化之申報句 | —— |
+| 座標 | 序言 | 出處改 `rev5:ADR 0048`；G 位句改「島 G 未入憲、凍結位指 ADR-00043／ADR-00044」；增補與明文化之申報句；「字母沿 rev4 記 H」改「字母沿前代記 H」；「G 位保留給授權治理刀之 casbin 授權治理島」改「G 位保留給授權治理島」（去刀集外刀名） | —— |
 | 座標 | H1 | 「deleteRole 家族（rev5 新增域成員）」改「角色刪除家族」；終態成員句改描述形＋現在式條件句 | 工程判斷 40 |
 | 座標 | H2 | 「buttons 聯集」改「按鈕碼聯集」、「in-memory 面」改「記憶體授權判定面」（與島 F 之 IP 規則集「記憶體判定面」區隔）；「回收桶復原」改「授權回收桶復原」（與 H1 同詞、與選單回收桶分立）；「此三類 reason」改「上列三類歸檔（reason 值 `menu_soft_delete`／`menu_button_removed`）」（前代三類歸檔只含兩值、與本刀 reason gate 三值區隔） | 措辭釐清、語意不變 |
 | 座標 | H3／H4 | 刪「（rev5 專屬新條）」；「授權列 v1 錨」去版本號 | 語意不變 |
@@ -95,6 +95,7 @@ tags: [constitution, amendment, fork-delta, behavior-island, role-menu-crud]
 - ★親決序：島 H 序言之凍結位與 H2 之機制細節指向 ADR-00043／ADR-00044——兩支之決定節於同一親決輪**先於**本 ADR 各決定呈 user 定稿（commit 仍分兩顆：本 ADR＝Amendment 顆在前、ADR-00043／ADR-00044／ADR-00047＝施工前提顆緊接其後）；施工前提顆 MUST NOT 改動已於同一親決輪先定、被島 H 引用之決定；確需改動＝停手升級，島 H 指針另走 §V.2（PATCH 級 ADR＋獨立 `docs(constitution): amend` commit）。
 - 本 ADR 轉 accepted 與憲法改動 MUST 同一顆 commit（§V.2 步 4）、同批 `python3 tools/docsync generate`（README 憲法版本鏡像同批）；commit 內容恰為憲法、本 ADR、README 憲法版本鏡像、活書 08 §8.4 之引文改字與 generate 產物；commit 訊息 `docs(constitution): amend …（1.4.0→1.5.0）`。
 - 該 commit 落地即解除「base-web 既有檔硬閘」（在此之前 base-web 既有檔零 diff；純新增檔依表外宣告 3 本不受閘）；`tools/fork-delta-lint.py` 名冊載入新列之變異自證於首個動 base-web 之單元順做。
+- **親決紀錄**：user 親決 2026-09-24（005 刀 tasks T002 Amendment 顆）——同一親決輪先定 ADR-00043 決定 1～10（逐款、皆照文）與 ADR-00044 決定 1～7（逐款、皆照文）、決定 8／9（字面確認）；再呈本 ADR 八題皆採建議，其中款二島 E 第二點補「或其來源位址取不到」（對齊 `handler/throttle.rs` 之 `operator_from` as-built 與島 F 之 F3① 用詞）、款三差異附表「座標｜序言」列補申報兩處（依 rev5 v1.7.0 原文逐字 diff 取證）。
 
 ## 後果
 

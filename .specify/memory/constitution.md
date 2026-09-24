@@ -91,7 +91,7 @@
 
 **進場規則**：每台狀態機（如 token rotation／policy governance／single-session）隨其刀的 brainstorm 拍板後，以 **MINOR Amendment** 將不變式條文入本節；前代已驗證狀態機之不變式（rev5 憲法 §I.7 已入憲者）為對應刀 brainstorm 的直接輸入（出處經 ADR provenance 溯源、引 `rev5:ADR 00NN`）。入本節後，動任一條不變式走 Amendment；方向性反轉（fail-OPEN/closed 方向、DB-first、踢人雙通道分離等）＝MAJOR。常數值與欄級細節留活書（非凍結面）。
 
-**已入憲行為島**（首批五座由 ADR-00026 於 v1.3.0 隨 003-auth-session 進場；出處 `rev5:ADR 0028`、rev5 v1.3.0 字面為底；rev6 增補恰四處＝島 B 第二點（brainstorm Q9）、島 E 末點（clarify Q3）、跨島總則（clarify Q4）、末句「方向性反轉自此為 MAJOR」射程確認，其餘逐字）：
+**已入憲行為島**（首批五座由 ADR-00026 於 v1.3.0 隨 003-auth-session 進場；出處 `rev5:ADR 0028`、rev5 v1.3.0 字面為底；各島進場時之 rev6 增補與其後細項調整，逐次見文末 Amendment log）：
 
 **A. token rotation**
 - 同一鏈（family）至多一條 `active`；DB partial UNIQUE 為護欄而非唯一防線。
@@ -125,6 +125,8 @@
 - 節流設定鍵缺失、不可解析、**越界**（超出設定 registry 宣告界值）、或**矛盾組合**（驗證碼門檻大於鎖定門檻）＝該組視同不可用、**整組**退活書常數並發結構化告警（每次載入至多一筆；帳號維與來源維各自獨立判定與告警）；門檻相等＝合法（軟區寬度零）。
 - 來源維計數之時間窗下界**恆兩源**（窗起點、解鎖標記）、**禁**「成功即重置」——帳號維取三源（含窗內最近成功）、兩維刻意不對稱（來源維鍵為攻擊者可控之位址、成功即重置＝以一組有效帳密穿插即可清零），記於此以免日後被「統一」。
 - 解鎖標記讀取故障＝**fail-closed**（視為無標記、該標的可能仍在鎖定中；至多少解鎖一次、可再解鎖自癒）。該標記為帳號維與來源維**共用**機制，故方向記於本島而非島 F。
+- 管理員解鎖端點之操作稽核 MUST **先於**解鎖標記寫入：稽核列寫不進去＝該次解鎖不生效、零標記；稽核已落而標記寫入失敗＝回 `5000`、可重試，重試多記之稽核列明文接受。
+- 解鎖端點之操作者上下文缺席或其來源位址取不到 MUST 拒寫 `5000`、不得以佔位位址補足稽核列（與島 F 之 F3① 同向）。
 
 **F. IP 存取閘＋信任錨＋來源維節流**（004-ip-trust-anchor 進場；出處 `rev5:ADR 0040`／`rev5:ADR 0043`、rev5 v1.6.2 釐清後字面為底）
 - ★**本島射程**＝位址的真相面（信任錨）與存取判定面（規則集）。來源維節流的狀態機本體（三區、滑動窗、計數下界、解鎖標記）屬**島 E**；本島只約束其**位址輸入**（F4）與**跳過條件**（F5）。
@@ -137,11 +139,19 @@
 - **F7 轉發鏈跳數上界**：鏈跳數逾上界者，**於登入端點** MUST 拒絕該請求（不服務、不進密碼雜湊驗證）；**其餘端點 MUST 標記**（`ip_confidence=chain_rejected`）**但照常服務**——標記全域、拒絕限登入（逾限只有中介層算得出來，下游拿到的轉發鏈欄已是判定窗、不可重算）。逾限請求 MUST **仍落一列稽核**；該列 MUST 被**帳號維計數排除**（保護受害者：否則以受害者帳號名發敵意鏈即可無限期鎖死該帳號）、被**來源維計數納入**（來源維鍵為攻擊者自身位址）。
 - **F8 稽核轉錄的複驗性**：稽核列的轉發鏈欄 MUST **保留判定窗**且與判定軌**共用同一份取窗實作**（結構性保證的是「同一份切分、同一組欄」）；複驗性帶**兩個成立條件**、不得寫成無條件保證：(a) 真實來源由鏈推導（直連腿／回退腿／通道覆蓋的位址取自對端或訪客標頭、本就不在鏈中）(b) 窗未逾字元上限（逾限時稽核欄退為字元對齊尾段、可能切掉最左欄）。
 
+**H. 選單域生命週期**（005-role-menu-crud 進場；出處 `rev5:ADR 0048`、rev5 v1.7.0 字面為底；五條主體沿前代已驗證形——rev6 增補＝H3 受保護選單不可停用、不可改父，H2 同步失敗保留上一份之方向句；rev6 明文化＝H3 常量父鏈之寫端列舉、H4 兩域消費面補列、H5 常量標的之父鏈重驗；逐項出處見 ADR-00042。字母沿前代記 H；G 位保留給授權治理島，兩島對偶（H2↔G3、H1／H5↔G5、H3↔G4）——島 G 條文入憲前，其行為之 rev6 凍結位＝ADR-00043〔判定面同步〕與 ADR-00044〔選單域與角色刪除之域行為〕）
+- **H1 序列化域**：選單樹五寫端（新增／編輯／刪除／批次刪除／復原）＋角色刪除家族（刪除／批次刪除）＋授權治理之選單維與按鈕維寫端及授權回收桶復原之該兩維分支（條文寫狀態機**終態成員**；該等端點不存在期間本條 vacuous 成立，端點落地即入域、零修憲）MUST 於單一 DB 交易級 advisory 序列化域內互斥執行（域鎖為載體、key 值留活書）；每一寫端 MUST 於域內鎖定標的並**重驗全部守門前提後才落寫**（lock-then-redecide、永不信 pre-read）。端點維授權寫入不涉選單域、不屬本域。★**advisory key space 全域唯一**：per-user 鎖以 uid 為 key、域鎖以高位自描述 ASCII 常數為 key——兩空間 MUST NOT 碰撞、新增 advisory 用途 MUST 先核既有 key space。★方向反轉（拆散序列化域、改回無域逐列鎖或無鎖 pre-read）＝MAJOR。
+- **H2 同鍵重建零繼承**：選單軟刪 MUST 同交易將其選單維授權（跨全角色）連動歸檔（reason=`menu_soft_delete`）；該選單「獨有」按鈕代碼（刪除後不再屬任何未刪選單〔含停用〕之按鈕碼聯集）之按鈕維授權亦同交易歸檔（reason 同 `menu_soft_delete`）；編輯移除按鈕代碼致其**全域絕版**（聯集域同上）時同理（reason=`menu_button_removed`）。上列三類歸檔（reason 值 `menu_soft_delete`／`menu_button_removed`）之歸檔列 MUST NOT 可手動復原（gate enforce 於復原權威判定）。同路由鍵重建之新選單 MUST NOT 經任何路徑（現役殘留、判定面殘留、授權回收桶復原）繼承舊實例授權——雙封＝現役無殘留（序列化域＋刪除連動歸檔掃盡）＋歸檔不可回灌（reason gate）；判定面同步使記憶體授權判定面同受本條約束；判定面同步失敗 MUST 保留上一份已知良好判定面（絕不空窗、半載或全域拒絕），單一 rust-api 行程部署下（部署前提與翻案觸發見 ADR-00043）重試耗盡期間記憶體授權判定面之殘留繼承為本條唯一已知降級窗、恢復＝下次成功同步或重啟（機制細節＝ADR-00043）。反轉＝MAJOR。
+- **H3 樹結構不變式**：選單樹恆無環（改父 MUST 過防環檢查、上溯上限為常數）；活性子項 MUST NOT 掛於已軟刪父層之下——parent 驗證三處一致（新增／改父／復原＝父存在且未刪、**停用不擋**、頂層豁免）；受保護選單 MUST NOT 可刪、**MUST NOT 可停用、MUST NOT 變更其父選單**；存在未刪子項（不論啟停）之選單 MUST NOT 可刪；批次刪除逐項驗證、任一違規**整批拒**（no-partial、單一交易、child-first 拓撲序）。★**常量父鏈常量性**：常量選單 MUST NOT 掛於常量性非真之父下——寫端 MUST 於寫入前驗證父鏈常量性（含改父、設為常量、復原常量標的，及清除自身常量性而其未刪後代存常量者）、違反顯式拒。
+- **H4 不可變錨欄與治理域／顯示域分層**：`route_name`（授權列錨／i18n 錨）與 `menu_type` 建後不可變（寫端 MUST 顯式拒變更、MUST NOT 靜默忽略）；選單讀端分兩域——**治理域**（授權候選與映射、管理列表、父選擇器、按鈕碼絕版判定）以「未軟刪」全集為準（含停用）、**顯示域**（使用者可見性、頁面下拉）以「啟用且未軟刪」為準；停用 MUST NOT 被任何全量替換語意升級為撤銷（停用＝暫時下架、非撤銷）。反轉＝MAJOR。
+- **H5 復原不回灌**：選單復原 MUST 於序列化域內鎖定並重驗守門（同路由鍵活性衝突／父層未刪／常量標的之父鏈常量性）；復原＝成對清空軟刪欄＋原 status 保留；MUST NOT 回灌任何授權——復原後零授權、可見性一律經授權面板重新勾選下放（與新增選單之兩步流一致）。反轉＝MAJOR。
+- 常數（advisory key 值、防環上溯上限、`route_name` 形制上限）＝活書級可調、不入條文。
+
 **跨島註（方向刻意不一致，記於此以免日後被「統一」）**：登入流程讀 `session_idle_timeout` 設定鍵缺失＝**fail-loud**（`5000`、不猜 TTL 值），與 E 的節流設定鍵缺失走 fail-open 退常數方向相反——前者猜錯會靜默改變所有人的會話壽命，後者猜錯只影響阻力強度。
 
 **跨島總則（設定改值的生效時點）**：每個設定鍵只在其消費事件當下讀現值；已簽發 token 的壽命與已建立的會話不追溯——single-session 於登入事件、idle 門檻與 TTL 於每次簽發（登入／換發）、節流三鍵於每次登入嘗試。
 
-**方向性反轉自此為 MAJOR**（§I.7 進場規則既有條款，此處確認其射程已涵蓋上列六島）。
+**方向性反轉自此為 MAJOR**（§I.7 進場規則既有條款，此處確認其射程已涵蓋上列七島）。
 
 **承襲指針**（user 拍板 2026-09-03：島體不預載、隨刀重新進場確認＝世代 DoD 的每刀驗收）：rev5 憲法 v1.10.0（唯讀、凍結 SHA `7eab28a`）§I.7 曾入憲十座行為島，對應域動刀時為 brainstorm 的直接輸入、依本節進場規則重新入憲——
 
@@ -154,7 +164,7 @@
 | E | 登入失敗節流 | rev5:ADR 0028（rev5 v1.3.0；來源維兩句隨 rev5 v1.4.0 補）；rev6 已入憲 v1.3.0（ADR-00026） |
 | F | IP 存取閘＋信任錨＋來源維節流 | rev5:ADR 0040（rev5 v1.4.0）＋rev5:ADR 0043（rev5 v1.5.0、F7／F8）；釐清至 rev5 v1.6.2；rev6 已入憲 v1.4.0（ADR-00034） |
 | G | casbin 授權治理（含 G6 結構性封死） | rev5:ADR 0053（rev5 v1.8.0；G6＝rev5:ADR 0054、復原五腿＝rev5:ADR 0055） |
-| H | 選單域生命週期 | rev5:ADR 0048（rev5 v1.7.0） |
+| H | 選單域生命週期 | rev5:ADR 0048（rev5 v1.7.0）；rev6 已入憲 v1.5.0（ADR-00042） |
 | I | 使用者域治理（含 I7 no-escalation 包含規則） | rev5:ADR 0063（rev5 v1.9.0）；I5 釐清＝rev5:ADR 0068（rev5 v1.9.1） |
 | J | 稽核域 retention 與 reporting | rev5:ADR 0077（rev5 v1.10.0） |
 
@@ -225,9 +235,10 @@
 | **★BASE-WEB-I18N-WIRING** | (iii) Schema backend 型節 | `src/typings/app.d.ts`（1 塊，新增型） | 僅補 `App.I18n.Schema` 之 `backend` **必填**型節。★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構**不在本次授權**，延前端 UI 刀 |
 | **★BASE-WEB-LOGOUT-UX-WIRING** | (i) 登出前撤銷接線 | `src/layouts/modules/global-header/components/user-avatar.vue`（1 處，修改型） | `onPositiveClick` 改 async、登出前 best-effort `await` logout wrapper，**失敗不得阻斷** `resetStore()`。★用途 (ii)（reLogin toast）**不在本次授權** |
 | **★BASE-WEB-MANAGE-PAGE-WIRING** | (i) IP 規則管理頁進場 | `src/locales/langs/{en-us,zh-cn}.ts`（各 2 塊，新增型：`route:` 樹與 `page:` 樹）／`src/typings/app.d.ts`（1 塊，新增型：`Schema.page` 之 `manage.ipRule` 型節）／`src/router/elegant/{imports,routes,transform}.ts`＋`src/typings/elegant-router.d.ts`（產物檔 4 支） | 兩語 locale 只在 `route:`（鍵 `manage_ip-rule`）與 `page:`（`manage.ipRule` 子樹）各插一塊新增型圈界、兩語鍵集 MUST 相等；`app.d.ts` 只補 `page.manage.ipRule` 型節（★必需：`page:` 為顯式型樹、既有 (iii) 只涵蓋 `backend`）；產物四檔採**產物檔紀律**——僅由路由外掛重算產出、禁手改、驗收＝重算冪等（`tools/route-artifact-gate.py`）＋「本列產物檔集＝外掛實際產出檔集」斷言；★明文**不要求逐行原文標記**：標記於下次重算即被抹除、物理上不可維持，故以冪等檢查（連單行手改都抓得到）替代註解紀律。頁面三檔、`rev6-ip-rule.{ts,d.ts}` 為新增檔、不入本表。解鎖按鈕與其包裝**不在本次授權**（使用者管理頁刀） |
+| **★BASE-WEB-MANAGE-PAGE-WIRING** | (ii) role／menu 管理頁 CRUD 接真 | `src/views/manage/role/index.vue`／`src/views/manage/role/modules/role-operate-drawer.vue`／`src/views/manage/role/modules/role-search.vue`／`src/views/manage/menu/index.vue`／`src/views/manage/menu/modules/menu-operate-modal.vue`／`src/components/advanced/table-header-operation.vue`（六支，修改型＋新增型；處數與塊數 Amendment 時不預估、實數以標記為準）／`src/locales/langs/{en-us,zh-cn}.ts`（各 4 塊，新增型：`page:` 樹 `manage.role`／`manage.menu` 既有子命名空間之資料級補鍵）／`src/typings/app.d.ts`（4 塊，新增型：`Schema.page` 之 `manage.role`／`manage.menu` 對應型節） | 嚴格限 demo 殼接真後端（列表／搜尋／新增編輯 drawer·modal／刪除批刪／回收桶開關／備註欄／父選擇器／頁面下拉）；共用表頭元件只准附加「顯示新增」「顯示批刪」兩布林 prop（預設 true、以帶預設值之宣告承載；既有呼叫端零行為變化）；★同目錄 `role/modules/` 之 `menu-auth-modal.vue`／`button-auth-modal.vue` **明文不入名單**（授權治理刀射程；本用途出現任何 diff＝紅）；`menu/modules/shared.ts` 經基線兩向 diff 判定零改動、不入名單；兩語鍵集 MUST 相等；`route:` 樹零新增（role／menu 頁 route 鍵 upstream 既在）；路由外掛產物四檔本用途零變動（不新增 view 頁）；`src/typings/components.d.ts` 之重算走 §III 生成檔紀律、不入本列；後端拒因鍵落兩語 locale `backend:` 樹與 `app.d.ts` backend 型節＝既有 I18N-WIRING (ii)(iii) 射程、不隨本列擴列 |
 
 **表外三項適用宣告**：
-1. 範圍欄處數以 `rev6-inline` 標記實數為準（量法＝修改型 `原行:` 數、新增型圈界數）、實作期改動同批更新；**檔級名單則是硬邊界**——名單外的 base-web 既有檔一律無授權，需要動即回本節走 §V.2。
+1. 範圍欄處數以 `rev6-inline` 標記實數為準——量法＝修改型 `原行:` 數、新增型**圈界形塊數**（單行形新增型不入範圍欄、由活書 08 §8.4 分列）；實作期改動同批更新（例外：範圍欄明文「不預估」或以預估值填列之列，實數得延至下一次 §V.2 Amendment 實數化，延後即登記回填義務）；**檔級名單則是硬邊界**——名單外的 base-web 既有檔一律無授權，需要動即回本節走 §V.2。
 2. devproxy 接管面由 §III.1 `BASE-WEB-ADAPT` 以根層 `.env*` 涵蓋、**不另開軌道**；modal 治理需求隨其頁面接線軌道之用途承載、**不另開專屬軌道**（承 rev5 處置）。
 3. 新增型 `NAME+` 標記**不入名冊**（承 rev5:ADR 0021 款 1）——名冊斷言的射程僅修改型（帶 `原行:`）。
 
@@ -280,7 +291,7 @@
 
 ---
 
-**Version**: 1.4.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-15
+**Version**: 1.5.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-24
 
 **Amendment log**:
 - 1.0.0（2026-09-03）：創世初版——自 rev5 constitution v1.10.0（凍結 SHA `7eab28a`）依啟動書 §3.8 逐條表搬入：§I.1～§I.3、§I.6 承襲改字（分支名、基線 SHA、fork 標記 token、前代 ADR 引用一律 `rev5:` 前綴）；§I.4 收為方向性四句、程序細節移 RULES.md；§I.5 世代 bump（前代＝rev5、rev4 溯源、源倉 main `32c5254` 起全新寫）；§I.7 僅搬進場規則、十座行為島以承襲指針表列（rev5 入憲載體逐島註明）、島體隨刀重新進場；§I.8 新增（AI 代理產物必經人審與機器閘、review 只讀、push／merge 需 user 明確同意）；§II 三筆承襲（逐筆核 rev5 ADR 摘要無翻案）；§III fork-delta 紀律與 §III.1 三軌道承襲（token `rev6-inline`、wrapper 前綴 `rev6-`）、§III.2 僅機制骨架＋補完判準＋表外三項宣告＋空表頭、rev5 五條 ★ 軌道十七用途以承襲指針列名；§IV 九題承襲（第 2 題 token、第 5 題前代改引）；§V.1 權威鏈納 RULES.md、§V.2 第 4 步改 `python3 tools/docsync generate`、§V.3 MAJOR 款納 §I.8。user 親審 diff＋grill 三題親決（§I.4 錨定「刀」＝spec-kit feature、§I.8 人審＝merge 同意＋拍板親決、§III.2 宣告 2 改原則句）後定版（創世拍板）。ADR-00003 同 commit 轉 accepted。
@@ -288,3 +299,4 @@
 - 1.2.0（2026-09-07）：獨立輪 000-r2 三筆同批 Amendment——①§I.5 例外① 射程補「含註解」、豁免第 3 款（ADR-00022；自證腿 `vendored-check` 去註解口徑就此有權威來源；例外② 之「註解依語意判準重寫」不變）②§I.3 四保留碼「從不發出」之機器承載點自「contract test 斷言」改記為「型別層全變體窮舉＋`error.rs` 矩陣斷言雙錨」（ADR-00023；as-built 對齊、零行為變更）③§III 生成檔紀律判準句去除對空表 §III.2 的死引用、改為「與路由外掛（elegant-router）重算產出之檔同族；具體檔集隨相關 ★ 軌道 Amendment 落表」（ADR-00024）。版本取三者最高級別＝MINOR（①屬 §I 例外清單射程擴展；②③為 PATCH 級釐清）。三支 ADR 與本次憲法改動同 commit（§V.2 步 4）；user 停點① 逐題親決 2026-09-07。
 - 1.3.0（2026-09-08）：003-auth-session 首刀 Amendment（ADR-00026）——①§III.2 空表落入首批四條 ★ 軌道八用途（`BASE-WEB-AUTH-WIRING` (a)(b)(c)／`BASE-WEB-LOGIN-CAPTCHA-WIRING` (i)／`BASE-WEB-I18N-WIRING` (i)(ii)(iii)／`BASE-WEB-LOGOUT-UX-WIRING` (i)；12 支 base-web 既有檔取得修改型授權、(ii) 類三項明文不授權；哨兵句同批移除、`tools/fork-delta-lint.py` 名冊自此七名）②§I.7 首批五座行為島 A～E 入憲（rev5 v1.3.0 字面為底、rev6 增補四處＝島 B 不追溯、島 E 矛盾組合方向、跨島總則、MAJOR 射程確認；承襲指針表 A～E 列尾註）③§I.2 第三點 PATCH 級釐清（「builtin 三頁」→「builtin 常量集、現五條」）。版本取最高級別＝MINOR（§V.3「新增 ★ 軌道」與「行為島隨刀進場」兩款）。ADR-00026 同 commit accepted（§V.2 步 4）；user 親決 2026-09-08（003 刀 tasks T001）。
 - 1.4.0（2026-09-15）：004-ip-trust-anchor Amendment（ADR-00034）——①§I.7 島 F（IP 存取閘＋信任錨＋來源維節流）八條 F1～F8 入憲（rev5 v1.10.0 終態字面為底、rev6 座標改寫）＋島 E 四處細項調整（判定面每次由 PG 定案、拔除 redis L1 負快取＝BL-00066；設定壞值判準補不可解析／越界且整組退、兩維獨立告警；來源維計數下界恆兩源；解鎖標記讀取故障 fail-closed）；承襲指針表 F 列尾註、MAJOR 射程改六島 ②§III.2 新增 `BASE-WEB-MANAGE-PAGE-WIRING` (i)（7 支既有檔：兩語 locale route／page 兩樹新增型、`app.d.ts` page 型節、路由外掛產物四檔採產物檔紀律、不要求逐行標記；解鎖按鈕明文不授權；`tools/fork-delta-lint.py` 名冊自此八名）、`BASE-WEB-I18N-WIRING` (ii) 譯文權威句改三檔 backend 子樹各為該語之家、(i) 範圍 2＋2 並補帶信封 HTTP 層錯誤句、五列範圍欄處數實數化（BL-00058 之 (iii) 改 1 塊新增型）、表外宣告 1 改以標記實數為準。版本取最高級別＝MINOR（§V.3「行為島隨刀進場」「已入憲 invariant 細項調整」「新增 ★ 軌道」「軌道授權邊界擴展」四款）。ADR-00034 同 commit accepted（§V.2 步 4）；user 親決 2026-09-15（004 刀 tasks T001；I18N (ii) 之程序備忘子句不入憲法、只留 ADR）。
+- 1.5.0（2026-09-24）：005-role-menu-crud Amendment（ADR-00042）——①§I.7 島 H（選單域生命週期）五條 H1～H5 入憲（rev5 v1.7.0 字面為底；rev6 增補兩處＝H3 受保護選單不可停用／不可改父、H2 同步失敗保留上一份之方向句；明文化三處＝H3 常量父鏈之寫端列舉、H4 兩域消費面補列、H5 常量標的之父鏈重驗；座標改寫依 ADR-00042 差異附表）；承襲指針表 H 列尾註、MAJOR 射程改七島；跨島重審結論＝跨島註與跨島總則不動 ②島 E 末尾補兩點（解鎖端點稽核先於標記；操作者上下文缺席或其來源位址取不到即拒寫 `5000`；BL-00098；前代位置 rev5 島 J5）③§III.2 新增 `BASE-WEB-MANAGE-PAGE-WIRING` (ii)（九檔：role 三、menu 兩、共用表頭元件、兩語 locale `page:` 樹、`app.d.ts` `Schema.page`；兩顆授權彈窗與 `shared.ts` 明文不入）④表外宣告 1 量法句（圈界形塊數；不預估／預估列得延至下次 Amendment 實數化並登記回填；BL-00118；既有各列範圍欄數字現算覆核相符）⑤§I.7 段首括號句改指 Amendment log（BL-00119）。版本取最高級別＝MINOR（§V.3「行為島隨刀進場」「軌道授權邊界擴展」「已入憲 invariant 細項調整」三款）。ADR-00042 同 commit accepted（§V.2 步 4）；user 親決 2026-09-24（005 刀 tasks T002）。

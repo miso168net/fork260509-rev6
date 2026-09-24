@@ -9,10 +9,10 @@
 - 波：6（docs/ops/NOTES.md 首行標記）
 
 ## constitution
-- 版本：1.4.0
+- 版本：1.5.0
 
 ## 帳面統計
-- ADR：47（proposed 6、accepted 37、superseded 4）
+- ADR：47（proposed 5、accepted 38、superseded 4）
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：41｜滯後：4
 - LESSONS：33 筆
