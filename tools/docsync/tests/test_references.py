@@ -459,7 +459,7 @@ class TestRoutes(unittest.TestCase):
             references.gen_reference_routes(stub({}))
 
     # 真 repo 釘值＝ROUTES 現行列集逐列全等（002 刀 U1 兩列＋U3 之 getSystemSettings 列＋U4 之 updateSystemSetting 列＋
-    # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub＝003 刀 data-model §12 終態十六列＋004 刀 U7 五列＝IP 規則管理五端點＋004 刀 U10 一列＝解鎖端點；現行二十二列）。★釘值形刻意保留——逐列全等是各單元的
+    # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub＝003 刀 data-model §12 終態十六列＋004 刀 U7 五列＝IP 規則管理五端點＋004 刀 U10 一列＝解鎖端點＋005 刀 U1 十七列＝角色管理八端點＋選單管理九端點；現行三十九列）。★釘值形刻意保留——逐列全等是各單元的
     # 驗收面，不以「非空＋包含」弱化；日後加 route 時本測釘值須同批增列。
     # ★紅而不自明的窗口：pre-commit 只在 staged 含 tools/docsync/ 時才跑 selftest-docsync（.githooks/pre-commit 同段），
     #   而 GT-01 漂移在 U3 跑過 generate 後即消——故本測不同批改＝一路綠燈到有人跑 docsync test／bootstrap 才浮出。
@@ -486,7 +486,24 @@ class TestRoutes(unittest.TestCase):
                                 ("/systemManage/updateIpRule", "POST", "Policy", "update-ip-rule", False),
                                 ("/systemManage/deleteIpRule", "DELETE", "Policy", "delete-ip-rule", False),
                                 ("/systemManage/restoreIpRule", "POST", "Policy", "restore-ip-rule", False),
-                                ("/systemManage/unlockLogin", "POST", "Policy", "unlock-login", False)])
+                                ("/systemManage/unlockLogin", "POST", "Policy", "unlock-login", False),
+                                ("/systemManage/getRoleList", "GET", "Policy", "get-role-list", False),
+                                ("/systemManage/getAllRoles", "GET", "Policy", "get-all-roles", False),
+                                ("/systemManage/addRole", "POST", "Policy", "add-role", False),
+                                ("/systemManage/updateRole", "POST", "Policy", "update-role", False),
+                                ("/systemManage/deleteRole", "DELETE", "Policy", "delete-role", False),
+                                ("/systemManage/batchDeleteRole", "DELETE", "Policy", "batch-delete-role", False),
+                                ("/systemManage/getRoleHome", "GET", "Policy", "get-role-home", False),
+                                ("/systemManage/updateRoleHome", "POST", "Policy", "update-role-home", False),
+                                ("/systemManage/getMenuList/v2", "GET", "Policy", "get-menu-list-v2", False),
+                                ("/systemManage/getMenuTree", "GET", "Policy", "get-menu-tree", False),
+                                ("/systemManage/getAllPages", "GET", "Policy", "get-all-pages", False),
+                                ("/systemManage/addMenu", "POST", "Policy", "add-menu", False),
+                                ("/systemManage/updateMenu", "POST", "Policy", "update-menu", False),
+                                ("/systemManage/deleteMenu", "DELETE", "Policy", "delete-menu", False),
+                                ("/systemManage/batchDeleteMenu", "DELETE", "Policy", "batch-delete-menu", False),
+                                ("/systemManage/getDeletedMenus", "GET", "Policy", "get-deleted-menus", False),
+                                ("/systemManage/restoreMenu", "POST", "Policy", "restore-menu", False)])
         out = references.gen_reference_routes(ctx)
         self.assertEqual([ln for ln in out.split("\n") if ln.startswith("| /")],
                          ["| /health | GET | Public | health | 是 |", "| /metrics | GET | Public | metrics | 是 |",
@@ -509,7 +526,24 @@ class TestRoutes(unittest.TestCase):
                           "| /systemManage/updateIpRule | POST | Policy | update-ip-rule | 否 |",
                           "| /systemManage/deleteIpRule | DELETE | Policy | delete-ip-rule | 否 |",
                           "| /systemManage/restoreIpRule | POST | Policy | restore-ip-rule | 否 |",
-                          "| /systemManage/unlockLogin | POST | Policy | unlock-login | 否 |"])
+                          "| /systemManage/unlockLogin | POST | Policy | unlock-login | 否 |",
+                          "| /systemManage/getRoleList | GET | Policy | get-role-list | 否 |",
+                          "| /systemManage/getAllRoles | GET | Policy | get-all-roles | 否 |",
+                          "| /systemManage/addRole | POST | Policy | add-role | 否 |",
+                          "| /systemManage/updateRole | POST | Policy | update-role | 否 |",
+                          "| /systemManage/deleteRole | DELETE | Policy | delete-role | 否 |",
+                          "| /systemManage/batchDeleteRole | DELETE | Policy | batch-delete-role | 否 |",
+                          "| /systemManage/getRoleHome | GET | Policy | get-role-home | 否 |",
+                          "| /systemManage/updateRoleHome | POST | Policy | update-role-home | 否 |",
+                          "| /systemManage/getMenuList/v2 | GET | Policy | get-menu-list-v2 | 否 |",
+                          "| /systemManage/getMenuTree | GET | Policy | get-menu-tree | 否 |",
+                          "| /systemManage/getAllPages | GET | Policy | get-all-pages | 否 |",
+                          "| /systemManage/addMenu | POST | Policy | add-menu | 否 |",
+                          "| /systemManage/updateMenu | POST | Policy | update-menu | 否 |",
+                          "| /systemManage/deleteMenu | DELETE | Policy | delete-menu | 否 |",
+                          "| /systemManage/batchDeleteMenu | DELETE | Policy | batch-delete-menu | 否 |",
+                          "| /systemManage/getDeletedMenus | GET | Policy | get-deleted-menus | 否 |",
+                          "| /systemManage/restoreMenu | POST | Policy | restore-menu | 否 |"])
         self.assertIn("docs/generated/reference/routes.md", references.compute_generated(ctx))
 
 
