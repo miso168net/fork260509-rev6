@@ -35,19 +35,19 @@
 
 | # | 題 | 判定 | 依據 |
 |---|---|---|---|
-| 1 | 違反 §I.1 base-web 權威？ | **PASS** | role／menu 頁為 upstream demo 面、其 fetch 標的正是本刀補齊對象；回傳型逐欄忠實兩支 wire 契約＋wire-schema 快照；wire 型開獨立命名空間 `Api.RoleAdmin`／`Api.MenuAdmin`；upstream 未改動之消費者（使用者頁抽屜之 `AllRole`、菜單權限彈窗之 `MenuTree`）所依 upstream 型同受審斷言相容 |
-| 2 | 動 base-web inline？ | **涉及——授權以 Amendment 先行取得** | 用途 (ii) 九檔（六支修改型＋新增型：語意改動逐行 `原行:`、純新增段走新增型圈界；三支僅新增型圈界；兩顆授權彈窗與 `shared.ts` 明文不入）；backend 24 鍵走既有 I18N (ii)(iii)；`components.d.ts` 走 §III 生成檔紀律。授權鏈＝ADR-00042 draft（已落、proposed）→ user 親決（tasks 首個主線任務）→ accepted＋§III.2 一列＋bump 1.5.0＋generate（§V.2 四步、獨立 commit）。★硬序：accepted 前不得動任何 base-web 既有檔（含 locale backend 鍵）；純新增檔不受此閘。驗收錨＝`tools/fork-delta-lint.py`（名冊載入變異自證、各新增塊拔標記必紅）＋`route-artifact-gate.py` 冪等 |
-| 3 | menu 走 Casbin enforce？ | **PASS** | 本刀對選單域只做 CRUD 資料面；可見性授權屬授權治理刀；零 seed 改動、零新政策列（17 條之 seed 政策列全在）；新建／復原選單側欄不現＝本項誠實結果（ADR-00045 款 3） |
-| 4 | wire 對齊 §I.3？ | **PASS** | 信封三欄／`code` string／業務錯誤 HTTP 200／`PageRes` 四欄不變／id number＋2^53 守衛／`msg` 載穩定 key（`MSG_KEYS` 19→43）；13 碼矩陣零觸碰、`2222` 復用、例外仍恰二；跨端點分頁規則入活書 08 §8.2＋契約＋contract test；IP 規則清單未知類型上 wire＝ADR-00046 by-design（wire 逐位元不變）。驗收錨＝contracts 兩支 wire＋`msg-keys.md`＋data-model §7～§8 |
+| 1 | 違反 §I.1 base-web 權威？ | **PASS** | role／menu 頁為 upstream demo 面、其 fetch 標的正是本刀補齊對象；回傳型逐欄忠實兩支 wire 契約＋wire-schema 快照；wire 型開獨立命名空間 `Api.RoleAdmin`／`Api.MenuAdmin`；upstream 未改動之消費者（使用者頁抽屜之 `AllRole`、菜單權限彈窗之 `MenuTree`）所依 upstream 型同受審斷言相容；upstream 同 URL 之 `Api.SystemManage.{RoleList,MenuList}`（本刀後零消費者）與本刀型之偏離＝§I.3 型別謊言帳本之顯式偏離，記帳於 ADR-00044 決定 9（`/speckit-analyze` 期 user 裁定）、欄差集由 wire 裁判面機器導出並釘住 |
+| 2 | 動 base-web inline？ | **涉及——授權以 Amendment 先行取得** | 用途 (ii) 九檔（六支修改型＋新增型：語意改動逐行 `原行:`、純新增段走新增型圈界；三支僅新增型圈界；兩顆授權彈窗與 `shared.ts` 明文不入）；backend 24 鍵走既有 I18N (ii)(iii)；`components.d.ts` 走 §III 生成檔紀律。授權鏈＝ADR-00042 draft（已落、proposed）→ user 親決（tasks T002）→ accepted＋§III.2 一列＋bump 1.5.0＋generate（§V.2 四步、獨立 commit）。★硬序：accepted 前不得動任何 base-web 既有檔（含 locale backend 鍵）；純新增檔不受此閘。驗收錨＝`tools/fork-delta-lint.py`（名冊載入變異自證、各新增塊拔標記必紅）＋`route-artifact-gate.py` 冪等 |
+| 3 | menu 走 Casbin enforce？ | **PASS** | 本刀對選單域只做 CRUD 資料面；可見性授權屬授權治理刀；零 seed 改動、零新政策列（17 條之 seed 政策列全在）；新建／復原選單側欄不現＝本項誠實結果（ADR-00045 款 3）；FR-021 常量可寫之免登入面：常量路由讀端不經 Casbin，新增擋前端保留路由名（ADR-00044 決定 8），使 builtin 常量集不被同名 DB 列覆蓋（§I.2） |
+| 4 | wire 對齊 §I.3？ | **PASS** | 信封三欄／`code` string／業務錯誤 HTTP 200／`PageRes` 四欄不變／id number＋2^53 守衛／`msg` 載穩定 key（`MSG_KEYS` 19→43）；13 碼矩陣零觸碰、`2222` 復用、例外仍恰二；跨端點分頁規則入活書 08 §8.2＋契約＋contract test；IP 規則清單未知類型上 wire＝ADR-00046 by-design（wire 逐位元不變）；upstream 同 URL 型偏離帳見第 1 題。驗收錨＝contracts 兩支 wire＋`msg-keys.md`＋data-model §7～§8 |
 | 5 | 拷貝前代 code？ | **否（重打字）** | rust／vue／python 全程重打字、註解 rev6 語境（rev5 出處 `rev5:`；research R3 清單 A 十二項剔除＋清單 B 二十一筆翻案＋十一項前代防回歸烤入 prompt）；entity／migration 零改 |
 | 6 | 抵觸 §II 拍板？ | **否** | 動態選單、`/api` 前綴、未知標頭忽略皆不動；翻碼內舊宣告三處＝判定面「boot 載入即終態」（ADR-00043、明引 ADR-00014 決定 4 為兌現其預告、不 supersede）；翻 ADR-00040（ADR-00046 supersede）與 ADR-00015（ADR-00047 supersede） |
 | 7 | 觸及 §III ★ 軌道？ | **涉及——授權以 Amendment 先行取得** | 既有軌道 `★BASE-WEB-MANAGE-PAGE-WIRING` 加用途 (ii)＝新能力（新接線、跨九檔）非補完；共用表頭元件為本刀新衝突面（只附加 prop、預設 true、帶預設值宣告）；i18n 三檔仍最熱（spec ★軌道登記表 11 列、風險判準可覆算）；表外宣告 1 量法句同批改（BL-00118） |
-| 8 | 新建業務表含 §I.6 六審計欄？ | **不適用（零 migration）** | 消費六表皆 001 基線既有（`sys_role`／`sys_menu` 變體 A 六審計欄齊、partial unique；`casbin_rule` 治理三欄；`sys_casbin_policy_archive` 14 欄；`sys_user_role` 複合 PK＋FK RESTRICT；`sys_operation_log` append-only）；DDL 冒出＝範圍翻案 |
+| 8 | 新建業務表含 §I.6 六審計欄？ | **不適用（零 migration）** | 消費六表皆 001 基線既有（`sys_role`／`sys_menu` 變體 A 六審計欄齊、partial unique；`casbin_rule` 治理三欄；`sys_casbin_policy_archive` 14 欄；`sys_user_role` 複合 PK＋FK RESTRICT；`sys_operation_log` append-only）；DDL 冒出＝範圍翻案；本刀為 `sys_role`／`sys_menu` 首寫者 ⇒ 寫端側 §I.6 成對寫條款適用（`*_by`＝操作者、`deleted_*`／`updated_*` 成對；承載點＝data-model §1） |
 | 9 | 觸及 §I.7 行為島？ | **涉及——授權以 Amendment 先行取得** | 島 H 隨本刀 MINOR 入憲（rev5 v1.7.0 字面為底；增補＝H3 受保護選單不可停用／不可改父、H2 同步失敗保留上一份；明文化＝H3 常量父鏈寫端列舉、H4 兩域消費面、H5 常量重驗；ADR-00042 款三逐字＋差異附表）；島 E 補兩句（BL-00098）；依承襲指針表尾句完成跨島重審（結論＝跨島註不動；唯一降級腿＝判定面同步失敗、方向＝保留上一份與 F2 同向——方向入 H2 條文、機制細節由 ADR-00043 承載）；島 G 行為由 ADR-00044 承載、條文隨授權治理刀入憲；state-machine 鏡頭＝data-model §2（角色／選單／判定面三矩陣）＋§4 觸發矩陣＋§5 守門序；方向性反轉自此 MAJOR（射程七島） |
 
 **初檢結論**：第 1／3／4／5／6／8 題 PASS；第 2／7／9 題「涉及、授權以 Amendment 先行取得」＝條件通過。
 
-**Phase 1 複檢（設計後）**：research R1～R20／data-model §1～§10／contracts 四檔／quickstart／ADR-00042～ADR-00047 draft 產出、並經唯讀對抗查證一輪（五鏡＋逐鏡複核、55 筆成立皆已改入）後重走九題——判定不變。第 2／7 題授權鏈形制已定（ADR-00042 款五表列逐字、範圍欄為 rev5 as-built 預估且前端單元出口逐檔斷言）；第 4 題由 contracts 兩支 wire＋`msg-keys.md`＋data-model §7～§8 承載；第 5 題 R2 逐檔標處置、零拷貝面；第 9 題條文全文在 ADR-00042 款三。design 新增之憲法接觸面＝零（Phase 1 產物皆為既有拍板具象化）；plan 期對 spec 措辭之精修五處——FR-052 判定面 lint 生產面定義、FR-073 BL-00111 lint 射程納跨檔被切檔（research R12；皆擴大覆蓋）、FR-042 與 Key Entities 之終態入域成員限選單維／按鈕維（對齊島 H1 前代字面）、FR-058／FR-075③ 與 ★ 軌道登記表之六檔型別改「修改型＋新增型」且預估限三支僅新增型檔（ADR-00042 款五）——皆不觸憲法現文。★**GATE 狀態＝條件通過**：ADR-00042 accepted＋bump 1.5.0 為 tasks 第一個 ★ 主線任務且為硬閘，未完成前第 2／7／9 題不得視為 PASS、不得動任何 base-web 既有檔；純後端單元（零 base-web 既有檔改動者）不受該閘，但全部施工單元皆排在 U0 施工前提顆（ADR-00043／ADR-00044／ADR-00047 accepted）之後。
+**Phase 1 複檢（設計後）**：research R1～R20／data-model §1～§10／contracts 四檔／quickstart／ADR-00042～ADR-00047 draft 產出、並經唯讀對抗查證一輪（五鏡＋逐鏡複核、55 筆成立皆已改入）後重走九題——判定不變。第 2／7 題授權鏈形制已定（ADR-00042 款五表列逐字、範圍欄為 rev5 as-built 預估且前端單元出口逐檔斷言）；第 4 題由 contracts 兩支 wire＋`msg-keys.md`＋data-model §7～§8 承載；第 5 題 R2 逐檔標處置、零拷貝面；第 9 題條文全文在 ADR-00042 款三。design 新增之憲法接觸面＝零（Phase 1 產物皆為既有拍板具象化）；plan 期對 spec 措辭之精修五處——FR-052 判定面 lint 生產面定義、FR-073 BL-00111 lint 射程納跨檔被切檔（research R12；皆擴大覆蓋）、FR-042 與 Key Entities 之終態入域成員限選單維／按鈕維（對齊島 H1 前代字面）、FR-058／FR-075③ 與 ★ 軌道登記表之六檔型別改「修改型＋新增型」且預估限三支僅新增型檔（ADR-00042 款五）——皆不觸憲法現文。`/speckit-analyze`（2026-09-24、七鏡唯讀查證）後再精修 spec 摘要、Clarifications（Session 2026-09-24）、FR-005／006／008／013／023／026／029／032／034／037／048／050／058／070／071／074／075、SC-003／004／011／012、US2 場景 3、US4 場景 2／3、Edge Cases、Key Entities 與 Assumptions（親決時點），並改 ADR-00042／00043／00044／00047 草稿（ADR-00044 增決定 8 保留路由名守門、決定 9 upstream 同 URL 型偏離帳＝user 裁定）——皆不觸憲法現文（第 1／3／4／8 題依據欄同步補述）。★**GATE 狀態＝條件通過**：ADR-00042 accepted＋bump 1.5.0 為 tasks T002（首個親決之 ★ 主線任務）且為硬閘，未完成前第 2／7／9 題不得視為 PASS、不得動任何 base-web 既有檔；純後端單元（零 base-web 既有檔改動者）不受該閘，但全部施工單元皆排在 U0 施工前提顆（ADR-00043／ADR-00044／ADR-00047 accepted）之後。
 
 ## Project Structure
 
@@ -78,11 +78,13 @@ rust-api/                                        # worktree（rev6-admin-rust-ap
     │   │   ├── common.rs(擴)                    # +tristate<T>／blank_to_none／db_status_to_wire／wire_two_value_to_db；BL-00113 重評結論入 doc；兩域字面守名冊擴
     │   │   ├── mod.rs(改)                       # pub mod menu／role（ASCII 序）；域數句
     │   │   ├── ip_rule.rs(改)                   # 改引 page_params、刪私有三常數；degraded 腿射程擴；doc 指針
+    │   │   ├── throttle.rs(改：doc)             # 檔頭回填句（島 E 末兩點）；切面腿 docstring 補指
+    │   │   ├── auth/{login,refresh}.rs(改：doc) # 切面腿 docstring 補指（BL-00111）
     │   │   └── system_settings.rs(改：只註＋私有三態改引)
     │   ├── model/facade/
     │   │   ├── sys_casbin_archive.rs(新)        # MENU_DOMAIN_LOCK_KEY／enter_menu_domain／menu_domain_waiter_count／三 reason＋is_non_restorable_reason／insert_archived／三支歸檔 fn（回傳列數）
     │   │   ├── sys_role.rs(擴)                  # SEEDED_ROLE_IDS／SUPER_ROLE_CODE／page_query／all_active_enabled／寫端（收 &DatabaseTransaction）
-    │   │   ├── sys_menu.rs(擴)                  # list_governed／build_governed_tree／paginate_top_level（不 clamp）／governed_tree／display_route_names／寫端狀態機
+    │   │   ├── sys_menu.rs(擴)                  # list_governed／build_governed_tree／paginate_top_level（不 clamp）／governed_tree／display_route_names／寫端狀態機／RESERVED_ROUTE_NAMES（ADR-00044 決定 8）
     │   │   ├── sys_ip_rule.rs(改)               # 改引共用件；四寫端＋find_by_id_for_update 收 &DatabaseTransaction（BL-00096）
     │   │   ├── mod.rs(擴)                       # ilike_contains／violated_constraint／now_ts；名冊句改寫
     │   │   ├── sys_user_role.rs(擴)             # count_by_role／is_member（只讀）
@@ -94,13 +96,14 @@ rust-api/                                        # worktree（rev6-admin-rust-ap
     │   ├── error.rs(改)                         # 24 msg_key 常數；MSG_KEYS 19→43；名冊兩測
     │   ├── router.rs(改)                        # ROUTES 39、ROUTES_COUNT 39；釘值測
     │   ├── model/audit.rs(改：doc) / model/facade/sys_operation_log.rs(改：doc) / main.rs(改：doc) / state.rs(改：doc) / ipgate/mod.rs(改：測試模組 3 處改交易)
+    │   ├── middleware/mod.rs(改：測試模組 2 則對拍)
     │   └── handler/route.rs(改：doc)
     └── tests/
         ├── contract.rs(改：39 case＋24 鍵發射段＋常量路由非空案＋請求上下文缺席總數案)
         ├── common/mod.rs(改：tests 側五表 RestorePlan＋BL-00110 RAII)
         ├── wire_schema.rs(改：新受審型＋PageRes＋表驅動鍵集＋首屏真串)
         ├── wire_i64_guard_lint.rs(改：三件＋檔頭兩段)
-        ├── authz_entrypoint_lint.rs(新) / test_module_tail_lint.rs(新)
+        ├── authz_entrypoint_lint.rs(新) / test_module_tail_lint.rs(新) / entity_access_lint.rs(名冊如需)
         └── fixtures/wire-schema.json(重抽)
 
 base-web/src/                                    # worktree（rev6-admin-base-web）
@@ -114,11 +117,11 @@ base-web/src/                                    # worktree（rev6-admin-base-we
 └── typings/components.d.ts(產物檔重算：NTreeSelect 兩行)
 
 deploy/trust-model.dev.toml(改註：三態)   deploy/grafana-provisioning/alerting/rules.yml(改註：島 H2＋ADR-00043)
-tools/wire-schema.py(BL-00109 腿) / walkthrough-baseline.py(restore 擴面) / docsync/tests/test_references.py(+17 列)
+tools/wire-schema.py(BL-00109 腿＋保留路由名對賬腿) / view-render-guard.py(ip-rule 表頭 prop 形腿；BL-00117) / walkthrough-baseline.py(restore 擴面) / docsync/tests/test_references.py(+17 列)
 .specify/memory/constitution.md(§I.7 島 H＋島 E 兩句＋段首句＋MAJOR 七島＋指針表；§III.2 (ii)＋表外宣告 1；1.5.0；U0)   README.md(憲法版本鏡像)
-docs/arc42/{04,05,06,08,10,11,12}-*.md(as-built、feature branch 內) / decisions/ADR-00042～00047
+docs/arc42/{04,05,06,08,10,11,12}-*.md(as-built、feature branch 內) / decisions/ADR-00042～00047＋ADR-00015／ADR-00040(status→superseded)
 docs/ops/RUNBOOK.md(§9c／§11／§12／§13／§16.1／§16.2) / reference-src/{schema-definition,trust-model-config,code-gate-contracts}.md
-docs/ops/BACKLOG.md(收刀：done 19／改 3／add 0)   docs/ops/NOTES.md(specify 起手後指 005 進行中、收刀→006)
+docs/ops/BACKLOG.md(收刀：done 19／改 3／add 0)   docs/ops/NOTES.md(specify 起手後指 005 進行中、收刀→006)   docs/ops/events.jsonl(perf 事件；收刀 feature_close)
 ```
 
 **Structure Decision**：承 rev6 004 形——handler 依端點群拆檔、交易殼住 handler（域鎖為交易首動作、facade 寫端收具型交易、可被組合）；facade 一表一檔之例外恰一（`sys_casbin_archive` 同寫授權表與歸檔表、名冊句改寫）；共用件依消費面分層（handler 共用件住 `handler/common.rs`、facade 共用件住 `facade/mod.rs`、分頁規則住 `envelope.rs` 與 `PageRes` 同檔）。高風險共享檔序列鏈（同檔單元不並發）：`router.rs`／`tests/contract.rs`（U1 立 17 case 後逐單元充實）、`error.rs`＋三檔 locale＋`app.d.ts`（U7～U9 隨首發單元分批、雙 pin 同顆）、`facade/{sys_menu,sys_role,sys_casbin_archive,mod}.rs`、`handler/{role,menu,common}.rs`、`envelope.rs`（U2；U6 改名冊期望）＋`sys_ip_rule.rs`＋`ipgate/mod.rs`＋`handler/ip_rule.rs`（U2；後者另於 U7／U8 改其 degraded 射程測）。執行單元＝research R18 骨架（U0 主線兩顆〔Amendment 顆＋施工前提顆〕→U1～U11 後端與 wire〔U6 讀端六支零新鍵、getRoleHome 併入 U7〕→U12～U13 前端→U14 體檢→U15 走查工具→U16 CDP 三方對照〔ADR-00045 觀察定稿〕→U17 治理面與全量閘〔ADR-00045／00046 親決〕）；每單元 pin bump、Workflow 六件套、review／fix 烤入 RULES scope 塊（RULES-VERSION 不變）、TDD 單元保險絲 ≤20 支；編排全角色 opus[1m] xhigh、prompt 首行帶深思關鍵詞（骨架現值）。

@@ -57,13 +57,14 @@ curl -s "$BASE/systemManage/getMenuTree" -H "$SUPER" | jq -c '[.data[0],.data[1]
 curl -s "$BASE/systemManage/getAllPages" -H "$SUPER" | jq '.data|length'                        # 78
 curl -s "$BASE/systemManage/addMenu" -H "$SUPER" -H "$J" -d '{"menuType":"2","menuName":"qs","routeName":"qs_menu","parentId":2,"href":"javascript:alert(1)"}' | jq -r .msg   # biz.menu.hrefInvalid
 curl -s "$BASE/systemManage/addMenu" -H "$SUPER" -H "$J" -d '{"menuType":"2","menuName":"qs","routeName":"qs_menu","parentId":2,"buttons":[{"code":"qs:a"},{"code":"qs:a"}]}' | jq -r .msg   # biz.menu.buttonsInvalid
+curl -s "$BASE/systemManage/addMenu" -H "$SUPER" -H "$J" -d '{"menuType":"2","menuName":"qs","routeName":"login","constant":true}' | jq -r .msg   # biz.menu.routeNameExists（保留路由名；ADR-00044 決定 8）
 curl -s "$BASE/systemManage/addMenu" -H "$SUPER" -H "$J" -d '{"menuType":"2","menuName":"qs","routeName":"qs_menu","parentId":2,"buttons":[{"code":"qs:a","desc":"a"},{"code":"qs:b","desc":"b"}]}' | jq -r .code   # 0000
 curl -s "$BASE/systemManage/updateMenu" -H "$SUPER" -H "$J" -d '{"id":5,"status":"2"}' | jq -r .msg          # biz.menu.protectedMenu（停用受保護列）
 curl -s "$BASE/systemManage/updateMenu" -H "$SUPER" -H "$J" -d '{"id":5,"parentId":0}' | jq -r .msg          # biz.menu.protectedMenu（改父）
 curl -s "$BASE/systemManage/deleteMenu" -X DELETE -H "$SUPER" -H "$J" -d '{"id":2}' | jq -r .msg              # biz.menu.protectedMenu
 ```
 
-★受保護列「同值 `parentId` 放行、其餘欄照常可編」之正向腿會寫 seed 列（走查還原面不還原 seed 列之更新）⇒ 由契約測試承擔、走查不做。
+★受保護列「同值 `parentId` 放行、其餘欄照常可編」之正向腿若打 seed 列會留寫痕（走查還原面不還原 seed 列之更新）⇒ 由契約測試以守衛植入之自建 `protected=TRUE` 列承擔、走查不做。
 
 ## 4. 移除面：歸檔＋判定面同步（US4／SC-006／SC-007）
 

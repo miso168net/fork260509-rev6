@@ -1,7 +1,7 @@
 # Contract — 角色管理八端點（role CRUD 6＋roleHome 2）
 
 > 權威序依憲法 §I.3：base-web 實碼 ＞ 官方 docs ＞ mock。upstream 角色頁為 demo 殼、其 fetch 標的即本刀補齊面；契約以 `rev5:005` `contracts/wire-role-admin.md` 已驗證形為藍本、依 rev6 拍板改寫（research R3 清單 B），由本檔凍結（spec 目錄＝定點快照；wire 活體權威＝碼＋`tests/contract.rs`＋wire-schema 快照）。
-> 信封一律 `{data, code, msg}`、業務錯誤 HTTP 200（例外恰二：`4040`→404、`5003`→403）；八條 route 皆政策保護（授權態逐列照 seed，見各節）。未登入＝既有 `8888`；無授權＝`5003`；寫端一律先取操作者上下文（缺席＝`5000` 拒寫、不落稽核列，先於一切守門與提前 no-op）；其餘 DB 錯＝`5000`。授權中介層不讀 body。
+> 信封一律 `{data, code, msg}`、業務錯誤 HTTP 200（例外恰二：`4040`→404、`5003`→403）；八條 route 皆政策保護（授權態逐列照 seed，見各節）。未登入＝既有 `8888`；無授權＝`5003`；寫端一律先取操作者上下文（缺席＝`5000` 拒寫、不落稽核列，先於一切守門與提前 no-op）；其餘 DB 錯＝`5000`。授權中介層不讀 body。移除面寫端 commit 後之判定面同步結果不影響回應（commit 成功即回 `0000`；同步失敗只告警與計數，ADR-00043 決定 4）。
 > 型別檔＝`base-web/src/typings/api/rev6-role-admin.d.ts` 之 `Api.RoleAdmin`；wrapper＝`base-web/src/service/api/rev6-role-admin.ts`（不入 barrel）。
 
 ## 共用型 `RoleRecord`（camelCase；宣告序＝wire 欄序）
@@ -19,7 +19,7 @@
 | `updatedAt` | string \| null | |
 | `createdBy`／`updatedBy` | string \| null | 操作者帳號名（單次批次回填、查無→null） |
 
-軟刪欄不上 wire（角色無回收桶）。
+軟刪欄不上 wire（角色無回收桶）。可空欄 DB NULL＝顯式 `null`、不省略欄（ADR-00047 決定 1）。upstream 同 URL 之 `Api.SystemManage.RoleList`（`fetchGetRoleList`）與本型之偏離記帳於 ADR-00044 決定 9。
 
 ## 1. `GET /systemManage/getRoleList`（seed 12 R_SUPER、13 R_ADMIN）
 
@@ -39,7 +39,7 @@ Req `RoleAddReq`：`{ roleCode: string, roleName: string, roleDesc?: string|null
 
 ## 4. `POST /systemManage/updateRole`（seed 22 R_SUPER；不進選單域）
 
-Req `RoleUpdateReq`：`{ id: number, roleName?: string|null, roleDesc?: string|null, roleMemo?: string|null, roleHome?: string|null, status?: string, roleCode?: unknown }`。
+Req `RoleUpdateReq`：`{ id: number, roleName?: string|null, roleDesc?: string|null, roleMemo?: string|null, roleHome?: string|null, status?: string, roleCode?: string|null }`（`roleCode` 出現〔含 null〕即拒；非字串值＝body 壞形、零變更成功）。
 欄位語意（ADR-00047）：缺席＝不動；可空文字欄 null 或 `""`＝清空落 NULL；有值＝設值；`status` 值域外（含 `""`、null）＝缺席。
 處理序：①提前 no-op（除 `id` 外全欄缺席——`roleCode` 出現即非缺席——＝成功、零變更、零稽核、不 bump 時戳）②名稱非空（出現且為 null 或 `""`→`nameRequired`）③鎖列（查無或已刪→`biz.role.notFound`）④`roleCode` 出現（不比對值）→`biz.role.codeImmutable`⑤停用雙護欄（`status` 解析為 `'2'` 時：操作者為該角色成員〔含停用角色之成員身分〕→`biz.role.cannotDisableSelfRole`；標的為 R_SUPER→`biz.role.superCannotDisable`，不因操作者身分而異）⑥UPDATE＋稽核 `update`。停用即斷權沿基線（授權讀端每請求濾角色狀態）、MUST NOT 觸發判定面同步。
 200：`data: null`。body 缺席或壞形＝零變更成功。
@@ -53,7 +53,7 @@ Req `RoleIdReq`：`{ id: number }`（JSON body；缺席或壞形＝id=0→`notFo
 ## 6. `DELETE /systemManage/batchDeleteRole`（seed 24 R_SUPER；進選單域）
 
 Req `RoleBatchDeleteReq`：`{ ids: number[] }`（缺席或壞形＝空陣列）。
-語意：空陣列＝提前成功（零副作用、零稽核、不取域鎖）；重複 id 先去重（`[5,5]`≡`[5]`、稽核列數＝去重後標的數）；單一交易、id 升冪逐項全套 §5 守門；任一違規（含任一查無或已刪＝`notFound`）整批拒、零變更零稽核；全數通過後逐標的歸檔＋軟刪＋稽核；整批合計實際歸檔 ≥1 列＝commit 後至多一次同步。
+語意：空陣列＝提前成功（零副作用、零稽核、不取域鎖）；重複 id 先去重（`[5,5]`≡`[5]`、稽核列數＝去重後標的數）；單一交易、id 升冪逐項全套 §5 守門（★查無與 seeded／in-use／self-role 同序、先遇先回；例 `[1, <不存在 id>]`→`seededProtected`）；任一違規（含任一查無或已刪＝`notFound`）整批拒、零變更零稽核；全數通過後逐標的歸檔＋軟刪＋稽核；整批合計實際歸檔 ≥1 列＝commit 後至多一次同步。
 200：`data: null`。
 
 ## 7. `GET /systemManage/getRoleHome`（seed 34 R_SUPER）

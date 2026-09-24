@@ -1,11 +1,11 @@
 ---
 id: "ADR-00044"
-title: 選單域與角色刪除之域行為——角色刪除家族入域且實際歸檔才同步、島 G 行為（G1 前半／G3／G4／G5）由本 ADR 承載、授權歸檔表三自由度 won't-use、受保護選單守門、隱藏於選單釋義
+title: 選單域與角色刪除之域行為——角色刪除家族入域且實際歸檔才同步、島 G 行為（G1 前半／G3／G4／G5）由本 ADR 承載、授權歸檔表三自由度 won't-use、受保護選單守門、隱藏於選單釋義、保留路由名守門、upstream 同 URL 型偏離帳
 date: 2026-09-23
 status: proposed
 supersedes: []
 superseded_by: []
-provenance: "005-role-menu-crud 之 spec FR-012～FR-017、FR-024、FR-038～FR-043（brainstorm 既定不問 2／4／5、R1-Q2／R1-Q5／R2-Q1／R1-Q10、工程判斷 12／27／28；clarify 2026-09-23 Q2～Q4）；藍本＝rev5:ADR 0050（§1 deleteRole 入域、§3 島 G 行為承載、§4 歸檔表三自由度 won't-use 與前代翻案觸發條款）——其 §2 免同步論證由 R1-Q2 翻為實際歸檔才同步（ADR-00043）；rev5 憲法 v1.10.0 島 G1／G3／G4 最終字面供對照（rev6 島 G 未入憲）；憲法 §I.2（前端隱藏機制皆不啟用、釋義②）與 `docs/ops/reference-src/schema-definition.md` hide_in_menu 白名單；draft 於 plan 期落 feature branch、user 親決於 tasks 首個主線任務"
+provenance: "005-role-menu-crud 之 spec FR-012～FR-017、FR-024、FR-038～FR-043（brainstorm 既定不問 2／4／5、R1-Q2／R1-Q5／R2-Q1／R1-Q10、工程判斷 12／27／28；clarify 2026-09-23 Q2～Q4）；藍本＝rev5:ADR 0050（§1 deleteRole 入域、§3 島 G 行為承載、§4 歸檔表三自由度 won't-use 與前代翻案觸發條款）——其 §2 免同步論證由 R1-Q2 翻為實際歸檔才同步（ADR-00043）；rev5 憲法 v1.10.0 島 G1／G3／G4 最終字面供對照（rev6 島 G 未入憲）；憲法 §I.2（前端隱藏機制皆不啟用、釋義②）與 `docs/ops/reference-src/schema-definition.md` hide_in_menu 白名單；draft 於 plan 期落 feature branch；決定 8／9＝`/speckit-analyze` 期 user 裁定（2026-09-24）；user 親決於 tasks T003（施工前提顆）"
 tags: [authz, role, menu, behavior-island, role-menu-crud]
 ---
 
@@ -13,6 +13,7 @@ tags: [authz, role, menu, behavior-island, role-menu-crud]
 
 - 本刀落地授權治理刀要消費的三件底座中之兩件——選單序列化域與授權歸檔寫入面——並首次讓角色有寫端。島 G（casbin 授權治理）條文隨授權治理刀入憲；在此之前，本刀已實作之島 G 行為（歸檔真相、撤銷必歸檔、刪除守門、lock-then-redecide）需要一個凍結位：條文早入＝憲法宣告無機器證之 grant 面行為，條文晚入＝本刀行為無凍結位，ADR 承載是兩全（前代同形）。
 - 前代「刪角色免同步」論證被 R1-Q2 推翻（見 ADR-00043 背景）；受保護選單原只擋刪除，停用或改父受保護列可令管理區自 UI 消失（R1-Q5／R2-Q1）；活體契約 `schema-definition.md` 載 hide_in_menu 白名單「rev6 對應釋義隨 menu 域刀重審」（R1-Q10）。
+- 本刀起常量旗標與路由名皆可寫：前端常量路由表以路由名為鍵、後端常量列排在內建之後，同名即覆蓋內建路由（例：常量選單 `login` 令全站登入頁失效）；另 base-web 內 upstream 之角色清單與選單清單請求函式仍以 upstream 型宣告同一 URL 之回應，與本刀 wire 權威型逐欄不同（憲法 §I.3 型別謊言帳本）。
 
 ## 決策驅動因子
 
@@ -43,7 +44,10 @@ tags: [authz, role, menu, behavior-island, role-menu-crud]
 4. **授權歸檔表三自由度 won't-use**（`sys_casbin_policy_archive` 結構零變更）：①`role_id` 維持可空（`v0` 反查活性角色、查無誠實退化 NULL）②不加 `protected` 快照欄（可復原列必經撤銷路徑而受保護列之撤銷整批拒 ⇒ 可復原列原值恆 `protected=false`；受保護列結構上進不了可復原歸檔；un-protect 永不 UI 化）③不加 `menu_id` 同實例欄（選單維歸檔僅三 reason 且全屬不可復原集 ⇒ 選單維歸檔列結構性無復原路徑、同實例判定無判定時點）。★**翻案觸發條款**（前代原文過境＋rev6 語境）：任何後續刀若引入角色復原、把受保護政策掛上非 seed 角色、或將 un-protect UI 化——不變式即破、缺欄變成靜默降權破口；屆時該刀 MUST 自帶 `protected` 快照欄（NULL＝unknown 誠實退化）並復核本 ADR。若引入使選單維歸檔列出現**可復原** reason 之寫端，同理 MUST 復核 `menu_id` 同實例欄之必要性。
 5. **受保護選單守門（島 H3 之行為面）**：updateMenu 對受保護列拒「status 解析為停用」與「`parentId` 變更」（變更＝正規化後 ≠ 現值；同值＝無變更、放行）；deleteMenu 拒受保護列；拒因同鍵 `biz.menu.protectedMenu`、三檔譯文涵蓋刪除／停用／改父；其餘欄照常可編；受保護旗標不在寫端 DTO。
 6. **hideInMenu 釋義**：憲法 §I.2「`hideInMenu`／頁面排除等前端隱藏機制**皆不啟用**」依其釋義②（「不啟用」＝禁止以 hideInMenu 作 demo 可見性治理手段）只約束 seed／demo 之可見性治理；超管運行期經選單管理改 `hideInMenu`＝業務資料、不算啟用隱藏機制；`schema-definition.md` 之六列白名單只描述 seed、該契約句改現在式並指向本款。
-7. **寫端實作不變式**（兩域）：歸檔掃描先於標的列軟刪；絕版判定之按鈕碼聯集＝治理域（未刪含停用）且排除標的自身；掃描依 `v2` 維度過濾；按鈕碼清單形制驗證先於「舊碼−新碼」計算；facade 歸檔 fn 回傳歸檔列數（觸發門之唯一依據）；擁有交易之入域寫端失敗腿顯式 rollback。
+7. **寫端實作不變式**（兩域）：歸檔掃描先於標的列軟刪；絕版判定之按鈕碼聯集＝治理域（未刪含停用）且排除標的自身；批次刪除選單之「獨有按鈕碼」於各標的歸檔時點現算（同批先行軟刪者已不在治理域）、MUST NOT 於守門期預算；掃描依 `v2` 維度過濾；按鈕碼清單形制驗證先於「舊碼−新碼」計算；facade 歸檔 fn 回傳歸檔列數（觸發門之唯一依據）；擁有交易之入域寫端失敗腿顯式 rollback。
+
+8. **保留路由名守門**：addMenu 於路由名形制之後驗「路由名 ∉ 前端保留路由名集」——保留集＝base-web 內建常量路由（`403`／`404`／`500`／`iframe-page`／`login`）∪ 內建根路由（`root`／`not-found`）；違反回 `biz.menu.routeNameExists`（零新鍵；語意＝該路由名已被占用）。updateMenu 因路由名不可變免驗；restoreMenu 因新增即擋而結構性不可達。保留集為 rust 單一常數、由既有跨子庫 python 閘以純讀檔對賬 base-web 路由定義之名集（附變異自證）。理由：憲法 §I.2「builtin 常量集不動」；未擋即一次誤操作全站鎖死、只能直改庫復原。
+9. **upstream 同 URL 型偏離帳**（憲法 §I.3「每筆顯式偏離＝拍板、立 ADR」）：base-web 內 upstream `fetchGetRoleList`（`/systemManage/getRoleList`）、`fetchGetMenuList`（`/systemManage/getMenuList/v2`）與 `service-alova` 同名函式仍以 `Api.SystemManage.{RoleList,MenuList}` 宣告回應型；本刀 wire 權威型＝`Api.RoleAdmin.RoleRecord`／`Api.MenuAdmin.MenuRecord`（本刀 ADAPT 新型檔）。偏離類別（**實集以 wire-schema 快照之機器導出為準**；下列為舉例、非窮舉）＝①欄名差（審計四欄改名 `createBy`→`createdBy`、`createTime`→`createdAt`、`updateBy`→`updatedBy`、`updateTime`→`updatedAt`；rev6 額外欄如 `roleMemo`／`roleHome`／`menuMemo`／`deleted`）②可空性差（兩向：upstream 非空而 rev6 可空，如 `roleDesc`／`routePath`／`icon`；upstream 可空而 rev6 非空，如 `status`）③必出性差（upstream 可選而 rev6 必出，如 `component`／`buttons`）④值型差（upstream 為字面聯集型而 rev6 為寬型，如 `activeMenu`／`i18nKey`）。wire 裁判測試一案斷言「upstream 型與 rev6 型之欄差集（欄名集差＋共有欄之 required 差與型別差〔含可空性〕）＝同檔釘值常數」、漂移即紅。理由：本刀起 upstream 兩函式零 UI 消費者、rev6 型為接真頁唯一消費面；改 wire 欄名對齊 upstream 會翻 004 起之 rev6 欄名慣例。wire 行為零變化。
 
 ## 後果
 
@@ -57,3 +61,5 @@ tags: [authz, role, menu, behavior-island, role-menu-crud]
 - 使用者角色指派寫端落地 ⇒ in-use／self-role 兩腿轉為生產面可達、複核拒因語意與 UI 呈現。
 - 決定 4 之翻案觸發條款任一成立。
 - 受保護旗標開放寫入 ⇒ 重審決定 5。
+- 新增 view 頁或 upstream rebase 改動內建常量路由／內建根路由之名集 ⇒ 決定 8 之保留集隨之對賬（由對賬閘攔下、同批改常數）。
+- upstream 兩支清單請求函式出現消費者、或 upstream rebase 改動 `Api.SystemManage.{Role,Menu}` 型 ⇒ 重審決定 9 之偏離帳。

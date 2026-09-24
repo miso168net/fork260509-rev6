@@ -5,7 +5,7 @@ date: 2026-09-23
 status: proposed
 supersedes: []
 superseded_by: []
-provenance: "005-role-menu-crud 之 spec FR-006／FR-007／FR-009（brainstorm R1-Q3、工程判斷 23／30；clarify 2026-09-23 Q5 新增路徑名稱空字串亦拒）；被續行面＝ADR-00015 五款（其決定 1「空字串亦為設值」與決定 5「create 不在射程」為本檔改寫面；body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例）；前代出處＝rev5:ADR 0023（rev5:002 刀三態約定）＋rev5:B-102（rev5 可空欄空字串＝清空、名稱欄空字串＝不動——名稱欄一半由本檔翻為拒）＋rev5:L-009；draft 於 plan 期落 feature branch、user 親決於 tasks 首個主線任務（accepted 同顆補 supersedes 並改 ADR-00015 狀態）"
+provenance: "005-role-menu-crud 之 spec FR-006／FR-007／FR-009（brainstorm R1-Q3、工程判斷 23／30；clarify 2026-09-23 Q5 新增路徑名稱空字串亦拒）；被續行面＝ADR-00015 五款（其決定 1「空字串亦為設值」與決定 5「create 不在射程」為本檔改寫面；body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例）；前代出處＝rev5:ADR 0023（rev5:002 刀三態約定）＋rev5:B-102（rev5 可空欄空字串＝清空、名稱欄空字串＝不動——名稱欄一半由本檔翻為拒）＋rev5:L-009；draft 於 plan 期落 feature branch、user 親決於 tasks T003（施工前提顆；accepted 同顆補 supersedes 並改 ADR-00015 狀態）"
 tags: [wire, envelope, serde, role-menu-crud]
 ---
 
@@ -31,12 +31,12 @@ tags: [wire, envelope, serde, role-menu-crud]
 
 ## 決定
 
-1. **ADR-00015 之決定 2～4 原意續行**，現行依據＝本決定：NOT NULL 欄之顯式清空＝拒收、nullable 欄之顯式 null＝落 NULL；解析層承載形＝`Option<Option<T>>`＋`#[serde(default)]`＋自訂反序列化（本刀起為 `handler/common.rs` 之泛型 `tristate<T>`、系統設定寫端之私有 String 版改引）；必填欄亦以寬鬆形承載、缺席或 null 由 handler 判 `2222`（不落框架 400／422 裸 body）；wire 型別對應（寫端請求之 nullable 三態欄 typings 為 `T | null` 可選欄〔快照經 `--strictNullChecks` 忠實呈 `["null","string"]`〕；讀端列型對同名欄若後端 NULL 以缺席上 wire、其 typings 不含 null——讀端缺席語意與寫端清空語意各自斷言）；系統設定寫端之機器錨續行（`settingValue` null→`2222 biz.systemSettings.invalidValue`、`description` null 落 NULL）。
+1. **ADR-00015 之決定 2～4 原意續行**，現行依據＝本決定：NOT NULL 欄之顯式清空＝拒收、nullable 欄之顯式 null＝落 NULL；解析層承載形＝`Option<Option<T>>`＋`#[serde(default)]`＋自訂反序列化（本刀起為 `handler/common.rs` 之泛型 `tristate<T>`、系統設定寫端之私有 String 版改引）；必填欄亦以寬鬆形承載、缺席或 null 由 handler 判 `2222`（不落框架 400／422 裸 body）；wire 型別對應（寫端請求之 nullable 三態欄 typings 為 `T | null` 可選欄〔快照經 `--strictNullChecks` 忠實呈 `["null","string"]`〕；讀端列型可空欄之 NULL 表示〔缺席或顯式 null〕逐域以各刀契約為準、typings 忠實對應 wire——缺席形之 typings 不含 null、顯式形為 `T | null`；系統設定讀端〔002〕與路由讀端〔003：`MenuRoute`／`RouteMeta`〕為缺席形、005 新增之角色與選單管理讀端〔`RoleRecord`／`MenuRecord`〕為顯式 null 形；讀端 NULL 表示與寫端清空語意各自斷言）；系統設定寫端之機器錨續行（`settingValue` null→`2222 biz.systemSettings.invalidValue`、`description` null 落 NULL）。
 2. **envelope 級三態（改寫 ADR-00015 決定 1）**：部分更新請求 body 之每一可選欄——**欄位缺席＝不動；JSON `null`＝顯式清空；有值＝設值**；★空字串之語意**逐域明文**：
    - **系統設定寫端**：空字串＝設值（落空字串）——續行、行為零變化。
    - **角色與選單寫端**：可空**文字**欄之空字串＝清空落 NULL（與 null 同）；NOT NULL 名稱欄（`roleName`／`menuName`）之 null 或空字串＝拒 `nameRequired`；可空**非文字**欄之 null＝清空落 NULL。
    - ★**非三態欄之 null＝缺席**：兩域之 `status`、新增路徑之 `menuType`、選單之 `parentId`（其 0＝頂層）；選單之 `iconType` 為三態狀態類欄、null＝清空落 NULL。逐欄三態與否以各刀契約為準。
-3. **提前 no-op**：除 `id` 外之一切欄（含不可變欄）經值域收斂後皆缺席＝成功、零變更、零稽核、不 bump 時戳；**不可變欄只要出現（不論值）即不屬缺席**、依各域守門拒（`codeImmutable`／`routeNameImmutable`／`menuTypeImmutable`）。
+3. **提前 no-op**：除 `id` 外之一切欄（含不可變欄）經值域收斂後皆缺席＝成功、零變更、零稽核、不 bump 時戳；**不可變欄只要出現（不論值、含 null）即不屬缺席**、依各域守門拒（`codeImmutable`／`routeNameImmutable`／`menuTypeImmutable`）；承載形＝`tristate::<String>`（null＝出現），非字串值＝body 壞形、依各域收斂（部分更新型＝零變更成功）。
 4. **狀態類欄**（角色與選單之 `status`、選單之 `iconType`、僅新增路徑之 `menuType`）：恰二值嚴格解析（trim 後 `"1"`／`"2"`）；值域外（含空字串）＝缺席——新增取預設、更新不動、清單不篩選（null 之語意依決定 2 之逐欄規定：`status`／`menuType` 為缺席、`iconType` 為清空）。
 5. **射程（改寫 ADR-00015 決定 5）**：部分更新請求 body＋**角色與選單新增請求之可空文字欄空字串形**（空字串＝NULL、防並存；新增之名稱欄空字串亦拒）；query 參數除決定 4 之狀態類欄值域收斂（值域外＝清單不篩選）外不在射程；非部分更新之寫端（如 `updateRoleHome`＝`home` 缺席、null 或空字串皆清空、同值亦寫）以其契約為準。逐域欄級三態表住各刀契約。
 
@@ -47,7 +47,7 @@ tags: [wire, envelope, serde, role-menu-crud]
 | 1 三態語意（空字串亦為設值） | 2 | 改寫（空字串逐域明文） |
 | 2 NOT NULL 顯式清空＝拒收 | 1、2 | 續行＋擴寫（名稱欄空字串同拒＝決定 2） |
 | 3 解析層承載形 | 1 | 續行（泛型件上 common） |
-| 4 wire 型別對應 | 1 | 續行 |
+| 4 wire 型別對應 | 1 | 續行＋讀端 NULL 表示逐域明文 |
 | 5 射程＝部分更新 body | 5 | 改寫（擴角色與選單新增之可空文字欄） |
 | —— | 3、4 | 新增（提前 no-op 與不可變欄出現形；狀態類值域收斂） |
 

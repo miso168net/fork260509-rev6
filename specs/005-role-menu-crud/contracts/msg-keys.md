@@ -23,7 +23,7 @@
 | 鍵 | 發出點 | 語意要求 |
 |---|---|---|
 | `notFound` | updateMenu ③、deleteMenu／batch（含查無 id）、restoreMenu ①（含現役列） | 選單不存在（或不在可操作狀態） |
-| `routeNameExists` | addMenu ③⑨ | 路由名已被現役選單使用 |
+| `routeNameExists` | addMenu ③⑥⑩（⑥＝保留路由名、ADR-00044 決定 8） | 路由名已被使用（現役選單或系統保留路由） |
 | `routeNameImmutable` | updateMenu ④ | 路由名建立後不可修改 |
 | `menuTypeImmutable` | updateMenu ④ | 選單類型建立後不可修改 |
 | `parentNotFound` | addMenu ①、updateMenu ⑥、restoreMenu ③ | 父選單不存在或已刪除 |
@@ -32,10 +32,10 @@
 | `protectedMenu` | deleteMenu ②、batch、updateMenu ⑤ | ★受保護選單**不可刪除、不可停用、不可變更父選單**——三種情形皆須涵蓋（前代「不可刪除」譯文不得照搬；零新鍵） |
 | `constantParent` | addMenu ④、updateMenu ⑦（含清除常量性之後代腿）、restoreMenu ④ | 常量選單只能掛在常量父選單之下（清除常量性時亦受此約束） |
 | `restoreConflict` | restoreMenu ② | 已有同路由名之現役選單、無法復原 |
-| `nameRequired` | addMenu ⑥、updateMenu ② | 名稱不可為空（涵蓋 null 與空字串） |
+| `nameRequired` | addMenu ⑦、updateMenu ② | 名稱不可為空（涵蓋 null 與空字串） |
 | `routeNameInvalid` | addMenu ⑤ | 路由名只許字母、數字、底線、連字號、最長 100 字元 |
-| `hrefInvalid` | addMenu ⑦、updateMenu ⑧ | 外連網址須以 http:// 或 https:// 開頭 |
-| `buttonsInvalid` | addMenu ⑧、updateMenu ⑨ | 按鈕碼清單格式不正確（每項須有非空且不重複之碼、最長 100 字元） |
+| `hrefInvalid` | addMenu ⑧、updateMenu ⑧ | 外連網址須以 http:// 或 https:// 開頭 |
+| `buttonsInvalid` | addMenu ⑨、updateMenu ⑨ | 按鈕碼清單格式不正確（每項須有非空且不重複之碼、最長 100 字元） |
 
 ## 落地時序（工程判斷 24）
 

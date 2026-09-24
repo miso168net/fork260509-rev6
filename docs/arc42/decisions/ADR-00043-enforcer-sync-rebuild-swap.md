@@ -5,7 +5,7 @@ date: 2026-09-23
 status: proposed
 supersedes: []
 superseded_by: []
-provenance: "005-role-menu-crud 之 spec FR-046～FR-053（brainstorm G1 既定不問 4、R1-Q2、工程判斷 12／25／26／37）；藍本＝rev5:ADR 0049（rebuild-swap／keep-last-good／硬禁令＋版本鎖／ABBA 三失效條件）＋rev5:ADR 0053 款四（rev5:B-104 觸發矩陣訂正）＋rev5:ADR 0067 款二（指派寫端同步、rev5:B-093 閉合；其被棄替代案 C＝rev6 所採）＋rev5:005 收刀 final holistic review 之 RELOAD_SERIAL 與 rev5:B-105 交錯時序 seam（rev5:932ba8c）；rev6 被翻宣告＝002 刀碼內 enforce.rs 檔頭與 init doc、main.rs、state.rs 之終態句；ADR-00014 決定 4 括號句（運行期重載屬後刀）；ADR-00036（AppState 恰七欄）；casbin 2.20.0（rust-api/Cargo.toml 釘版）；draft 於 plan 期落 feature branch、user 親決於 tasks 首個主線任務"
+provenance: "005-role-menu-crud 之 spec FR-046～FR-053（brainstorm G1 既定不問 4、R1-Q2、工程判斷 12／25／26／37）；藍本＝rev5:ADR 0049（rebuild-swap／keep-last-good／硬禁令＋版本鎖／ABBA 三失效條件）＋rev5:ADR 0053 款四（rev5:B-104 觸發矩陣訂正）＋rev5:ADR 0067 款二（指派寫端同步、rev5:B-093 閉合；其被棄替代案 C＝rev6 所採）＋rev5:005 收刀 final holistic review 之 RELOAD_SERIAL 與 rev5:B-105 交錯時序 seam（rev5:932ba8c）；rev6 被翻宣告＝002 刀碼內 enforce.rs 檔頭與 init doc、main.rs、state.rs 之終態句；ADR-00014 決定 4 括號句（運行期重載屬後刀）；ADR-00036（AppState 恰七欄）；casbin 2.20.0（rust-api/Cargo.toml 釘版）；draft 於 plan 期落 feature branch、user 親決於 tasks T003（施工前提顆）"
 tags: [authz, casbin, enforcer, reload, role-menu-crud]
 ---
 
@@ -36,7 +36,7 @@ tags: [authz, casbin, enforcer, reload, role-menu-crud]
 1. **翻案標的**：`auth/enforce.rs` 檔頭與 `init_enforcer` doc、`main.rs` 連線段註解、`state.rs` 判定面欄 doc 之「boot 載入即終態」「不提供運行期重載」「運行期只有讀鎖」諸句——改寫為「判定面由授權真相全量導出；移除面寫端 commit 後以全新重建後一步換上同步（ADR-00043）」。日後再見「不再重載＝終態」殘句＝文檔漂移、以本 ADR 為準。
 2. **重建後一步換上**：`rebuild_enforcer(db)` 另建全新實例——模型 → 轉接器 → 建構 → 載入四步（鏡像 boot 初始化；boot 亦委派同一 fn）；任一步失敗整體失敗、不產出實例；成功才於判定面寫鎖臨界區**一行賦值**換上。判定面容器＝AppState 既有欄（零新欄）。
 3. **全程互斥**：`reload_enforcer` 以函式內靜態互斥件包住重建＋換上＋重試全程，使較晚 commit 之結果不被較早開始、較慢完成之重建以舊快照蓋回；鎖序恆「互斥件 → 判定面寫鎖」、無反向取得。交錯時序以測試專用注入點機器證（換上之前可被測試卡住之 await 點；整段測試門控、生產建置零存在）。
-4. **失敗契約＝保留上一份**：`RELOAD_MAX_ATTEMPTS = 3`、`RELOAD_RETRY_BACKOFF_MS = 50`（線性退避、末次失敗後不退避；寫死常數、絕不取自輸入、以編譯期斷言自證）；每次失敗（含第 3 次）結構化告警（帶 cause）＋`retry` 計數、耗盡時另計 `exhausted`（三次全敗＝retry 3＋exhausted 1）；同步結果計數 `casbin_reload_total{outcome=ok|retry|exhausted}`（開機預註冊三值；既有告警規則 `obs016-casbin-reload-anomaly` 之錨字面）；耗盡仍失敗＝維持舊面、持續告警、服務不中斷。**絕不空窗、絕不半載、絕不全域拒絕**。該計數為同步結果計數、非降級序列。
+4. **失敗契約＝保留上一份**：`RELOAD_MAX_ATTEMPTS = 3`、`RELOAD_RETRY_BACKOFF_MS = 50`（線性退避、末次失敗後不退避；寫死常數、絕不取自輸入、以編譯期斷言自證）；每次失敗（含第 3 次）結構化告警（帶 cause）＋`retry` 計數、耗盡時另計 `exhausted`（三次全敗＝retry 3＋exhausted 1）；同步結果計數 `casbin_reload_total{outcome=ok|retry|exhausted}`（開機預註冊三值；既有告警規則 `obs016-casbin-reload-anomaly` 之錨字面）；耗盡仍失敗＝維持舊面、服務不中斷；告警面＝每次失敗與耗盡各一則結構化 error log＋計數，既有告警規則（5 分鐘增量窗）於窗內觸發——耗盡後計數不再增、告警自然解除，其後之殘留窗處置依 RUNBOOK §13（恢復＝下次成功同步或重啟；持續態告警不在本刀）。**絕不空窗、絕不半載、絕不全域拒絕**。該計數為同步結果計數、非降級序列。`reload_enforcer` 回 `()`：同步結果不影響寫端回應（交易 commit 成功即回 `0000`）。
 5. **★硬禁令＋版本鎖**：**絕不對現役判定面就地呼叫載入**。casbin 2.20.0 之 `Enforcer::load_policy` 為先清空再載入（前代 ADR 與碼註所引、rev6 以特性鎖定測試承擔）——載入失敗即留空政策、在本 repo 模型下＝含 R_SUPER 全拒。升版 MUST 重核其重載語意（縱改為 append 語意、重建後換上仍安全，惟註記須同步更新）。
 6. **呼叫端紀律**：同步 MUST 於交易 commit 之後；呼叫時 MUST NOT 持有判定面讀鎖（tokio 讀寫鎖不可重入、持讀鎖再取寫鎖＝永久互鎖；名冊守恆對此形無感、由 review 承載）。
 7. **觸發矩陣（恰五支、以實際歸檔列數為門）**：
