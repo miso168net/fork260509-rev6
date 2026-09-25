@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00036 -->
+<!-- next: LL-00037 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -41,3 +41,4 @@
 | LL-00033 | tracked 單檔 bind mount（`deploy/trust-model.dev.toml`）在 pull 換 inode 後於容器內懸空——信任模型靜默退成零網段、一切來源視為直連；watchexec 重啟與 `restart` 皆不重掛 | none：屬 Docker Desktop 單檔 bind mount 的環境層陷阱、非流程規則；守法＝RUNBOOK §2 固定起手句（pull 動到該檔即重建 rust-api 容器）＋本檔診斷捷徑，不另立規則 | none | [LL-00033-single-file-bind-mount-dangles-after-git-replaces-tracked-file.md](LESSONS/LL-00033-single-file-bind-mount-dangles-after-git-replaces-tracked-file.md) |
 | LL-00034 | tests/ 共用件 doc 以窮舉形寫「消費者＝…」——每進一個新消費者即成名冊假述，而共用件檔多不在該單元允許清單內、agent 只能升級（005 刀 U1、U2 連兩單元同坑） | RL-0011 | none | [LL-00034-enumerated-consumer-roster-in-shared-helper-doc-drifts-every-unit.md](LESSONS/LL-00034-enumerated-consumer-roster-in-shared-helper-doc-drifts-every-unit.md) |
 | LL-00035 | casbin 自動存檔下 `add_policy` 先寫轉接器、後加記憶體面——已存在之政策回 `Err`（唯一鍵違反）而非 `Ok(false)`，且 nextval 已被吃掉（005 刀 U3） | none：第三方庫（casbin 2.20.0）寫入次序之語意、非流程規則可守 | code | [LL-00035-casbin-autosave-adds-to-adapter-before-model-duplicate-errs-and-burns-nextval.md](LESSONS/LL-00035-casbin-autosave-adds-to-adapter-before-model-duplicate-errs-and-burns-nextval.md) |
+| LL-00036 | compile_fail 反段的「正面孿生」沒涵蓋反段獨有的 token——該 token 失效時反段因錯的理由照綠，doc「孿生會紅」之宣稱不成立（005 刀 U3、U4 連兩單元、回溯命中 004 域既有碼） | RL-0051 | none | [LL-00036-compile-fail-twin-misses-token-unique-to-negative-leg.md](LESSONS/LL-00036-compile-fail-twin-misses-token-unique-to-negative-leg.md) |
