@@ -1,4 +1,4 @@
-<!-- next: BL-00126 -->
+<!-- next: BL-00127 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -46,3 +46,4 @@
 - BL-00123｜governance｜`obs.rs` 之 `request_context_absent` **每請求腿數無總數案**：該值計腿不計請求，碼註載明「打 auth 三端點＝3 格、其餘端點＝2 格、`/health` 與 `/metrics`＝1 格」，而測試只逐腿各一案、無釘住「同一請求推幾格」的總數案；第四條缺席腿進場時全數案仍綠，該敘述與依此設定的告警基線一併靜默失準｜觸發＝下次新增或移除 `request_context_absent` 發射腿時，或下一支動 `middleware` 請求上下文注入面之刀
 - BL-00124｜product｜004 刀 spec Out of Scope 首條「通用化節流 seam」（004 刀只交付來源維本體、可掛任意敏感端點的通用 seam 待第二個消費者出現再做）在現在式帳本**零承載**：BACKLOG 兩卷、NOTES、RUNBOOK、憲法 §I.7 島表、ADR 全集皆零命中，延後義務只由凍結的 spec 承載、開刀前儀式（只掃 BACKLOG 觸發欄）結構上掃不到｜觸發＝第二個需要節流 seam 的消費端進場時（改密端點舊密節流＝007 user-password-admin 為最近候選）
 - BL-00125｜governance｜ADR-00040 款 2「dev 經反向代理只可達來源信心二態（`fallback`／`proxy_clean`）、其餘信心態由整合測試直餵信任模型覆蓋」與 as-built 不符：`chain_rejected` 不依賴信任模型（判準＝轉發鏈跳數逾上界），經 dev 反向代理送出逾 `MAX_XFF_TOKENS` 欄之 `X-Forwarded-For` 即端到端可達（落一列 `chain_rejected` 登入稽核＋`5003`），故 as-built 為**三態**。ADR body 已 accepted 不可變（GT-04），本條即其對沖；現在式面三處鏡像（RUNBOOK §16.1「dev 的分界」、活書 06 島 F ⑧、活書 11「IP 域 by-design 已知態」）已於 spec-compliance-004 同批加對沖註、字面計數待翻案時一併改｜觸發＝下一支翻案 ADR-00040 之刀，或下次動信任模型 dev 交付形與其分界敘述時（先到者）
+- BL-00126｜governance｜context 自動壓縮機制入版控：現行只在單機以 gitignored 之本機設定檔設自動壓縮視窗 400k＋PreCompact hook（注入壓縮規則 A／B＋hook 當下機器快照〔座標、pin 方向、三處 porcelain、workflow run 之 journal 進度、背景 task id〕＋人讀進度表摘錄；依觸發方式〔auto／manual〕給不同收尾句）＋SessionStart(compact) 回灌 hook，規則本文與腳本住 gitignored 工作區、他機（Mac）不同步；入版控須把規則範本移入 `tools/orchestration/`、hook 掛 `.claude/settings.json`，並重新設計進度表之定位方式（受版控檔不得寫工作區具名路徑；RL-0077）｜觸發＝005 刀收刀（feature_close）後之下一支維護批（user 2026-09-25 裁定）
