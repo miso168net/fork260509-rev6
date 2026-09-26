@@ -27,10 +27,10 @@
 
 ### 2.2 `rust-api/server/tests/test_module_tail_lint.rs`（BL-00111 ①②；`mod common;`；行掃描）
 
-- **判準①射程**＝(a) BL-00111 條文 grep 判準（`split("\\n#\[cfg(test)\]")\|find("\\n#\[cfg(test)\]")\|split_once(TEST_MODULE_MARKER)`）現算之切面腿所在檔 ∪ (b) 跨檔腿名冊字面所指之被切檔（於 (a) 之檔內以 `("<name>.rs"` 形抽取、以所在檔目錄為基準解析〔`include_str!` 語意〕、逐一解析存在性）；兩集合自我對賬（抽不到或解析不到即紅）。現況 (a)＝九檔、(b) 於 FR-074 擴射程後納 `handler/role.rs`／`handler/menu.rs`。★(a) 之 grep 與 (b) 之抽取皆於原文（或 Keep 視圖）執行——兩者之字面皆在字串常值內、Drop 視圖下兩集合皆空；只有判準①之 item 掃描用 Drop 視圖。
+- **判準①射程**＝(a) BL-00111 條文 grep 判準（`split("\\n#\[cfg(test)\]")\|find("\\n#\[cfg(test)\]")\|split_once(TEST_MODULE_MARKER)`）現算之切面腿所在檔 ∪ (b) 跨檔腿名冊字面所指之被切檔（於 (a) 之檔內以 `("<name>.rs"` 形抽取、以所在檔目錄為基準解析〔`include_str!` 語意〕、逐一解析存在性）；兩集合自我對賬（抽不到或解析不到即紅）。現況 (a) 以判準現算、(b) 於 FR-074 擴射程後納 `handler/role.rs`／`handler/menu.rs`。★(a) 之 grep 與 (b) 之抽取皆於原文（或 Keep 視圖）執行——兩者之字面皆在字串常值內、Drop 視圖下兩集合皆空；只有判準①之 item 掃描用 Drop 視圖。
 - **判準①**：首個行首 `#[cfg(test)]` 之後，每個 column-0 item 之屬性鏈 MUST 含 `#[cfg(test)]`；item 頭形 regex 涵蓋可見性前綴（`pub`／`pub(crate)`／`pub(super)`／`pub(in …)`）與修飾詞（`async`／`const`／`unsafe`／`extern`）及 `fn`／`struct`／`enum`／`impl`／`trait`／`type`／`const`／`static`／`mod`／`use`／`macro_rules!`。
 - **判準②**（**射程獨立＝src 全樹**；生產面同 §2.1 之定義）：零 `obs::` 出口之 item 別名匯入——樣式涵蓋 `use (crate|server|super…)::obs::<ident> as <ident>` 與分組 `obs::{ … <ident> as <ident> … }`（含跨行）。★若沿判準①之射程即漏 `ipgate_blocked` 唯一生產呼叫檔 `middleware/mod.rs` 與 bin crate 之 `server::obs::` 形＝BL-00111 假結案。
-- **變異自證六形**：item 級門控不紅、第二測試模組不紅、字串常值內行首碼不紅、植入 `pub(super) fn` 於切點後必紅、植入別名匯入必紅、於 `middleware/mod.rs` 植別名匯入必紅。既有十二支腿 docstring 補指本腿為其射程守。
+- **變異自證六形**：item 級門控不紅、第二測試模組不紅、字串常值內行首碼不紅、植入 `pub(super) fn` 於切點後必紅、植入別名匯入必紅、於 `middleware/mod.rs` 植別名匯入必紅。既有切面腿（以本節判準現算）docstring 補指本腿為其射程守。
 
 ## §3 既有 lint 與名冊擴充
 
