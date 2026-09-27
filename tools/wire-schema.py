@@ -9,10 +9,11 @@ ADR-00019「容器依賴型碼面閘之環境缺席語意＝具名跳過、工�
 子命令：
   extract   base-web 容器內 npx 抽取 typings → draft-07 JSON Schema 快照，
             原子替換寫 rust-api/server/tests/fixtures/wire-schema.json（需 stack 在跑）
-  check     重抽 typings 至暫存路徑、與工作樹快照 byte 比對（rev4:B-128 drift 閘；絕不覆寫
-            快照）。--staged-gate＝pre-commit 專用收窄：兩側 pin 區間皆零變動才跳過（base-web
-            區間零 typings 變動＋rust-api 區間零快照變動）。容器不可用＝警告＋0 放行；容器可用
-            但重抽失敗／不一致＝2
+  check     先跑跨子庫純讀檔錨兩腿（BL-00109 qs 前提；ADR-00044 決定 8 保留路由名對賬）——無條件、
+            先於收窄與容器探測、不觸 docker／git，任一違規＝2；再重抽 typings 至暫存路徑、與工作樹
+            快照 byte 比對（rev4:B-128 drift 閘；絕不覆寫快照）。--staged-gate＝pre-commit 專用收窄：
+            兩側 pin 區間皆零變動才跳過重抽比對（base-web 區間零 typings 變動＋rust-api 區間零快照
+            變動）。容器不可用＝警告＋0 放行；容器可用但重抽失敗／不一致＝2
   test      跑自帶測試（unittest、離線可跑）
 
 失敗語意：stack 不在／抽取工具非零退出＝非零退出（2）＋stderr 提示啟動命令；抽取輸出
@@ -22,12 +23,14 @@ package.json／pnpm lock；前端 porcelain 前後皆空。用法錯誤走 exit 
 
 lineage：rev4:003-wire-foundation（契約＝contracts/contract-machinery.md §1、機器基準＝data-model.md §3、
 抽取工具實測與釘版＝research.md R1）→ rev5:002-system-settings U7（`--strictNullChecks`）→ rev6 002 刀
-（docs/ops/reference-src/code-gate-contracts.md §1、§2；rc 慣例＝RUNBOOK §12）。
+（docs/ops/reference-src/code-gate-contracts.md §1、§2；rc 慣例＝RUNBOOK §12）→ rev6 005 刀 U11（check 前置之跨子庫
+錨兩腿；該刀 spec FR-057、research R10）。
 """
 import contextlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -175,6 +178,247 @@ def check_self_test():
         raise AssertionError("相異 bytes 被誤判為一致")
 
 
+# ---------------------------------------------------------------------------
+# 跨子庫純讀檔錨兩腿（005 刀 U11 T070；spec FR-057、research R10）
+# ---------------------------------------------------------------------------
+# ★位置即語意：兩腿在 cmd_check 合成 self-test 之後、staged-gate 短路與容器探測之前**無條件**執行——只讀工作樹檔、不觸
+# docker／git，故「pin 區間有無 typings／快照變動」「stack 有無在跑」都不能讓它跳過。收窄 pathspec（TYPINGS_PATHSPECS／
+# SNAPSHOT_PATHSPECS）刻意不擴：擴了即牽動 pre-commit submodule-sync 段；觸發面沿用 pre-commit 既有 wire-schema 段（任一子庫
+# pin bump 即跑 check）。★裁判力邊界：兩腿讀工作樹（與本工具重抽比對同一讀面）、不讀 pin 樹。
+
+# BL-00109 qs 前提腿：base-web 查詢串序列化器＝`createAxiosConfig` 之 `paramsSerializer: params => stringify(params)`
+# （`stringify` from qs；qs 預設 `strictNullHandling: false` ⇒ null 渲染成 `k=` 空值）＋axios 包之 qs 釘版。
+# rust-api/server/tests/wire_schema.rs 的真串常數皆以此前提於 base-web 容器實跑產出；前提一改（序列化器傳選項、拿掉序列化器
+# 回 axios 預設〔null 欄整個丟掉〕、換 qs 版）常數即不再是前端真送的串、而該檔照綠——本腿把前提釘成機器面。
+# ★讀面只及這兩檔：呼叫端經 `createAxiosConfig(config)` 之 `Object.assign` 覆寫序列化器不在本腿讀面。
+AXIOS_OPTIONS_TS = "base-web/packages/axios/src/options.ts"
+AXIOS_PACKAGE_JSON = "base-web/packages/axios/package.json"
+QS_PINNED_VERSION = "6.15.1"
+
+# ADR-00044 決定 8 保留路由名對賬腿：rust `sys_menu::RESERVED_ROUTE_NAMES`＝routes.ts 之 `meta.constant: true` 路由名集
+# ∪ builtin.ts 之路由名集（新增 view 頁或 upstream rebase 動到內建常量路由／內建根路由之名集時由本腿攔下）。
+SYS_MENU_RS = "rust-api/server/src/model/facade/sys_menu.rs"
+ELEGANT_ROUTES_TS = "base-web/src/router/elegant/routes.ts"
+BUILTIN_ROUTES_TS = "base-web/src/router/routes/builtin.ts"
+
+ANCHOR_FILES = (AXIOS_OPTIONS_TS, AXIOS_PACKAGE_JSON, SYS_MENU_RS, ELEGANT_ROUTES_TS, BUILTIN_ROUTES_TS)
+
+
+QS_REMEDY = ("補救：前提改動須同批於 base-web 容器以新前提實跑、重取 rust-api/server/tests/wire_schema.rs 之各真串常數，"
+             "再改本工具之前提釘值（BL-00109）")
+RESERVED_REMEDY = ("補救：同批改 rust-api/server/src/model/facade/sys_menu.rs 之 RESERVED_ROUTE_NAMES（ADR-00044 決定 8）"
+                   "或還原前端路由定義，使兩側名集相等")
+
+
+def strip_ts_comments(text):
+    """去 TS 註解（`//` 至行尾、`/* */` 區塊）、字串字面（'…'／"…"／`…`）原樣保留——註解掉的碼不得被當成生效碼。
+    regex 字面不特判。"""
+    out = []
+    i, n = 0, len(text)
+    quote = None
+    while i < n:
+        c = text[i]
+        if quote:
+            out.append(c)
+            if c == "\\" and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+            i += 1
+        elif c in "'\"`":
+            quote = c
+            out.append(c)
+            i += 1
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            i = n if j == -1 else j
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            i = n if j == -1 else j + 2
+            out.append(" ")
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
+_QS_IMPORT = re.compile(r"^import\s*\{\s*stringify\s*\}\s*from\s*['\"]qs['\"]\s*;?\s*$", re.M)
+_SERIALIZER_TOKEN = re.compile(r"\bparamsSerializer\b")
+# 去空白後比對：屬性值恰為無選項之 `params => stringify(params)`（區塊體或表達式體皆可）。
+_SERIALIZER_FORM = re.compile(
+    r"paramsSerializer:\(?params\)?=>(?:\{returnstringify\(params\);?\}|stringify\(params\))[,}]")
+
+
+def qs_premise_problems(options_ts, package_json):
+    """BL-00109 qs 前提腿判準（純函式）：回違規說明清單、空＝通過。
+    ①`stringify` 恰以 `import { stringify } from 'qs'` 匯入一次 ②去註解後 `paramsSerializer` 恰一處、且為無選項
+    `params => stringify(params)` ③axios 包 `dependencies.qs` 恰為 QS_PINNED_VERSION。"""
+    problems = []
+    code = strip_ts_comments(options_ts)
+    if len(_QS_IMPORT.findall(code)) != 1:
+        problems.append(f"{AXIOS_OPTIONS_TS}：`stringify` 須恰以 `import {{ stringify }} from 'qs'` 匯入一次——{QS_REMEDY}")
+    occurrences = len(_SERIALIZER_TOKEN.findall(code))
+    if occurrences != 1 or not _SERIALIZER_FORM.search(re.sub(r"\s+", "", code)):
+        problems.append(f"{AXIOS_OPTIONS_TS}：`paramsSerializer` 須恰一處生效碼、且為無選項 `params => stringify(params)`"
+                        f"（實得生效碼 {occurrences} 處）——{QS_REMEDY}")
+    try:
+        deps = json.loads(package_json).get("dependencies") or {}
+    except (json.JSONDecodeError, AttributeError):
+        deps = {}
+    qs = deps.get("qs") if isinstance(deps, dict) else None
+    if qs != QS_PINNED_VERSION:
+        problems.append(f"{AXIOS_PACKAGE_JSON}：dependencies.qs 須為 {QS_PINNED_VERSION}（實得 {qs!r}）——{QS_REMEDY}")
+    return problems
+
+
+_RESERVED_DECL = re.compile(
+    r"\bconst\s+RESERVED_ROUTE_NAMES\s*:\s*\[\s*&\s*(?:'static\s+)?str\s*;\s*\d+\s*\]\s*=\s*\[([^\]]*)\]\s*;")
+_RUST_STR = re.compile(r'"((?:[^"\\]|\\.)*)"')
+_TS_TOKEN = re.compile(
+    r"""(?P<space>\s+)|(?P<str>'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)"""
+    r"""|(?P<ident>[A-Za-z_$][\w$]*)|(?P<punct>[{}\[\]():,;])|(?P<other>.)""", re.S)
+_CLOSERS = {"}": "{", "]": "[", ")": "("}
+
+
+_RUST_RAW_STR = re.compile(r'b?r(#*)"')
+_RUST_CHAR = re.compile(r"'(?:\\(?:u\{[0-9A-Fa-f]{1,6}\}|x[0-9A-Fa-f]{2}|.)|[^'\\\n])'")
+
+
+def strip_rust_comments(text):
+    """去 rust 註解（`//` 至行尾〔含 doc 註解〕、`/* */` 區塊〔可巢狀〕）；字串字面（`"…"`、raw 字串 `r#"…"#`）與字元字面
+    （`'x'`）原樣保留、生命週期號（`'static`）之 `'` 不是字面起點——同 strip_ts_comments 之旨：註解掉的碼不得被當成生效碼。"""
+    out = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        raw = (_RUST_RAW_STR.match(text, i)
+               if c in "br" and not (i and (text[i - 1].isalnum() or text[i - 1] == "_")) else None)
+        if raw:
+            end = text.find('"' + raw.group(1), raw.end())
+            j = n if end == -1 else end + 1 + len(raw.group(1))
+        elif c == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                j += 2 if text[j] == "\\" else 1
+            j = min(j + 1, n)
+        elif c == "'":
+            char = _RUST_CHAR.match(text, i)
+            j = char.end() if char else i + 1
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            i = n if j == -1 else j
+            continue
+        elif text.startswith("/*", i):
+            depth, j = 1, i + 2
+            while j < n and depth:
+                step = text[j:j + 2]
+                depth += (step == "/*") - (step == "*/")
+                j += 2 if step in ("/*", "*/") else 1
+            out.append(" ")
+            i = j
+            continue
+        else:
+            j = i + 1
+        out.append(text[i:j])
+        i = j
+    return "".join(out)
+
+
+def rust_reserved_route_names(sys_menu_rs):
+    """sys_menu.rs → (RESERVED_ROUTE_NAMES 成員集, 違規清單)。先經 strip_rust_comments 去註解（行尾 `//`、`/* */` 內之名不計）；
+    宣告須恰一處。"""
+    code = strip_rust_comments(sys_menu_rs)
+    decls = _RESERVED_DECL.findall(code)
+    if len(decls) != 1:
+        return set(), [f"{SYS_MENU_RS}：`const RESERVED_ROUTE_NAMES: [&str; N] = [...];` 宣告須恰一處（實得 {len(decls)} 處）"]
+    return set(_RUST_STR.findall(decls[0])), []
+
+
+def ts_route_names(text, rel):
+    """TS 路由定義檔 → (全部路由名集, `meta.constant: true` 之路由名集, 違規清單)。
+    路由物件＝直屬 `name: '<字串>'` 屬性之物件字面；常量性＝其直屬 `meta: { … }` 內之 `constant: true`。"""
+    tokens = [(m.lastgroup, m.group()) for m in _TS_TOKEN.finditer(strip_ts_comments(text))
+              if m.lastgroup != "space"]
+    stack = []   # 每層：[開括號, 屬性鍵, 路由名, 常量性]
+    names, constants = set(), set()
+    for i, (kind, tok) in enumerate(tokens):
+        prev = tokens[i - 1][1] if i else ""
+        if tok in ("{", "[", "("):
+            key = tokens[i - 2][1] if prev == ":" and i >= 2 and tokens[i - 2][0] == "ident" else None
+            stack.append([tok, key, None, False])
+        elif tok in _CLOSERS:
+            if not stack or stack[-1][0] != _CLOSERS[tok]:
+                return names, constants, [f"{rel}：括號不成對（解析失準）"]
+            opener, _, name, constant = stack.pop()
+            if opener == "{" and name is not None:
+                names.add(name)
+                if constant:
+                    constants.add(name)
+            elif constant:
+                return names, constants, [f"{rel}：`meta.constant: true` 所屬物件缺 `name`（解析失準）"]
+        elif (kind == "ident" and prev in ("{", ",") and i + 2 < len(tokens) and tokens[i + 1][1] == ":"
+              and stack and stack[-1][0] == "{"):
+            value_kind, value = tokens[i + 2]
+            if tok == "name" and value_kind == "str":
+                stack[-1][2] = value[1:-1]
+            elif (tok == "constant" and value == "true" and stack[-1][1] == "meta"
+                  and len(stack) >= 2 and stack[-2][0] == "{"):
+                stack[-2][3] = True
+    if stack:
+        return names, constants, [f"{rel}：括號不成對（解析失準）"]
+    return names, constants, []
+
+
+def reserved_route_names_problems(sys_menu_rs, routes_ts, builtin_ts):
+    """ADR-00044 決定 8 保留路由名對賬腿判準（純函式）：回違規說明清單、空＝通過。
+    rust 成員集須恰等於 routes.ts 之常量路由名集 ∪ builtin.ts 之路由名集；任一側零成員＝解析面空、即紅。"""
+    rust, problems = rust_reserved_route_names(sys_menu_rs)
+    _, constant_routes, p_routes = ts_route_names(routes_ts, ELEGANT_ROUTES_TS)
+    builtin_routes, _, p_builtin = ts_route_names(builtin_ts, BUILTIN_ROUTES_TS)
+    problems += p_routes + p_builtin
+    if problems:
+        return problems
+    for label, found in (("rust RESERVED_ROUTE_NAMES", rust), (f"{ELEGANT_ROUTES_TS} 常量路由", constant_routes),
+                         (f"{BUILTIN_ROUTES_TS} 路由", builtin_routes)):
+        if not found:
+            problems.append(f"{label} 零成員＝解析面空（判準失準或檔形改變）")
+    frontend = constant_routes | builtin_routes
+    if not problems and rust != frontend:
+        problems.append(f"保留路由名集不一致：rust 多出 {sorted(rust - frontend)}、前端兩源多出 {sorted(frontend - rust)}"
+                        f"——{RESERVED_REMEDY}")
+    return problems
+
+
+def anchor_problems(root=REPO_ROOT):
+    """讀 `root` 下兩腿五檔、跑兩支判準；檔缺席或讀不了＝違規一條（fail-loud、不當跳過）。"""
+    texts = {}
+    problems = []
+    for rel in ANCHOR_FILES:
+        try:
+            with open(os.path.join(root, *rel.split("/")), encoding="utf-8") as fh:
+                texts[rel] = fh.read()
+        except OSError as ex:
+            problems.append(f"錨檔讀不了：{rel}（{ex}）——子庫工作樹缺席或損壞、跑 bash tools/bootstrap.sh 檢修")
+    if problems:
+        return problems
+    return (qs_premise_problems(texts[AXIOS_OPTIONS_TS], texts[AXIOS_PACKAGE_JSON])
+            + reserved_route_names_problems(texts[SYS_MENU_RS], texts[ELEGANT_ROUTES_TS],
+                                            texts[BUILTIN_ROUTES_TS]))
+
+
+def run_anchor_legs(root=REPO_ROOT):
+    """跑兩腿並印結果（違規逐條走 stderr）；回 True＝通過。"""
+    problems = anchor_problems(root)
+    for problem in problems:
+        print(f"[check] ✗ {problem}", file=sys.stderr)
+    if problems:
+        return False
+    print("[check] ✓ 跨子庫錨兩腿通過（BL-00109 qs 前提；ADR-00044 決定 8 保留路由名對賬）")
+    return True
+
+
 def _clean_git_env(environ):
     """清掉 GIT_* env：git hook 會把外層 repo 的 GIT_DIR/GIT_INDEX_FILE 洩漏給子行程，
     害對 base-web worktree（.git 為檔）跑 git 抓錯 index（.git/index: Not a directory）
@@ -240,17 +484,20 @@ def staged_snapshot_verdict(run_outer=_run_capture, run_rustapi=_run_git_sub):
 
 def cmd_check(staged_gate=False, run=_run_capture, run_outer=_run_capture,
               run_baseweb=_run_git_sub, run_rustapi=_run_git_sub,
-              output_path=OUTPUT_PATH):
-    """check 子命令：重抽 typings 至暫存路徑、與工作樹快照 byte 比對（rev4:B-128 drift 閘）。
+              output_path=OUTPUT_PATH, anchor_root=REPO_ROOT):
+    """check 子命令：跨子庫純讀檔錨兩腿＋重抽 typings 至暫存路徑、與工作樹快照 byte 比對（rev4:B-128 drift 閘）。
 
     絕不覆寫 OUTPUT_PATH；比對工作樹檔、勿讀 git blob（快照剛改未 commit 的中間態會誤紅）。
     fail 語意（rev5 user 親決 2026-08-01；rev6 002 刀 clarify Q5 同向拍板）：容器不可用→警告＋0 放行；
-    容器可用但重抽失敗→2。"""
+    容器可用但重抽失敗→2。錨兩腿任一違規→2（無條件、不看收窄與容器）。"""
     # ① 無條件合成 self-test（防恆綠）。
     try:
         check_self_test()
     except AssertionError as ex:
         print(f"[check] ✗ self-test 失敗（check 比對邏輯壞）：{ex}", file=sys.stderr)
+        return 2
+    # ①′ 跨子庫純讀檔錨兩腿（BL-00109 qs 前提／ADR-00044 決定 8 保留路由名）：無條件執行、先於下方收窄與容器探測。
+    if not run_anchor_legs(anchor_root):
         return 2
     # ② hook 專用收窄：**兩側** pin 區間皆零變動才跳過（省 npx 秒數）。
     # ★BL-00037③：原只判 base-web 側，rust-api pin bump 帶進的快照改動零觸發——sh 段補了
@@ -323,6 +570,10 @@ def cmd_check(staged_gate=False, run=_run_capture, run_outer=_run_capture,
 # ---------------------------------------------------------------------------
 # 自帶測試（unittest、離線可跑——不觸 docker）
 # ---------------------------------------------------------------------------
+
+# 既有 check 流程案（探測／重抽比對／收窄）只驗各自語意：錨兩腿以「恆通過」替身隔離，免其紅綠繫於本 repo 兩子庫工作樹現況。
+# 兩腿本身的紅綠由 TestAnchorLegs（真檔副本字串構造）與 TestCheckAnchorsUnconditional（接進 cmd_check 之位置）承擔。
+_ANCHORS_PASS = unittest.mock.patch.dict(globals(), {"run_anchor_legs": lambda root: True})
 
 
 class TestCommandAssembly(unittest.TestCase):
@@ -446,6 +697,7 @@ class TestCleanGitEnv(unittest.TestCase):
         self.assertEqual(_clean_git_env(env), {"PATH": "/usr/bin", "HOME": "/home/u"})
 
 
+@_ANCHORS_PASS
 class TestCheckFailOpen(unittest.TestCase):
     """容器不可用（stack 未起）＝警告＋rc 0 放行（rev5 user 親決 2026-08-01；rev6 002 刀 clarify Q5 同向）。"""
 
@@ -473,6 +725,7 @@ class TestCheckFailOpen(unittest.TestCase):
         self.assertIn("wire-schema check 跳過", out.getvalue())
 
 
+@_ANCHORS_PASS
 class TestCheckFailLoud(unittest.TestCase):
     """容器可用但重抽失敗＝rc 2（環境宣稱可用時失敗即異常、靜默跳過＝恆綠洞）。"""
 
@@ -505,6 +758,7 @@ class TestCheckFailLoud(unittest.TestCase):
         self.assertEqual(rc, 2)
 
 
+@_ANCHORS_PASS
 class TestCheckCompare(unittest.TestCase):
     """重抽落暫存路徑 vs 工作樹快照 byte 比對——絕不覆寫快照、不一致指名補救命令。"""
 
@@ -555,6 +809,7 @@ _RAW_GITLINK = ":160000 160000 " + "a" * 40 + " " + "b" * 40 + " M\tbase-web\n"
 _RAW_GITLINK_RA = ":160000 160000 " + "c" * 40 + " " + "d" * 40 + " M\trust-api\n"
 
 
+@_ANCHORS_PASS
 class TestCheckStagedGate(unittest.TestCase):
     """--staged-gate 收窄（hook 專用）：**兩側** pin 區間皆零變動＝跳過 rc 0、不觸容器；
     任一側（typings 側 base-web／快照側 rust-api）有變動＝走完整比對（BL-00037③ 雙側觸發）。"""
@@ -708,6 +963,201 @@ class TestCheckStagedGate(unittest.TestCase):
         self.assertIn("src/typings/common.d.ts", seen["argv"])
         self.assertIn("src/typings/api", seen["argv"])
         self.assertIn("base-web", seen["argv"])
+
+
+def _real_anchor_texts():
+    """五支錨檔之真檔內容（副本字串的出發點；反例一律改副本、不改真檔）。"""
+    texts = {}
+    for rel in ANCHOR_FILES:
+        with open(os.path.join(REPO_ROOT, *rel.split("/")), encoding="utf-8") as fh:
+            texts[rel] = fh.read()
+    return texts
+
+
+def _replace_once(text, old, new):
+    """副本字串內恰一處替換——出發形不在或不唯一即 AssertionError（反例打偏＝測試自身失準、不得靜默綠）。"""
+    if text.count(old) != 1:
+        raise AssertionError(f"反例出發形須恰一處：{old!r}（實得 {text.count(old)} 處）")
+    return text.replace(old, new)
+
+
+def _write_anchor_tree(root, texts):
+    for rel, text in texts.items():
+        path = os.path.join(root, *rel.split("/"))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(text)
+
+
+# 反例參數名 → 錨檔（TestAnchorLegs._problems 用）。
+ANCHOR_KEYS = {"options": AXIOS_OPTIONS_TS, "package": AXIOS_PACKAGE_JSON, "rust": SYS_MENU_RS,
+               "routes": ELEGANT_ROUTES_TS, "builtin": BUILTIN_ROUTES_TS}
+
+
+class TestAnchorLegs(unittest.TestCase):
+    """兩腿判準紅綠（BL-00109 qs 前提；ADR-00044 決定 8 保留路由名）：以真檔副本為出發形、逐一植入反例——
+    改序列化器選項／拿掉或註解掉序列化器／改 qs 版本；rust 側與前端兩源各增刪一名、rust 側註解掉一名。"""
+
+    def setUp(self):
+        self.real = _real_anchor_texts()
+
+    def _problems(self, **mutated):
+        texts = dict(self.real)
+        texts.update({ANCHOR_KEYS[k]: v for k, v in mutated.items()})
+        with tempfile.TemporaryDirectory() as root:
+            _write_anchor_tree(root, texts)
+            return anchor_problems(root)
+
+    def _assert_red(self, needle, **mutated):
+        problems = self._problems(**mutated)
+        self.assertTrue(problems, "植入反例須紅")
+        self.assertTrue(any(needle in p for p in problems),
+                        f"紅須指名 {needle!r}；實得 {problems}")
+
+    def test_real_file_copies_pass(self):
+        self.assertEqual(self._problems(), [])
+
+    # ── BL-00109 qs 前提腿 ──
+    def test_serializer_with_options_red(self):
+        self._assert_red("paramsSerializer", options=_replace_once(
+            self.real[AXIOS_OPTIONS_TS], "return stringify(params);",
+            "return stringify(params, { strictNullHandling: true });"))
+
+    def test_serializer_removed_red(self):
+        self._assert_red("paramsSerializer", options=_replace_once(
+            self.real[AXIOS_OPTIONS_TS],
+            "    paramsSerializer: params => {\n      return stringify(params);\n    }\n", ""))
+
+    def test_serializer_commented_out_red(self):
+        """註解掉的序列化器不是生效碼（axios 回預設＝null 欄整個丟掉）——判準去註解後才比對。兩形：逐行 `//`；以及
+        `/* … */` 包住的單行表達式體——後者去空白後字面仍合判準形，只有去註解擋得住。"""
+        serializer = "    paramsSerializer: params => {\n      return stringify(params);\n    }\n"
+        for commented in ("    // paramsSerializer: params => {\n    //   return stringify(params);\n    // }\n",
+                          "    /* paramsSerializer: params => stringify(params), */\n"):
+            self._assert_red("paramsSerializer", options=_replace_once(
+                self.real[AXIOS_OPTIONS_TS], serializer, commented))
+
+    def test_stringify_not_from_qs_red(self):
+        self._assert_red("from 'qs'", options=_replace_once(
+            self.real[AXIOS_OPTIONS_TS], "import { stringify } from 'qs';",
+            "import { stringify } from 'query-string';"))
+
+    def test_qs_version_changed_red(self):
+        pkg = json.loads(self.real[AXIOS_PACKAGE_JSON])
+        self.assertEqual(pkg["dependencies"]["qs"], QS_PINNED_VERSION, "出發形須為釘版")
+        pkg["dependencies"]["qs"] = "6.14.0"
+        self._assert_red("6.14.0", package=json.dumps(pkg))
+
+    # ── ADR-00044 決定 8 保留路由名對賬腿 ──
+    RUST_DECL = ('pub const RESERVED_ROUTE_NAMES: [&str; 7] =\n'
+                 '    ["403", "404", "500", "iframe-page", "login", "root", "not-found"];')
+
+    def test_rust_side_add_one_red(self):
+        self._assert_red("about", rust=_replace_once(
+            self.real[SYS_MENU_RS], self.RUST_DECL,
+            'pub const RESERVED_ROUTE_NAMES: [&str; 8] =\n'
+            '    ["403", "404", "500", "iframe-page", "login", "root", "not-found", "about"];'))
+
+    def test_rust_side_remove_one_red(self):
+        self._assert_red("login", rust=_replace_once(
+            self.real[SYS_MENU_RS], self.RUST_DECL,
+            'pub const RESERVED_ROUTE_NAMES: [&str; 6] =\n'
+            '    ["403", "404", "500", "iframe-page", "root", "not-found"];'))
+
+    def test_rust_side_name_commented_out_red(self):
+        """註解掉的成員不是生效碼（常數真少了該名、新增寫端放得過）——rust 側判準去註解後才比對。兩形：行尾 `//` 註掉一名
+        （多行陣列）；`/* */` 註掉一名，且宣告型別寫 `&'static str`——生命週期號 `'` 不得被當成字串起點而把註解連帶保留。"""
+        for commented in ('pub const RESERVED_ROUTE_NAMES: [&str; 6] = [\n'
+                          '    "403", "404", "500", "iframe-page", "login", "not-found", // "root",\n];',
+                          "pub const RESERVED_ROUTE_NAMES: [&'static str; 6] =\n"
+                          '    ["403", "404", "500", "iframe-page", "login", /* "root", */ "not-found"];'):
+            self._assert_red("root", rust=_replace_once(self.real[SYS_MENU_RS], self.RUST_DECL, commented))
+
+    def test_routes_constant_add_one_red(self):
+        self._assert_red("about", routes=_replace_once(
+            self.real[ELEGANT_ROUTES_TS], "      title: 'about',\n",
+            "      title: 'about',\n      constant: true,\n"))
+
+    def test_routes_constant_remove_one_red(self):
+        self._assert_red("login", routes=_replace_once(
+            self.real[ELEGANT_ROUTES_TS], "      i18nKey: 'route.login',\n      constant: true,\n",
+            "      i18nKey: 'route.login',\n"))
+
+    def test_builtin_add_one_red(self):
+        self._assert_red("extra-builtin", builtin=_replace_once(
+            self.real[BUILTIN_ROUTES_TS], "/** builtin routes",
+            "const EXTRA_ROUTE: CustomRoute = {\n  name: 'extra-builtin',\n  path: '/extra',\n"
+            "  meta: {\n    title: 'extra',\n    constant: true\n  }\n};\n\n/** builtin routes"))
+
+    def test_builtin_remove_one_red(self):
+        start = self.real[BUILTIN_ROUTES_TS].index("const NOT_FOUND_ROUTE")
+        end = self.real[BUILTIN_ROUTES_TS].index("};\n", start) + len("};\n")
+        text = _replace_once(self.real[BUILTIN_ROUTES_TS], self.real[BUILTIN_ROUTES_TS][start:end], "")
+        text = _replace_once(text, "[ROOT_ROUTE, NOT_FOUND_ROUTE]", "[ROOT_ROUTE]")
+        self._assert_red("not-found", builtin=text)
+
+    def test_missing_anchor_file_red_not_skip(self):
+        with tempfile.TemporaryDirectory() as root:
+            texts = dict(self.real)
+            del texts[BUILTIN_ROUTES_TS]
+            _write_anchor_tree(root, texts)
+            problems = anchor_problems(root)
+        self.assertTrue(any(BUILTIN_ROUTES_TS in p for p in problems), problems)
+
+
+
+class TestCheckAnchorsUnconditional(unittest.TestCase):
+    """兩腿在 cmd_check 的位置：合成 self-test 之後、staged-gate 短路與容器探測之前**無條件**執行——
+    staged-gate 判跳過、容器不可用，兩腿都照跑；違規 rc 2 且不觸任何容器／git 子行程。"""
+
+    @staticmethod
+    def _boom(argv):
+        raise AssertionError("錨腿違規即 return 2、不得觸發容器探測／重抽／git")
+
+    @staticmethod
+    def _unstaged(argv):
+        return subprocess.CompletedProcess(argv, 0, "", "")   # 兩側 gitlink 皆未 staged＝收窄判跳過
+
+    def _tree(self, root, qs_version=QS_PINNED_VERSION):
+        texts = _real_anchor_texts()
+        pkg = json.loads(texts[AXIOS_PACKAGE_JSON])
+        pkg["dependencies"]["qs"] = qs_version
+        texts[AXIOS_PACKAGE_JSON] = json.dumps(pkg)
+        _write_anchor_tree(root, texts)
+
+    def test_staged_gate_skip_still_runs_legs_healthy(self):
+        """正向：收窄判跳過時，錨腿先跑且通過、才輪到跳過訊息（位置先於短路）。"""
+        with tempfile.TemporaryDirectory() as root:
+            self._tree(root)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc = cmd_check(staged_gate=True, run=self._boom, run_outer=self._unstaged,
+                               run_baseweb=self._boom, run_rustapi=self._boom, anchor_root=root)
+        self.assertEqual(rc, 0)
+        text = out.getvalue()
+        self.assertIn("跨子庫錨兩腿通過", text)
+        self.assertIn("跳過", text)
+        self.assertLess(text.index("跨子庫錨兩腿通過"), text.index("跳過"))
+
+    def test_staged_gate_skip_still_runs_legs_red(self):
+        """反向：收窄本會判跳過，錨腿違規照樣 rc 2（不被短路吞掉）。"""
+        with tempfile.TemporaryDirectory() as root:
+            self._tree(root, qs_version="6.14.0")
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                rc = cmd_check(staged_gate=True, run=self._boom, run_outer=self._unstaged,
+                               run_baseweb=self._boom, run_rustapi=self._boom, anchor_root=root)
+        self.assertEqual(rc, 2)
+        self.assertIn("6.14.0", err.getvalue())
+        self.assertNotIn("跳過", out.getvalue())
+
+    def test_container_unavailable_still_runs_legs_red(self):
+        """容器不可用本會具名跳過 rc 0；錨腿違規先一步 rc 2（位置先於容器探測、純讀檔不觸容器）。"""
+        with tempfile.TemporaryDirectory() as root:
+            self._tree(root, qs_version="6.14.0")
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                rc = cmd_check(run=self._boom, anchor_root=root)
+        self.assertEqual(rc, 2)
 
 
 class TestCheckUsage(unittest.TestCase):
