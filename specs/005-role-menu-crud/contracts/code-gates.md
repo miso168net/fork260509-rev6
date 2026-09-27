@@ -10,7 +10,7 @@
 - **名冊載入變異自證**（首個動 base-web 之單元順做）：暫把新列範圍欄任一反引號路徑之**反引號內**字面改為不含 `/` 之非路徑 token（例 `role-index`；觸發 `load_roster` 路徑形斷言 die）→ `tools/fork-delta-lint.py` 當場紅 → 還原（RL-0005 回基準態）；拔反引號形於用途 (ii) 標記出現前恆綠、不得作自證。
 - **各新增圈界塊「拔標記必紅」**：逐塊拔 START／END → lint 必報未圈界新增 → 還原。★插入位置不得落在物件最末項之後（research R14）。
 - **生成檔**：`src/typings/components.d.ts` 以 unplugin 重算、`git -C base-web diff` 只准出現 `NTreeSelect` 兩行增列（介面內一行、全域 const 區一行）、其餘任何差異即紅；重算檔與彈窗同 commit；路由外掛產物四檔零變動（`tools/route-artifact-gate.py` 冪等綠）。
-- **變更檔集斷言**（檔級硬邊界之機器半邊；前端兩單元出口＋全量閘復跑）：`git -C base-web diff --name-only --diff-filter=M <基線>..HEAD` ⊆ 用途 (ii) 九檔 ∪ {`src/typings/components.d.ts`（生成檔）、`src/views/manage/ip-rule/index.vue`、`src/locales/langs/zh-tw.ts`（rev6 自有檔）}；`--diff-filter=A` 恰為 `src/typings/api/rev6-{role,menu}-admin.d.ts` 與 `src/service/api/rev6-{role,menu}-admin.ts` 四檔；`--diff-filter=DR` 為空。
+- **變更檔集斷言**（檔級硬邊界之機器半邊；前端兩單元出口＋全量閘復跑）：`git -C base-web diff --name-only --diff-filter=M <基線>..HEAD` ⊆ 用途 (ii) 九檔 ∪ {`src/typings/components.d.ts`（生成檔）、`src/views/manage/ip-rule/index.vue`、`src/locales/langs/zh-tw.ts`（rev6 自有檔）} ∪ {`src/hooks/business/captcha.ts`（具名例外：005 刀 U13b 揭出之 003 刀既有缺漏、只補修改型註解標記、碼行零改；憲法 1.5.1、ADR-00048）}；`--diff-filter=A` 恰為 `src/typings/api/rev6-{role,menu}-admin.d.ts` 與 `src/service/api/rev6-{role,menu}-admin.ts` 四檔；`--diff-filter=DR` 為空。
 - **ip-rule 頁**（rev6 新檔、免授權）：模板靜態斷言 `TableHeaderOperation` 帶 `:show-add="hasAuth('ipRule:add')"` 與 `:show-delete="false"`、不再覆寫 `#default` 插槽。
 
 ## §2 新 lint 兩支

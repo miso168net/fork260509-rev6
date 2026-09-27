@@ -25,7 +25,7 @@
 
 **Performance Goals**: 無業務量化目標（dev workspace）。紀律面：①判定面每請求零外部查詢不變（同步只在移除面寫端 commit 後、治理 QPS≈0）②全量重建一次＝163 列級政策載入、毫秒級③選單治理清單全取＝seed 78 列一次、樹組裝 O(n)④pre-commit 全鏈 ≤45s 警戒（新 python 腿為純讀檔、秒級）
 
-**Constraints**: 零 migration／零 seed／零新依賴／13 碼矩陣零觸碰且零新錯誤變體／AppState 恰七欄不動（ADR-00036）／Amendment 硬序（accepted 前 base-web 既有檔零 diff、含 locale backend 鍵）／§I.5 rev5 參照紀律（重打字、註解重寫、清單 A／B 烤入 prompt）／§III fork-delta 三元組（修改型只在九檔、兩彈窗零 diff）／整樹掃描既有腿約束（`ipgate` 禁 `.store(`／`::swap(` 等呼叫形、`throttle` 禁鎖快取字面、`fallback_event` debug 恰 1、`entity_access_lint`）／review 只讀／rev5 樹與 stack 唯讀／編排全角色 opus[1m] xhigh、CDP 一律 opus
+**Constraints**: 零 migration／零 seed／零新依賴／13 碼矩陣零觸碰且零新錯誤變體／AppState 恰七欄不動（ADR-00036）／Amendment 硬序（accepted 前 base-web 既有檔零 diff、含 locale backend 鍵）／§I.5 rev5 參照紀律（重打字、註解重寫、清單 A／B 烤入 prompt）／§III fork-delta 三元組（用途 (ii) 修改型只在九檔、兩彈窗零 diff）／整樹掃描既有腿約束（`ipgate` 禁 `.store(`／`::swap(` 等呼叫形、`throttle` 禁鎖快取字面、`fallback_event` debug 恰 1、`entity_access_lint`）／review 只讀／rev5 樹與 stack 唯讀／編排全角色 opus[1m] xhigh、CDP 一律 opus
 
 **Scale/Scope**: 39 routes（17 新：GET 7／POST 6／DELETE 4）／43 msg keys（24 新）／9 AppError 變體（0 新）／5 AuditOperation 詞（0 新）／3 archive reason／5 觸發寫端／7 進域寫端／4 分頁端點＋1 例外／base-web 修改型 6 檔＋新增型圈界 3 檔（預估 12 塊）＋4 新檔＋1 產物檔／憲法 +1 島 +1 用途 +2 島 E 句＋2 簿記句／ADR 6／BACKLOG done 19＋改 3＋add 0／執行單元 18（U0～U17；派發真源＝tasks.md、骨架＝research R18）
 

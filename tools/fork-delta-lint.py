@@ -17,9 +17,13 @@
     rev6 刀序重定、不整表照搬）。
 
 最原始源-基線＝`fork260509-soybean-admin-base/` @ `example` 分支 tip（實體目錄、須先切到；bootstrap 斷言在場）。
-判定：base-web 若改動 example 既有 inline 行（該行不再逐字存在於我方版）→ 我方檔內**必須**有
+判定：base-web 若刪改 example 既有 inline 行 → 我方檔內**必須**有
 `// [rev6-inline …] 原行: <example 那行原始內容>` 標記、且 `原行:` 後內容＝基線該行（正規化後相等）。
-缺 → 紅、指名「檔:上游原行」。我方新檔／純新增行（example 沒有）不要求原行。
+「刪改」逐值比次數（005 刀 U13b；rev5 形為集合判定）：某基線碼行值之基線出現次數 > 我方存留次數
+（不計新增型圈界塊內行）＋有效 `原行:` 記錄次數＝缺——非唯一基線行（`/>`、`})` 之類純結構標點行
+亦然、不豁免）被刪改其一同樣要記錄。缺 → 紅、指名「檔:上游原行」。我方新檔／純新增行（example 沒有）
+不要求原行。圈界塊外與基線同字面之新增行照計我方存留次數、可掩蓋刪改＝機器守不及（灌水路徑逐條見
+`find_unmarked_additions` 已知可接受殘留③）。
 
 ★補位（rev4:B-052）：新增型（基線沒有的新行）雖不要原行，但依 §III 須走「新增型圈界」rev6-inline
 標記——`find_unmarked_additions` 補這道，令「所有 fork-delta（修改＋新增）皆帶 rev6-inline 標記、
@@ -44,6 +48,7 @@ rev4 舊面只掃 src/，`.env*` 與 build/ 的 fork-delta 全靠人工 review�
 每次執行**先跑 self-test**（合成缺原行/缺圈界樣本、證 lint 真能攔——防 vacuous 恆綠），無 `test` 時再跑實掃。
 退出碼：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗、源倉缺席或未在 example、self-test 敗）／64 用法錯。
 """
+import collections
 import contextlib
 import difflib
 import io
@@ -65,6 +70,9 @@ SENTINEL = "（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入�
 USAGE = "用法：tools/fork-delta-lint.py [test] [--constitution <path>]"
 
 MARKER = re.compile(r"原行:\s*(.*\S)\s*$")
+# 新增型圈界塊首／塊尾（活書 08 §8.4 定形 `[rev6-inline <軌道名>[(<用途>)]+ <刀名> START]`／同名 `… END]`）：
+# 取 token 後首個 `]` 之前緊接之整詞 START／END（self-test CNT14～CNT16 釘住）；供 [`_outside_addition_blocks`] 劃塊（005 刀 U13b）。
+BLOCK_EDGE = re.compile(r"\[rev6-inline\s[^\]]*\b(START|END)\]")
 
 # 軌道名＋用途抽取（rev5 T069②＋rev5:B-068；rev5:B-058 實測五種標記形都要吃）：group(1) 捕 `[rev6-inline`
 # 後首個大寫 token——字元類止於 `(`（用途後綴）、`+`（新增型尾綴）、空白（刀號）與 `]`，
@@ -362,12 +370,35 @@ def norm(line):
     return line.strip().rstrip(",;").rstrip()
 
 
+def _outside_addition_blocks(lines):
+    """回 lines 中不在新增型圈界塊內的行（塊首、塊尾標記行本身保留）；唯一消費者＝[`find_missing`] 計我方次數。
+    塊內行是新增碼、不是基線行的存留——與基線同字面者若計入，基線那行被刪改後同字面行落在新增塊內即掩蓋刪改。
+    塊首／塊尾＝合法標記行（認得形沿用 [`_block_has_marker`]）之首個 `]` 緊接整詞 `START`／`END`（見 [`BLOCK_EDGE`]）；
+    塊尾缺席＝排除至檔尾（多報、不少報）；巢狀以深度計、多出的塊尾不使深度為負。★只排除圈界塊：單行形新增型標記
+    所在 change-block 之各行、無標記之純結構標點新增行、與修改型同塊之新增行皆照計——灌水路徑、機器守不及
+    （見 [`find_unmarked_additions`] 已知可接受殘留③）。"""
+    out, depth = [], 0
+    for l in lines:
+        m = BLOCK_EDGE.search(l) if _block_has_marker([l]) else None
+        if m:
+            depth = depth + 1 if m.group(1) == "START" else max(0, depth - 1)
+            out.append(l)
+        elif depth == 0:
+            out.append(l)
+    return out
+
+
 def find_missing(base_content, ours_content):
-    """回傳「基線有、我方既無此行、又無對應原行標記」的上游**原行**（供逐字補回）。
-    ★比對用 norm（去尾標點）、輸出保原行原貌（含尾逗號等）。"""
+    """回傳「基線行被刪改卻缺對應原行標記」的上游**原行**（供逐字補回）。判準逐值比**次數**（005 刀 U13b）：
+    某基線碼行之 norm 值，基線出現次數 > 我方存留次數＋有效記錄（帶 `rev6-inline` token 之 `原行:`）次數＝缺。
+    舊形以集合判「此值我方是否仍有」——同檔另有同字面行即當成「仍在」，非唯一基線行（`/>`、`})` 之類）
+    被刪改其一時缺 `原行:` 照綠；純結構標點行**不豁免**。我方存留次數不計新增型圈界塊內行
+    （[`_outside_addition_blocks`]）、其餘新增行照計＝灌水殘留（[`find_unmarked_additions`] 已知可接受殘留③、
+    機器守不及）。★比對用 norm（去尾標點）、輸出保原行原貌（取該值於基線之首見形、
+    含尾逗號等）、同值只報一次、依基線首見序。"""
     ours = ours_content.splitlines()
-    ours_lines = {norm(l) for l in ours}
-    recorded = set()
+    ours_count = collections.Counter(norm(l) for l in _outside_addition_blocks(ours))
+    recorded = collections.Counter()
     for l in ours:
         if "[rev6-inline" not in l:
             continue  # rev5 T069③：裸 `原行:`（無 rev6-inline token）不算已記錄——防形制外洗白
@@ -381,18 +412,17 @@ def find_missing(base_content, ours_content):
                 if head.startswith(opener) and val.endswith(closer):
                     val = val[: -len(closer)].rstrip()
                     break
-            recorded.add(norm(val))
-    seen = set()
-    missing = []
+            recorded[norm(val)] += 1
+    base_count, first_raw = collections.Counter(), {}
     for raw in base_content.splitlines():
         if not is_code(raw):
             continue
         n = norm(raw)
-        if not n or n in ours_lines or n in recorded or n in seen:
+        if not n:
             continue
-        seen.add(n)
-        missing.append(raw.strip())  # 原行原貌（去首尾空白、保尾逗號）
-    return missing
+        base_count[n] += 1
+        first_raw.setdefault(n, raw.strip())  # 原行原貌（去首尾空白、保尾逗號）；dict 保基線首見序
+    return [raw for n, raw in first_raw.items() if base_count[n] > ours_count[n] + recorded[n]]
 
 
 def is_generated(content):
@@ -470,7 +500,19 @@ def find_unmarked_additions(base_content, ours_content):
     常值內子字串不算）→報首行。分工：修改型缺原行→find_missing；純新增（新 import/欄位）缺圈界→本函式。
     ★已知可接受殘留（rev5 兩輪對抗驗證後定）：①與修改型同塊（無 context 分隔）的額外未圈界新增歸該塊
     原行標記涵蓋、不另報（修它會重引入 captcha 型替換誤報張力）；②字串常值內未閉合 /* 之後續行罕見被當
-    註解（窄 FN；不做 string-parsing）。假 DEL 洗白被 find_missing『刪行缺原行』兜住。"""
+    註解（窄 FN；不做 string-parsing）；③（find_missing 面、005 刀 U13b 定）灌水路徑：find_missing 的我方存留
+    次數只扣新增型圈界塊內行，下列新增行若與某基線行同字面（norm 後）照計——該基線行被刪改而無 `原行:` 時即被
+    掩蓋、本函式亦不攔＝**機器守不及**：③a 單行形新增型標記所在 change-block 之各行（不只次行；整塊有標記即放行）；
+    ③b 被 [`_structural_only`] 放過、不帶任何標記之純結構標點新增行（任意位置）——恰為逐值比次數所要抓之 `/>`、
+    `})`、`}` 一類；例：以單行形標記包住既有碼時，閉合之 `}`／`})` 被 context 隔開而自成無標記純結構新增塊；
+    ③c 殘留①同塊吸收之新增行（與修改型同一替換塊）。self-test CNT18～CNT20（記載型）逐條釘住現行不攔——判準若改
+    使之轉紅＝同批改本段。只排除圈界塊之據（005 刀 U13b 實測）：排除圈界塊內行＝對補標記前現樹新增紅 1 筆且為
+    真缺漏（`captcha.ts` 之 `start();` 移入塊內條件式、已補 `原行:`）；對補標記後現樹（該時紅 0）另以下列形排除之
+    新增紅——單行形標記之次行 1 筆且為誤報（`user-avatar.vue` 之 `authStore.resetStore();`＝單行形註記之逐字未動
+    基線行）；③c 以 difflib 對齊之替換塊新增行 18 筆且皆為誤報（`menu/index.vue` 上游操作欄 JSX 僅縮排變動、norm
+    後逐字存留，difflib 以原字比對判為替換）；③a／③b 以 difflib change-block 0 筆——閉此二路徑須令 find_missing
+    另依 difflib 對齊分塊，未於 005 刀 U13b 採行。self-test CNT6／CNT10 兩向釘住圈界塊排除與次行不排除。假 DEL
+    洗白被 find_missing『刪行缺原行』兜住（逐值比次數：非唯一基線行被刪其一亦然；③所列灌水路徑除外）。"""
     out = []
     added, removed = [], []
     seen_hunk = False
@@ -603,6 +645,76 @@ def self_test():
         "self-test D3：template 形原行值與基線不符仍須攔"
     # spec-compliance-003 L4-4：修改型樓地板守——0 處須回錯因、≥1 處放行。
     assert floor_violation(0) and floor_violation(19) is None, "self-test FL：修改型 0 處須 die、≥1 處放行"
+    # ── 005 刀 U13b：find_missing 逐值比次數（基線次數 > 我方存留＋有效記錄＝缺；純結構標點行不豁免）。
+    #    集合判定形＝同檔另有同字面行即當「仍在」：被刪改的 `/>`、`})` 之類非唯一基線行缺 `原行:` 照綠。
+    cmark = "<!-- [rev6-inline BASE-WEB-MANAGE-PAGE-WIRING(ii) 005-role-menu-crud] 原行: {} -->\n"
+    cbase = "<A\n  x\n/>\n<B\n  y\n/>\n"
+    cdel = "<A\n  x\n/>\n<B\n  y\n>\n  <slot />\n</B>\n"           # 第二個 `/>` 改對標籤、同檔另一 `/>` 仍在
+    assert find_missing(cbase, cdel) == ["/>"], \
+        "self-test CNT1：非唯一基線行被刪改其一、無標記須攔（集合判定形在此恆綠）"
+    assert find_missing(cbase, cdel.replace("<B\n", "<B\n" + cmark.format("/>"))) == [], \
+        "self-test CNT2：同情形帶 `原行:` 標記須過"
+    jbase = "f(() => {\n  a();\n})\ng(() => {\n  b();\n})\n"
+    jsame = jbase.replace("  b();\n", "  // [rev6-inline X(c) 003-auth-session] 原行: b();\n  c();\n")
+    assert find_missing(jbase, jsame) == [], "self-test CNT3：基線 2 次、我方 2 次＝綠（次數相等不誤報）"
+    tri = "  }));\n"
+    tbase3 = "p(() => ({\n" + tri + "q(() => ({\n" + tri + "r(() => ({\n" + tri
+    rmk = "// [rev6-inline X(ii) 005-role-menu-crud] 原行: }));\n"
+    tours1 = "p(() => ({\n" + tri + "q(() => ({\n  })).then(z);\nr(() => ({\n  })).then(z);\n"   # 三支 `}));` 改掉兩支
+    assert find_missing(tbase3, rmk + rmk + tours1) == [], \
+        "self-test CNT4：基線 3、我方 1、記錄 2＝綠（記錄次數補足）"
+    assert find_missing(tbase3, rmk + tours1) == ["}));"], \
+        "self-test CNT5：基線 3、我方 1、記錄 1＝紅（記錄只算次數、不因同值已記錄一次就全數放行）"
+    assert find_missing("b();\n})\na();\n});\n", "x();\n") == ["b();", "})", "a();"], \
+        "self-test CNT13：同值缺 2 次只報一次、取基線首見形、依基線首見序（`})`／`});` norm 同值）"
+    # 灌水面：新增型圈界塊（START…END）內之同字面行不計我方次數——否則基線那行被刪改、
+    # 同字面行搬進新增塊即掩蓋刪改（captcha 型：無條件 `start();` 改成塊內條件式）。
+    sbase = "run();\nstart();\nend();\n"
+    sblk = ("run();\n// [rev6-inline X(c)+ 003-auth-session START] 條件化\nif (ok) {\n  start();\n}\n"
+            "// [rev6-inline X(c)+ 003-auth-session END]\nend();\n")
+    assert find_missing(sbase, sblk) == ["start();"], \
+        "self-test CNT6：圈界塊內同字面行不墊高我方次數——基線行被刪改仍須攔"
+    assert find_missing(sbase, "// [rev6-inline X(c) 003-auth-session] 原行: start();\n" + sblk) == [], \
+        "self-test CNT7：CNT6 補 `原行:` 標記須過"
+    assert find_missing("start();\n", "start();\n" + sblk.replace("run();\n", "").replace("end();\n", "")) == [], \
+        "self-test CNT8：塊外基線行仍在、塊內另有同字面行＝綠（排除只扣塊內、不誤報）"
+    assert find_missing("a();\nb();\n", "a();\n// [rev6-inline X(c)+ 003-auth-session START] 缺塊尾\nb();\n") \
+        == ["b();"], "self-test CNT9：塊尾缺席＝排除至檔尾（多報、不少報）"
+    assert find_missing("a();\nreset();\n",
+                        "a();\n// [rev6-inline X+ 003-auth-session] 下一行＝基線既有行\nreset();\n") == [], \
+        "self-test CNT10：單行形新增型標記之次行不排除（單行形可註記未動之基線行、排除即誤報）"
+    edge = "// [rev6-inline X(c)+ 003-auth-session {}]\n"
+    assert find_missing("start();\n", edge.format("END") + edge.format("START") + "if (ok) {\n  start();\n}\n"
+                        + edge.format("END")) == ["start();"], \
+        "self-test CNT11：多出的塊尾不使深度為負（否則其後整塊的塊內行被計入、掩蓋刪改）"
+    assert find_missing("start();\n", edge.format("START") + "log('[rev6-inline X(c)+ 003-auth-session END]');\n"
+                        + "start();\n" + edge.format("END")) == ["start();"], \
+        "self-test CNT12：字串常值內的塊尾字樣不算塊尾（塊首／塊尾限合法標記行、沿用 _block_has_marker 認得形）"
+    # BLOCK_EDGE 形狀三面（token 後首個 `]` 之前緊接整詞 START／END）：誤認塊首＝其後基線行被排除＝誤報。
+    assert find_missing("a();\n", "// [rev6-inline X+ 003-auth-session] 前置說明 [START]\na();\n") == [], \
+        "self-test CNT14：START 須在 token 後首個 `]` 之前——標記說明文字內之 `[START]` 不算塊首"
+    assert find_missing("a();\n", "// [rev6-inline BASE-WEB-RESTART]\na();\n") == [], \
+        "self-test CNT15：START 須為整詞——`RESTART]` 之尾綴不算塊首"
+    assert find_missing("a();\n", "// [rev6-inline X+ 003-auth-session STARTUP] 說明\na();\n") == [], \
+        "self-test CNT16：START 須緊接 `]`——`STARTUP]` 之前綴不算塊首"
+    assert find_missing("b();\n", edge.format("START") + edge.format("START") + "x();\n" + edge.format("END")
+                        + "b();\n" + edge.format("END")) == ["b();"], \
+        "self-test CNT17：巢狀塊以深度計——內層塊尾之後仍在外層塊內、不計我方次數"
+    # 記載型（find_unmarked_additions 已知可接受殘留③a～③c＝灌水路徑、機器守不及）：釘住現行兩道皆不攔——
+    #   判準若改使下列轉紅＝同批改殘留③文字；對照組先證「刪而未記錄」本身會紅、綠是灌水所致。
+    pbase = "p(() => {\n  a();\n});\nq(() => {\n  b();\n});\nk1();\nk2();\nk3();\nk4();\n"
+    pmk = "// [rev6-inline X(c) 003-auth-session] 原行: {}\n"
+    pdel = pbase.replace("q(() => {\n  b();\n});\n", pmk.format("q(() => {") + pmk.format("b();"))
+    assert find_missing(pbase, pdel) == ["});"], "self-test CNT18 對照組：第二支 `});` 刪而未記錄須攔"
+    pad_b = pdel.replace("k4();\n", "k4();\n});\n")
+    assert find_missing(pbase, pad_b) == [] and find_unmarked_additions(pbase, pad_b) == [], \
+        "self-test CNT18（記載型、殘留③b）：任意處新增無標記純結構 `});` 墊高我方次數、兩道現行皆不攔"
+    pad_a = pdel + "// [rev6-inline X+ 005-role-menu-crud] 新增回呼\nr(() => {\n  c();\n});\n"
+    assert find_missing(pbase, pad_a) == [] and find_unmarked_additions(pbase, pad_a) == [], \
+        "self-test CNT19（記載型、殘留③a）：單行形標記塊內標記後第 3 行 `});`（非次行）墊高我方次數、兩道現行皆不攔"
+    pad_c = pdel.replace("k4();\n", pmk.format("k4();") + "h(() => {\n  d();\n});\n")
+    assert find_missing(pbase, pad_c) == [] and find_unmarked_additions(pbase, pad_c) == [], \
+        "self-test CNT20（記載型、殘留③c）：與修改型同一替換塊之新增 `});` 墊高我方次數、兩道現行皆不攔"
 
     # 補位 find_unmarked_additions（新增型圈界覆蓋；rev4:B-052）：
     marked_add = "  content: response.data.msg,\n  other: keep,\n  // [rev6-inline I18N-WIRING(ii)] 新鍵\n  brandNew: 1,\n"
@@ -1165,7 +1277,7 @@ def main(argv):
     except AssertionError as e:
         die(f"self-test 失敗（lint 邏輯壞）：{e}")
     if test_only:
-        print("[fork-delta-lint] ✓ self-test 過（修改型缺原行／新增型缺圈界／新檔檔頭標記（含 `+` 尾綴定形）＋軌道×路徑"
+        print("[fork-delta-lint] ✓ self-test 過（修改型缺原行（逐值比次數＋圈界塊內行不計＋灌水殘留③記載型）／新增型缺圈界／新檔檔頭標記（含 `+` 尾綴定形）＋軌道×路徑"
               "（含真 scan 接線 fixture）／五形抽取＋token 換世代／"
               "分層授權判定／範圍欄展開器／掃描面 fixture／名冊載入守 RG1～RG24 含空 ★表哨兵句一正一反"
               "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／template 形行尾 `-->`／修改型樓地板守／CLI 引數）")
@@ -1177,8 +1289,9 @@ def main(argv):
     errs, unmarked, rogue, checked_total, stats = scan(s1, s2)
     if errs or unmarked or rogue:
         if errs:
-            print(f"[fork-delta-lint] ✗ {len(errs)} 條 example 上游 inline 行被改動卻缺 `原行:` 標記"
-                  f"（constitution §III 修改型；基線 {BASELINE}@{tip}）：")
+            print(f"[fork-delta-lint] ✗ {len(errs)} 條 example 上游 inline 行被刪改卻缺 `原行:` 標記"
+                  f"（constitution §III 修改型；逐值比次數＝基線次數 > 我方存留＋記錄、"
+                  f"非唯一行被刪改其一亦算；基線 {BASELINE}@{tip}）：")
             for rel, m in errs:
                 print(f"    {rel}｜缺 原行: {m}")
             print("  補法：緊鄰改動行之上加 `// [rev6-inline <track>] 原行: <上列原碼>`。")

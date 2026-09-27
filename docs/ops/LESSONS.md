@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00038 -->
+<!-- next: LL-00039 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -43,3 +43,4 @@
 | LL-00035 | casbin 自動存檔下 `add_policy` 先寫轉接器、後加記憶體面——已存在之政策回 `Err`（唯一鍵違反）而非 `Ok(false)`，且 nextval 已被吃掉（005 刀 U3） | none：第三方庫（casbin 2.20.0）寫入次序之語意、非流程規則可守 | code | [LL-00035-casbin-autosave-adds-to-adapter-before-model-duplicate-errs-and-burns-nextval.md](LESSONS/LL-00035-casbin-autosave-adds-to-adapter-before-model-duplicate-errs-and-burns-nextval.md) |
 | LL-00036 | compile_fail 反段的「正面孿生」沒涵蓋反段獨有的 token——該 token 失效時反段因錯的理由照綠，doc「孿生會紅」之宣稱不成立（005 刀 U3、U4 連兩單元、回溯命中 004 域既有碼） | RL-0051 | none | [LL-00036-compile-fail-twin-misses-token-unique-to-negative-leg.md](LESSONS/LL-00036-compile-fail-twin-misses-token-unique-to-negative-leg.md) |
 | LL-00037 | 先紅階段在交易體內放會 panic 的佔位（`todo!()`）——panic 留下持列鎖的「交易中閒置」連線，其後守衛 Drop 等那把鎖、整輪測試永久卡住（非終止型故障；005 刀 U7） | RL-0066 | none | [LL-00037-todo-stub-panics-inside-db-transaction-hangs-guard-drop.md](LESSONS/LL-00037-todo-stub-panics-inside-db-transaction-hangs-guard-drop.md) |
+| LL-00038 | 在 host 跑 base-web 的 pnpm 指令會自動 install 並改寫外層 hooks；而 dev 容器實際共用 host 的 `base-web/node_modules`——具名 volume 在 9p bind 下沒掛上，刪 host 那份等於刪容器那份（005 刀 U13b） | RL-0057 | none | [LL-00038-host-pnpm-autoinstall-rewrites-hooks-and-container-shares-host-node-modules.md](LESSONS/LL-00038-host-pnpm-autoinstall-rewrites-hooks-and-container-shares-host-node-modules.md) |

@@ -332,7 +332,7 @@
 
 **I. 前端**
 
-- **FR-058**: role 頁與 menu 頁 MUST 接真後端（列表／搜尋／新增編輯抽屜或彈窗／刪除批刪／回收桶開關／備註）；本刀動到之 base-web upstream 既有非生成檔恰為用途 (ii) 九檔（FR-075 ③；六檔修改型逐行 `原行:`〔純新增段走新增型圈界〕、三檔僅新增型圈界）；另 `src/typings/components.d.ts` 依 §III 生成檔紀律重算（FR-065）、rev6 自有檔 `src/locales/langs/zh-tw.ts` 與 `src/views/manage/ip-rule/index.vue` 不入用途名單；base-web 變更檔集 MUST 以機器斷言 ⊆ 上列授權集＋四支新增檔；兩顆授權彈窗 MUST 一行不動（本刀出現任何 diff＝紅）。
+- **FR-058**: role 頁與 menu 頁 MUST 接真後端（列表／搜尋／新增編輯抽屜或彈窗／刪除批刪／回收桶開關／備註）；本刀動到之 base-web upstream 既有非生成檔恰為用途 (ii) 九檔（FR-075 ③；六檔修改型逐行 `原行:`〔純新增段走新增型圈界〕、三檔僅新增型圈界）；另 `src/typings/components.d.ts` 依 §III 生成檔紀律重算（FR-065）、rev6 自有檔 `src/locales/langs/zh-tw.ts` 與 `src/views/manage/ip-rule/index.vue` 不入用途名單；另 `src/hooks/business/captcha.ts`（§III.2 ★AUTH-WIRING (c) 軌道之 003 刀既有檔）＝具名例外：005 刀 U13b 次數比對揭出之 003 刀既有缺漏、只補兩條修改型註解標記、碼行零改（憲法 1.5.1、ADR-00048）；base-web 變更檔集 MUST 以機器斷言 ⊆ 上列授權集＋四支新增檔；兩顆授權彈窗 MUST 一行不動（本刀出現任何 diff＝紅）。
 - **FR-059**: 新增型新檔 MUST 為兩支 API wrapper 與兩支型別檔（獨立命名空間；角色含 roleHome 兩支、選單含 getMenuTree）；頁面下拉走 upstream 既有 getAllPages 包裝（該檔零改）；menu 彈窗之 upstream 殘留 `fetchGetAllRoles` 呼叫 MUST NOT 帶入。
 - **FR-060**: menu 頁 MUST：治理清單無參一次取全樹、分頁列凍結呈現（位置不動、頁碼 1、每頁 0、整列停用、前綴顯真實筆數；分頁元件 MUST 走頁數分支而非筆數分支，否則每頁 0 會算出無限頁數凍死瀏覽器）；
   回收桶開關換源、操作欄整欄換復原、切換清勾選、切換前每頁筆數歸位；已刪模式以共用元件 prop 關閉新增與批刪入口；父選擇器三模式（新增／新增子項／編輯）皆顯、首項為合成頂層節點；彈窗含備註 textarea（placeholder 註明管理員可見）；編輯態路由名與選單型別鎖定且更新請求 MUST NOT 帶該兩欄（FR-018）。
@@ -381,7 +381,7 @@
 - **FR-078**: 帳本 MUST 於收刀兌現：`backlog_done` 19 條＝BL-00082／BL-00095／BL-00096／BL-00098／BL-00105／BL-00106／BL-00107／BL-00109／BL-00110／BL-00111／BL-00112／BL-00113／BL-00115／BL-00116／BL-00117／BL-00118／BL-00119／BL-00123／BL-00125；
   條文改寫 3 條＝BL-00120（只剩 ADR-00039 半）、BL-00093（② 加 casbin-reload 錨已對齊之戳記）、BL-00045（補選單管理頁曝光面）；`backlog_add` 零；反向確認 BL-00047／BL-00028／BL-00048／BL-00074（兩半）／BL-00108（兩半）／BL-00123 之新增發射腿半邊（角色／選單寫端拒寫不增計請求上下文缺席計數）零觸發並現算；收刀事件 notes 記淨流量值與揭露型／新欠型分型；
   `feature_close.adrs` 六支、`arch_impact` 以收刀時 diff 現算之活書節號為準；NOTES 下一步 specify 起手後改 005 進行中、收刀改 006。
-- **FR-079**: 收刀 DoD MUST 全綠：容器內後端全量測試（全程 serial）＋contract 39 case＋前端型別檢查＋fork-delta-lint（新用途列名冊載入變異自證、修改型只在九檔）＋msg-key-gate＋wire 裁判 check＋schema 三閘＋
+- **FR-079**: 收刀 DoD MUST 全綠：容器內後端全量測試（全程 serial）＋contract 39 case＋前端型別檢查＋fork-delta-lint（新用途列名冊載入變異自證、用途 (ii) 修改型只在九檔）＋msg-key-gate＋wire 裁判 check＋schema 三閘＋
   路由產物冪等＋docsync check／lint 零紅＋走查基準 diff rc 0＋CDP 三方對照（判準＝SC-011）；FR-001～FR-079 與 US1～US6 驗收場景全數對應至少一測試案、機器守或演練紀錄（tasks 逐條映射、無承載者即紅）。
 
 **★ 軌道逐處登記（憲法 §III.2 必需三欄：位置＋改動內容＋upstream 衝突風險評估）**
@@ -441,7 +441,7 @@ i18n 三檔仍是基線最熱之檔；緩解＝一律新增型圈界、不與 up
 - **SC-011**: CDP 三方對照（rev5 22080 vs rev6 32080、必要時加 upstream 22089）以**結構清單逐項全等**為判準（表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜與彈窗欄位與校驗訊息／分頁列形／回收桶流程／toast 文案；
   另含已刪模式寫入口不現、備註欄），任一項不等即紅；間距／字體／顏色只記入走查紀錄、不擋收刀；已知態各款以「觀察路徑→症狀」實際操作觀察記錄；排除清單＝rev5 22080 之 006～008 增量（三顆授權彈窗接真、角色抽屜之端點權限鈕與其彈窗、policy-archive 頁、user 頁、audit 頁）＋已知態各款＋治理清單三列路由裸鍵＋請求次數維度＋rev6 翻案與新增腿（受保護選單停用／改父、href、按鈕碼清單、保留路由名之拒因）與 `protectedMenu`／`routeNameExists` 譯文改寫造成之 toast 差異；
   role 與 user 頁表頭對 upstream example 驗新增批刪鈕仍在；常量選單端到端一步（FR-021）通過；編輯請求之 body 以網路請求事件斷言不含不可變欄。
-- **SC-012**: 治理面全綠——憲法 1.5.0 且 accepted 前 base-web 既有檔零 diff（git 史可證）；新用途列被名冊載入器讀進（變異自證）；修改型標記只出現於九檔、base-web 變更檔集 ⊆ 授權檔集（機器斷言）、兩顆授權彈窗零 diff、`components.d.ts` 只有兩行增列；
+- **SC-012**: 治理面全綠——憲法 1.5.0 且 accepted 前 base-web 既有檔零 diff（git 史可證）；新用途列被名冊載入器讀進（變異自證）；用途 (ii) 修改型標記只出現於九檔、base-web 變更檔集 ⊆ 授權檔集（機器斷言）、兩顆授權彈窗零 diff、`components.d.ts` 只有兩行增列；
   各新增圈界塊拔標記必紅；docsync lint 零錯誤。
 - **SC-013**: 機器守非 vacuous——BL-00111 lint（含別名匯入腿）、i64 守衛三件、wire 鍵集表驅動斷言、前端查詢串前提錨（含「收窄判跳過時仍執行」自測）各以植入反例證必紅；wire 受審名冊涵蓋本刀新增全部型（以抽取現算）。
 - **SC-014**: 測試基建不連坐——dev 庫存在走查殘列時容器內全量測試全綠；守衛以現讀值還原序列（寫死值零殘留）；指派列清理序反腿之自證在案；跑全量前後走查基準 diff rc 0；走查工具還原擴面後 diff rc 0 且提示重啟。
