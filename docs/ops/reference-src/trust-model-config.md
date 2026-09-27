@@ -29,11 +29,7 @@
 
 ## dev 交付形（現檔、零改）
 
-```toml
-internal_default = [
-  "172.16.0.0/12",   # docker 預設橋接網段
-]
-```
+值不在本檔另抄：唯一一份＝交付檔 `deploy/trust-model.dev.toml`（只宣告 `internal_default`＝docker 預設橋接網段）。rust 測試 fixture `dev_trust_model()` 與它逐欄對賬（`rust-api/server/src/model/facade/test_kit.rs` 之 `tests` 子模組；dev 容器內經 `APP_TRUST_MODEL_PATH` 讀掛載檔，變數缺席即具名跳過）。
 
 只填此項、其餘留空 ⇒ 經反向代理可達 `fallback`／`proxy_clean` 二態（research R7）。
 
