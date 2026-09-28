@@ -53,3 +53,4 @@
 | ADR-00048 | accepted | 2026-09-27 | 憲法 Amendment 1.5.0→1.5.1——§III.2 ★BASE-WEB-AUTH-WIRING (c) 列範圍欄 captcha.ts 修改型處數 3→5（fork-delta-lint 改逐值比次數後揭出之既有缺漏補錄） | — | — | — |
 | ADR-00049 | superseded | 2026-09-28 | 角色與選單拒因譯文對 rev5 之對照口徑——純換句話說者逐字對齊 rev5、帶 rev6 語意延伸之四鍵保留 rev6 措辭並入 CDP 排除清單 | — | — | ADR-00050 |
 | ADR-00050 | accepted | 2026-09-28 | 角色與選單拒因譯文對 rev5 之對照口徑（續行 ADR-00049）——`nameRequired` 兩鍵改歸「帶 rev6 語意延伸」、保留 rev6 措辭並入 CDP 排除清單 | — | ADR-00049 | — |
+| ADR-00051 | accepted | 2026-09-28 | 憲法 Amendment 1.5.1→1.5.2——§III.2 ★BASE-WEB-MANAGE-PAGE-WIRING 用途 (ii) 六支 view／元件檔範圍欄「不預估」實數化（兌現 ADR-00042 回填義務） | — | — | — |
