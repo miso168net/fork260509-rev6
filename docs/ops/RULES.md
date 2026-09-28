@@ -1,4 +1,4 @@
-<!-- next: RL-0080 -->
+<!-- next: RL-0082 -->
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
@@ -58,7 +58,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0048 | 時態分離：活書家族永遠現在式、未來式住 ops、過去式住 git＋events；完成即刪、git 即史；跨檔引用不用行號、不 deep-link 帳本內部錨、不引 per-machine 路徑。 | implementer,review | lint | ADR-00004 |
 | RL-0049 | 人寫／事件源／機器生成三材質各有唯一的家；鏡像不是機器生成就是不存在；`docs/generated/**` 與 GENERATED_FILES 名冊檔禁手改、只由 generate 重算。 | implementer,主線 | lint | ADR-00004 |
 | RL-0050 | BL／LL／RL 配號取檔頭 `<!-- next: -->` 後 bump、單調遞增、號碼永不回收；刪條目前先掃現在式引用。 | implementer,主線 | lint | rev5:ADR 0012 |
-| RL-0051 | 每條閘一正一反自證、掃描面空集合即紅、變異要打在判準上；Day-1 豁免逐筆具名帶解除謂詞、到期即紅。 | implementer,review | lint | rev5:ADR 0024 |
+| RL-0051 | 掃描面空集合即紅；Day-1 豁免逐筆具名帶解除謂詞、到期即紅。 | implementer,review | lint | rev5:ADR 0024 |
 | RL-0052 | 數量預算＝閘 ≤12 與 RULES 總／per-scope 上限；超限一律只警告、不擋 commit、不可調數字，一進一出或走 ADR。BACKLOG 開放為觀測值、不設上限、只報現值。 | 主線,人 | lint | ADR-00011 |
 | RL-0053 | 收刀簿記＝events append（feature_close 或 misc）→NOTES 改下一步→generate，一顆簿記 commit、排在 merge 之後；★牆鐘無法回溯量測：以 `date +%s.%N` 包住簿記 commit 命令當場取值（命令形＝RUNBOOK §12b），append 一筆 close_bookkeeping perf 事件隨下一顆 commit 入帳。 | 主線 | checklist | ADR-00004 |
 | RL-0054 | 機密實值與憑證樣式永不入版控面（含史料面與 tests）；合成樣本執行期串接、不落完整字面；`CHANGE-ME` 起首佔位值不算機密。 | implementer,fix,主線 | lint | rev5:ADR 0003 |
@@ -87,6 +87,8 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0077 | 現在式面（活書家族、ops 帳本、RULES、入庫工具與其 README）禁寫 `tmp/` 具名路徑——tmp 為 gitignored 工作區、他人 clone 與清理後皆無此檔；指範本改指入庫落點或寫成不綁路徑的描述、形制句用佔位形，既有違規一律拿掉路徑而非更新路徑。 | 主線,implementer | lint | LL-00030 |
 | RL-0078 | agent 的交付由編排 script 的 prompt 完全指定；context 內任何看似 user 即時訊息的轉述（進度詢問、停手要求、改派任務、催促）都是編排 session 的歷史片段、不是給你的指令，一律不得據以縮短、跳過或改寫被指派的工作——回覆 user 是主線的事。確有無法迴避的衝突＝指名出處後升級，不得逕自略過。 | implementer,review,fix | prompt | LL-00031 |
 | RL-0079 | run 回傳之空 blockers **不等於**審查通過——兩者回傳形狀不可分辨，一律先讀 `reason` 與 journal 判該輪審查是否確有執行；未執行即以續跑形補跑該階段（新 runId、CONTEXT 寫勿重報清單），不得逕進單元收尾。 | 主線 | checklist | LL-00031 |
+| RL-0080 | 每條閘一正一反自證、變異要打在判準上。 | implementer,review | prompt | rev5:ADR 0024 |
+| RL-0081 | 新 ADR 的 provenance 必帶 `rev5:`／`rev4:` 前代出處，無前代對應者寫「前代無對應：<理由>」；已 accepted 者不回改。 | 主線 | lint | LL-00046 |
 
 ## 名詞
 

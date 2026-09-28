@@ -54,3 +54,6 @@
 | ADR-00049 | superseded | 2026-09-28 | 角色與選單拒因譯文對 rev5 之對照口徑——純換句話說者逐字對齊 rev5、帶 rev6 語意延伸之四鍵保留 rev6 措辭並入 CDP 排除清單 | 005-role-menu-crud | — | ADR-00050 |
 | ADR-00050 | accepted | 2026-09-28 | 角色與選單拒因譯文對 rev5 之對照口徑（續行 ADR-00049）——`nameRequired` 兩鍵改歸「帶 rev6 語意延伸」、保留 rev6 措辭並入 CDP 排除清單 | 005-role-menu-crud | ADR-00049 | — |
 | ADR-00051 | accepted | 2026-09-28 | 憲法 Amendment 1.5.1→1.5.2——§III.2 ★BASE-WEB-MANAGE-PAGE-WIRING 用途 (ii) 六支 view／元件檔範圍欄「不預估」實數化（兌現 ADR-00042 回填義務） | 005-role-menu-crud | — | — |
+| ADR-00052 | accepted | 2026-09-29 | 治理閘取值口徑——文字類腿續讀工作樹＋「工作樹＝暫存區」一致性腿；HEAD 版本缺席＝新檔通過、其他 git 失敗＝ERROR | — | — | — |
+| ADR-00053 | accepted | 2026-09-29 | 事件帳自由文字欄（summary／reason／spec_supersessions[].note）不入更正欄位、寫錯以後續事件 notes 說明——三欄於寫入端套 notes 同一道守衛 | — | — | — |
+| ADR-00054 | accepted | 2026-09-29 | 設定界值唯一權威＝validation.rs 的 REGISTRY、不與設計文件做機器對賬——seed 界內以純測守衛 | — | — | — |

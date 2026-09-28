@@ -12,10 +12,10 @@
 - 版本：1.5.2
 
 ## 帳面統計
-- ADR：51（proposed 0、accepted 44、superseded 7）
-- RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
+- ADR：54（proposed 0、accepted 47、superseded 7）
+- RULES：81 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 46/52、人 10/12）
 - BACKLOG 開放：22｜滯後：4
-- LESSONS：40 筆
+- LESSONS：46 筆
 - events：96 筆（erratum 2、feature_close 5、misc 35、perf 47、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
@@ -31,11 +31,11 @@
 | 項目 | 現值 | 上限 | 狀態 |
 |---|---|---|---|
 | 閘數 | 12 | 12 | 內 |
-| RULES 總 | 79 | 92 | 內 |
-| RULES implementer | 42 | 48 | 內 |
-| RULES review | 15 | 18 | 內 |
+| RULES 總 | 81 | 92 | 內 |
+| RULES implementer | 43 | 48 | 內 |
+| RULES review | 16 | 18 | 內 |
 | RULES fix | 17 | 19 | 內 |
-| RULES 主線 | 45 | 52 | 內 |
+| RULES 主線 | 46 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
 | docsync 行數 | 3916 | 4000 | 內 |
 

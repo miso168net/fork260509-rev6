@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00041 -->
+<!-- next: LL-00047 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -46,3 +46,9 @@
 | LL-00038 | 在 host 跑 base-web 的 pnpm 指令會自動 install 並改寫外層 hooks；而 dev 容器實際共用 host 的 `base-web/node_modules`——具名 volume 在 9p bind 下沒掛上，刪 host 那份等於刪容器那份（005 刀 U13b） | RL-0057 | none | [LL-00038-host-pnpm-autoinstall-rewrites-hooks-and-container-shares-host-node-modules.md](LESSONS/LL-00038-host-pnpm-autoinstall-rewrites-hooks-and-container-shares-host-node-modules.md) |
 | LL-00039 | 在 host 端用 `timeout` 包 `docker compose exec … cargo test`，逾時只殺掉 exec 客戶端，容器內的測試程序照活、持鎖不放，守衛 Drop 也不會跑（005 刀 U18） | RL-0045 | none | [LL-00039-host-timeout-around-docker-exec-leaves-container-test-alive.md](LESSONS/LL-00039-host-timeout-around-docker-exec-leaves-container-test-alive.md) |
 | LL-00040 | 以為 hook 輸入一律帶 `agent_id`、拿它過濾「只作用於主線」，但 PreCompact 與 SessionStart(compact) 的輸入根本不帶這欄——workflow agent 自身壓縮時，主線的壓縮指示與回灌照樣進到 agent（maint-backlog-126） | none：hook 設計面踩點、非流程規則可承——判準與緩解寫在 `.claude/hooks/compact-hook.py` 檔頭與本檔，寫新 hook 時照本檔逐事件取證即可 | none | [LL-00040-precompact-hook-input-lacks-agent-id.md](LESSONS/LL-00040-precompact-hook-input-lacks-agent-id.md) |
+| LL-00041 | 用 `stat` 看背景 task 輸出檔的 mtime 判斷卡住，讀到的是 symlink 本身的時間、誤報「很久沒動」（005 刀收尾期、2026-09-28） | none：監看命令的取證寫法、非流程規則可承——寫對命令即可，判準住本檔 | none | [LL-00041-harness-output-symlink-stat-reads-link-mtime.md](LESSONS/LL-00041-harness-output-symlink-stat-reads-link-mtime.md) |
+| LL-00042 | commit 被 pre-commit 擋下一次後重試，碰到殘留的 `.git/index.lock`（005 刀憲法 1.5.1 那顆、2026-09-27） | none：git 現場處置細節（先查行程再移鎖），判準住本檔即可承 | none | [LL-00042-stale-git-index-lock-after-blocked-commit.md](LESSONS/LL-00042-stale-git-index-lock-after-blocked-commit.md) |
+| LL-00043 | 手寫 `casbin_rule` INSERT 只給用到的欄、省略 v3～v5 就失敗——這幾欄是 NOT NULL（005 刀手寫 SQL 植入政策列時） | none：資料形事實（vendored adapter 的欄定義），非流程規則 | none | [LL-00043-casbin-rule-unused-columns-not-null-fill-empty.md](LESSONS/LL-00043-casbin-rule-unused-columns-not-null-fill-empty.md) |
+| LL-00044 | 先 `git add` 再跑 generate，generate 回填的 ADR `superseded_by` 沒進這顆 commit，閘卻全綠（005 刀 final holistic review 修正顆 2bfabcf、2026-09-28） | none：機器承載＝GT-12 之「工作樹＝暫存區」一致性腿（ADR-00052），不另立流程規則 | gate | [LL-00044-generate-backfills-superseded-by-after-git-add.md](LESSONS/LL-00044-generate-backfills-superseded-by-after-git-add.md) |
+| LL-00045 | 在 base-web 跨多行的元素標籤裡加屬性，修改型的 `原行:` 標記沒有位置可放（005 刀、2026-09-28） | none：fork-delta 標記寫法細節，判準住 tools/fork-delta-lint.py 與憲法 §III | none | [LL-00045-multiline-tag-origin-marker-placement.md](LESSONS/LL-00045-multiline-tag-origin-marker-placement.md) |
+| LL-00046 | ADR-00039 accepted 時全文沒有任何 rev5 出處，而 ADR body 不可變，缺口永遠補不回來（004 刀；2026-09-29 以紀律收） | RL-0081 | rules | [LL-00046-adr-accepted-without-predecessor-provenance.md](LESSONS/LL-00046-adr-accepted-without-predecessor-provenance.md) |
