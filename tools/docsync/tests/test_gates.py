@@ -77,7 +77,9 @@ class TestDay1(unittest.TestCase):
         key = "GT-99.fake"
         gates.DAY1_EXEMPTIONS[key] = common.Day1Exemption(key, "樁", lambda ctx: True, "2026-09-03")
         try:
-            fs, _ = gates.run_lint(common.Ctx(ROOT))
+            # 本案只驗 run_lint 尾端的 Day-1 到期迴圈：閘名冊換空（整趟真 repo 閘另由 real_lint() 承擔；drvfs 上一趟約 25 秒）
+            with unittest.mock.patch.object(gates, "ROSTER", ()):
+                fs, _ = gates.run_lint(common.Ctx(ROOT))
             self.assertTrue(any(key in f[3] and "到期" in f[3] for f in errs(fs)))
         finally:
             del gates.DAY1_EXEMPTIONS[key]

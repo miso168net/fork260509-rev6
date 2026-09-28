@@ -275,11 +275,22 @@ def parse_events(text):
 
 
 def _sha_exists(ctx, sha, cwd=None):
-    try:
-        ctx.git("cat-file", "-e", f"{sha}^{{commit}}", cwd=cwd)
-        return True
-    except GitError:
-        return False
+    return ctx.commit_exists(sha, cwd=cwd)
+
+
+def _prefetch_commits(ctx, viewed, sub_present):
+    """gt_02 實證前一次批次：候選＝各列 merge／commit／corrected 與 pins 值（取超集、多查無害），外層與在場子庫各一支 git 行程。
+    判定邏輯仍在 gt_02 迴圈、不動；本函式只把逐個 `cat-file -e`（drvfs 上每次約 0.1s、九十餘次）收成三次。"""
+    cands = set()
+    for _, e in viewed:
+        pins = e.get("pins")
+        for v in (e.get("merge"), e.get("commit"), e.get("corrected"), *(pins.values() if isinstance(pins, dict) else ())):
+            if isinstance(v, str):
+                cands.add(v)
+    ctx.prefetch_commits(cands)
+    for _, sub in PIN_KEYS:
+        if sub_present[sub]:
+            ctx.prefetch_commits(cands, cwd=os.path.join(ctx.root, sub))
 
 
 def _erratum_view(rows):
@@ -372,6 +383,7 @@ def gt_02(ctx):
     for ln, m in verrs:
         out.append(finding(ERROR, "GT-02", f"{EVENTS}:{ln}", m))
     sub_present = {sub: ctx.exists(os.path.join(sub, ".git")) for _, sub in PIN_KEYS}
+    _prefetch_commits(ctx, viewed, sub_present)
     for ln, e in viewed:
         where = f"{EVENTS}:{ln}"
         t = e.get("type")

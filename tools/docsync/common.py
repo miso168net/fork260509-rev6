@@ -68,6 +68,7 @@ class Ctx:
     def __init__(self, root):
         self.root = root
         self._cache = {}
+        self._commits = {}
         inside = self.git("rev-parse", "--is-inside-work-tree") == "true"
         self.tracked = [t for t in self.git("ls-files").split("\n") if t] if inside else []
 
@@ -92,6 +93,33 @@ class Ctx:
             capture_output=True, text=True, encoding="utf-8",
         )
         return p.returncode, p.stdout
+
+    def prefetch_commits(self, shas, cwd=None):
+        """一次 `git cat-file --batch-check` 實證多個 commit 存在性、記入 memo（drvfs 上逐個 `cat-file -e` 每次約 0.1s）。
+        含空白的字面與批次失敗皆不記——`commit_exists` 對其退回逐個查，語意不變。"""
+        todo = sorted({s for s in shas if s and not any(c.isspace() for c in s) and (cwd, s) not in self._commits})
+        if not todo:
+            return
+        p = subprocess.run(
+            ["git", "-C", cwd or self.root, "cat-file", "--batch-check"],
+            input="".join(f"{s}^{{commit}}\n" for s in todo), capture_output=True, text=True, encoding="utf-8",
+        )
+        lines = p.stdout.split("\n")
+        if p.returncode != 0 or len(lines) < len(todo):
+            return
+        for s, line in zip(todo, lines):
+            # 可解析＝「<oid> commit <size>」三欄；`^{commit}` 剝不出 commit 者（不存在、非 commit 物件、歧義）一律「<名> missing／ambiguous」兩欄
+            self._commits[(cwd, s)] = len(line.split()) == 3
+
+    def commit_exists(self, sha, cwd=None):
+        """`<sha>^{commit}` 可解析＝True；先查 prefetch_commits 之 memo、未命中才逐個 `cat-file -e`。"""
+        if (cwd, sha) not in self._commits:
+            try:
+                self.git("cat-file", "-e", f"{sha}^{{commit}}", cwd=cwd)
+                self._commits[(cwd, sha)] = True
+            except GitError:
+                self._commits[(cwd, sha)] = False
+        return self._commits[(cwd, sha)]
 
     def exists(self, rel):
         return os.path.exists(os.path.join(self.root, rel))

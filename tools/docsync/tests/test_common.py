@@ -47,6 +47,17 @@ class TestCtx(unittest.TestCase):
         self.assertIsNone(ctx.text("nope.md"))
         self.assertEqual(ctx.md_texts(("a",)), {"a.md": "A\n"})
 
+    def test_commit_prefetch_matches_single_and_fills_memo(self):
+        """批次預取與逐個查同判（commit 真／假 SHA 假／tree 物件不算 commit）；memo 須由批次填入——批次若壞、退路會默默兜住結果而慢回原樣。"""
+        ctx = common.Ctx(self.d)
+        head, tree, fake = ctx.git("rev-parse", "HEAD"), ctx.git("rev-parse", "HEAD^{tree}"), "0" * 40
+        ctx.prefetch_commits([head, head[:7], tree, fake, "a b"])
+        self.assertEqual({s: ctx._commits.get((None, s)) for s in (head, head[:7], tree, fake)},
+                         {head: True, head[:7]: True, tree: False, fake: False})
+        self.assertNotIn((None, "a b"), ctx._commits)  # 含空白＝不入批次、改走逐個查
+        fresh = common.Ctx(self.d)
+        self.assertEqual([fresh.commit_exists(s) for s in (head, tree, fake, "a b")], [True, False, False, False])
+
     def test_finding_shape(self):
         self.assertEqual(
             common.finding(common.ERROR, "GT-01", "x", "y"), ("ERROR", "GT-01", "x", "y")

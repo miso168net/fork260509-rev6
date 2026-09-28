@@ -19,10 +19,12 @@ RULES_TEXT = """<!-- next: RL-0003 -->
 
 
 def stub(files, head=None, tracked=None):
-    """假 Ctx：text／head_text 讀 dict、exists 看鍵或目錄前綴、git 一律 GitError（無子庫）。"""
+    """假 Ctx：text／head_text 讀 dict、exists 看鍵或目錄前綴、git 一律 GitError（無子庫）；commit 批次預取為空操作（存在性一律走 git＝恆假）。"""
     c = common.Ctx.__new__(common.Ctx)
     c.root = "/nonexistent"
     c._cache = dict(files)
+    c._commits = {}
+    c.prefetch_commits = lambda shas, cwd=None: None
     c.tracked = list(tracked if tracked is not None else files)
     head = head or {}
     c.head_text = lambda rel: head.get(rel)
