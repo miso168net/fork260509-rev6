@@ -76,7 +76,7 @@
   ```
 
   ★wf-watchdog 的 runaway 判準＝數**不重複 agent key**（非 journal 行數）——勿以行數直覺判保險絲。
-- **隨做隨記**：新拍板→ADR draft→accepted；階段 0 定稿與 SDD 步進→NOTES「下一步」同批更新（當前意圖真源）；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）；衍生工作→BACKLOG append；per-unit pin 即時 bump。
+- **隨做隨記**：新拍板→ADR draft→accepted；階段 0 定稿與 SDD 步進→NOTES「下一步」同批更新（當前意圖真源）；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）；衍生工作→BACKLOG append；per-unit pin 即時 bump；長流程另開人讀進度表（`*progress*.md`、gitignored 工作區）、每個動作同 call 追加＝context 自動壓縮能接續的前提（機制＝`.claude/settings.json` 三支壓縮 hook；規則與兩檔約定＝`tools/orchestration/compact-rules.md`）。
   一次性遷移（改名／搬移／基線前進／拓樸調整）之 brainstorm 或 spec 附 Risk／Guard／Rollback 三欄表。
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
   程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。

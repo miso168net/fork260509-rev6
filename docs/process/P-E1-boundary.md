@@ -9,11 +9,11 @@ rad_ai_map:
 ---
 # P-E1 邊界劃定（流程層）
 
-本檔以 RAD-AI E1 的形制記載開發流程中的 AI 代理（主線、implementer、review、fix、CDP 代理、三支 hook）與人審／機器閘的邊界；系統層對應＝`docs/arc42/03-context-and-scope.md` §3.3。每個子節首句標明類比張力（哪裡對得上、哪裡是硬套）。
+本檔以 RAD-AI E1 的形制記載開發流程中的 AI 代理（主線、implementer、review、fix、CDP 代理、四支 hook）與人審／機器閘的邊界；系統層對應＝`docs/arc42/03-context-and-scope.md` §3.3。每個子節首句標明類比張力（哪裡對得上、哪裡是硬套）。
 
 ### AI 元件清冊
 
-類比張力：對得上——RAD-AI 的「AI 元件」在流程層＝會產出碼、文件或判斷的代理；三支 hook 與看門狗是確定性守門，列入清冊是為了畫出邊界、不是 AI 元件。
+類比張力：對得上——RAD-AI 的「AI 元件」在流程層＝會產出碼、文件或判斷的代理；四支 hook 與看門狗是確定性守門，列入清冊是為了畫出邊界、不是 AI 元件。
 
 | 角色 | 承載 | 產物 | 進哪道閘 |
 |---|---|---|---|
@@ -22,7 +22,7 @@ rad_ai_map:
 | review | Workflow agent（REVIEW；只讀） | findings（file×summary、blocker 集合） | 主線三分流（RL-0073）；不寫 repo 檔（RL-0043） |
 | fix | Workflow agent（FIX） | 允許清單內的改動＋回傳 | 次輪 review 附前輪駁回清單（RL-0071）；迴圈上限 ≤3（RL-0060） |
 | CDP 代理 | `tools/orchestration/cdp.mjs` 驅動的走查 agent | 走查回報（附機器反證，RL-0033） | 驗證審查；走查還原（RL-0031） |
-| hook×3 | `.claude/hooks/`（session-start.sh、pre-workflow-gate.py、post-workflow-reminder.py）；確定性 | 健檢注入、擋缺 zh-TW／RULES-VERSION 之 script、配對提醒 | GT-09 接線對賬 |
+| hook×4 | `.claude/hooks/`（session-start.sh、pre-workflow-gate.py、post-workflow-reminder.py、compact-hook.py）；確定性 | 健檢注入、擋缺 zh-TW／RULES-VERSION 之 script、配對提醒、context 壓縮之規則與快照注入／壓後回灌／級距提醒 | GT-09 接線對賬 |
 | 看門狗 | `tools/wf-watchdog.py`；確定性 | stall／runaway 告警 | 與 Workflow 原子成對（RL-0061） |
 
 ### 系統邊界圖
