@@ -18,3 +18,4 @@
 ## 未決
 
 - `alert_webhook_url` 佔位值→真值（RUNBOOK §15.4 形重加密）。
+- 他機（Mac）pull 到 maint-backlog-126 後須重開 Claude Code session，入版控之壓縮 hook 與 `autoCompactWindow` 才生效（設定只在啟動時讀入）。

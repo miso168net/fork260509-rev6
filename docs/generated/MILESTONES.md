@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | misc | governance｜maint-backlog-126 | 輕量軌 maint-backlog-126 收單（user 2026-09-29 令、主線直改）：context 自動壓縮機制入版控——compact-hook.py 三模式＋compact-rules.md（A／B 規則與工作區兩檔約定）＋settings.json 三處註冊與 autoCompactWindow 750000；工作區檔改以本 session 碰過者定位（RL-0077）；LL-00040。併入 pre-commit 提速：lint 25.9s→13.5s、docsync test 約 75s→40.5s。BACKLOG 刪 BL-00126。 | 59250ea | — | — |
 | 2026-09-29 | feature_close | 005-role-menu-crud | 005 role-menu-crud 收單（rev6 第五刀）：角色與選單管理接真（角色 CRUD＋首頁、選單 CRUD＋樹＋回收桶）／島 H 選單域生命週期（域鎖、歸檔先於軟刪、判定面全新重建一步換上、失敗保留上一份、請求中斷不中止同步）／分頁通則＋全取例外／ROUTES 22→39、MSG_KEYS 19→43／新 lint 兩支＋wire_i64 型級三腿／走查還原工具擴面；零 migration；憲法 1.5.0→1.5.2 | 7f09ae0 | ADR-00042、ADR-00043、ADR-00044、ADR-00045、ADR-00046、ADR-00047、ADR-00048、ADR-00049、ADR-00050、ADR-00051 | §4、§5、§6、§8、§10、§11、§12 |
 | 2026-09-23 | misc | governance｜maint-orchestration-opus-all | 輕量軌 maint-orchestration-opus-all 收單（user 2026-09-23 令、005 SDD 重做前、主線直改零 cargo）：編排骨架全角色改 opus[1m] xhigh（_sk_head.js 之 IMPL_OPTS fable→opus）＋implementer prompt 首行烤 DEEP_THINK（_sk_main.js）；harness-test 案 1 補對應斷言；README 記 opus[1m] 別名現解析 claude-opus-5-5[1m]；agents.md 重算。RULES／ADR／閘數／BACKLOG 未動。 | 076fb3b | — | — |
 | 2026-09-22 | misc | governance｜maint-trust-model-bind-mount | 輕量軌 maint-trust-model-bind-mount 收單（macOS 第二台開發機 pull 時實證、主線直改零 cargo）：LL-00033 單檔 bind mount（deploy/trust-model.dev.toml）於 git 換 inode 後在容器內懸空、信任模型照契約退零網段而零紅燈；RUNBOOK §2 補固定起手句（動到該檔→up -d --force-recreate --no-deps rust-api）。LESSONS 32→33；RULES／ADR／閘數皆未動。 | 7beaa46 | — | — |
@@ -53,6 +54,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-29｜misc｜governance｜maint-backlog-126
+
+3 顆：實作 235c461＋final holistic review 收單 fe606bd＋提速 76bb9b4。★user 裁定：Q1 autoCompactWindow 入 settings.json（他機要不同值以該機 settings.local.json 覆寫）；Q2 §C 留工作區壓縮備忘檔（手動且 30 分鐘內改過才附）；pre-commit 提速併入本批。★final review run wf_fbf3498a-412（review 形 explore＋inline 兩鏡、6 支、0 錯）14 筆兩鏡全 confirmed、全修零 BL；方向性主線裁定＝拿掉 precompact「主線 context 過小即靜默」門檻（synthetic 零 usage 列、PCT 覆寫、伺服器端預壓比例、usage 落後皆可誤殺主線真壓縮），precompact 與 rehydrate 只靠文首主線限定句兜底（PreCompact／SessionStart 輸入皆不帶 agent_id）。★變異自證：實作顆 10 發、收單顆 14 發、提速顆 5 發（1 發存活→刪冗餘判斷）。★per-machine（不入 commit）：本機 settings.local.json 清為 {}；工作區舊腳本與規則檔待 user 裁定清理。rust-api／base-web 零改動、pins 不動。
 
 ### 2026-09-29｜feature_close｜005-role-menu-crud
 
