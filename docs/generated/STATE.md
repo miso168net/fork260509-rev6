@@ -16,7 +16,7 @@
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：23｜滯後：4
 - LESSONS：39 筆
-- events：91 筆（erratum 2、feature_close 5、misc 34、perf 43、review 7）
+- events：92 筆（erratum 2、feature_close 5、misc 34、perf 44、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3872 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-29｜perf｜close_bookkeeping｜close_bookkeeping 26.52 秒 rc=0
 - 2026-09-29｜feature_close｜005-role-menu-crud｜005 role-menu-crud 收單（rev6 第五刀）：角色與選單管理接真（角色 CRUD＋首頁、選單 CRUD＋樹＋回收桶）／島 H 選單域生命週期…
 - 2026-09-28｜perf｜precommit_chain｜precommit_chain 26.46 秒 rc=0
-- 2026-09-23｜perf｜close_bookkeeping｜close_bookkeeping 2.17 秒 rc=0
