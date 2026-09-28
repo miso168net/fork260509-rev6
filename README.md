@@ -39,7 +39,7 @@ fork260509-rev6/
 │   ├── route-artifact-gate.py       路由外掛產物檔閘：check [--constitution <path>]＝base-web 容器內 `/tmp` 沙盒重跑路由外掛、三道斷言（①實產出集＝帶產物檔頭之檔集＝憲法 §III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` (i) 列範圍欄「（產物檔 N 支）」注記所轄路徑集〔雙向差集即紅〕 ②工作樹為種重算冪等 ③上游基線為種重算＝工作樹〔手改一行即紅〕）、對工作樹唯讀；docker 缺或 base-web 容器未起＝具名跳過 rc 0、容器在而重算失敗＝rc 2、基線源倉缺席＝只③具名跳過／test＝離線自測；pre-commit route-artifact-gate 段＝base-web pin bump、本檔或憲法 staged 時實跑；--constitution 只供自身變異驗證
 │   ├── comment-overlap.py           rev5↔rev6 註解逐字重疊核（解析四形：`//` 家族／`/* */`／`.vue` 之 `<!-- -->`／`.py` 以 tokenize＋ast 取 `#` 與真 docstring、`.sh`／`.bash` 取行首 `#`；★「隨遷工具」逐字承襲允許、不適用 RL-0076）：對 rev5 對應檔（同相對路徑；缺席且檔名 `rev6-` 起首者映射同目錄 `rev5-` 同名檔）量共同子字串比（預設 40 字元／5%、超標 rc 1；解析 `//` 行＋`/* */` 塊註解＋`.vue` 之 `<!-- -->`；base-web 路徑三型豁免後量；全路徑碼面豁免〔code span／doc 註與塊註解內之三反引號圍欄〕；比對面為空 rc 2）／test 自測（RL-0076 量尺；非閘工具＝`NON_GATE_TOOLS` 成員、自測入 pre-commit 條件觸發名冊）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／refresh（快照照相、需 dev stack）／rules emit／errata／vendored-check（§I.5 例外① 自證、bootstrap 3c）／test；tests/ 為語料面
-│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架、TDD／review 兩種主流程共用首段；_sk_rules.js＝generate 產物）、assemble.py 組裝器（三道自檢）、harness-test 十八案（六反例）／harness-review 九案（三反例）（斷言＋退出碼）、cdp.mjs、EXAMPLE 成品與 TDD／review 單元定義範本
+│   └── orchestration/               Workflow 編排骨架 _sk_*.js（單一骨架、TDD／review 兩種主流程共用首段；_sk_rules.js＝generate 產物）、assemble.py 組裝器（三道自檢）、harness-test 十八案（六反例）／harness-review 九案（三反例）（斷言＋退出碼）、cdp.mjs、EXAMPLE 成品與 TDD／review 單元定義範本、compact-rules.md（context 壓縮規則範本）
 ├── deploy/                          營運面：dev stack 部署資產＋機密管線（管「跑起來的系統」）
 │   ├── secrets_common.py            機密落點三級解析共用庫（消費者＝下列 CLI＋docsync GT-07）
 │   ├── preflight-secrets.py         機密上機前把關（缺檔／CR·LF／composite drift）
@@ -61,8 +61,8 @@ fork260509-rev6/
 │   └── lib/                         scan-range.sh：pre-push 範圍推導（三 repo 共用）
 ├── .githooks-submodule/             兩 worktree 專用 hooks（pre-commit／pre-push；bootstrap 以絕對路徑設 hooksPath）
 ├── .claude/                         Claude Code 接線
-│   ├── settings.json                三支 hook 註冊（SessionStart／PreToolUse(Workflow)／PostToolUse(Workflow)）
-│   ├── hooks/                       session-start.sh、pre-workflow-gate.py（zh-TW＋RULES-VERSION 對賬）、post-workflow-reminder.py
+│   ├── settings.json                hook 註冊（SessionStart：健檢／compact 回灌；PreToolUse(Workflow)；PostToolUse：Workflow 配對提醒／全工具 context 級距提醒；PreCompact）＋自動壓縮視窗 `autoCompactWindow`
+│   ├── hooks/                       session-start.sh、pre-workflow-gate.py（zh-TW＋RULES-VERSION 對賬）、post-workflow-reminder.py、compact-hook.py（context 壓縮三模式：注入規則與快照／compact 回灌／級距提醒）
 │   └── skills/                      spec-kit 1.0.3 產物（第三方面；speckit-* 十五支）
 ├── .gitleaks.toml                   betterleaks 設定（extend 預設＋rev6-dsn-credential-url；allowlist 逐條雙向實證後才收）
 ├── docker-compose*.yml              dev stack 三檔：base 層／dev override／example 參照實例（host 埠 3xxxx＝ADR-00001）

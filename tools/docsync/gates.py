@@ -399,7 +399,7 @@ def gt_09(ctx):
             out.append(finding(ERROR, "GT-09", rel, f"index mode {mode} ≠ 100755（git update-index --chmod=+x）"))
     settings = ctx.text(SETTINGS)
     if settings is None:
-        out.append(finding(ERROR, "GT-09", SETTINGS, "settings.json 缺席（三支 hook 接線無面）"))
+        out.append(finding(ERROR, "GT-09", SETTINGS, "settings.json 缺席（hook 接線無面）"))
         return out
     try:
         cfg = json.loads(settings)

@@ -42,13 +42,17 @@ def _files(ctx, head=False):
     if head:
         try:
             names = ctx.git("ls-tree", "--name-only", "HEAD", f"{ADR_DIR}/").split("\n")
+            # 工作樹與 HEAD 相同（git 判定、含 .gitattributes 換行正規化）者以工作樹內容代之、免逐檔 `git show`（drvfs 上每次約 0.1s）
+            changed = set(ctx.git("diff", "--name-only", "HEAD", "--", f"{ADR_DIR}/").split("\n"))
         except GitError:
             return {}
         out = {}
         for p in names:
             fn = os.path.basename(p)
             if fn.endswith(".md"):
-                t = ctx.head_text(f"{ADR_DIR}/{fn}")
+                t = ctx.text(p) if p not in changed else None
+                if t is None:
+                    t = ctx.head_text(f"{ADR_DIR}/{fn}")
                 if t is not None:
                     out[fn] = t
         return out
