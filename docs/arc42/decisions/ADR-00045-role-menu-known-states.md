@@ -2,7 +2,7 @@
 id: "ADR-00045"
 title: 角色與選單管理之已知態與 by-design——授權彈窗真樹假勾選／policy-archive 死項／新建與復原選單側欄不現／新按鈕碼無人持有／新建選單顯原始 i18n 鍵／治理清單三列路由裸鍵／getAllRoles 之既有 UI 消費者與 roleHome 零消費者／治理清單分頁列凍結與無 size 全取（各款「觀察路徑→症狀」、CDP 實際觀察後定稿）
 date: 2026-09-23
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "005-role-menu-crud 之 spec FR-076④、Edge Cases「前端與已知態」、SC-011（brainstorm 既定不問 4／5／7、R1-Q4／R1-Q9、工程判斷 5／9／14）；藍本＝rev5:005 已知態三組與 rev5:ADR 0060（分頁列凍結；其殘餘一〔頂層 >100 列截斷＝rev5:B-131〕由 rev6 無 size 全取消解）；rev5:B-145（getAllRoles 只回活性且啟用 ⇒ 使用者頁看不到其持有之停用角色）；BL-00045（policy-archive 頁）；rev5:L-046／rev5:L-054（已知態須以實際操作觀察、只記最好驗的症狀＝煙測驗一條沒人走的路）；草稿於 plan 期落 feature branch、各款於 CDP 走查實際觀察後定稿、user 親決於治理單元"
@@ -24,7 +24,7 @@ tags: [role-menu-crud, known-state, by-design]
 2. **授權治理刀前隱藏角色頁兩顆授權鈕**：須改兩顆彈窗入口所在檔之授權外行為、且使 CDP 對照多一差；棄（R1-Q9）。
    對所選方案跑同一反例（RL-0013）：合併立案是否讓單款翻案變難？不會——翻案時新 ADR 以 `supersedes` 指向本檔並聲明「某款翻案、其餘續行」；成立。
 
-## 決定（各款症狀已於 005 刀 U16 CDP 走查實際觀察定稿；仍 proposed、由 T093 親決定案）
+## 決定（各款症狀已於 005 刀 U16 CDP 走查實際觀察定稿；user 2026-09-28 親決定案）
 
 1. **角色頁兩顆授權彈窗**：「菜單權限」彈窗開啟即取真選單樹與真首頁下拉選項，但首頁現值恆寫死 `home`、勾選為寫死 id 1～21（不代表真授權）、送出假成功零寫入；「按鈕權限」彈窗全為假資料。兩顆彈窗一行不動（用途 (ii) 明文不入名單）。觀察路徑＝角色列表→編輯（自建角色）→「菜單權限」⇒開啟只發 `getAllPages`／`getMenuTree`（零 getRoleHome／getRoleMenu）、首頁下拉恆顯 `home`（庫中首頁為 NULL 亦然）、樹為真選單樹（節點標籤為路由名字面）、勾選為寫死 id 1～21（頂層 11 節點全勾＋10 個第二層節點）；改勾選與首頁後按「確認」⇒零請求、toast「修改成功」、`casbin_rule` 與角色列零變；重開即回寫死值。「按鈕權限」⇒開啟零請求、固定 button1～10 勾 1～5；改勾選後按「確認」⇒零請求、toast「修改成功」、零寫入；★該彈窗之勾選在同一頁內沿用上次改動（重開、換角色列、按「取消」皆然；初始化只在元件建立時跑一次、勾選雙向綁定），重新整理頁面才回 1～5。
 2. **policy-archive 選單項為死項**：側欄可見（標題顯路由裸鍵 `route.manage_policy-archive`）。觀察路徑＝Super 登入→側欄「系統管理」→點該項⇒不跳轉、停在原頁、零 API 請求、零 toast，console 報 `No match for {"name":"manage_policy-archive"}`；直打 `/manage/policy-archive`⇒全頁 404（blank 版面＋「返回首頁」）。system-settings／audit 兩列症狀相同（BL-00045 同批 errata）。
@@ -37,7 +37,7 @@ tags: [role-menu-crud, known-state, by-design]
 
 ## 後果
 
-- 審查輪與 CDP 對照遇上列八款，指向本 ADR 即結案；新發現之同類現象不自動適用、須個案判斷；走查期新發現之已知態直接併入本草稿。
+- 審查輪與 CDP 對照遇上列八款，指向本 ADR 即結案；新發現之同類現象不自動適用、須個案判斷；U16 走查期新發現之已知態已併入各款（款 1 按鈕權限勾選同頁沿用、款 7 使用者頁首載 4040）。
 - 款 2／款 6 由 BL-00045 承載後續工作；其餘款之解除點＝各自翻案觸發器。
 
 ## 翻案觸發器

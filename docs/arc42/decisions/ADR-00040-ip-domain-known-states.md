@@ -2,9 +2,9 @@
 id: "ADR-00040"
 title: 004 ip-trust-anchor 已知態集——解鎖無 UI 按鈕／dev 經反向代理可達二態／操作稽核覆蓋不對稱／logout 故障窗弱 oracle／redis 不開持久化／wire 裁判面不開嚴格模式（六款皆 by-design、各附翻案觸發器）
 date: 2026-09-20
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00046]
 provenance: "004-ip-trust-anchor brainstorm（Q2 解鎖 API-only、Q5 logout 5000 出口與弱 oracle〔BL-00062、won't-fix〕、設計節「操作稽核首寫不對稱」、風險 6 redis 不開持久化、第二輪 grill ⑦ wire 嚴格模式）；research R7（dev 可達來源信心二態）；憲法 §III.2 BASE-WEB-MANAGE-PAGE-WIRING (i) 列「解鎖按鈕與其包裝不在本次授權」；002 刀 spec FR-016（設定寫端不落稽核列）；ADR-00033（logout 靜默 no-op 之前例）；won't-fix／by-design 亦立 ADR（CLAUDE.md §4）；主線擬稿即 accepted（tasks T064）"
 tags: [ip-trust-anchor, known-state, wont-fix, by-design]
 ---
