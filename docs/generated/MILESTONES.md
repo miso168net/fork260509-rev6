@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | feature_close | 005-role-menu-crud | 005 role-menu-crud 收單（rev6 第五刀）：角色與選單管理接真（角色 CRUD＋首頁、選單 CRUD＋樹＋回收桶）／島 H 選單域生命週期（域鎖、歸檔先於軟刪、判定面全新重建一步換上、失敗保留上一份、請求中斷不中止同步）／分頁通則＋全取例外／ROUTES 22→39、MSG_KEYS 19→43／新 lint 兩支＋wire_i64 型級三腿／走查還原工具擴面；零 migration；憲法 1.5.0→1.5.2 | 7f09ae0 | ADR-00042、ADR-00043、ADR-00044、ADR-00045、ADR-00046、ADR-00047、ADR-00048、ADR-00049、ADR-00050、ADR-00051 | §4、§5、§6、§8、§10、§11、§12 |
 | 2026-09-23 | misc | governance｜maint-orchestration-opus-all | 輕量軌 maint-orchestration-opus-all 收單（user 2026-09-23 令、005 SDD 重做前、主線直改零 cargo）：編排骨架全角色改 opus[1m] xhigh（_sk_head.js 之 IMPL_OPTS fable→opus）＋implementer prompt 首行烤 DEEP_THINK（_sk_main.js）；harness-test 案 1 補對應斷言；README 記 opus[1m] 別名現解析 claude-opus-5-5[1m]；agents.md 重算。RULES／ADR／閘數／BACKLOG 未動。 | 076fb3b | — | — |
 | 2026-09-22 | misc | governance｜maint-trust-model-bind-mount | 輕量軌 maint-trust-model-bind-mount 收單（macOS 第二台開發機 pull 時實證、主線直改零 cargo）：LL-00033 單檔 bind mount（deploy/trust-model.dev.toml）於 git 換 inode 後在容器內懸空、信任模型照契約退零網段而零紅燈；RUNBOOK §2 補固定起手句（動到該檔→up -d --force-recreate --no-deps rust-api）。LESSONS 32→33；RULES／ADR／閘數皆未動。 | 7beaa46 | — | — |
 | 2026-09-22 | misc | governance｜maint-backlog-103-104-114-121-122 | 005 前第 8 支維護批（user 2026-09-22 依 BACKLOG 分類體檢裁定、python／doc 面五條、主線直改零 cargo）：perf 表列依 date 穩定排序；schema-definition 三行四處「本刀」改刀名形；GT-06 補折行拼接與懸空前綴兩腿；GT-12 新腿對賬走查工具與 rust-api 的門鈴頻道字面；route-artifact-gate 沙盒旗標前移。五條刪列、零新記。final review 12 筆＝修 9／駁回 3。 | 092cc52 | — | — |
@@ -52,6 +53,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-29｜feature_close｜005-role-menu-crud
+
+U1～U18 各一支 Workflow（U13b／U14b／U18 為審查升級吸收單元）；U16 CDP 三方對照（ADR-00045 實測定稿、拒因譯文口徑 ADR-00049→ADR-00050）；T100 全量閘、T101 反例演練、T102 quickstart 76 項斷言；final holistic review 13 筆三分流（修 12／駁回 1）；全量 1118 passed／2 ignored；precommit_chain 26.46s；LL-00038／LL-00039；backlog_add 以在途 GT-03 全集為準＝BL-00126
 
 ### 2026-09-23｜misc｜governance｜maint-orchestration-opus-all
 
