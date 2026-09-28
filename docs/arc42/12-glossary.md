@@ -2,7 +2,7 @@
 section: 12
 summary: 系統術語與 AI 術語（保留）；流程術語住 RULES 名詞段
 rev5_blueprint:
-  §12 名詞表: 承襲（治理詞入 §12 系統術語；踢除／撤銷、鎖定兩組域詞與 IP 域詞組〔信任錨、來源信心、來源維、存取閘等〕已入表，停用／軟刪、重設／修改密碼兩組隨島 I 進場刀）
+  §12 名詞表: 承襲（治理詞入 §12 系統術語；踢除／撤銷、鎖定兩組域詞、IP 域詞組〔信任錨、來源信心、來源維、存取閘等〕與選單域詞組〔選單序列化域、治理域／顯示域、絕版、常量父鏈、reason gate、兩回收桶分立、casbin 判定面與判定面同步〕已入表，使用者域之停用／軟刪、重設／修改密碼兩組屬未入憲之島 I）
 ---
 # §12 名詞表
 
@@ -42,8 +42,16 @@ rev5_blueprint:
 | 來源維 | 登入失敗節流的第二個計數維度：以信任錨還原的真實來源位址（歸入計數桶）為鍵，與帳號維並列判定、合成；計數下界恰兩源（窗起點／解鎖標記）、成功登入不重置；文件一律稱「來源維」，碼識別字維持 `ip`（`DIM_IP`、`ip_bucket`、設定鍵 `ip_*`） | `rust-api/server/src/throttle/mod.rs`；憲法 §I.7 島 E、島 F 之 F4／F5 |
 | 計數桶 | 一維的計數身分：來源維＝`throttle::ip_bucket` 單點導出的網段（先折疊 IPv4-mapped；v4 逐位址 `/32`、v6 聚合至 `/64`；未指定位址無桶＝該維整層跳過），快取鍵與計數 SQL 共用此值；帳號維＝送出的帳號名原文（大小寫敏感、零正規化） | `rust-api/server/src/throttle/mod.rs` |
 | 解鎖標記 | 某帳號名或某計數桶「自此刻起重新計數」的時點：redis 鍵 `throttle:unlock:user:{name}`／`throttle:unlock:ip:{bucket}`、值＝unix 秒十進位字串（不可解析視為無標記）、存活 1440×60 秒；寫入者＝解鎖端點（稽核列落定之後才寫）、讀者＝`throttle::precheck` 第一步（作該維滑動窗下界之一；讀取 `Err`＝視為無標記＝fail-closed，並兼作本次嘗試的快取可用性判定）；遺失的後果＝至多少解鎖一次、可再解鎖自癒 | `rust-api/server/src/cache/mod.rs`；`rust-api/server/src/handler/throttle.rs`；憲法 §I.7 島 E；ADR-00038 |
+| 選單序列化域 | 選單樹五寫端（新增／更新／刪除／批刪／復原）與角色刪除家族（刪除／批刪）互斥執行的交易級 advisory 鎖域：key＝`MENU_DOMAIN_LOCK_KEY`（`0x7265_7636_6D65_6E75`＝ASCII `rev6menu`）、入域＝交易擁有者內層首句、commit 或 rollback 即釋放；域內鎖標的並重驗全部守門後才落寫（lock-then-redecide）；固定鎖序與 key 空間分立見 §6.1 島 H 情境①；角色新增／更新／首頁寫不入域 | `rust-api/server/src/model/facade/sys_casbin_archive.rs`；憲法 §I.7 島 H1；ADR-00043 決定 8；ADR-00044 決定 1 |
+| 治理域／顯示域 | 選單讀端的兩個謂詞域：治理域＝未軟刪全集（含停用；管理清單、父選擇器之輕量樹、寫端守門快照、按鈕碼絕版判定之聯集）；顯示域＝啟用且未軟刪（使用者路由、常量路由、頁面下拉、路由存在查詢）；兩域謂詞各住 facade 一處；治理用途誤用顯示域＝把停用靜默升級為撤銷 | `rust-api/server/src/model/facade/sys_menu.rs`；憲法 §I.7 島 H4 |
+| 絕版（按鈕碼） | 某按鈕碼於選單編輯時自清單移除後，不再屬任何其他未刪選單（含停用＝治理域、排除標的自身）之按鈕碼聯集；絕版碼之按鈕維政策同交易移入授權歸檔（reason `menu_button_removed`）、非絕版移除不歸檔；刪除選單時之對應概念＝獨有按鈕碼（刪後不再屬任何未刪選單者；reason `menu_soft_delete`、批刪逐標的於其歸檔時點現算） | `rust-api/server/src/model/facade/sys_menu.rs`（`obsolete_codes`）；憲法 §I.7 島 H2 |
+| 常量父鏈 | 常量選單（`constant=TRUE`、經免認證的常量路由端點下發）之全祖先皆須常量——否則非常量父目錄以祖先身分隨樹經免認證端點流出；寫端於新增、改父、設為常量、復原常量標的時驗全祖先常量性（沿治理域上溯、逾上限或鏈斷保守拒），清除自身常量性時反查未刪常量後代；違反拒 `biz.menu.constantParent` | `rust-api/server/src/model/facade/sys_menu.rs`（`GovernedMenus`）；憲法 §I.7 島 H3／H5 |
+| reason gate | 授權歸檔列可否復原的單點判定 `sys_casbin_archive::is_non_restorable_reason`：歸檔原因三值 `role_soft_delete`／`menu_soft_delete`／`menu_button_removed` 全屬不可復原集——刪除連動與絕版歸檔之授權不得經授權回收桶回灌（島 H2「歸檔不可回灌」半邊）；授權回收桶之讀端與復原端點不在現行路由，此閘目前無生產呼叫點、成員集由該檔案釘住 | `rust-api/server/src/model/facade/sys_casbin_archive.rs`；憲法 §I.7 島 H2；ADR-00044 決定 3 |
+| 選單回收桶 vs 授權回收桶 | 兩者分立、不共用端點與判定：選單回收桶＝已刪選單清單（getDeletedMenus）＋復原（restoreMenu：域內鎖列重驗、成對清空軟刪欄、原狀態保留、零授權回灌、零判定面同步＝島 H5），UI＝選單頁「顯示已刪除」開關；授權回收桶＝授權歸檔表 `sys_casbin_policy_archive` 之讀端與復原（受 reason gate 擋），不在現行路由；角色無回收桶（角色刪除單向） | §6.1 島 H 情境；憲法 §I.7 島 H2／H5；ADR-00044 決定 3 |
+| casbin 判定面 | 記憶體中的 casbin `Enforcer`（`AppState.enforcer`、`tokio` 讀寫鎖包覆）＝授權真相 `casbin_rule` 的全量導出；單一判定進入點 `enforce_role_path_method`、使用者路由之 menu 維可見集與按鈕碼皆讀它；★「判定面」一詞另指 IP 域之規則集判定面（`ipgate`、`ArcSwap<RuleSet>`）與登入節流判定面（ADR-00038），三者同詞異物、互不代稱；本表以限定詞區分，活書與 RUNBOOK 各處多依所在情境省略限定詞、由上下文判讀所指（§6.1 島 H 情境、RUNBOOK §11.2／§13 所稱者＝casbin 判定面；§6.1 島 F 情境所稱者＝IP 規則集判定面） | `rust-api/server/src/auth/enforce.rs`；`rust-api/server/src/state.rs`；ADR-00043 |
+| 判定面同步（vs IP 規則熱重載） | casbin 判定面同步＝移除面寫端 commit 後、本請求實際歸檔 ≥1 列時以 `reload_enforcer` 自 `casbin_rule` 全新重建、於寫鎖內一步換上（失敗保留上一份、至多 3 次、全程互斥、單一行程前提；結果計 `casbin_reload_total{outcome}`＝同步結果計數、非降級序列）；IP 規則熱重載＝規則寫端 commit 後 `ipgate::reload_and_publish` 重讀換版並按門鈴 `ipgate:invalidate`、各行程 watcher 補讀（失敗沿用上一份、計 `ip_domain_degraded_total`）。兩者同為「DB 真相→記憶體投影、失敗沿用上一份」，觸發面、互斥件、跨行程通知與可觀測序列皆不同、互不代稱 | ADR-00043；§6.1 島 H／島 F 情境 |
 
-踢除／撤銷（撤銷三型）、鎖定兩組域詞與 IP 域詞組（信任錨～解鎖標記）已隨憲法 §I.7 島 A～F 入上表；停用／軟刪、重設／修改密碼兩組隨島 I 的進場刀入本表（rev5 活書 §12 為藍本）。
+踢除／撤銷（撤銷三型）、鎖定兩組域詞、IP 域詞組（信任錨～解鎖標記）與選單域詞組（選單序列化域～判定面同步）已隨憲法 §I.7 島 A～F 與島 H 入上表；使用者域之停用／軟刪、重設／修改密碼兩組屬未入憲之島 I、目前不在表內（rev5 活書 §12 為藍本）。
 
 ## AI 術語（保留；自 RAD-AI glossary 中文改寫）
 

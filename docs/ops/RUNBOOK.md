@@ -2,7 +2,7 @@
 
 本檔＝「怎麼操作」唯一的家。分工（防鏡像）：系統長怎樣→活書 `docs/arc42/`（索引 `docs/arc42/ARCHITECTURE.md`）；十三機密明細表→`deploy/secrets/README.md`；埠全表→`docs/generated/reference/ports.md`；閘名冊→`docs/generated/GATES.md`；坑索引→`docs/ops/LESSONS.md`（全文＝`docs/ops/LESSONS/` 一坑一檔）。
 本檔命令一律完整可複製、於 repo 根執行。章節編號承 rev5（`deploy/secrets/README.md` 以 §7／§15 指向本檔；改號＝勘誤級）。
-創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§12c／§14／§16 為已補實文章、§15 為指針章；§9 已補 DB 直連與管理員解鎖、其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
+創世期章節現況：§1／§4／§7 抬頭／§9c／§10／§12／§12b／§12c／§14／§16 為已補實文章、§15 為指針章；§9 已補 DB 直連與管理員解鎖、§11 已補選單域鎖觀測與判定面同步計數判讀、§13 除指路外已補 403 分診與判定面同步耗盡處置，其餘維運端點與其餘各章隨對應刀補實文，章內不放未經實跑的命令。（本句為章節現況的唯一人寫家；README 文件系統地圖該列只指回本句、不重述名冊。）
 
 ## 1. 快速啟動（新機五步）
 
@@ -98,7 +98,31 @@ migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 
 
 ## 11. 觀測層維運
 
-隨觀測刀補實文。
+### 11.1 選單序列化域鎖（`pg_locks` 觀測）
+
+選單五寫端與角色刪除家族於交易首句取同一把 xact 級 advisory lock（key＝`MENU_DOMAIN_LOCK_KEY`＝ASCII `rev6menu`；取得點、鎖序與常數之家＝活書 §6.1「選單域生命週期——島 H」①）：commit 或 rollback 即釋放、零逾時零重試，後到者在 PG 端排隊。查誰持有、誰在等（唯讀）：
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust -At -c "SELECT l.pid, l.granted, now() - a.xact_start AS xact_age FROM pg_locks l JOIN pg_stat_activity a USING (pid) WHERE l.locktype = 'advisory' AND l.classid = 1919252022 AND l.objid = 1835363957 AND l.objsubid = 1 ORDER BY l.granted DESC, a.xact_start;"
+```
+
+- 判讀：零列＝域內無人；`t` 列＝持有者（至多一列）、`f` 列＝等待者，`xact_age`＝該交易已開多久。域內寫端一個請求一顆交易、請求結束即收場——等待者累積且持有者 `xact_age` 持續增長＝持有者交易卡住未收場，查該 `pid` 在做什麼（`pg_stat_activity`）。
+- ★64 位 key 在 `pg_locks` 上拆兩欄讀：`classid`＝高 32 位 1919252022、`objid`＝低 32 位 1835363957、`objsubid`＝1（bigint 單參數形；雙 int4 形之兩欄可與本 key 兩半逐欄同值、只差此欄）。拿整把 key 比單欄不成立：`objid = 8243124669107236469` 報 `OID out of range`、`objid::bigint = 8243124669107236469` 恆假（零列）；要以整把 key 比，先組回 `((classid::bigint << 32) | objid::bigint)`（碼內等待者觀測件 `menu_domain_waiter_count` 即此形）。
+
+### 11.2 判定面同步計數 `casbin_reload_total`
+
+```sh
+curl -s http://127.0.0.1:32079/metrics | grep '^casbin_reload_total'
+```
+
+計數為行程內累計、重啟 rust-api 即歸零；開機預註冊三個 outcome 為 0（三行恆在、行序不固定）。判讀：
+
+- `ok`：一次同步成功換上。只有移除面寫端（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列才觸發、每請求至多一次；其餘寫端（新增、復原、角色停用、選單啟停等）零增是設計形（觸發矩陣＝ADR-00043 決定 7；流程＝活書 §6.1「選單域生命週期——島 H」⑤）。
+- `retry`：每次重建失敗（含末次）+1、各配一則 target `security.authz` 的 error log（帶 `attempt`／`max`／`cause`）；`retry` 增而 `exhausted` 未增＝該次同步的後續嘗試已成功換上（`ok` 同增）、已自癒。
+- `exhausted`：一次同步三次全敗 +1（同時 `retry` +3）＝現役判定面仍是上一份（耗盡窗）→ 處置＝§13。
+- 告警＝`casbin-reload-anomaly`（`deploy/grafana-provisioning/alerting/rules.yml`；判準＝`retry`／`exhausted` 之 5 分鐘增量 > 0、`ok` 不告警）。本計數是同步結果計數、不屬降級序列：不入 `*_degraded_total`、`throttle-degraded`／`ipgate-degraded` 兩支降級告警皆不涵蓋。
+
+其餘觀測層維運隨觀測刀補實文。
 
 ## 12. 工具鏈速查（python 工具一律 `python3` 前綴直跑）
 
@@ -119,10 +143,10 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `python3 tools/schema-gate.py check｜test｜doccheck` | check＝三閘全跑（gate1 結構／gate2 欄序＋seed／audit archetype；三閘左源與判準＝ADR-00010；入口先自證 self-test；不進 pre-commit、手動／review 輪跑；一次性 pristine 加 `--container <容器名>`）／test＝離線自測（含 negative 五類）／doccheck＝活體定稿 `docs/ops/reference-src/schema-definition.md` §2／§6／§9 vs 凍結 fixtures 離線對賬（左源座標＝ADR-00012）（★不入 pre-commit 常跑鏈、護雙錨）；rc 0 全等／1 差異／2 環境或結構異常／64 用法錯 | check 是；test／doccheck 否 |
 | `python3 tools/entity-drift-gate.py check｜test` | check＝`rust-api/entity/src` vs schema 快照雙向比對（表／欄完整性＋型別＋可空性；欄序歸 gate2、index／constraint 歸 gate1）——pre-commit entity-drift 段於 rust-api pin bump 或快照 staged 時實跑、★快照缺席即紅（hook 段 rc 2＋提示 `python3 tools/docsync refresh` 照相）／test＝自測；rc 同上 | 否 |
 | `python3 tools/rust-fmt-gate.py check｜test` | check（預設）＝rust-api 容器內 `cargo fmt --all --check` 唯讀比對（設定＝`rust-api/rustfmt.toml`）；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0、未格式化 rc 1（逐段計數＋補救命令）、容器在而 cargo-fmt 缺 rc 2／test＝離線自測（subprocess 全樁）；rc 64 用法錯 | check 是（未起＝具名跳過）；test 否 |
-| `python3 tools/wire-schema.py extract｜check [--staged-gate]｜test` | extract＝base-web 容器內 typings→draft-07 JSON Schema 快照、原子寫 `rust-api/server/tests/fixtures/wire-schema.json`／check＝重抽至暫存與工作樹快照 byte 比對、絕不覆寫（`--staged-gate`＝**兩側** pin 區間皆零變動才跳過：base-web 區間零 typings 變動＋rust-api 區間零快照變動）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0、重抽失敗或快照缺席或不一致＝rc 2／test＝離線自測；rc 64 用法錯 | extract 是；check 未起＝具名跳過；test 否 |
+| `python3 tools/wire-schema.py extract｜check [--staged-gate]｜test` | extract＝base-web 容器內 typings→draft-07 JSON Schema 快照、原子寫 `rust-api/server/tests/fixtures/wire-schema.json`／check＝先跑跨子庫純讀檔錨兩腿（BL-00109 qs 前提腿：base-web 查詢串序列化器仍為無選項 `stringify(params)` 且 axios 包之 qs 版本＝工具釘值——`rust-api/server/tests/wire_schema.rs` 之真串常數以此前提實跑產出；保留路由名對賬腿：rust `RESERVED_ROUTE_NAMES`＝base-web 常量路由名集 ∪ 內建根路由名集〔ADR-00044 決定 8〕；無條件、先於收窄與容器探測、零 docker、任一違規 rc 2），再重抽至暫存與工作樹快照 byte 比對、絕不覆寫（`--staged-gate`＝**兩側** pin 區間皆零變動才跳過重抽比對：base-web 區間零 typings 變動＋rust-api 區間零快照變動）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0、重抽失敗或快照缺席或不一致＝rc 2；★錨兩腿讀工作樹、不讀 pin 樹——工作樹改了 axios 設定（`base-web/packages/axios/`）或 `sys_menu.rs` 而未 commit 時判的是工作樹、不是本次 commit 內容（submodule-sync 段閘面不含這兩處、不擋）／test＝離線自測；rc 64 用法錯 | extract 是；check 之錨兩腿否、重抽比對未起＝具名跳過；test 否 |
 | `python3 tools/fork-delta-lint.py [test] [--constitution <path>]` | 無引數＝self-test＋全掃 base-web vs 源倉 `example` 基線（修改型缺 `原行:`／新增型缺圈界〔含新檔檔頭一行＋軌道×路徑〕／授權判定；rc 0 綠／1 違規／2 結構斷言敗或源倉未在 example）／test＝離線只跑 self-test（bootstrap 名冊）／`--constitution`＝只供自身變異驗證、日常一律預設憲法路徑；rc 64 用法錯 | 否（前置＝源倉在 example、bootstrap 斷言） |
 | `python3 tools/msg-key-gate.py check｜test [--rust <error.rs>] [--locales <dir>] [--src <dir>]` | check（預設）＝左源 `MSG_KEYS` ⇔ 三檔 locale backend 子樹逐檔雙向全等＋Biz 構造點守衛＋前端 msg 字面消費點名冊（碼面閘表列；pre-commit msg-key-gate 段於 rust-api／base-web pin bump 或本體 staged 時跑）／test＝離線 self-test（合成契約案＋判準補強案〔斷言 2 比對面為空／同義構造形／`MSG_KEYS` 宣告數≠元素數／Biz 構造鍵之名冊歸屬兩分支〕＋真 repo 左源綠案＋斷言 3 案；案數以 `test` 輸出為準；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；`--rust`／`--locales`／`--src` 只供自測注入、日常一律預設路徑；rc 0 綠／1 違規／2 結構異常／64 用法錯 | 否 |
-| `python3 tools/view-render-guard.py check｜test` | check（預設）＝逐行掃 `base-web/src/views/manage/**`（`.vue`／`.ts`／`.tsx`／`.js`／`.jsx`）之原始 HTML 注入寫法被禁字面（碼面閘表列；不分註解與碼）；rc 0 綠／1 命中（指名檔:行）／2 base-web 工作樹或射程目錄缺席、零受掃檔／64 用法錯／test＝離線自測（逐條逐行反例、註解內字面照紅、三種 rc 2；pre-commit 自測迴圈與 bootstrap 名冊呼叫） | 否 |
+| `python3 tools/view-render-guard.py check｜test` | check（預設）＝兩腿（碼面閘表列）：①逐行掃 `base-web/src/views/manage/**`（`.vue`／`.ts`／`.tsx`／`.js`／`.jsx`）之原始 HTML 注入寫法被禁字面（不分註解與碼）②IP 規則頁表頭 prop 形正面錨（BL-00117：`base-web/src/views/manage/ip-rule/index.vue` 每個 `<TableHeaderOperation` 開標籤帶新增鈕綁新增權限、批刪鈕恆關之兩屬性〔屬性與值逐字＝工具常數 `ANCHOR_ATTRS`〕、自閉合、檔內零 default 插槽覆寫字面；零個開標籤＝不成立）；rc 0 綠／1 任一腿命中（指名檔:行）／2 base-web 工作樹、射程目錄或錨檔缺席、零受掃檔／64 用法錯／test＝離線自測（被禁字面逐條逐行反例、註解內字面照紅、表頭錨三條判準各一反例與零實例、四種 rc 2〔工作樹／射程目錄／錨檔缺席、零受掃檔〕；pre-commit 自測迴圈與 bootstrap 名冊呼叫） | 否 |
 | `python3 tools/route-artifact-gate.py check [--constitution <path>]｜test` | check（預設）＝base-web 容器內 `/tmp` 沙盒重跑路由外掛、三道斷言（①產出檔集對賬 ②工作樹為種重算冪等 ③上游基線為種零手改；碼面閘表列）、對工作樹唯讀；`--constitution`＝只供自身變異驗證、日常一律預設憲法路徑；rc 0 綠或具名跳過／1 任一道不通過（附 diff）／2 環境或結構異常／64 用法錯／test＝離線自測（subprocess 全樁；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；★重算者＝dev server 內之該外掛（新 view 落地即自動重算、未觸發則重啟 base-web 服務）——`pnpm gen-route` 是互動腳手架、不重算 | check 是（未起＝具名跳過）；test 否 |
 | `python3 tools/wf-watchdog.py <冒煙token> [wf目錄\|runId] [--rearm] [--bg]｜test` | Workflow 看門狗（stall／runaway 保險絲；與 Workflow launch 同回合原子成對、雙掛＝Monitor 腿＋`--bg` 背景長尾腿）；`test`＝離線自測，由 pre-commit 自測迴圈與 bootstrap 名冊呼叫——亦即冒煙 token 不可取字面 `test`（會被當自測子命令、CLAUDE.md §2） | 否 |
 | `python3 tools/walkthrough-baseline.py snapshot <檔>｜diff <檔>｜restore <檔>｜restore --seed [--user U] [--db D]｜test` | 走查前後全表基準對賬與走查後清理（§9c 契約；非碼面閘＝`NON_GATE_TOOLS` 成員）：snapshot＝三面現算（public 全部表列數／全部序列 `last_value`＋`is_called`／redis `DBSIZE`＋逐前綴鍵數）＋角色／選單域兩欄（四表 id 上界＋`sys_user_role` 鍵集；檔形 v2、v1 舊檔 diff／restore 皆 rc 2 指名重新 snapshot）寫 JSON 基準檔、`<檔>` 必填落 `tmp/walkthrough-<日期>.json`／diff＝重取現況逐值比對（含兩欄）、只列有差者＋末行摘要、★rc 0 才算環境已還原（runtime-append 四表之 id 序列只比存在性、不比值＝同 gate2 口徑）／restore＝§9c 第 3 步清理面機器化（`system_settings` 值對凍結 seed、值≠seed 不改值即 rc 2、演進帳有其 `seed_*` 登記即 rc 2 指名 id；審計欄歸 NULL＋清理面五表 DELETE＋`session_id` 歸 NULL＋角色／選單域（指派鍵集差刪除→四表刪上界以上列）＋九支 setval（清理面五支＋角色／選單域四支）自基準現讀＝單交易；redis `session:`／`throttle:` 逐鍵 DEL；收尾 diff 之 rc 即其 rc；★基準之清理面五表或兩前綴非空＝rc 2 拒跑（角色／選單域不套）、角色／選單域四表上界高於其序列位置＝rc 2 拒跑（snapshot 即告警）；動過 `casbin_rule` 即收尾輸出「MUST 重啟 rust-api」補救句）／restore --seed＝無須基準檔、目標態＝凍結 seed（同上清理；setval `sys_ip_rule_id_seq`＋角色／選單域四支＝五支、值自凍結 seed 現讀，runtime-append 序列不復位；角色／選單域以凍結 seed 之上界與鍵集為目標；收尾比對面＝清理面與角色／選單域對 seed 目標值；★凍結 seed 之清理面五表非零列、或演進帳有 `system_settings`／清理面五表／角色／選單域五表之 `seed_*` 登記＝rc 2 拒跑）／test＝離線自測（subprocess 全樁；pre-commit 自測迴圈與 bootstrap 名冊呼叫）；snapshot／diff 唯讀（pg 只 SELECT、redis 只 DBSIZE／SCAN）、restore 寫面恰為所列語句（自測逐字釘住；pg 單交易＋④b `PUBLISH ipgate:invalidate` 門鈴〔清前 `sys_ip_rule` 非 0 時、排在 DEL 之前〕＋redis 逐鍵 DEL）、只指向 rev6 dev stack；`--user`／`--db` 預設同 `tools/schema-gate.py` 常數；rc 0 全等／1 有差／2 環境或結構異常（含比對面為空、restore 拒跑）／64 用法錯 | snapshot／diff／restore 是；test 否 |
@@ -148,10 +172,10 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `tools/schema-gate.py` | schema 三閘：凍結 fixtures ⊕ 演進帳 vs 實庫（gate1 結構／gate2 欄序＋seed／audit archetype）＋doccheck 離線對賬 | 不進 pre-commit 常跑鏈（護雙錨）：`check` 手動／review 輪跑（需 stack）；pre-commit `schema-frozen` 段＝凍結存證或活體定稿 staged 時跑其 `test`；本體 staged 時自測 | ADR-00010（閘契約）；ADR-00032（碼面閘名冊承載於本表＋GT-12 腿） |
 | `tools/entity-drift-gate.py` | `rust-api/entity/src` vs schema 快照雙向（表／欄完整性＋型別＋可空性；零 docker） | pre-commit entity-drift 段＝`rust-api` pin bump 或快照 staged 時 `check`；★快照缺席＝hook 段 rc 2 擋下＋提示 `python3 tools/docsync refresh`（不具名跳過）；本體 staged 時自測 | ADR-00010；ADR-00018（快照缺席即紅） |
 | `tools/rust-fmt-gate.py` | rust 格式：容器內 `cargo fmt --all --check`（唯讀、絕不寫檔） | pre-commit rust-fmt 段＝`rust-api` pin bump 或本體 staged 時 `check`；docker 不在 PATH／compose 兩檔缺／`rust-api` 容器未起＝具名跳過 rc 0；容器在而 cargo-fmt 缺＝rc 2 fail-loud；未格式化＝rc 1；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意＝具名跳過、工具缺席＝fail-loud；承 rev5:ADR 0057 決定 3） |
-| `tools/wire-schema.py` | wire 契約：base-web typings → JSON Schema 快照 byte 比對（快照＝`rust-api/server/tests/fixtures/wire-schema.json`；唯讀鐵則、前端 porcelain 前後皆空） | pre-commit wire-schema 段＝`base-web` **或 `rust-api`** pin bump 時 `check --staged-gate`（雙側觸發、對稱於 entity-drift：typings 側住 base-web、快照側住 rust-api worktree；兩側 pin 區間皆零變動才跳過）；docker 缺／`base-web` 容器未起＝具名跳過 rc 0；容器在而重抽失敗、快照缺席或不一致＝rc 2；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意） |
+| `tools/wire-schema.py` | wire 契約：base-web typings → JSON Schema 快照 byte 比對（快照＝`rust-api/server/tests/fixtures/wire-schema.json`；唯讀鐵則、前端 porcelain 前後皆空）＋跨子庫純讀檔錨兩腿：①BL-00109 qs 前提（`base-web/packages/axios/src/options.ts` 之序列化器恰一處、為無選項 `stringify(params)` 且 `stringify` 自 qs 匯入，`base-web/packages/axios/package.json` 之 qs 版本＝工具釘值；前提一改，`rust-api/server/tests/wire_schema.rs` 之真串常數即不再是前端真送的串而照綠——本腿把前提釘成機器面）②保留路由名對賬（`rust-api/server/src/model/facade/sys_menu.rs` 之 `RESERVED_ROUTE_NAMES`＝base-web `src/router/elegant/routes.ts` 之常量路由名集 ∪ `src/router/routes/builtin.ts` 之路由名集；新增 view 頁或 upstream rebase 動到兩集即紅）；兩腿去註解後判、任一錨檔缺席或任一側零成員即違規。★已知邊界：兩腿讀工作樹、不讀 pin 樹——工作樹改了 axios 設定或 `sys_menu.rs` 而未 commit 時判的是工作樹、不是本次 commit 內容（submodule-sync 段閘面不含這兩處、不擋）；呼叫端經 `createAxiosConfig(config)` 覆寫序列化器不在讀面 | pre-commit wire-schema 段＝`base-web` **或 `rust-api`** pin bump 時 `check --staged-gate`（雙側觸發、對稱於 entity-drift：typings 側住 base-web、快照側住 rust-api worktree；兩側 pin 區間皆零變動才跳過重抽比對）；錨兩腿無條件先跑（先於收窄與容器探測、零 docker 零 git；違規＝rc 2）；其後 docker 缺／`base-web` 容器未起＝具名跳過 rc 0；容器在而重抽失敗、快照缺席或不一致＝rc 2；本體 staged 時自測 | ADR-00019（容器依賴型碼面閘之環境缺席語意）；ADR-00044 決定 8（保留路由名對賬腿） |
 | `tools/fork-delta-lint.py` | base-web fork-delta 標記：修改型缺 `原行:`／新增型缺圈界（含我方新檔之檔頭一行標記＋所稱軌道×檔路徑相符）／授權判定（憲法 §III.1 檔面收窄＋§III.2 三元組）＋名冊結構斷言（空 ★表以哨兵句守；§III.1 範圍欄反引號 token 集對賬本工具常數、次序不計，不符即 rc 2＝Amendment 須同批重導新增面判定） | pre-commit fork-delta 段＝`base-web` pin bump、本體或憲法 staged 時全掃（源倉在 `example`＝bootstrap 斷言；源倉缺席＝rc 2 fail-loud、hook 不設跳過分支）；`test`＝離線自測、入 bootstrap 名冊 | 憲法 §III（標記字面 `rev6-inline`＋★軌道授權）；哨兵句改形＝002 刀 research R10 |
 | `tools/msg-key-gate.py` | msg key 跨端：後端 `rust-api/server/src/error.rs` 之 `MSG_KEYS`（常數表＋常數引用陣列兩段解析）⇔ base-web `src/locales/langs/{en-us,zh-cn,zh-tw}.ts` 各自 `backend: {` 子樹鍵集**逐檔雙向全等**（子樹為封閉集、無白名單；ADR-00017「雙向必恆紅」指整本字典、不指子樹）＋Biz 構造點守衛（`server/src/**/*.rs` 生產區間每處 Biz 構造點〔`AppError::Biz(`／`Self::Biz(`／經 use 匯入之裸 `Biz(`、`::` 與 `(` 間容空白；函式值形亦計、`enum AppError` 變體宣告不計〕須 `Cow::Borrowed(字面｜msg_key::NAME)` 且鍵 ∈ 名冊、動態構造即紅、構造點零處＝比對面為空 rc 2；`#[cfg(test)]` 所附項目排除＝本體形 brace 配對、欄位／variant 形以 `,`／`}` 收界）＋前端 msg 字面消費點名冊（base-web `src/**/*.{ts,vue,tsx}`〔排除 `src/locales/`〕剝註解後之字串字面，恰等於 `MSG_KEYS` 成員或為安全前綴之 wire 形者＝消費點；安全前綴＝`MSG_KEYS` 頂層前綴 − 三檔 locale 頂層鍵、程式現算不寫死；實掃〔檔×鍵×次數〕⇔ 工具內名冊 `FRONTEND_MSG_CONSUMERS` 逐項雙向全等且每鍵 ∈ `MSG_KEYS`，不等即紅指名檔:行、掃描根缺席或零源檔＝比對面為空 rc 2） | pre-commit msg-key-gate 段＝`rust-api` **或** `base-web` pin bump、本體 staged 時 `check`（雙側觸發、比對面＝兩側工作樹；「兩側須同一顆外層 commit 同 bump」＝跨子庫同步律之紀律面，本閘讀不到 pin 樹、非其守備範圍；該律之粗判＝pre-commit submodule-sync 段、非碼面閘、不入本表）；零 docker、無環境跳過分支；rc 1 鍵集不等、動態構造或前端消費點與名冊不等、rc 2 結構異常（檔缺席／節缺席／名冊解析失敗／比對面為空）；`test`＝離線自測（契約案＋判準補強案＋真 repo 左源綠案＋斷言 3 案；案數以 `test` 輸出為準）、入 for 自測迴圈與 bootstrap 名冊 | ADR-00039（續行 ADR-00029 之閘形制：逐檔雙向全等、無白名單、Biz 守衛兩形；譯文之家＝三檔 locale 各自的 backend 子樹；承 ADR-00017 決定 3 兌現、rev5:Lint24 翻案為逐檔雙向） |
-| `tools/view-render-guard.py` | 管理頁零原始 HTML 注入寫法：`base-web/src/views/manage/**` 之 `.vue`／`.ts`／`.tsx`／`.js`／`.jsx` 逐行比對被禁字面（Vue 模板之原始 HTML 指令、DOM `innerHTML`／`outerHTML`／`insertAdjacentHTML`、`document.write`／`writeln`；不分註解與碼、不解析語法＝射程內連註解都不得寫出被禁字面）；自由文字欄（IP 規則備註為首例）一律純文字插值（`specs/004-ip-trust-anchor/spec.md` FR-052） | pre-commit view-render-guard 段＝`base-web` pin bump 或本體 staged 時 `check`；零 docker、hook 段零條件判斷不設跳過分支（ADR-00019 決定 3／4）；base-web 工作樹缺席、射程目錄缺席或零受掃檔＝工具 rc 2 fail-loud（掃描面為空不算綠）；命中＝rc 1 指名檔:行；本體 staged 時自測 | ADR-00034（§III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` 進場；閘契約＝docs/ops/reference-src/code-gate-contracts.md §3①） |
+| `tools/view-render-guard.py` | 管理頁零原始 HTML 注入寫法：`base-web/src/views/manage/**` 之 `.vue`／`.ts`／`.tsx`／`.js`／`.jsx` 逐行比對被禁字面（Vue 模板之原始 HTML 指令、DOM `innerHTML`／`outerHTML`／`insertAdjacentHTML`、`document.write`／`writeln`；不分註解與碼、不解析語法＝射程內連註解都不得寫出被禁字面）；自由文字欄（IP 規則備註為首例）一律純文字插值（`specs/004-ip-trust-anchor/spec.md` FR-052）＋IP 規則頁表頭 prop 形正面錨（BL-00117；`specs/005-role-menu-crud/spec.md` FR-062）：`base-web/src/views/manage/ip-rule/index.vue` 表頭寫入口須由共用表頭元件之兩布林 prop 控制（屬性與值逐字＝工具常數 `ANCHOR_ATTRS`）、標籤自閉合、檔內零 default 插槽覆寫字面——覆寫插槽即脫離兩 prop 控制、無權帳號會看見寫入口，而型別檢查照綠、seed 下亦無「有頁面權限、無新增權限」之帳號可供走查觸到；錨檔內零個該開標籤＝不成立（正面錨無實例不算綠）；射程外（同名 prop 之其他繫結寫法、kebab-case 標籤名之第二個表頭）逐項＝工具 docstring | pre-commit view-render-guard 段＝`base-web` pin bump 或本體 staged 時 `check`（兩腿皆跑）；零 docker、hook 段零條件判斷不設跳過分支（ADR-00019 決定 3／4）；base-web 工作樹缺席、射程目錄缺席、零受掃檔或錨檔缺席＝工具 rc 2 fail-loud（掃描面為空不算綠）；任一腿命中＝rc 1 指名檔:行；本體 staged 時自測 | ADR-00034（§III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` 進場；閘契約＝docs/ops/reference-src/code-gate-contracts.md §3①） |
 | `tools/route-artifact-gate.py` | 路由外掛產物檔（`src/router/elegant/{imports,routes,transform}.ts`＋`src/typings/elegant-router.d.ts`）之產物檔紀律三道斷言：①空沙盒觀測之外掛實產出集＝`base-web/src` 帶產物檔頭之檔集＝憲法 §III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` (i) 列範圍欄「（產物檔 N 支）」注記所轄路徑集（解析＝`tools/fork-delta-lint.py` 之 `load_roster` 與其同一支範圍欄展開器；雙向差集即紅——漏列一支〔該支無授權亦無守〕與幽靈宣告一支〔授權射程虛胖〕皆紅，注記自稱支數與該組路徑數不符亦紅）②工作樹為種重算冪等（view 樹變了而產物沒跟上即紅）③上游基線 `fork260509-soybean-admin-base/` 為種重算＝工作樹（外掛對 `routes.ts` 走增量合併、工作樹為種時手改行存活——「手改一行即紅」由本道承擔）；重算一律 base-web 容器內 `/tmp` 沙盒、對工作樹唯讀、外掛設定取現行 `build/plugins/router.ts` 不重抄 | pre-commit route-artifact-gate 段＝`base-web` pin bump、本體或憲法 staged 時 `check`；docker 不在 PATH／compose 兩檔缺／`base-web` 容器未起＝具名跳過 rc 0；容器在而重算失敗、外掛零產出、憲法列或基線種子不完整＝rc 2；基線源倉缺席＝只③具名跳過並警告；任一道不通過＝rc 1 附 diff；本體 staged 時自測 | ADR-00034（§III.2 該列之產物檔紀律與「本列產物檔集＝外掛實際產出檔集」斷言）；ADR-00019（容器依賴型碼面閘之環境缺席語意） |
 
 ## 12b. 收刀簿記牆鐘量法（perf 事件 `close_bookkeeping` 的唯一命令形）
@@ -190,6 +214,15 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 症狀「回應 403」的分診（只給座標、事實住活書）：`5003` 的發出面與彼此在 wire 上不可分辨＝活書 §8.2；IP 存取閘阻擋的可觀測面（豁免路徑、`ipgate_blocked_total`、`security.ipgate` 阻擋告警之命中網段欄）＝活書 §6.1「信任錨與 IP 存取閘——島 F」④；登入端點轉發鏈逾限拒絕（落一列 `chain_rejected` 登入稽核）＝同情境②。★Grafana `ipgate-degraded` 只看降級事件、不涵蓋阻擋（阻擋告警不帶 `degraded` 欄）——告警沒響不等於不是閘擋的。誤擋的解法＝IP 規則管理頁改規則（不重啟即生效）——★該改動若涵蓋操作者自身來源會被**防自鎖**當場拒絕（`2222`／`biz.ipRule.selfLock`、規則列與稽核列皆零寫入）、須改自其他來源操作或改建不涵蓋自身之規則，事實＝活書 §6.1「信任錨與 IP 存取閘——島 F」⑤ 與 §12「防自鎖」列；來源被登入節流鎖住＝§9 管理員解鎖。
 
+判定面同步耗盡（§11.2 `casbin_reload_total{outcome="exhausted"}` 增、或 `casbin-reload-anomaly` 告警之 outcome＝exhausted）：寫端回應與 DB 皆已成功落地（不需重送），但現役判定面仍是上一份——本次已歸檔之授權仍在記憶體面生效，同路由名重建之選單、同代碼重建之角色可經殘留面繼承（耗盡窗＝ADR-00043 決定 9）。處置依序：
+
+1. 查失敗原因：`docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --no-log-prefix rust-api 2>&1 | grep '判定面同步'`——每次重建失敗一行（`fields.cause`＝根因、`attempt`／`max`＝第幾次），耗盡另一行；零命中印空、rc 1＝容器 log 範圍內（橫跨容器內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`）未發生同步失敗。
+2. 修 DB 連線：重建只讀 DB（模型字串內嵌），cause 指向 DB 連線或查詢面；先排除 postgres 面（`docker compose -f docker-compose.yml -f docker-compose.dev.yml ps postgres` 為 healthy、§9 DB 直連連得上）。★未修好就重啟＝boot 建不出判定面即不開服（boot 鏈 fail-loud）、整站停擺。
+3. 重啟 rust-api（命令＝§2 之 `--force-recreate` 重建形）：boot 自 DB 全量重建判定面、殘留隨之消失；不重啟則殘留持續至下次任一成功同步。
+4. 驗計數：§11.2 命令三行皆回 0（新行程預註冊）且 `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:32079/health` 回 200。
+
+★告警解除≠已恢復：告警判準是 5 分鐘增量，耗盡後計數不再增、告警於窗過後自然解除，而殘留持續至下次成功同步（其後出現 `ok` 增量）或重啟 rust-api——以此為恢復判準、不以告警狀態為準。
+
 ## 14. 埠與帳號
 
 - 真相源：埠全表→`docs/generated/reference/ports.md`（機器生成；配號紀律＝ADR-00001、世代 3xxxx）；帳號／角色→`docs/generated/reference/accounts.md`（generate 產；真源＝`docs/ops/reference-src/accounts-snapshot.json`、`python3 tools/docsync refresh` 自實庫照相；dev 三帳 Super／Admin／User 之角色綁定承 rev5 對照基準、全表見該檔）。
@@ -214,7 +247,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 
 ### 16.1 信任模型設定檔
 
-1. **掛載**：環境變數 `APP_TRUST_MODEL_PATH` 指向一份 TOML；rust-api 啟動時載入一次、之後唯讀共享——改檔後要重啟 rust-api 才生效。dev 現況＝`docker-compose.dev.yml` 把 `deploy/trust-model.dev.toml` 唯讀掛到容器內 `/etc/rev6/trust-model.toml`，環境變數值與掛載目標共用同一個 YAML anchor（兩者不會分岔）。
+1. **掛載**：環境變數 `APP_TRUST_MODEL_PATH` 指向一份 TOML；rust-api 啟動時載入一次、之後唯讀共享——改檔後要重啟 rust-api 才生效。dev 現況＝`docker-compose.dev.yml` 把 `deploy/trust-model.dev.toml` 唯讀掛到容器內 `/etc/rev6/trust-model.toml`，環境變數值與掛載目標共用同一個 YAML anchor（兩者不會分岔）。dev 值的唯一一份＝該交付檔，rust 測試 fixture 與它的逐欄對賬＝contracts 檔「dev 交付形」節——改 dev 值須兩側同批改、否則 dev 容器內該對賬案紅。
 2. **由 dev 那份擴充**（prod 樣例＝上述 contracts 檔「prod 樣例」節）：
    - `internal_default`＝我方內網／容器網段。反向代理連到 rust-api 的來源位址必須落在受信集（六集合聯集）內、慣例就放這一項；對端不受信時，**位址推導**在第一層對端閘就結案＝直取對端、來源信心 `direct`，轉發鏈與兩個覆蓋層都不參與（兩覆蓋各自的對端前置集同樣在那個聯集內）。唯溢出短路不看對端受不受信、一律套在最後：鏈的原始非空欄數逾上界者來源信心改 `chain_rejected`，登入端點據此拒絕（`5003`／HTTP 403、另落一列登入稽核），其餘端點帶著標記照常服務（管線全序＝活書 §6.1「信任錨與 IP 存取閘——島 F」情境②）。
    - 前置 CDN 者另填 `[[cdn]]`（`networks`＋`connecting_ip_header`）與 `cf_gate_egress`（掛邊緣驗證閘的我方出口；缺它則邊緣驗證標記不被採信、信心升不到 `cdn_verified`）。
@@ -236,10 +269,10 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 
    dev 實得（②之欄位段）：`"trust_model_path":"/etc/rev6/trust-model.toml","warnings":0,"internal_default":1,"tunnel":0,"cf_gate_egress":0,"cdn":0,"my_public":0,"bindings_internal":0`。
    - ②各集合欄報的是**受信網段數**、不是條目數；`trust_model_path` 印「(未設定)」＝環境變數沒掛上。
-   - ②的 `warnings` 含兩類不算降級的告警（設定檔有不認得的鍵、載入完成但零受信網段）；這兩類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
+   - ②的 `warnings` 含三類不算降級的告警（設定檔有不認得的鍵、訪客位址標頭名不合法〔§16.2〕、載入完成但零受信網段）；這三類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
    - ③看印出的數、不看 rc：`grep -c` 零命中時印 `0` 而 rc 為 1。③橫跨容器 log 內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`（如 `--since 24h`）。
    - 告警規則 `ipgate-degraded`（`deploy/grafana-provisioning/alerting/rules.yml`）也涵蓋載入降級，但啟動端事件每次啟動只發一次、紅一個評估窗即復歸——部署當下以②③④為準、不等告警。
-5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的只有來源信心態 `fallback` 與 `proxy_clean` 二態，其餘信心態由整合測試覆蓋（已知態＝ADR-00046 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
+5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00046 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
 
 ### 16.2 CDN 邊緣網段：兩處各存一份、必須同步更新
 
@@ -248,7 +281,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | `deploy/nginx/nginx.conf` 的 `geo $cf_edge` 區塊 | **傳輸層對端**是不是 CDN 邊緣——決定 `X-CF-Verified`／`CF-Connecting-IP` 兩標頭注入還是移除 | 每個網段一行 `<CIDR> 1;`（區塊內附註解樣例）；dev 留空 |
 | 信任模型檔 `[[cdn]]` 的 `networks` | **轉發鏈裡**哪一跳是 CDN 邊緣（位置錨） | CIDR 字串陣列；`connecting_ip_header` 填該 CDN 的訪客位址標頭名 |
 
-- ★訪客位址標頭（信任模型 `[[cdn]]`／`[tunnel]` 的 `connecting_ip_header`）的前置層義務：該名 MUST 由前置層**無條件覆寫或移除**——`deploy/nginx/conf.d/_locations.inc` 只對固定一組標頭名 `proxy_set_header`（含預設的 `CF-Connecting-IP`），宣告成別的名字而 nginx 沒有同步為它加一行（非 CDN／非通道流量給空值＝移除）時，請求端可自帶該標頭原樣穿透：`[[cdn]]` 側扭曲來源信心，`[tunnel]` 側在通道回退成立時直接改寫真實來源（連帶影響存取閘判定、來源維計數桶與稽核列）。另該名須為合法 HTTP 標頭名——非法名使兩層覆蓋靜默失效、載入面現無告警（承載＝BACKLOG BL-00082）。
+- ★訪客位址標頭（信任模型 `[[cdn]]`／`[tunnel]` 的 `connecting_ip_header`）的前置層義務：該名 MUST 由前置層**無條件覆寫或移除**——`deploy/nginx/conf.d/_locations.inc` 只對固定一組標頭名 `proxy_set_header`（含預設的 `CF-Connecting-IP`），宣告成別的名字而 nginx 沒有同步為它加一行（非 CDN／非通道流量給空值＝移除）時，請求端可自帶該標頭原樣穿透：`[[cdn]]` 側扭曲來源信心，`[tunnel]` 側在通道回退成立時直接改寫真實來源（連帶影響存取閘判定、來源維計數桶與稽核列）。另該名須為合法 HTTP 標頭名——非法名（如尾隨空白、內含空白、空字串）原字面照載、請求層依此名恆查無：`[tunnel]` 側覆蓋 A 整條停用、`[[cdn]]` 側該條目取不到訪客位址（只縮小信任、不改讀預設名）；載入面每處一則告警（`kind`＝`UnusableHeaderName`、`scope`＝`tunnel`／`cdn`、`reason` 指名鍵路徑並附改寫建議；不計 `ip_domain_degraded_total`）。核對＝§16.1 第 4 步③：命中行帶此 `kind` 即依 `reason` 改設定檔後重啟 rust-api。
 - 兩份用途不同、內容必須一致。來源＝CDN 供應商公告的邊緣網段表（Cloudflare＝`https://www.cloudflare.com/ips/`，IPv4 與 IPv6 兩份都要）；它是部署參數、會變——**更新節奏跟供應商公告走**，每次變更**兩處同一批改**，改完 nginx 重載設定、rust-api 重啟（信任模型只在啟動時載入）。
 - ★只改一邊的表徵：
   - 只改 nginx、漏改信任模型：新邊緣位址在轉發鏈上不被認得是 CDN、被當成真實來源（多個訪客塌成同一個邊緣位址）；同時邊緣驗證標記為真、訪客標頭與它對不上 ⇒ 來源信心大量落 `cdn_mismatch`（前提＝`cf_gate_egress` 已填）。

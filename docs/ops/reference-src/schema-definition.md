@@ -305,7 +305,7 @@ rev5 對 rev4 終態的定稿差異屬史述、不隨刀前進——全文見凍
 user_memo／role_memo／menu_memo／wbip_memo（text 可空、可多行）：R_SUPER 備註用途；
 顯示於**管理列表**；不顯示於其它被取用處（下拉、引用、對外 API 一律不帶）。
 role_desc（upstream UI「角色描述」、使用者可見）與 role_memo 職責不同、兩欄並存不合併。
-UI 兌現不在 001 刀（rev5 由 `rev5:B-003` 承載、rev6 對應條目隨 UI 刀 brainstorm 立；活書資料慣例節指針隨 001 刀）。
+UI 兌現之逐欄落點（哪一頁、哪一欄已兌現、哪一欄目前無）住活書 §8.1 memo 段、本檔不重述（前代承載條目＝`rev5:B-003`）。
 
 ## 6. 索引與約束（rev5 終態、機器轉錄；gate1 比對面）
 
@@ -611,8 +611,8 @@ entity-drift 比對豁免本表。
   - 收尾 `setval` 對齊 sequence 落值（§9）。
 - 簡繁定稿：22 筆改值（`rev5:clarify Q2`；含 `登录→登入`、`菜单→選單`）已固化於 m0002 字面——rev6 不做任何 runtime 轉換。
 - `hide_in_menu` 6 列 true（id 6 manage_user-detail／16 user-center／22 function_multi-tab／
-  58·59·60 function_hide-child_*）＝upstream route meta 原樣、非 §I.2 隱藏治理——釋義與
-  白名單承 `rev5:ADR 0005`（rev6 對應釋義隨 menu 域刀重審）。
+  58·59·60 function_hide-child_*）＝upstream route meta 原樣、非 §I.2 隱藏治理——本白名單只描述 seed
+  （承 `rev5:ADR 0005`）；超管運行期經選單管理改 `hideInMenu` 屬業務資料、不算啟用隱藏機制（釋義＝ADR-00044 決定 6）。
 - 3 列選單之 `component` 指向 view 於 rev6 base-web（upstream `example` 基線）尚缺（manage_system-settings／
   manage_policy-archive／manage_audit）——選單與政策隨基線先行、view 由
   對應 UI 刀補齊（rev5 由 `rev5:B-008` 承載；rev6 由 BL-00045 承載）；同批之 manage_ip-rule 其 view 已在位。

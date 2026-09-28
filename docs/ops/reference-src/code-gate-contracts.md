@@ -6,14 +6,19 @@
 
 ## §1 `tools/wire-schema.py` 行為契約
 
-> 凍結存證＝`specs/002-system-settings/contracts/code-gates.md` §1.2。
+> 凍結存證＝`specs/002-system-settings/contracts/code-gates.md` §1.2；跨子庫純讀檔錨兩腿＝`specs/005-role-menu-crud/contracts/code-gates.md` §4。
 
 
-- 子命令：`extract`（base-web 容器內 `npx -y typescript-json-schema@0.67.4 "src/typings/{common,api/*}.d.ts" "*" --ignoreErrors --required --strictNullChecks` → draft-07 快照、原子替換寫 `rust-api/server/tests/fixtures/wire-schema.json`；需 stack 在跑；輸出確定性）；`check [--staged-gate]`（重抽至暫存、與工作樹快照 byte 比對、絕不覆寫；`--staged-gate`＝staged base-web gitlink 區間零 typings 變動即跳過）；`test`。
+- 子命令：`extract`（base-web 容器內 `npx -y typescript-json-schema@0.67.4 "src/typings/{common,api/*}.d.ts" "*" --ignoreErrors --required --strictNullChecks` → draft-07 快照、原子替換寫 `rust-api/server/tests/fixtures/wire-schema.json`；需 stack 在跑；輸出確定性）；`check [--staged-gate]`（依序：合成 self-test → 跨子庫純讀檔錨兩腿〔下條〕→ `--staged-gate` 收窄＝兩側 pin 區間皆零變動〔base-web 區間零 typings 變動＋rust-api 區間零快照變動〕才跳過重抽比對 → 容器探測 → 重抽至暫存、與工作樹快照 byte 比對、絕不覆寫）；`test`。
+- 跨子庫純讀檔錨兩腿（005 刀 U11；該刀 spec FR-057、ADR-00044 決定 8）：
+  - 位置＝合成 self-test 之後、收窄與容器探測之前**無條件**執行；只讀工作樹檔、不觸 docker／git——pin 區間有無變動、stack 有無在跑皆不能讓它跳過（self-test 釘：staged-gate 判跳過與容器不可用時兩腿照跑照紅）；收窄 pathspec 不擴（擴了即牽動 pre-commit submodule-sync 段）。
+  - BL-00109 qs 前提腿：`base-web/packages/axios/src/options.ts` 去 TS 註解後 ①`stringify` 恰以 `import { stringify } from 'qs'` 匯入一次 ②`paramsSerializer` 恰一處生效碼、且為無選項 `params => stringify(params)`（表達式體或區塊體皆可）；③`base-web/packages/axios/package.json` 之 `dependencies.qs` 恰為工具常數 `QS_PINNED_VERSION`。理由：`rust-api/server/tests/wire_schema.rs` 之真串常數以此前提（qs 預設 `strictNullHandling: false` ⇒ null 渲染成 `k=`）於 base-web 容器實跑產出，前提一改（序列化器傳選項、拿掉序列化器回 axios 預設、換 qs 版）常數即不再是前端真送的串而照綠。補救＝同批以新前提實跑重取各真串常數、再改釘值。
+  - 保留路由名對賬腿：`rust-api/server/src/model/facade/sys_menu.rs` 去 rust 註解後 `const RESERVED_ROUTE_NAMES: [&str; N] = [...];` 宣告恰一處，其成員集 MUST ＝ `base-web/src/router/elegant/routes.ts` 之 `meta.constant: true` 路由名集 ∪ `base-web/src/router/routes/builtin.ts` 之路由名集（路由物件＝直屬 `name: '<字串>'` 之物件字面、去 TS 註解後判）；任一側零成員＝解析面空、括號不成對＝解析失準，皆為違規。補救＝同批改該常數或還原前端路由定義。
+  - 錨檔五支任一缺席或讀不了＝違規（fail-loud、不當跳過）；違規逐條走 stderr、`check` 即回 2。已知邊界（讀工作樹不讀 pin 樹；呼叫端覆寫序列化器不在讀面）＝RUNBOOK §12 該列。
 - 唯讀鐵則：npx 一次性、不碰 base-web 工作樹／package.json／pnpm lock；前端 porcelain 前後皆空。
-- rc：check 0＝一致或具名跳過（docker 缺／`base-web` 容器未起／staged-gate 零變動；clarify Q5）；2＝重抽失敗或不一致；extract 2＝stack 不在或 npx 非零（不寫部分結果）；64 用法錯。
+- rc：check 0＝一致或具名跳過（docker 缺／`base-web` 容器未起／staged-gate 兩側零變動；clarify Q5）；2＝錨兩腿任一違規、重抽失敗、快照缺席或不一致；extract 2＝stack 不在或 npx 非零（不寫部分結果）；64 用法錯。
 - rev6 座標核對＝compose 兩檔名、`base-web` 服務名與 `-w /app`（皆同 rev5）；typings glob 零改（已涵蓋 `api/rev6-*.d.ts`）。
-- pre-commit 觸發：staged 含 `base-web`（gitlink）即 `check --staged-gate`。
+- pre-commit 觸發：staged 含 `base-web` 或 `rust-api`（gitlink）即 `check --staged-gate`。
 
 ## §2 wire 快照與覆蓋閘契約
 
@@ -21,7 +26,7 @@
 
 
 - 快照產製：`python3 tools/wire-schema.py extract`（base-web 容器內 `npx typescript-json-schema@0.67.4` 唯讀抽取、`--strictNullChecks`、原子替換寫入
-  `rust-api/server/tests/fixtures/wire-schema.json`；需 stack 在跑）；drift 閘＝`check`（重抽 byte 比對；pre-commit `--staged-gate` 收窄：staged base-web gitlink 區間零 typings 變動即跳過；
+  `rust-api/server/tests/fixtures/wire-schema.json`；需 stack 在跑）；drift 閘＝`check`（重抽 byte 比對；pre-commit `--staged-gate` 收窄：兩側 pin 區間皆零變動才跳過〔判準＝§1〕；
   ★docker 缺或 `base-web` 容器未起＝具名跳過 rc 0、容器在而重抽失敗或不一致＝rc 2——clarify Q5）。
 - 受審 definitions（002 刀新增）：`Api.SystemManage.SystemSetting`（讀端序列化輸出必過；★description 不含 null）＋`Api.SystemManage.UpdateSystemSettingReq`
   （service 送出形錨定；description 呈 `["null","string"]`）。
@@ -33,7 +38,7 @@
 > 凍結存證＝`specs/004-ip-trust-anchor/contracts/code-gates.md` §2。
 
 
-① `tools/view-render-guard.py`（承 `rev5:tools/view-render-guard.py` 282 行、新寫）：射程 `base-web/src/views/manage/**`；零 `v-html`／`innerHTML`／`outerHTML`／`insertAdjacentHTML`／`document.write`（含 `writeln`）用法（禁用字面集＝工具常數 `FORBIDDEN`，以該常數為準、本檔不另釘值）；環境缺席語意＝base-web 工作樹缺席即 fail-loud（ADR-00019 形）。
+① `tools/view-render-guard.py`（承 `rev5:tools/view-render-guard.py` 282 行、新寫）：射程 `base-web/src/views/manage/**`；零 `v-html`／`innerHTML`／`outerHTML`／`insertAdjacentHTML`／`document.write`（含 `writeln`）用法（禁用字面集＝工具常數 `FORBIDDEN`，以該常數為準、本檔不另釘值）；環境缺席語意＝base-web 工作樹缺席即 fail-loud（ADR-00019 形）。另一腿＝IP 規則頁表頭 prop 形正面錨（005 刀 U13；BL-00117、該刀 spec FR-062）：錨檔＝工具常數 `ANCHOR_REL`（`base-web/src/views/manage/ip-rule/index.vue`），三條皆對錨檔原文判（註解內字面同計）——(a) 每個 `<TableHeaderOperation` 開標籤帶工具常數 `ANCHOR_ATTRS` 兩屬性且值逐字相符（新增鈕綁新增按鈕碼權限、批刪鈕恆關；本檔不另釘值）(b) 該標籤自閉合（標籤體任何子節點即 default 插槽內容、自閉合即結構上無從覆寫）(c) 檔內零 `#default`／`v-slot:default` 字面；錨檔內零個該開標籤＝不成立（正面錨無實例不算綠）；開標籤終點＝引號外第一個 `>`。理由：呼叫端改回覆寫 default 插槽即脫離兩 prop 控制（覆寫成空時元件改渲染自帶備援按鈕）、無權帳號看見寫入口，而型別檢查照綠、seed 下無「有頁面權限、無新增權限」之帳號可走查觸到。射程外：同名 prop 之其他繫結寫法（靜態屬性、`v-bind` 物件展開、camelCase 別名）與錨屬性並存時之覆蓋序、kebab-case 標籤名之第二個表頭；確需具名插槽時 (b) 須同批改判準。rc：兩腿違規合併列出＝1（指名檔:行）；錨檔缺席＝2。
 ② `tools/route-artifact-gate.py`（承 `rev5:tools/route-artifact-gate.py` 605 行、新寫）：於 base-web 容器內**沙盒**重跑路由外掛重算（不就地改工作樹＝pre-commit 各閘唯讀）後與版控產物四檔 byte 比對＝冪等，另以上游基線為種重算一腿承擔「手改一行即紅」（外掛對 `routes.ts` 為增量合併、版控為種時手改行存活；★勘誤 2026-09-20：原文「容器外以 `pnpm` 重跑…後 `git diff --quiet`」——`node_modules` 住容器、`pnpm gen-route` 為互動腳手架非重算指令〔`rev5:L-053`〕）；斷言「憲法 §III.2 該軌道列所列產物檔集＝外掛實際產出檔集」（雙向差集即紅）；環境缺席＝具名跳過 rc 0，判準三項（工具 `observe` 段；ADR-00019）：`docker` 不在 PATH／compose 兩檔任一缺／base-web 容器未起；容器在而憲法列或基線種子不完整＝rc 2，基線源倉缺席＝只第三腿具名跳過並警告。
 ★接線與名冊落點屬各刀施工面、不收進本檔（ADR-00041 決定 2）；現況真源＝RUNBOOK §12 碼面閘表與 `tools/docsync/tests/test_hook_wiring.py` 的 SEGMENTS。
 

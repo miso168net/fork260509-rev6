@@ -16,7 +16,7 @@ rev5_blueprint:
 | 契約一致性 | 契約守恆 | 每條 route 有 contract case、13 碼矩陣零偏離 | 憲法 §I.3；`rust-api/server/tests/contract.rs`（ROUTES×case 雙向覆蓋閘）／`src/error.rs` 13 碼矩陣斷言；wire 快照面另由 `tools/wire-schema.py`（碼面閘）守 |
 | 可重現性 | 可重現 | 任一外層 commit 的 pin＝子庫 worktree HEAD；新機 bootstrap rc 0 | GT-02；`tools/bootstrap.sh` |
 | 文件正確性 | 文件與碼零漂移 | generate 兩次同 bytes；名冊同源；預算表「內」 | GT-01／GT-12；STATE 預算對賬 |
-| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之管理頁選單標題於側邊欄展開態顯裸鍵、逐頁帳住 BACKLOG，收合態零差異 | 走查流程（CLAUDE.md §7） |
+| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之三支管理頁（system-settings／policy-archive／audit）之選單標題於側邊欄展開態與選單管理頁治理清單顯路由裸鍵（ADR-00045 款 2／款 6；帳＝BL-00045），收合態零差異；拒因 toast 之措辭差異限 ADR-00049 排除清單所列鍵 | 走查流程（CLAUDE.md §7） |
 
 ## 10.2 品質情境
 
@@ -29,7 +29,7 @@ rev5_blueprint:
 | 量測 | 可斷言的值：碼、HTTP status、序列計數、時限 |
 | 守門 | 釘住該情境的測試或 lint |
 
-情境逐島一則＝憲法 §I.7 已入憲行為島 A～F（島 G～J 的情境隨其進場刀入本節；承襲指針表＝憲法 §I.7）。每則只釘該島最容易被「順手統一」抹掉的 fail-* 方向（方向之凍結面＝該島入憲條文）；流的完整敘述住 §6.1、碼表與每級語意的權威定義住 §8.2／§8.3，本節依上表格式只在回應欄寫方向、在量測欄引用該欄所定義的可斷言值，不重新定義語意。守門欄的案名皆可 `grep -rn "fn <名>" rust-api/server` 自證。
+情境逐島一則＝憲法 §I.7 已入憲行為島 A～F 與島 H（未入憲之島 G／I／J 目前無情境；承襲指針表＝憲法 §I.7）。每則只釘該島最容易被「順手統一」抹掉的 fail-* 方向（方向之凍結面＝該島入憲條文）；流的完整敘述住 §6.1、碼表與每級語意的權威定義住 §8.2／§8.3，本節依上表格式只在回應欄寫方向、在量測欄引用該欄所定義的可斷言值，不重新定義語意。守門欄的案名皆可 `grep -rn "fn <名>" rust-api/server` 自證。
 
 ### 島 A token rotation——並發換發與 grace 不可用
 
@@ -84,6 +84,15 @@ rev5_blueprint:
 | 回應 | 錨右含不受信跳→棄錨、取最右不受信跳（攻擊者自身位址、`proxy_clean`），合法 CDN 路徑結論逐位元不變；逾限→全域只標記 `chain_rejected`（位址不覆寫、照常服務），登入端點拒絕並仍落一列稽核（帳號維計數排除、來源維計入）；重讀失敗→沿用上一份規則集、不清空；初載失敗→空規則集＝除結構豁免外全放行；上下文缺席→存取閘放行、來源維節流跳過；fail-closed 恰兩處＝寫端自鎖拒寫（操作者來源取不到時同向拒寫、零落庫零重載）與登入端點逾限拒絕；阻擋只擋該次請求、會話與 token 不動、規則解除即恢復；每次降級一則結構化 warn＋計數，阻擋與逾限拒絕不入降級序列 |
 | 量測 | 攻擊形鏈之 `real_ip`＝攻擊者位址而非偽造位址；逾限登入回 HTTP 403＋`code=5003`、`sys_login_attempt` 恰增一列 `ip_confidence=chain_rejected`；重讀失敗前後規則集兩袋原樣（不清空）、`ip_domain_degraded_total{source="ruleset_reload"}` 增 1；阻擋回 `5003`＋`ipgate_blocked_total` 增 1＋warn 帶命中網段；自鎖拒寫回 2222 `biz.ipRule.selfLock`、來源取不到回 `5000`，兩者 `sys_ip_rule`／`sys_operation_log` 皆零新列；`ip_domain_degraded_total` 值集（`obs.rs` `IP_DOMAIN_DEGRADED_SOURCES`）預註冊顯式 0 |
 | 守門 | `trust/mod.rs`：`hardening_defeats_forged_anchor_on_bypass_path`／`hardening_is_bit_identical_on_legitimate_cdn_path`／`window_direction_guards_real_ip_under_left_side_flood`／`every_confidence_state_is_reachable_through_the_pipeline`；`middleware/mod.rs`：`chain_over_the_token_bound_is_marked_rejected_and_keeps_the_resolved_address`／`ip_gate_walks_the_six_decision_steps_in_order`／`gate_outcome_agrees_with_decide_on_every_cell`／`blocked_request_gets_the_5003_envelope_one_count_and_a_warn_naming_the_cidr`／`absent_context_passes_with_one_degraded_count_and_a_warn`／`chain_rejected_source_is_gated_on_its_resolved_address_not_bypassed_nor_pre_rejected`；`handler/auth/login.rs`：`login_with_overflowing_chain_is_403_and_lands_one_chain_rejected_row`；`model/facade/sys_login_attempt.rs`：`count_recent_failures_excludes_chain_rejected_but_counts_null_and_legacy_rows`／`count_by_ip_counts_chain_rejected_rows_unlike_the_account_dimension`；`ipgate/mod.rs`：`initial_load_failure_falls_back_to_the_empty_ruleset`／`reload_failure_keeps_the_last_good_ruleset_and_returns_err`／`watcher_keeps_the_last_good_ruleset_when_its_rereads_fail`／`a_blocked_source_keeps_its_session_and_recovers_once_the_rule_is_gone`／`ruleset_mutator_calls_across_src_stay_at_the_single_keep_last_good_site`／`watcher_pushed_degraded_counts_are_never_pinned_on_the_process_recorder`；`handler/ip_rule.rs`：`self_lock_guard_refuses_on_all_four_write_ends_and_writes_nothing`／`write_ends_refuse_with_5000_when_the_request_context_is_absent`；`obs.rs`：`pre_register_renders_ip_domain_degraded_eight_sources_explicit_zero`／`pre_register_renders_ipgate_blocked_explicit_zero`／`ipgate_blocked_outlet_is_called_from_exactly_one_production_site`／`blocked_series_literal_is_named_only_at_the_obs_outlets`；`tests/serve_connect_info_lint.rs` |
+
+### 島 H 選單域生命週期——判定面同步失敗保留上一份、同鍵重建零繼承
+
+| 欄 | 內容 |
+|---|---|
+| 刺激 | 移除面寫端（刪除選單／批刪選單／編輯選單之按鈕碼絕版／刪除角色／批刪角色）commit 後重建判定面時資料庫連線持續失敗；兩支同步交錯、較早開始者較慢完成；選單（或角色）刪除後以同路由名（同代碼）重建並直種授權或指派；兩支進域寫端併發 |
+| 回應 | 同步失敗＝保留上一份已知良好判定面（絕不空窗、半載、全域拒絕）：至多 3 次、線性退避、每次失敗與耗盡各一則 `security.authz` error，寫端回應不受影響（commit 成功即 `0000`）；互斥件使較晚 commit 之結果最後換上；刪除連動歸檔＋判定面同步使新實例零繼承舊授權、復原不回灌；後到之進域寫端於域鎖等待至先到者交易結束；零歸檔之寫端不觸發同步 |
+| 量測 | 壞連線下 `R_SUPER` 對其 seed 授權之請求前後皆放行；`casbin_reload_total{outcome="retry"}` 增 3＋`{outcome="exhausted"}` 增 1、`ok` 零（成功路徑 `ok` 增 1）；就地 `load_policy` 失敗即清空現役面而重建後換上不清空（特性鎖定）；三支併發同步全數完成；刪除前判定面命中該授權、重建後之同名新實例零命中；`pg_locks` 上本 key 之 NOT granted 等待者恰 1；三 outcome 預註冊顯式 0 |
+| 守門 | `auth/enforce.rs`：`reload_failure_keeps_the_live_face_and_counts_retry_then_exhausted`／`in_place_load_policy_empties_the_live_face_while_rebuild_then_replace_keeps_it`／`reload_success_replaces_the_face_from_truth_and_counts_ok`／`three_concurrent_reloads_all_complete`／`stalled_reload_holds_the_next_one_so_the_later_rebuild_replaces_last`；`handler/menu.rs`：`deleting_a_menu_archives_its_route_and_sole_code_grants_and_syncs_the_face_once`／`deletes_that_archive_nothing_keep_shared_codes_and_do_not_sync`／`a_route_name_rebuilt_after_deletion_inherits_no_grant`／`restoring_a_deleted_menu_regrants_nothing_across_the_next_rebuild`／`delete_menu_waits_behind_the_menu_domain_holder`；`handler/role.rs`：`deleting_granted_roles_syncs_the_face_once_and_zero_policy_deletes_do_not`／`a_role_code_recreated_after_deletion_inherits_no_grant`；`model/facade/sys_casbin_archive.rs`：`enter_menu_domain_holds_rival_until_holder_commits`／`archive_reasons_pin_three_literals_and_non_restorable_set_is_exactly_them`；`obs.rs`：`pre_register_renders_casbin_reload_three_outcomes_explicit_zero`；`tests/authz_entrypoint_lint.rs` |
 
 ## 10.3 E6 AI 品質情境
 
