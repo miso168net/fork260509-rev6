@@ -4,7 +4,7 @@ title: 角色與選單拒因譯文對 rev5 之對照口徑——純換句話說�
 date: 2026-09-28
 status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00050]
 provenance: "005-role-menu-crud U16 CDP 三方對照（T089 揭出 `biz.role.*` 拒因 toast 措辭與 rev5 不同、T090 同形）；user 2026-09-28 以 AskUserQuestion 兩題親決"
 tags: [role-menu-crud, i18n, cdp, parity]
 ---
