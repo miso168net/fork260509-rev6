@@ -3,8 +3,9 @@
 """tools/walkthrough-baseline.py — CDP 真登入走查前後的全表基準對賬（rev5:B-147；rev5:L-071 防法①的機制化）
 
 子命令：
-  snapshot <檔>   取 rev6 dev stack 實庫＋redis 現況三面、寫成 JSON 基準檔（走查**前**跑）
-  diff <檔>       重取現況、與基準檔逐值比對、只列有差者＋末行摘要（走查**後**清理完跑；
+  snapshot <檔>   取 rev6 dev stack 實庫＋redis 現況三面＋角色／選單域兩欄、寫成 JSON 基準檔（走查**前**跑；四表上界高於
+                  其序列位置＝stderr 告警〔以之 restore 將拒跑〕、rc 仍 0——見 restore 安全帶）
+  diff <檔>       重取現況、與基準檔逐值比對（含兩欄：上界差、鍵集差逐對）、只列有差者＋末行摘要（走查**後**清理完跑；
                   ★rc 0 才算「環境已還原」——三閘綠不算，rev5:L-055／rev5:L-071 招牌徵狀＝三閘綠而全量紅）
                   ★序列面例外一項：runtime-append 四表（RUNTIME_APPEND_TABLES、與 tools/schema-gate.py 同名常數同值）
                     之 id 序列只比**存在性**、不比值——同 gate2 對其 setval 值正規化之口徑；這四支只進不退
@@ -18,22 +19,41 @@
                   ②DELETE 清理面五表（RESTORE_TABLES＝會話三表＋sys_ip_rule＋sys_operation_log）全表
                     ＋sys_user.session_id 歸 NULL
                   ③五支 setval（RESTORE_SEQUENCES＝上列五表之 id 序列）值自基準檔現讀
-                    ——①～③ 同一交易（BEGIN…COMMIT、ON_ERROR_STOP=1；任一句敗即整筆回滾、不進④）
+                  ③b角色／選單域寫面（接在③之後）：sys_user_role 以目標鍵集差刪除（現況有而目標無之對；其 role_id
+                    外鍵 ON DELETE RESTRICT 指 sys_role、故先於四表）→ BOUNDED_TABLES 四表（sys_role／sys_menu／
+                    casbin_rule／sys_casbin_policy_archive；四表間無外鍵、次序取名冊序）刪 id > 目標上界之列 → 四支序列
+                    setval 回目標值；目標＝基準檔 id_bounds／user_role_keys 與序列面現讀值。★seed 有列＝不 DELETE 全表、
+                    不套列數安全帶（改守上界對序列之前置、見安全帶）；★射程界＝只刪上界以上列與鍵集差、不補不改——id ≤ 上界之列
+                    （含 seed 列）之就地改寫或被刪、指派對被刪，restore 皆不還原：列數與鍵集差由收尾比對報出、欄值改寫由
+                    tools/schema-gate.py check 之 gate2 逐列兜；上界本身被取樣時之顯式 id 殘列抬高者＝該前置拒跑、不在射程內硬做
+                    ——①～③b 同一交易（BEGIN…COMMIT、ON_ERROR_STOP=1；任一句敗即整筆回滾、不進④）
+                  ④b門鈴（BL-00094；交易提交後、④之前）：清前 sys_ip_rule 列數非 0＝PUBLISH ipgate:invalidate 一次並
+                    回報訂閱者數；回非整數＝拋錯並附可照抄之人工按鈴命令（doorbell_cli）；清前 0 列＝不按
                   ④redis 以 `--scan --pattern` 取 session:*／throttle:* 鍵、逐鍵指名 DEL（每批 ≤REDIS_DEL_BATCH
                     把；絕不 FLUSHDB、絕不以樣式刪）
                   ⑤收尾自動跑一次 diff、其 rc 即 restore 之 rc（0＝已還原）
-                  ★安全帶：基準檔五表列數或 session／throttle 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
-                    會毀掉基準資料——restore 只服務「走查前為空基準」之形；無空基準檔可用＝改跑 seed 模式）；
-                    安全帶與 seed 比對皆在任何寫入之前
+                  ⑥重啟句：③b 實際刪過 casbin_rule 列或改過其序列（交易前以 SQL_CASBIN_STATE 現讀判）＝收尾輸出
+                    CASBIN_RESTART_HINT（MUST 重啟 rust-api、附可照抄之 compose restart 命令；判定面無外部通知管道）
+                    ——提交後任一步失敗之路徑亦輸出；未動 casbin 者不輸出
+                  ★安全帶：基準檔清理面五表列數或 session／throttle 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
+                    會毀掉基準資料——restore 只服務「走查前為空基準」之形；無空基準檔可用＝改跑 seed 模式）；角色／選單域
+                    五表不套（其寫面不毀目標態之列）、改守前置：基準檔四表任一之上界高於其序列位置（nextval 已發出之最大值：
+                    is_called 真＝last_value、假＝last_value-1）＝拒跑 rc 2、零寫入——取樣時已有顯式 id 殘列越過序列、走查以
+                    nextval 造之列落在序列與上界之間＝刪不到、序列卻被 setval 回其下＝下一次 nextval 撞 PK（補救＝seed 模式；
+                    snapshot 遇同條件即告警）；安全帶、seed 比對與重啟句判準之現讀皆在任何寫入之前
   restore --seed  同上清理、但無須基準檔：目標態＝凍結 seed（BL-00075；走查外殘列——被殺測試留下之列與鍵——
                   產生時通常無空基準 snapshot 可用）。與基準檔模式之差恰三處：
-                  (a)安全帶改對凍結 seed：清理面五表之 COPY 段須在場且零列、五支序列之 setval 行須在場；演進帳
-                    拒跑判定由 system_settings 擴及清理面五表（有其 seed_* 登記＝凍結段非期望 seed、照清會毀 seed 列）
+                  (a)安全帶改對凍結 seed：清理面五表之 COPY 段須在場且零列、五支序列之 setval 行須在場；角色／選單域
+                    五表之 COPY 段與四支序列之 setval 行須在場（不論列數；段首缺欄、列欄數不符、id 非整數＝凍結面受損）；
+                    演進帳拒跑判定由 system_settings 擴及清理面五表與角色／選單域五表（有其 seed_* 登記＝凍結段非期望
+                    seed、照清會毀 seed 列）；上界對序列之前置照套、對象改為凍結 seed（COPY 列 id 最大值高於其 setval 位置＝
+                    凍結面受損 rc 2；真檔恰相等、自測釘住＝不觸發）
                   (b)③只 setval sys_ip_rule_id_seq 一支（SEED_SETVAL_SEQUENCES＝清理面序列扣掉 runtime-append 者）、
-                    值自凍結 seed 之 setval 行現讀；runtime-append 四支序列**不復位**
-                  (c)⑤收尾比對之判準面＝清理面對 seed 目標值（五表 0 列、sys_ip_rule_id_seq＝seed 值、runtime-append
-                    序列在場、兩前綴 0 鍵）；清理面之外無基準可比＝不判——pg 殘留由 tools/schema-gate.py check 之
-                    gate2 逐列兜
+                    值自凍結 seed 之 setval 行現讀；runtime-append 四支序列**不復位**；③b 目標＝凍結 seed：四表上界＝COPY
+                    列 id 最大值（零列記 0）、四支 setval 值＝其 setval 行、指派鍵集＝COPY 鍵集
+                  (c)⑤收尾比對之判準面＝清理面與角色／選單域對 seed 目標值（清理面五表 0 列、sys_ip_rule_id_seq＝seed 值、
+                    runtime-append 序列在場、兩前綴 0 鍵；角色／選單域五表列數、四表上界與序列、指派鍵集）；其餘面無基準
+                    可比＝不判——pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜
   test            自帶 self-test（unittest、離線、零 docker；subprocess 全樁）
   選項（snapshot／diff／restore 共用）：`--user U`／`--db D`（預設同 tools/schema-gate.py 常數）。
   `<檔>` 為必填位置引數、無隱含預設落點（契約用法落 tmp/、見 RUNBOOK §9c）；唯 restore 得以 `--seed` 取代之
@@ -47,15 +67,19 @@
     DBSIZE 與去重鍵數互證、不等出提示；前綴＝鍵第一個冒號前段、無冒號者歸「(無前綴)」；
     前綴名冊亦不手抄——rust-api 現行 session:／throttle: 兩前綴只是今天的值）
   基準檔另帶 taken_at（UTC ISO）與 schema_version（檔形演進用）；diff 忽略 taken_at。
+  另帶角色／選單域兩欄（檔形 v2；restore ③b 之目標值、非比對面之名冊式防法——全表列數仍由①現算）：id_bounds＝
+    BOUNDED_TABLES 四表之 max(id)（空表記 0）、user_role_keys＝sys_user_role 之 [user_id, role_id] 有序清單；
+    diff 亦比兩欄。v1 基準檔（無兩欄）diff／restore 皆 rc 2 指名重新 snapshot。
 
 退出碼：0 全等／1 有差／2 環境或結構異常（docker 不可執行、psql／redis 失敗、基準檔缺席或壞形、
 ★比對面為空＝零表或零序列——空面的全綠是假綠、同 schema-gate 紀律，snapshot 與 diff 皆然；restore 另含
-安全帶拒跑、基準檔缺清理面之表或序列、seed 左源缺席或不可解、演進登記檔缺席或壞形、system_settings 有 seed_*
-演進登記、system_settings 值≠seed）／
+安全帶拒跑（含目標態四表上界高於其序列位置）、基準檔缺清理面之表或序列、seed 左源缺席或不可解、演進登記檔缺席或壞形、system_settings 有 seed_*
+演進登記、system_settings 值≠seed、casbin_rule 現態撈取壞形；seed 模式另含凍結 seed 缺清理面或角色／選單域之 COPY
+段或 setval 行、該面 COPY 段受損、清理面五表或角色／選單域五表有 seed_* 演進登記；基準檔壞形含 v1 舊檔形）／
 64 用法錯（usage 走 stderr）。restore 之 0／1 即其收尾 diff 之 rc。
 
 唯讀紀律（self-test 逐字釘住）：snapshot／diff 唯讀——pg 只下 SELECT（含目錄視圖）、redis 只下 DBSIZE／--scan；
-restore 之寫面恰為上列①～④（交易句逐字、redis 只 DEL 指名鍵），其餘撈取同唯讀判準；
+restore 之寫面恰為上列①～④（含④b；交易句逐字、redis 只 PUBLISH 門鈴與 DEL 指名鍵），其餘撈取同唯讀判準；
 pg 走 `docker compose … exec -T postgres psql -U … -d … -At -F <分隔>`；redis 走
 `exec -T redis sh -c` 以 `$(cat /run/secrets/redis_password)` 取密（同 compose healthcheck 形、
 `--no-auth-warning`）——密碼值只在容器內 sh 展開，host argv 與本工具任何輸出皆不含。
@@ -69,7 +93,8 @@ pg 走 `docker compose … exec -T postgres psql -U … -d … -At -F <分隔>`�
 不可 import。隨遷自 rev5:tools/walkthrough-baseline.py（003 刀 U10a；四型失效引用 rev6 化、其餘逐字承襲）。
 restore 子命令＝BL-00053（maint-backlog-pre-004 A2b 新增、rev5 無對應）：取代 003 刀 U6／U7／U11 各自手寫之 tmp
 清理腳本；寫面由 self-test 逐字釘住（多一句即紅）。清理面擴及 sys_ip_rule／sys_operation_log、seed 模式、
-runtime-append 序列存在性口徑＝BL-00075（004 刀 U3；rev5 同名工具無此三項）。
+runtime-append 序列存在性口徑＝BL-00075（004 刀 U3；rev5 同名工具無此三項）。角色／選單域寫面（③b）、檔形 v2
+兩欄與重啟句（⑥）＝005 刀 U15（T088；rev5 同名工具無此面、無藍本）。
 """
 import contextlib
 import datetime
@@ -99,7 +124,7 @@ REDIS_PASSWORD_FILE = "/run/secrets/redis_password"
 # ★密碼只在容器內 sh 展開（同 docker-compose.yml redis healthcheck 形）；host 端只見這行字面。
 REDIS_CLI = f'redis-cli -a "$(cat {REDIS_PASSWORD_FILE})" --no-auth-warning'
 PSQL_SEP = "\t"          # psql -F 分隔（表名／序列名不含 tab）
-SCHEMA_VERSION = 1       # 基準檔形版本；改檔形即 bump、舊檔 diff 走 rc 2 而非誤比
+SCHEMA_VERSION = 2       # 基準檔形版本；改檔形即 bump、舊檔 diff／restore 走 rc 2 而非誤比（v2＝005 刀 U15 加兩欄）
 NO_PREFIX = "(無前綴)"
 STARTUP_HINT = ("docker compose -f docker-compose.yml -f docker-compose.dev.yml "
                 "up -d --wait postgres redis")
@@ -116,7 +141,7 @@ SQL_SEQUENCES = ("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=
 # seed 左源＝凍結 fixture 之 system_settings COPY 段（唯讀、REPO_ROOT 相對）
 SEED_FIXTURE = os.path.join("specs", "001-schema-baseline", "fixtures", "seed.sql")
 # 演進登記檔（形斷言權威＝tools/schema-gate.py）：期望 seed＝凍結 ⊕ 演進；本工具左源只讀凍結段、未合成演進，
-# 故帳上有 system_settings（seed 模式另含清理面五表）之 seed 面登記即拒跑（check_seed_evolution）
+# 故帳上有 system_settings（seed 模式另含清理面五表與角色／選單域五表）之 seed 面登記即拒跑（check_seed_evolution）
 SCHEMA_EVOLUTION = os.path.join("docs", "ops", "reference-src", "schema-evolution.json")
 SEED_EVOLUTION_KINDS = ("seed_add", "seed_update", "seed_delete")
 # runtime-append 四表→其 id 序列：與 tools/schema-gate.py 之 RUNTIME_APPEND_TABLES **同值**（連字檔名 CLI 不可 import、
@@ -150,6 +175,37 @@ SQL_RESTORE_AUDIT = ("UPDATE system_settings SET updated_at = NULL, updated_by =
                      "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL;")
 SQL_RESTORE_CLEAR = tuple(f"DELETE FROM {t};" for t in RESTORE_TABLES) + (
     "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL;",)
+
+# ── 角色／選單域寫面（005 刀 U15、T088；restore ③b）──────────────────────────
+# id 上界四表→其 id 序列（dict 序即刪除序）：seed 有列（archive 於 seed 零列、同形處置）＝不可 DELETE 全表、不套「基準列數非 0
+# 即拒」——restore 只刪 id > 目標上界之列、序列 setval 回目標值；目標上界＝基準檔 id_bounds（max(id)、空表記 0）或凍結 seed 之
+# COPY 列 id 最大值（零列記 0）。
+BOUNDED_TABLES = {
+    "sys_role": "sys_role_id_seq",
+    "sys_menu": "sys_menu_id_seq",
+    "casbin_rule": "casbin_rule_id_seq",
+    "sys_casbin_policy_archive": "sys_casbin_policy_archive_id_seq",
+}
+# 指派表（複合主鍵 (user_id, role_id)、無 id 與序列）：以鍵集差刪除（現況有而目標無之對）。其 role_id 外鍵 ON DELETE RESTRICT
+# 指 sys_role ⇒ 刪除排在四表之前；四表之間無外鍵（005 刀 U15 以 pg_constraint 現查）、次序取名冊序。
+USER_ROLE_TABLE = "sys_user_role"
+ROLE_MENU_TABLES = tuple(BOUNDED_TABLES) + (USER_ROLE_TABLE,)
+# 基準檔 v2 兩欄之撈取（單句、唯讀）：四表 id 上界＋指派鍵集（依 user_id, role_id 排序）
+SQL_BOUND_FACES = (
+    "SELECT json_build_object('id_bounds', json_build_object("
+    + ", ".join(f"'{t}', (SELECT COALESCE(max(id), 0) FROM {t})" for t in BOUNDED_TABLES)
+    + f"), 'user_role_keys', (SELECT COALESCE(json_agg(json_build_array(user_id, role_id) "
+      f"ORDER BY user_id, role_id), '[]'::json) FROM {USER_ROLE_TABLE}))")
+# 重啟句判準之現讀（寫入前、唯讀）：casbin_rule 現況上界與其序列
+SQL_CASBIN_STATE = ("SELECT json_build_object('max_id', (SELECT COALESCE(max(id), 0) FROM casbin_rule), "
+                    "'seq', (SELECT json_build_object('last_value', last_value, 'is_called', is_called) "
+                    "FROM casbin_rule_id_seq))")
+# 重啟句（restore 實際刪過 casbin_rule 列或改過其序列時收尾輸出；self-test 逐字釘住）：判定面只在 rust-api 開機與自身寫端
+# 同步時自庫載入、SQL 直改無外部通知管道。
+RUST_API_RESTART_CLI = "docker compose -f docker-compose.yml -f docker-compose.dev.yml restart rust-api"
+CASBIN_RESTART_HINT = ("[walkthrough-baseline] ★MUST 重啟 rust-api：本次 restore 以 SQL 直改 casbin_rule（刪列或改序列）、"
+                       "判定面無外部通知管道——執行中的 rust-api 仍持 restore 前之政策集、重啟即自庫重載；照抄："
+                       + RUST_API_RESTART_CLI)
 
 
 class BaselineError(Exception):
@@ -283,16 +339,45 @@ def fetch_redis(run):
     return {"dbsize": dbsize, "prefixes": prefixes}
 
 
+def _check_bound_faces(obj, what):
+    """v2 兩欄形斷言（基準檔與現況撈取共用）：id_bounds＝恰 BOUNDED_TABLES 四鍵、值為非負整數（空表記 0）；
+    user_role_keys＝[[user_id, role_id], …] 整數對。不符 → BaselineError（rc 2）。"""
+    def _int(v):
+        return isinstance(v, int) and not isinstance(v, bool)
+
+    bounds = obj.get("id_bounds")
+    if not isinstance(bounds, dict) or set(bounds) != set(BOUNDED_TABLES) \
+            or not all(_int(v) and v >= 0 for v in bounds.values()):
+        raise BaselineError(f"{what}：id_bounds 須為 {{{'／'.join(BOUNDED_TABLES)}: 非負整數上界}}（空表記 0）")
+    keys = obj.get("user_role_keys")
+    if not isinstance(keys, list) or not all(
+            isinstance(k, list) and len(k) == 2 and all(_int(x) for x in k) for k in keys):
+        raise BaselineError(f"{what}：user_role_keys 須為 [[user_id, role_id], …]（整數對）")
+
+
+def fetch_bound_faces(user, db, run):
+    """基準檔 v2 兩欄（restore ③b 之目標值；非比對面之名冊式防法——全表列數仍由①現算）：四表 id 上界＋sys_user_role
+    鍵集（排序）。輸出形不符 → rc 2。"""
+    got = psql_json(SQL_BOUND_FACES, user, db, run)
+    what = "角色／選單域兩欄撈取輸出形不符"
+    if not isinstance(got, dict):
+        raise BaselineError(f"{what}：須為 {{id_bounds, user_role_keys}} 物件")
+    _check_bound_faces(got, what)
+    return dict(got["id_bounds"]), sorted(got["user_role_keys"])
+
+
 def snapshot_live(user=DB_USER, db=DB_NAME, run=subprocess.run, now=None):
-    """三面現算 → 基準 dict（含 taken_at UTC ISO＋schema_version）。"""
+    """三面現算＋v2 兩欄 → 基準 dict（含 taken_at UTC ISO＋schema_version）。"""
     taken = now or datetime.datetime.now(datetime.timezone.utc)
-    return {
+    snap = {
         "schema_version": SCHEMA_VERSION,
         "taken_at": taken.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tables": fetch_tables(user, db, run),
         "sequences": fetch_sequences(user, db, run),
         "redis": fetch_redis(run),
     }
+    snap["id_bounds"], snap["user_role_keys"] = fetch_bound_faces(user, db, run)
+    return snap
 
 
 # ── 基準檔 ──────────────────────────────────────────────────────────────────
@@ -318,6 +403,7 @@ def validate_snapshot(obj):
             or not isinstance(redis.get("prefixes"), dict) \
             or not all(isinstance(v, int) for v in redis["prefixes"].values()):
         raise BaselineError("基準檔壞形：redis 須為 {dbsize: 整數, prefixes: {前綴: 整數}}")
+    _check_bound_faces(obj, "基準檔壞形")
     return obj
 
 
@@ -382,6 +468,14 @@ def diff_snapshots(base, live):
                      "base": base["redis"]["dbsize"], "live": live["redis"]["dbsize"],
                      "delta": live["redis"]["dbsize"] - base["redis"]["dbsize"]})
     _int_rows("redis", base["redis"]["prefixes"], live["redis"]["prefixes"], missing=0)
+    _int_rows("上界", base["id_bounds"], live["id_bounds"])
+    bk = {tuple(k) for k in base["user_role_keys"]}
+    lk = {tuple(k) for k in live["user_role_keys"]}
+    for u, r in sorted(bk ^ lk):                      # 鍵集差逐對一列：現況多＝+1、現況少＝-1
+        has = (u, r) in lk
+        rows.append({"face": "鍵集", "name": f"{USER_ROLE_TABLE}({u},{r})",
+                     "base": absent if has else "有", "live": "有" if has else absent,
+                     "delta": 1 if has else -1})
     return rows
 
 
@@ -397,9 +491,10 @@ def render_diff(rows, live):
         return [f"[walkthrough-baseline] ✓ 全等（表 {t}／序列 {s}／redis {k} 鍵、{p} 前綴）"]
     lines = ["[walkthrough-baseline] ✗ 與基準有差——面｜名｜基準值｜現值｜差"]
     lines += [f"  {r['face']}｜{r['name']}｜{r['base']}｜{r['live']}｜{r['delta']}" for r in rows]
-    n = {face: sum(1 for r in rows if r["face"] == face) for face in ("表", "序列", "redis")}
+    n = {face: sum(1 for r in rows if r["face"] == face) for face in ("表", "序列", "redis", "上界", "鍵集")}
     lines.append(f"[walkthrough-baseline] 摘要：表 {n['表']} 項差／序列 {n['序列']} 項差／"
-                 f"redis {n['redis']} 項差（比對面：表 {t}／序列 {s}／redis {k} 鍵、{p} 前綴）")
+                 f"redis {n['redis']} 項差／上界 {n['上界']} 項差／鍵集 {n['鍵集']} 項差"
+                 f"（比對面：表 {t}／序列 {s}／redis {k} 鍵、{p} 前綴）")
     return lines
 
 
@@ -411,6 +506,12 @@ def cmd_snapshot(path, user, db, run=subprocess.run):
     t, s, k, p = _face_counts(snap)
     _say(f"[walkthrough-baseline] ✓ 基準已寫：{path}（表 {t}／序列 {s}／redis {k} 鍵、{p} 前綴；"
          f"taken_at {snap['taken_at']}）")
+    # 走查**前**即告知 restore 前置不成立（restore 時才拒已在走查之後）；基準檔仍可供 diff、rc 不變
+    high = bounds_above_sequence(snap)
+    if high:
+        _say("[walkthrough-baseline] ★告警：角色／選單域上界高於其序列位置（" + "、".join(high) + "）——本基準檔可供 diff、"
+             "但以之 restore 將 rc 2 拒跑（取樣時已有顯式 id 殘列越過序列）；走查前先跑 "
+             f"`python3 {PROG} restore --seed` 清殘列後重新 snapshot", err=True)
     return RC_OK
 
 
@@ -454,32 +555,64 @@ def _seed_copy_rows(lines, table):
     return None
 
 
+def _seed_copy_ints(blk, table, want):
+    """COPY 段（_seed_copy_rows 之回傳）→ 逐列取 want 欄之整數 tuple。段首缺欄／列欄數不符／值非整數＝凍結面受損 rc 2。"""
+    cols = [c.strip().strip('"') for c in blk[0].split(",")]
+    missing = [c for c in want if c not in cols]
+    if missing:
+        raise BaselineError(f"seed {table} 段首缺 {'／'.join(missing)} 欄：{cols}——凍結面受損")
+    idx = [cols.index(c) for c in want]
+    out = []
+    for row in blk[1]:
+        vals = row.split("\t")
+        if len(vals) != len(cols):
+            raise BaselineError(f"seed {table} 列欄數 {len(vals)} ≠ 段首 {len(cols)}：{row[:80]!r}——凍結面受損")
+        try:
+            out.append(tuple(int(vals[i]) for i in idx))
+        except ValueError:
+            raise BaselineError(f"seed {table} 列之 {'／'.join(want)} 非整數：{row[:80]!r}——凍結面受損") from None
+    return out
+
+
 def seed_restore_target(seed_text):
     """seed 模式之目標態（形同基準檔之清理面子集、供 check_restore_baseline／restore_sql 同一套判定）：
-    tables＝清理面各表於凍結 seed 之 COPY 段列數；sequences＝清理面各序列之 setval 行值。段或行缺席者不入 dict
-    （由 check_restore_baseline 指名為清理面缺席）；redis 於 seed 無載體＝兩前綴目標恆 0 鍵。"""
+    tables＝清理面各表與角色／選單域五表於凍結 seed 之 COPY 段列數；sequences＝清理面各序列與 BOUNDED_TABLES 四支之
+    setval 行值；id_bounds＝四表 COPY 列 id 最大值（零列記 0）；user_role_keys＝sys_user_role COPY 鍵集（段缺席＝None）。
+    段或行缺席者不入 dict（由 check_restore_baseline 指名為清理面缺席）；redis 於 seed 無載體＝兩前綴目標恆 0 鍵。"""
     lines = seed_text.splitlines()
-    tables, seqs = {}, {}
+    tables, seqs, bounds, keys = {}, {}, {}, None
     for t in RESTORE_TABLES:
         blk = _seed_copy_rows(lines, t)
         if blk is not None:
             tables[t] = len(blk[1])
+    for t in BOUNDED_TABLES:
+        blk = _seed_copy_rows(lines, t)
+        if blk is not None:
+            ids = [row[0] for row in _seed_copy_ints(blk, t, ("id",))]
+            tables[t], bounds[t] = len(ids), max(ids, default=0)
+    blk = _seed_copy_rows(lines, USER_ROLE_TABLE)
+    if blk is not None:
+        pairs = _seed_copy_ints(blk, USER_ROLE_TABLE, ("user_id", "role_id"))
+        tables[USER_ROLE_TABLE], keys = len(pairs), sorted([list(p) for p in pairs])
+    wanted = set(RESTORE_SEQUENCES) | set(BOUNDED_TABLES.values())
     for m in re.finditer(r"^SELECT pg_catalog\.setval\('public\.(\w+)', (\d+), (true|false)\);$",
                          seed_text, re.M):
-        if m.group(1) in RESTORE_SEQUENCES:
+        if m.group(1) in wanted:
             seqs[m.group(1)] = {"last_value": int(m.group(2)), "is_called": m.group(3) == "true"}
-    return {"tables": tables, "sequences": seqs, "redis": {"dbsize": 0, "prefixes": {}}}
+    return {"tables": tables, "sequences": seqs, "redis": {"dbsize": 0, "prefixes": {}},
+            "id_bounds": bounds, "user_role_keys": keys}
 
 
 def seed_mode_baseline(live, target):
-    """seed 模式無基準檔：以現況為底、只把清理面覆寫成 seed 目標值（五表列數、五支序列、兩前綴 0 鍵）→ 交
-    diff_snapshots 比。清理面之外恆等於現況＝不入判準（無基準可比；該面之 pg 殘留由 tools/schema-gate.py check
-    之 gate2 逐列兜）。"""
+    """seed 模式無基準檔：以現況為底、只把清理面與角色／選單域覆寫成 seed 目標值（清理面五表列數、五支序列、兩前綴 0 鍵；
+    角色／選單域五表列數、四表上界與序列、指派鍵集）→ 交 diff_snapshots 比。其餘面恆等於現況＝不入判準（無基準可比；
+    該面之 pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜）。"""
     prefixes = {p: n for p, n in live["redis"]["prefixes"].items() if p not in RESTORE_REDIS_PREFIXES}
     cleared = sum(live["redis"]["prefixes"].get(p, 0) for p in RESTORE_REDIS_PREFIXES)
     return {"tables": dict(live["tables"], **target["tables"]),
             "sequences": dict(live["sequences"], **target["sequences"]),
-            "redis": {"dbsize": live["redis"]["dbsize"] - cleared, "prefixes": prefixes}}
+            "redis": {"dbsize": live["redis"]["dbsize"] - cleared, "prefixes": prefixes},
+            "id_bounds": dict(target["id_bounds"]), "user_role_keys": target["user_role_keys"]}
 
 
 def seed_settings(seed_text):
@@ -507,8 +640,8 @@ def seed_settings(seed_text):
 def check_seed_evolution(ledger_path, tables):
     """演進帳有 `tables` 任一表之 seed_* 登記＝凍結 COPY 段已非期望 seed（期望＝凍結 ⊕ 演進、同 tools/schema-gate.py
     gate2 之 apply_seed_entries）。本工具左源未合成演進——system_settings 照比會把 migration 定義的合法值誤報為
-    值≠seed、並給出「以寫端改回」的錯誤補救；seed 模式另以凍結段為清理面目標態（tables 加傳 RESTORE_TABLES），
-    照清會把演進帳定義的 seed 列一併 DELETE——故拒跑 rc 2、指名登記 id 與表。結構性 kind（add_column 等）不擋：
+    值≠seed、並給出「以寫端改回」的錯誤補救；seed 模式另以凍結段為清理面與角色／選單域之目標態（tables 加傳 RESTORE_TABLES
+    與 ROLE_MENU_TABLES），照清會把演進帳定義的 seed 列一併 DELETE——故拒跑 rc 2、指名登記 id 與表。結構性 kind（add_column 等）不擋：
     不改列集與鍵值集。登記檔缺席／非 JSON／entries 非 list 或含非物件項＝rc 2（形之完整斷言權威在 schema-gate、
     此處只驗判定所需）。"""
     try:
@@ -532,14 +665,32 @@ def check_seed_evolution(ledger_path, tables):
                             "拒絕執行、零寫入")
 
 
+def bounds_above_sequence(snap):
+    """③b 前置之判定（純函式；snapshot 告警與 restore 兩模式拒跑共用）：BOUNDED_TABLES 四表之 id 上界高於其序列位置
+    （nextval 已發出之最大值：is_called 真＝last_value、假＝last_value-1）者 → 指名字串 list。基準檔上成立＝取樣時已有顯式
+    id 殘列越過序列（號段殘列）：走查以 nextval 造之列落在序列與上界之間、`id >` 上界刪不到，序列卻被 setval 回其下＝下一次
+    nextval 撞 PK；凍結 seed 上成立＝凍結面受損。序列缺席者略（缺席由 check_restore_baseline 另判）。"""
+    high = []
+    for t, s in BOUNDED_TABLES.items():
+        v = snap["sequences"].get(s)
+        if v is not None and snap["id_bounds"][t] > v["last_value"] - (0 if v["is_called"] else 1):
+            high.append(f"{t} 上界 {snap['id_bounds'][t]}＞{s}（{_seq_text(v)}）")
+    return high
+
+
 def check_restore_baseline(snap, seed_mode=False):
-    """安全帶：清理面之表或序列不在目標態（基準檔；seed 模式＝凍結 seed）＝結構異常；清理面各表列數或
-    session／throttle 前綴鍵數非 0＝拒跑。restore 只服務「目標態之清理面為空」之形——DELETE 全表對非空目標會連
-    其資料一起毀掉、diff 還報不出來。"""
+    """安全帶：清理面或角色／選單域之表、序列、上界、鍵集不在目標態（基準檔；seed 模式＝凍結 seed）＝結構異常；清理面各表
+    列數或 session／throttle 前綴鍵數非 0＝拒跑。restore 只服務「目標態之清理面為空」之形——DELETE 全表對非空目標會連
+    其資料一起毀掉、diff 還報不出來。★角色／選單域五表不套列數拒跑：其寫面只刪上界以上列與鍵集差、不毀目標態之列；
+    改拒「目標態四表上界高於其序列位置」（bounds_above_sequence）：基準檔模式＝取樣時已有顯式 id 殘列越過序列、補救指
+    seed 模式；seed 模式＝凍結面受損（真檔之 COPY 列 id 最大值恰等於其 setval 位置、自測釘住＝不觸發）。"""
     # zh-TW 排版：以拉丁詞收尾的 origin（`凍結 seed`）與後接中文之間須有分隔空格，純中文者不須
     origin, sep = ("凍結 seed", " ") if seed_mode else ("基準檔", "")
     absent = [t for t in RESTORE_TABLES if t not in snap["tables"]] + \
-             [s for s in RESTORE_SEQUENCES if s not in snap["sequences"]]
+             [s for s in RESTORE_SEQUENCES if s not in snap["sequences"]] + \
+             [t for t in BOUNDED_TABLES if t not in snap["id_bounds"]] + \
+             ([USER_ROLE_TABLE] if snap["user_role_keys"] is None else []) + \
+             [s for s in BOUNDED_TABLES.values() if s not in snap["sequences"]]
     if absent:
         why = "凍結面受損或清理面名冊與 schema 不符" if seed_mode else "庫錯或基準檔非本 schema 所取"
         raise BaselineError(f"{origin}{sep}缺 restore 清理面：{'、'.join(absent)}——{why}")
@@ -554,6 +705,15 @@ def check_restore_baseline(snap, seed_mode=False):
                             "）——restore 只服務走查前為空基準之形；拒絕執行、零寫入。補救：手上有取於空基準之較早 "
                             f"snapshot 檔＝改以該檔跑 restore；無此檔＝改跑 `python3 {PROG} restore --seed`"
                             "（以凍結 seed 為目標態、無須基準檔）")
+    high = bounds_above_sequence(snap)
+    if high and seed_mode:
+        raise BaselineError(f"{origin}{sep}之角色／選單域上界高於其序列位置（" + "、".join(high) + "）——凍結面受損："
+                            "照跑則序列 setval 回 seed 值後、下一次 nextval 撞 seed 列 PK；拒絕執行、零寫入")
+    if high:
+        raise BaselineError("基準檔之角色／選單域上界高於其序列位置（" + "、".join(high) + "）——取樣時已有顯式 id 殘列越過"
+                            "序列：走查以 nextval 造之列落在序列與上界之間、刪不到，序列卻被 setval 回其下＝下一次 nextval 撞 PK；"
+                            f"拒絕執行、零寫入。補救：改跑 `python3 {PROG} restore --seed`（目標態＝凍結 seed、殘列一併刪除）；"
+                            "下次走查前先清殘列再 snapshot")
 
 
 def psql_json(sql, user, db, run):
@@ -584,13 +744,46 @@ def check_settings_against_seed(live_rows, seed):
     return sum(1 for r in live_rows if r["stamped"])
 
 
-def restore_sql(snap, sequences=RESTORE_SEQUENCES):
+def _setval_sql(name, v):
+    return f"SELECT setval('{name}', {v['last_value']}, {'true' if v['is_called'] else 'false'});"
+
+
+def restore_sql(snap, sequences=RESTORE_SEQUENCES, seed_surface=()):
     """②③ 單交易寫句：審計欄歸 NULL → 五表 DELETE＋session_id 歸 NULL → setval（值自目標態 snap 現讀；
-    基準檔模式＝RESTORE_SEQUENCES 五支、seed 模式＝SEED_SETVAL_SEQUENCES——runtime-append 序列不復位）。"""
+    基準檔模式＝RESTORE_SEQUENCES 五支、seed 模式＝SEED_SETVAL_SEQUENCES——runtime-append 序列不復位）→ seed_surface
+    （③b 角色／選單域寫句、seed_surface_sql 產；cmd_restore 兩模式恆帶、接在 COMMIT 之前）。"""
     seqs = snap["sequences"]
-    setvals = tuple(f"SELECT setval('{n}', {seqs[n]['last_value']}, "
-                    f"{'true' if seqs[n]['is_called'] else 'false'});" for n in sequences)
-    return " ".join(("BEGIN;", SQL_RESTORE_AUDIT) + SQL_RESTORE_CLEAR + setvals + ("COMMIT;",))
+    setvals = tuple(_setval_sql(n, seqs[n]) for n in sequences)
+    return " ".join(("BEGIN;", SQL_RESTORE_AUDIT) + SQL_RESTORE_CLEAR + setvals + tuple(seed_surface) + ("COMMIT;",))
+
+
+def seed_surface_sql(snap):
+    """③b 角色／選單域寫句（值自目標態 snap 現讀：基準檔 v2 兩欄＋序列面，或 seed_restore_target）：sys_user_role 鍵集差
+    刪除（現況有而目標無之對；目標鍵集空＝全清）→ BOUNDED_TABLES 四表依名冊序刪 `id >` 上界 → 四支 setval 回目標值。
+    ★四表絕不 DELETE 全表（seed 有列）；id ≤ 上界之列（含 seed 列）之就地改寫與被刪不在射程——只刪不補、不改欄值。"""
+    keys = sorted(tuple(k) for k in snap["user_role_keys"])
+    if keys:
+        keep = ", ".join(f"({u}, {r})" for u, r in keys)
+        user_role = f"DELETE FROM {USER_ROLE_TABLE} WHERE (user_id, role_id) NOT IN (VALUES {keep});"
+    else:
+        user_role = f"DELETE FROM {USER_ROLE_TABLE};"
+    deletes = tuple(f"DELETE FROM {t} WHERE id > {snap['id_bounds'][t]};" for t in BOUNDED_TABLES)
+    setvals = tuple(_setval_sql(s, snap["sequences"][s]) for s in BOUNDED_TABLES.values())
+    return (user_role,) + deletes + setvals
+
+
+def casbin_restore_touches(state, target):
+    """⑥重啟句判準（寫入前現讀 SQL_CASBIN_STATE）：現況 casbin_rule 有 id > 目標上界之列（③b 會刪）或其序列≠目標值
+    （③b 會 setval 改值）＝本次 restore 直改判定面左源。輸出形不符 → rc 2（仍在任何寫入之前）。"""
+    seq = state.get("seq") if isinstance(state, dict) else None
+    if not (isinstance(seq, dict) and isinstance(state.get("max_id"), int)
+            and not isinstance(state["max_id"], bool) and isinstance(seq.get("last_value"), int)
+            and isinstance(seq.get("is_called"), bool)):
+        raise BaselineError("casbin_rule 現態撈取輸出形不符（須為 {max_id, seq: {last_value, is_called}}）"
+                            "——輸出被污染或查詢形改變；拒絕執行、零寫入")
+    want = target["sequences"][BOUNDED_TABLES["casbin_rule"]]
+    return state["max_id"] > target["id_bounds"]["casbin_rule"] or \
+        (seq["last_value"], seq["is_called"]) != (want["last_value"], want["is_called"])
 
 
 def redis_clear_prefixes(run):
@@ -625,7 +818,7 @@ def _read_seed(seed_path):
 
 def doorbell_cli():
     """人工補按門鈴的完整命令（工具自己按不到時、輸出給人照抄）。"""
-    return (f"docker compose {' '.join('-f ' + f for f in COMPOSE_FILES)} exec -T {REDIS_SERVICE} "
+    return (f"{' '.join(COMPOSE_EXEC)} {REDIS_SERVICE} "
             f"sh -lc 'redis-cli -a \"$(cat {REDIS_PASSWORD_FILE})\" --no-auth-warning "
             f"PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}'")
 
@@ -652,14 +845,15 @@ def ring_doorbell(ip_rows, run):
 
 
 def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=None):
-    """path＝基準檔（目標態＝該檔、五支序列依檔 setval、收尾＝對該檔 diff）；path=None＝seed 模式（目標態＝凍結 seed
-    之清理面、只 setval SEED_SETVAL_SEQUENCES、收尾＝清理面對 seed 目標值之比對）。前置判定皆在任何寫入之前。"""
+    """path＝基準檔（目標態＝該檔、清理面五支＋角色／選單域四支序列依檔 setval、收尾＝對該檔 diff）；path=None＝seed
+    模式（目標態＝凍結 seed 之清理面與角色／選單域、清理面只 setval SEED_SETVAL_SEQUENCES＋角色／選單域四支、收尾＝兩面對
+    seed 目標值之比對）。前置判定與重啟句判準之現讀皆在任何寫入之前；重啟句於收尾（含提交後失敗路徑）輸出。"""
     seed_mode = path is None
     seed_text = _read_seed(seed_path or os.path.join(REPO_ROOT, SEED_FIXTURE))
     base = seed_restore_target(seed_text) if seed_mode else load_snapshot(path)
     check_restore_baseline(base, seed_mode)
     check_seed_evolution(ledger_path or os.path.join(REPO_ROOT, SCHEMA_EVOLUTION),
-                         ("system_settings",) + (RESTORE_TABLES if seed_mode else ()))
+                         ("system_settings",) + (RESTORE_TABLES + ROLE_MENU_TABLES if seed_mode else ()))
     sequences = SEED_SETVAL_SEQUENCES if seed_mode else RESTORE_SEQUENCES
     seed = seed_settings(seed_text)
     # 門鈴判準（BL-00094）：清前列數須在任何寫入之前取——DELETE 之後就再也問不到「規則集有沒有變」。
@@ -668,27 +862,38 @@ def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=
     stamped = check_settings_against_seed(psql_json(SQL_SETTINGS, user, db, run), seed)
     _say(f"[walkthrough-baseline] restore ①system_settings：{len(seed)} 鍵值＝seed；"
          f"審計欄非 NULL {stamped} 列（交易內歸 NULL）")
-    r = _run_docker(psql_argv(restore_sql(base, sequences), user, db), run)
+    # 重啟句判準（⑥）須在任何寫入之前現讀——交易提交後就再也問不到「有沒有刪過 casbin_rule 列、改過其序列」。
+    casbin_touched = casbin_restore_touches(psql_json(SQL_CASBIN_STATE, user, db, run), base)
+    r = _run_docker(psql_argv(restore_sql(base, sequences, seed_surface_sql(base)), user, db), run)
     if r.returncode != 0:
         raise BaselineError(f"restore 交易失敗（rc={r.returncode}、整筆回滾、未動 redis）："
                             f"{(r.stderr or '').strip()[:300]}"
                             "；補救：依上列 psql 錯誤修正（常見＝postgres 容器未起）後重跑同一 restore（交易已回滾、可安全重跑）")
-    seqs = "、".join(f"{n}（{_seq_text(base['sequences'][n])}）" for n in sequences)
-    _say(f"[walkthrough-baseline] restore ②③pg 單交易已提交：DELETE {'／'.join(RESTORE_TABLES)}＋"
-         f"sys_user.session_id 歸 NULL＋setval（{seqs}）")
-    # ★門鈴排在 pg 交易之後、redis 清理之前（mb4t review L1-1）：規則列此刻已從庫裡消失，判定面必須換版；
-    # 排在 redis 清理之後會被「DEL 失敗即拋」吃掉，而依其補救訊息重跑時清前列數已是 0＝永遠補不回來。
-    ring_doorbell(ip_rows, run)
-    found, deleted = redis_clear_prefixes(run)
-    counts = "／".join(f"{p} 前綴 {n} 鍵" for p, n in found.items())
-    _say(f"[walkthrough-baseline] restore ④redis：{counts}、DEL 回報 {deleted} 鍵（逐鍵指名）")
-    if seed_mode:
-        _say("[walkthrough-baseline] restore ⑤收尾比對（seed 模式：判準面＝清理面對凍結 seed 目標值、其 rc 即 restore 之 rc；"
-             "清理面之外無基準可比＝不判，pg 殘留另跑 python3 tools/schema-gate.py check）：")
-        live = snapshot_live(user, db, run)
-        return _report_diff(seed_mode_baseline(live, base), live)
-    _say("[walkthrough-baseline] restore ⑤收尾 diff（其 rc 即 restore 之 rc；0＝已還原）：")
-    return cmd_diff(path, user, db, run)
+    try:
+        seqs = "、".join(f"{n}（{_seq_text(base['sequences'][n])}）" for n in sequences)
+        _say(f"[walkthrough-baseline] restore ②③pg 單交易已提交：DELETE {'／'.join(RESTORE_TABLES)}＋"
+             f"sys_user.session_id 歸 NULL＋setval（{seqs}）")
+        bounds = "／".join(f"{t} ≤{base['id_bounds'][t]}" for t in BOUNDED_TABLES)
+        role_seqs = "、".join(f"{s}（{_seq_text(base['sequences'][s])}）" for s in BOUNDED_TABLES.values())
+        _say(f"[walkthrough-baseline] restore ③b（同一交易）：{USER_ROLE_TABLE} 鍵集差刪除（目標 "
+             f"{len(base['user_role_keys'])} 對之外）→ 刪 id > 上界（{bounds}）＋setval（{role_seqs}）")
+        # ★門鈴排在 pg 交易之後、redis 清理之前（mb4t review L1-1）：規則列此刻已從庫裡消失，判定面必須換版；
+        # 排在 redis 清理之後會被「DEL 失敗即拋」吃掉，而依其補救訊息重跑時清前列數已是 0＝永遠補不回來。
+        ring_doorbell(ip_rows, run)
+        found, deleted = redis_clear_prefixes(run)
+        counts = "／".join(f"{p} 前綴 {n} 鍵" for p, n in found.items())
+        _say(f"[walkthrough-baseline] restore ④redis：{counts}、DEL 回報 {deleted} 鍵（逐鍵指名）")
+        if seed_mode:
+            _say("[walkthrough-baseline] restore ⑤收尾比對（seed 模式：判準面＝清理面與角色／選單域對凍結 seed 目標值、"
+                 "其 rc 即 restore 之 rc；其餘面無基準可比＝不判，pg 殘留另跑 python3 tools/schema-gate.py check）：")
+            live = snapshot_live(user, db, run)
+            return _report_diff(seed_mode_baseline(live, base), live)
+        _say("[walkthrough-baseline] restore ⑤收尾 diff（其 rc 即 restore 之 rc；0＝已還原）：")
+        return cmd_diff(path, user, db, run)
+    finally:
+        # ⑥重啟句收尾輸出——含提交後任一步失敗之路徑：判定面左源已被改，而依補救重跑 restore 時現讀已等於目標＝不再輸出。
+        if casbin_touched:
+            _say(CASBIN_RESTART_HINT)
 
 
 def usage(msg=None):
@@ -700,8 +905,10 @@ def usage(msg=None):
          f"      python3 {PROG} test\n"
          f"  snapshot＝走查前取三面基準寫 JSON；diff＝走查後重取現況逐值比對（rc 0 才算環境已還原；"
          f"runtime-append 表之序列只比存在性）；"
-         f"restore <檔>＝走查後清理（安全帶：基準須為空）＋收尾 diff（rc 即 diff 之 rc）；"
-         f"restore --seed＝無基準檔、清理面還原到凍結 seed 態（runtime-append 序列不復位）；"
+         f"restore <檔>＝走查後清理（安全帶：清理面五表之基準須為空、角色／選單域四表之基準上界須不高於其序列；"
+         f"角色／選單域刪上界以上列與鍵集差）＋收尾 diff"
+         f"（rc 即 diff 之 rc；動過 casbin_rule 即輸出重啟 rust-api 句）；"
+         f"restore --seed＝無基準檔、清理面與角色／選單域還原到凍結 seed 態（runtime-append 序列不復位）；"
          f"退出碼 0 全等／1 有差／2 環境或結構異常（restore 含拒跑）／64 用法錯", err=True)
     return RC_USAGE
 
@@ -739,8 +946,12 @@ def main(argv, run=subprocess.run):
                  "名冊對賬 schema-gate；restore 寫面逐字＋次序、清理面五表五序列、"
                  "setval 自基準現讀、安全帶拒跑零呼叫、清理面缺席、settings 值≠seed 零寫入、收尾 diff rc、"
                  "失敗即停、DEL 分批、seed 解析與空面、演進帳 system_settings seed 登記拒跑／他表與結構性登記不擋／"
-                 "登記檔缺席壞形、預設 seed 與演進帳哨兵與 --user／--db；seed 模式寫面逐字＋只 setval 非 runtime-append 序列、"
-                 "seed 模式前置拒跑零寫入、seed 模式走真凍結 seed）")
+                 "登記檔缺席壞形、預設 seed 與演進帳哨兵與 --user／--db；seed 模式寫面逐字＋清理面只 setval 非 runtime-append 序列、"
+                 "seed 模式前置拒跑零寫入、seed 模式走真凍結 seed；檔形 v2 兩欄（空表上界 0、鍵集排序、v1 拒收、壞形）＋"
+                 "diff 比兩欄、③b 角色／選單域寫面逐字＋次序＋值自基準現讀＋空鍵集形、安全帶不攔有列之該面、"
+                 "基準上界高於序列即拒零呼叫＋snapshot 告警＋seed 模式可收、"
+                 "重啟句字面與出現（只刪列／只改序列兩腿各自成案、序列腿前進／後退／is_called 異三形、兩腿參照值＝目標上界／"
+                 "目標序列值各自區辨）／不出現、seed 模式該面目標自凍結 seed 與受損／缺段／演進帳拒跑）")
             return RC_OK
         return RC_DIFF
     if cmd in ("snapshot", "diff", "restore"):
@@ -769,6 +980,10 @@ FAKE_TABLES = {"sys_user": 3, "sys_token": 0, "seaql_migrations": 7}
 FAKE_SEQS = {"sys_user_id_seq": (3, "t"), "sys_token_id_seq": (1, "f")}
 FAKE_KEYS = ["session:sid-a:last_activity", "session:denylist:sid-b", "throttle:unlock:user:x",
              "plainkey"]
+# 角色／選單域樁（005 刀 U15）：四表之 id 集＋指派鍵集，形同凍結 seed（3／78／163／0 列、指派 3 對）。表名手寫、不自受測常數衍生。
+STUB_BOUNDED_IDS = {"sys_role": tuple(range(1, 4)), "sys_menu": tuple(range(1, 79)),
+                    "casbin_rule": tuple(range(1, 164)), "sys_casbin_policy_archive": ()}
+STUB_USER_ROLES = ((1, 1), (2, 2), (3, 3))
 
 
 def _completed(argv, rc, stdout="", stderr=""):
@@ -781,15 +996,18 @@ class _StubRun:
     收尾 diff 因此對著「被 restore 改過的樁」算，rc 0／1 皆真實走過。"""
 
     def __init__(self, tables=None, seqs=None, keys=None, dbsize=None, fail=None, garble=None,
-                 truncate=None, settings=None, subs=1):
+                 truncate=None, settings=None, subs=1, ids=None, user_roles=None):
         self.tables = dict(FAKE_TABLES if tables is None else tables)
         self.seqs = dict(FAKE_SEQS if seqs is None else seqs)
         self.keys = list(FAKE_KEYS if keys is None else keys)
+        # 角色／選單域四表之 id 集與指派鍵集（SQL_BOUND_FACES／SQL_CASBIN_STATE 依此回；交易之上界刪除與鍵集差刪除改之）
+        self.ids = {t: list(v) for t, v in (STUB_BOUNDED_IDS if ids is None else ids).items()}
+        self.user_roles = [tuple(k) for k in (STUB_USER_ROLES if user_roles is None else user_roles)]
         self._dbsize = dbsize       # None＝隨現存鍵數（DEL 後同步變小）
         self.settings = [dict(s) for s in (settings or [])]
         self.subs = subs            # PUBLISH 回報之訂閱者數（門鈴腿；0＝無 watcher 在訂）
         self.fail = fail            # "psql"／"redis"＝該支非零退出；"tx"＝交易句失敗；"del"＝DEL 回非整數
-        self.garble = garble        # "tables"／"seqs"／"settings"＝該面回不可解輸出（缺欄／非整數／非 JSON）
+        self.garble = garble        # "tables"／"seqs"／"settings"／"bounds"／"casbin"＝該面回不可解輸出（缺欄／非整數／非 JSON）
         self.truncate = truncate    # "tables"／"seqs"＝該面值腿少回一列（輸出被截斷／撈取不完整）
         self.log = []
 
@@ -812,6 +1030,19 @@ class _StubRun:
                     return _completed(argv, 3, "", "ERROR:  simulated failure")
                 for t in re.findall(r"DELETE FROM (\w+);", sql):
                     self.tables[t] = 0
+                    if t == "sys_user_role":
+                        self.user_roles = []
+                m = re.search(r"DELETE FROM sys_user_role WHERE \(user_id, role_id\) NOT IN \(VALUES (.*?)\);", sql)
+                if m:
+                    keep = {(int(u), int(r)) for u, r in re.findall(r"\((\d+), (\d+)\)", m.group(1))}
+                    gone = [k for k in self.user_roles if k not in keep]
+                    self.user_roles = [k for k in self.user_roles if k in keep]
+                    self.tables["sys_user_role"] = self.tables.get("sys_user_role", 0) - len(gone)
+                for t, bound in re.findall(r"DELETE FROM (\w+) WHERE id > (\d+);", sql):
+                    gone = [i for i in self.ids.get(t, []) if i > int(bound)]
+                    self.ids[t] = [i for i in self.ids.get(t, []) if i <= int(bound)]
+                    if t in self.tables:
+                        self.tables[t] -= len(gone)
                 for name, v, called in re.findall(r"setval\('(\w+)', (\d+), (true|false)\)", sql):
                     self.seqs[name] = (int(v), "t" if called == "true" else "f")
                 if sql.count("UPDATE system_settings SET updated_at = NULL, updated_by = NULL"):
@@ -820,6 +1051,19 @@ class _StubRun:
                 return _completed(argv, 0, "COMMIT\n", "")
             elif sql == SQL_IP_RULE_ROWS:
                 return _completed(argv, 0, json.dumps([{"n": self.tables.get("sys_ip_rule", 0)}]) + "\n", "")
+            elif sql == SQL_BOUND_FACES:
+                if self.garble == "bounds":
+                    return _completed(argv, 0, json.dumps({"id_bounds": {"sys_role": "3"}}) + "\n", "")
+                return _completed(argv, 0, json.dumps({
+                    "id_bounds": {t: max(v, default=0) for t, v in self.ids.items()},
+                    "user_role_keys": [list(k) for k in sorted(self.user_roles)]}) + "\n", "")
+            elif sql == SQL_CASBIN_STATE:
+                if self.garble == "casbin":
+                    return _completed(argv, 0, json.dumps({"max_id": 1}) + "\n", "")
+                v, called = self.seqs.get("casbin_rule_id_seq", (1, "f"))
+                return _completed(argv, 0, json.dumps({
+                    "max_id": max(self.ids.get("casbin_rule", []), default=0),
+                    "seq": {"last_value": v, "is_called": called == "t"}}) + "\n", "")
             elif "count(*)" in sql:
                 if self.garble == "tables":
                     return _completed(argv, 0, "sys_user\n", "")           # 缺列數欄
@@ -860,7 +1104,9 @@ def _snap(**over):
     base = {"schema_version": SCHEMA_VERSION, "taken_at": "2026-08-30T00:00:00Z",
             "tables": {"sys_user": 3, "sys_token": 0},
             "sequences": {"sys_user_id_seq": {"last_value": 3, "is_called": True}},
-            "redis": {"dbsize": 2, "prefixes": {"session": 2}}}
+            "redis": {"dbsize": 2, "prefixes": {"session": 2}},
+            "id_bounds": {"sys_role": 3, "sys_menu": 78, "casbin_rule": 163, "sys_casbin_policy_archive": 0},
+            "user_role_keys": [[1, 1], [2, 2], [3, 3]]}
     base.update(over)
     return base
 
@@ -1068,6 +1314,108 @@ class TestSnapshotFileAndForm(unittest.TestCase):
             self.assertFalse(os.path.exists(path))
 
 
+class TestSnapshotV2(unittest.TestCase):
+    """基準檔形 v2（005 刀 U15、T088①）：角色／選單域四表 id 上界欄（max(id)、空表記 0）＋sys_user_role 鍵集欄；
+    v1 檔 diff／restore 一律 rc 2 指名重新 snapshot；diff 比對兩新欄。"""
+
+    def test_schema_version_rosters_and_bound_sqls_are_pinned(self):
+        """版本、名冊（dict 序＝刪除序）與兩句撈取 SQL 逐字釘；兩句皆過唯讀判準。"""
+        self.assertEqual(SCHEMA_VERSION, 2)
+        self.assertEqual(BOUNDED_TABLES, {"sys_role": "sys_role_id_seq", "sys_menu": "sys_menu_id_seq",
+                                          "casbin_rule": "casbin_rule_id_seq",
+                                          "sys_casbin_policy_archive": "sys_casbin_policy_archive_id_seq"})
+        self.assertEqual(list(BOUNDED_TABLES), ["sys_role", "sys_menu", "casbin_rule", "sys_casbin_policy_archive"])
+        self.assertEqual(USER_ROLE_TABLE, "sys_user_role")
+        self.assertEqual(ROLE_MENU_TABLES, ("sys_role", "sys_menu", "casbin_rule", "sys_casbin_policy_archive",
+                                            "sys_user_role"))
+        self.assertEqual(SQL_BOUND_FACES,
+                         "SELECT json_build_object('id_bounds', json_build_object("
+                         "'sys_role', (SELECT COALESCE(max(id), 0) FROM sys_role), "
+                         "'sys_menu', (SELECT COALESCE(max(id), 0) FROM sys_menu), "
+                         "'casbin_rule', (SELECT COALESCE(max(id), 0) FROM casbin_rule), "
+                         "'sys_casbin_policy_archive', (SELECT COALESCE(max(id), 0) FROM sys_casbin_policy_archive)), "
+                         "'user_role_keys', (SELECT COALESCE(json_agg(json_build_array(user_id, role_id) "
+                         "ORDER BY user_id, role_id), '[]'::json) FROM sys_user_role))")
+        self.assertEqual(SQL_CASBIN_STATE,
+                         "SELECT json_build_object('max_id', (SELECT COALESCE(max(id), 0) FROM casbin_rule), "
+                         "'seq', (SELECT json_build_object('last_value', last_value, 'is_called', is_called) "
+                         "FROM casbin_rule_id_seq))")
+        self.assertEqual(_pg_write_offenders([SQL_BOUND_FACES, SQL_CASBIN_STATE]), [])
+
+    def test_snapshot_carries_id_bounds_with_empty_table_as_0_and_sorted_user_role_keys(self):
+        """★空表之上界定形為 0（非 null）：restore 以 `id > 0` 刪、語意＝走查前空表之新列全清；鍵集依 (user_id, role_id) 排序。"""
+        stub = _StubRun(ids={"sys_role": (1, 2, 5), "sys_menu": (1,), "casbin_rule": (1, 2),
+                             "sys_casbin_policy_archive": ()}, user_roles=((3, 3), (1, 5), (1, 1)))
+        snap = snapshot_live(run=stub)
+        self.assertEqual(snap["schema_version"], 2)
+        self.assertEqual(snap["id_bounds"], {"sys_role": 5, "sys_menu": 1, "casbin_rule": 2,
+                                             "sys_casbin_policy_archive": 0})
+        self.assertEqual(snap["user_role_keys"], [[1, 1], [1, 5], [3, 3]])
+        self.assertIn(SQL_BOUND_FACES, [a[-1] for a in stub.log if "psql" in a])
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "b.json")
+            dump_snapshot(snap, path)
+            back = load_snapshot(path)
+            self.assertEqual((back["id_bounds"], back["user_role_keys"]), (snap["id_bounds"], snap["user_role_keys"]))
+            self.assertEqual(diff_snapshots(back, snap), [])
+
+    def test_v1_baseline_is_refused_rc2_naming_resnapshot_with_zero_docker_calls(self):
+        """v1 基準檔（無兩新欄）：diff 與 restore 皆 rc 2、訊息指名重新 snapshot、零 docker 呼叫＝零寫入。"""
+        v1 = _snap(schema_version=1)
+        del v1["id_bounds"], v1["user_role_keys"]
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "v1.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(v1, fh)
+            for cmd in ("diff", "restore"):
+                stub, err = _StubRun(), io.StringIO()
+                with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(main([PROG, cmd, path], run=stub), RC_ENV, msg=cmd)
+                self.assertIn("schema_version=1", err.getvalue(), msg=cmd)
+                self.assertIn("重新 snapshot", err.getvalue(), msg=cmd)
+                self.assertEqual(stub.log, [], msg=cmd)
+
+    def test_malformed_bound_faces_are_env_errors(self):
+        """兩新欄壞形（缺欄、表名集不等、值非非負整數、鍵對形錯）＝rc 2；現況撈取輸出壞形亦 rc 2。"""
+        good = _snap()
+        bad_bounds = (None, [], {"sys_role": 3}, dict(good["id_bounds"], extra=1),
+                      dict(good["id_bounds"], sys_role="3"), dict(good["id_bounds"], sys_role=True),
+                      dict(good["id_bounds"], sys_role=-1), dict(good["id_bounds"], sys_role=None))
+        bad_keys = (None, {}, [[1]], [[1, 2, 3]], [["1", 2]], [[True, 2]], [(1, 2), "x"])
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "bad.json")
+            for field, values in (("id_bounds", bad_bounds), ("user_role_keys", bad_keys)):
+                for v in values:
+                    snap = _snap()
+                    if v is None:
+                        del snap[field]
+                    else:
+                        snap[field] = v
+                    with open(path, "w", encoding="utf-8") as fh:
+                        json.dump(snap, fh)
+                    with self.assertRaises(BaselineError, msg=(field, v)) as ctx:
+                        load_snapshot(path)
+                    self.assertIn(field, str(ctx.exception), msg=(field, v))
+        with self.assertRaises(BaselineError) as ctx:
+            snapshot_live(run=_StubRun(garble="bounds"))
+        self.assertIn("id_bounds", str(ctx.exception))
+
+    def test_diff_reports_id_bound_and_user_role_key_drift(self):
+        """diff 比對兩新欄：上界差＝一列（附差值）、鍵集差＝逐對一列（現況多＝+1、現況少＝-1）；摘要行附兩面計數。"""
+        base = _snap()
+        live = _snap(id_bounds=dict(base["id_bounds"], sys_role=4, sys_casbin_policy_archive=2),
+                     user_role_keys=[[1, 1], [1, 4], [3, 3]])
+        rows = diff_snapshots(base, live)
+        self.assertEqual([(r["face"], r["name"], r["base"], r["live"], r["delta"]) for r in rows], [
+            ("上界", "sys_casbin_policy_archive", 0, 2, 2), ("上界", "sys_role", 3, 4, 1),
+            ("鍵集", "sys_user_role(1,4)", "（無）", "有", 1), ("鍵集", "sys_user_role(2,2)", "有", "（無）", -1)])
+        lines = render_diff(rows, live)
+        self.assertIn("  上界｜sys_role｜3｜4｜1", lines)
+        self.assertIn("  鍵集｜sys_user_role(2,2)｜有｜（無）｜-1", lines)
+        self.assertIn("／上界 2 項差／鍵集 2 項差", lines[-1])
+        self.assertEqual(diff_snapshots(base, _snap()), [])
+
+
 class TestExitCodes(unittest.TestCase):
     """退出碼四態：0 全等／1 有差／2 環境（docker 不可執行、psql／redis 失敗）／64 用法。"""
 
@@ -1157,7 +1505,7 @@ class TestCommandForms(unittest.TestCase):
         stub = _StubRun()
         snapshot_live(run=stub)
         sqls = [a[-1] for a in stub.log if "psql" in a]
-        self.assertEqual(len(sqls), 4)                   # 表清單／表列數／序列清單／序列值
+        self.assertEqual(len(sqls), 5)                   # 表清單／表列數／序列清單／序列值／角色選單域兩欄（v2）
         self.assertEqual(_pg_write_offenders(sqls), [])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(len(redis_cmds), 2)
@@ -1170,7 +1518,7 @@ class TestCommandForms(unittest.TestCase):
                 self.assertEqual(cmd_diff(path, DB_USER, DB_NAME, diff_stub), RC_OK)
         diff_sqls = [a[-1] for a in diff_stub.log if "psql" in a]
         diff_redis = [a[-1] for a in diff_stub.log if "sh" in a]
-        self.assertEqual((len(diff_sqls), len(diff_redis)), (4, 2))
+        self.assertEqual((len(diff_sqls), len(diff_redis)), (5, 2))
         self.assertEqual(_pg_write_offenders(diff_sqls), [])
         self.assertEqual(_redis_write_offenders(diff_redis), [])
         # 判準本身抓得到寫句（含「SELECT 起首卻夾帶寫句」形）、且不被 updated_at 之類欄名誤觸
@@ -1259,10 +1607,14 @@ def _redis_write_offenders(cmds):
 
 RESTORE_FAKE_TABLES = {"sys_user": 3, "sys_token": 0, "session_event": 0, "sys_login_attempt": 0,
                        "sys_ip_rule": 0, "sys_operation_log": 0,
-                       "system_settings": 2, "seaql_migrations": 7}
+                       "system_settings": 2, "seaql_migrations": 7,
+                       "sys_role": 3, "sys_menu": 78, "casbin_rule": 163, "sys_casbin_policy_archive": 0,
+                       "sys_user_role": 3}
 RESTORE_FAKE_SEQS = {"sys_user_id_seq": (3, "t"), "sys_token_id_seq": (1, "f"),
                      "session_event_id_seq": (1, "f"), "sys_login_attempt_id_seq": (1, "f"),
-                     "sys_ip_rule_id_seq": (1, "f"), "sys_operation_log_id_seq": (1, "f")}
+                     "sys_ip_rule_id_seq": (1, "f"), "sys_operation_log_id_seq": (1, "f"),
+                     "sys_role_id_seq": (3, "t"), "sys_menu_id_seq": (78, "t"), "casbin_rule_id_seq": (163, "t"),
+                     "sys_casbin_policy_archive_id_seq": (1, "f")}
 SEED_SETTINGS_TEXT = (
     "--\n-- Data for Name: system_settings; Type: TABLE DATA; Schema: public; Owner: soybean\n--\n\n"
     "COPY public.system_settings (setting_key, created_at, updated_at, updated_by, setting_type, "
@@ -1273,6 +1625,18 @@ SEED_SETTINGS_TEXT = (
 
 # 清理面五表之測試側手寫名冊（不自受測常數 RESTORE_TABLES 衍生——常數縮水時跟著縮＝套套邏輯）
 FIVE_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log")
+# ③b 角色／選單域寫面於「目標＝seed 形（3／78／163／0、指派 3 對）」時之逐字期望（005 刀 U15；手寫、不自受測常數衍生）：
+# 指派鍵集差刪除先於四表、四表刪上界以上列、四支 setval——接在清理面 setval 之後、COMMIT 之前
+ROLE_MENU_SURFACE_AT_SEED = (
+    "DELETE FROM sys_user_role WHERE (user_id, role_id) NOT IN (VALUES (1, 1), (2, 2), (3, 3)); "
+    "DELETE FROM sys_role WHERE id > 3; "
+    "DELETE FROM sys_menu WHERE id > 78; "
+    "DELETE FROM casbin_rule WHERE id > 163; "
+    "DELETE FROM sys_casbin_policy_archive WHERE id > 0; "
+    "SELECT setval('sys_role_id_seq', 3, true); "
+    "SELECT setval('sys_menu_id_seq', 78, true); "
+    "SELECT setval('casbin_rule_id_seq', 163, true); "
+    "SELECT setval('sys_casbin_policy_archive_id_seq', 1, false); ")
 # seed 模式左源樁：上段＋清理面五表之零列 COPY 段＋五支 setval 行。表名與序列名字面手寫、不自受測常數衍生
 # （常數縮水時樁跟著縮＝套套邏輯）；sys_ip_rule_id_seq 刻意取非預設值、證 setval 值自 seed 現讀而非寫死。
 SEED_RESTORE_TEXT = SEED_SETTINGS_TEXT + "".join(
@@ -1281,7 +1645,20 @@ SEED_RESTORE_TEXT = SEED_SETTINGS_TEXT + "".join(
     f"\nSELECT pg_catalog.setval('public.{s}', {v});\n"
     for s, v in (("session_event_id_seq", "1, false"), ("sys_ip_rule_id_seq", "7, true"),
                  ("sys_login_attempt_id_seq", "1, false"), ("sys_operation_log_id_seq", "1, false"),
-                 ("sys_token_id_seq", "1, false")))
+                 ("sys_token_id_seq", "1, false"))) + (
+    # 角色／選單域五表（005 刀 U15）：形同真凍結 seed（3／78／163／0 列、指派 3 對、四支 setval）；表名與序列名手寫
+    "\nCOPY public.sys_role (id, created_at, role_code) FROM stdin;\n"
+    + "".join(f"{i}\t2026-08-05 00:00:00+00\tR_{i}\n" for i in range(1, 4)) + "\\.\n"
+    "\nCOPY public.sys_menu (id, \"order\", menu_name) FROM stdin;\n"
+    + "".join(f"{i}\t{i}\tm{i}\n" for i in range(1, 79)) + "\\.\n"
+    "\nCOPY public.casbin_rule (id, ptype, v0) FROM stdin;\n"
+    + "".join(f"{i}\tp\tR_1\n" for i in range(1, 164)) + "\\.\n"
+    "\nCOPY public.sys_casbin_policy_archive (id, role_id, ptype) FROM stdin;\n\\.\n"
+    "\nCOPY public.sys_user_role (user_id, role_id) FROM stdin;\n1\t1\n2\t2\n3\t3\n\\.\n"
+    "\nSELECT pg_catalog.setval('public.sys_role_id_seq', 3, true);\n"
+    "\nSELECT pg_catalog.setval('public.sys_menu_id_seq', 78, true);\n"
+    "\nSELECT pg_catalog.setval('public.casbin_rule_id_seq', 163, true);\n"
+    "\nSELECT pg_catalog.setval('public.sys_casbin_policy_archive_id_seq', 1, false);\n")
 
 
 def _seed_settings_rows(**value_over):
@@ -1307,7 +1684,7 @@ def _ledger_entry(eid, kind, table, detail):
 
 
 class TestRestore(unittest.TestCase):
-    """restore 五步：安全帶（基準須為空）→system_settings 對 seed（值不等 fail-loud、不改值）→pg 單交易
+    """restore 五步：安全帶（清理面五表之基準須為空）→system_settings 對 seed（值不等 fail-loud、不改值）→pg 單交易
     （寫句恰為列舉、setval 自基準檔現讀）→redis 兩前綴逐鍵指名 DEL（絕不 FLUSHDB）→收尾 diff 之 rc 即 restore 之 rc。"""
 
     def setUp(self):
@@ -1401,6 +1778,18 @@ class TestRestore(unittest.TestCase):
         self.assertEqual([c for c in (a[-1] for a in stub.log if "sh" in a) if " PUBLISH " in c], [])
         self.assertIn("0 列＝該表本就是空的", text)
 
+    def test_doorbell_failure_hands_over_the_runbook_manual_command_verbatim(self):
+        """PUBLISH 回非整數＝pg 已提交而門鈴未響：拋出之訊息須附可照抄的人工按鈴命令、且與 RUNBOOK §9c 所列逐字相同
+        （005 刀 U15 揭出：組命令處引用未定義名、此路徑以 NameError traceback 結束、照抄命令遺失）。"""
+        stub = _restore_stub(subs="OK")
+        path = self._baseline(stub)
+        self._dirty(stub)
+        with self.assertRaises(BaselineError) as ctx:
+            self._restore(path, stub)
+        self.assertIn("docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T redis sh -lc "
+                      "'redis-cli -a \"$(cat /run/secrets/redis_password)\" --no-auth-warning "
+                      "PUBLISH ipgate:invalidate 1'", str(ctx.exception))
+
     def test_write_statements_are_exactly_the_enumerated_transaction_and_del(self):
         """★寫面逐字釘死（多一句、少一句、換序皆紅）；其餘 pg 句與 redis 命令一律過唯讀判準。"""
         stub = _restore_stub(seqs=dict(RESTORE_FAKE_SEQS, sys_token_id_seq=(5, "t")))
@@ -1422,6 +1811,7 @@ class TestRestore(unittest.TestCase):
             "SELECT setval('sys_login_attempt_id_seq', 1, false); "
             "SELECT setval('sys_ip_rule_id_seq', 1, false); "
             "SELECT setval('sys_operation_log_id_seq', 1, false); "
+            + ROLE_MENU_SURFACE_AT_SEED +
             "COMMIT;"])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
@@ -1638,7 +2028,8 @@ class TestRestore(unittest.TestCase):
 
     def test_seed_mode_clears_five_tables_and_setvals_only_the_ip_rule_sequence_from_seed(self):
         """★seed 模式（`restore --seed`；BL-00075 候選①）：無基準檔、目標態＝凍結 seed。寫面逐字釘——清列句同基準檔
-        模式之五表；setval **只有** sys_ip_rule_id_seq 一支、值自 seed 之 setval 行現讀（樁取 7,true 非預設值）；
+        模式之五表；清理面五表之序列 setval **只有** sys_ip_rule_id_seq 一支、值自 seed 之 setval 行現讀（樁取 7,true 非預設值；
+        角色／選單域四支序列屬 ③b、另案釘）；
         runtime-append 四支序列不復位（走完仍是髒值）而收尾比對照樣 rc 0（只比存在性）。★清理面之外不入 seed
         模式判準（無基準檔可比；該面之 pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜）。"""
         stub = _restore_stub()
@@ -1655,6 +2046,7 @@ class TestRestore(unittest.TestCase):
             "DELETE FROM sys_ip_rule; DELETE FROM sys_operation_log; "
             "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
             "SELECT setval('sys_ip_rule_id_seq', 7, true); "
+            + ROLE_MENU_SURFACE_AT_SEED +
             "COMMIT;"])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
         self.assertEqual(_redis_write_offenders(redis_cmds), [
@@ -1743,8 +2135,13 @@ class TestRestore(unittest.TestCase):
         self.assertEqual(rc, RC_OK, msg=err.getvalue())
         writes = [a[-1] for a in stub.log if "psql" in a and _pg_write_offenders([a[-1]])]
         self.assertEqual(len(writes), 1)
-        self.assertEqual(re.findall(r"SELECT setval\([^)]*\);", writes[0]),
-                         [f"SELECT setval('sys_ip_rule_id_seq', {m.group(1)}, {m.group(2)});"])
+        # 角色／選單域四支序列（③b）亦自真檔 setval 行現讀：本案以獨立 regex 逐支另讀一次對賬（序列名手寫）
+        want = [f"SELECT setval('sys_ip_rule_id_seq', {m.group(1)}, {m.group(2)});"]
+        for s in ("sys_role_id_seq", "sys_menu_id_seq", "casbin_rule_id_seq", "sys_casbin_policy_archive_id_seq"):
+            ms = re.search(r"setval\('public\." + s + r"', (\d+), (true|false)\)", real_text)
+            self.assertIsNotNone(ms, msg=s)
+            want.append(f"SELECT setval('{s}', {ms.group(1)}, {ms.group(2)});")
+        self.assertEqual(re.findall(r"SELECT setval\([^)]*\);", writes[0]), want)
         psqls = [a for a in stub.log if "psql" in a]
         self.assertTrue(psqls and all(a[a.index("-U") + 1] == "u9" and a[a.index("-d") + 1] == "d9"
                                       for a in psqls))
@@ -1798,6 +2195,358 @@ class TestRestore(unittest.TestCase):
         psqls = [a for a in stub.log if "psql" in a]
         self.assertTrue(psqls and all(a[a.index("-U") + 1] == "u9" and a[a.index("-d") + 1] == "d9"
                                       for a in psqls))
+
+    # ── 角色／選單域寫面（005 刀 U15、T088②～④）────────────────────────────────
+
+    @staticmethod
+    def _dirty_role_menu(stub, casbin=True):
+        """模擬角色／選單域走查殘留（走 nextval 形、同 pg：新 id 只看序列——is_called 真＝last_value+1、假＝last_value——不看
+        max(id)；序列推進到新 id）：角色／選單／歸檔各一新列＋指派一對（新角色×uid 1）；casbin=True 另加兩列授權。表名與序列名手寫。"""
+        def grow(table, seq, n):
+            last, called = stub.seqs[seq]
+            start = last + 1 if called == "t" else last
+            new = list(range(start, start + n))
+            stub.ids[table] += new
+            stub.tables[table] += n
+            stub.seqs[seq] = (new[-1], "t")
+            return new
+
+        role = grow("sys_role", "sys_role_id_seq", 1)[0]
+        grow("sys_menu", "sys_menu_id_seq", 1)
+        grow("sys_casbin_policy_archive", "sys_casbin_policy_archive_id_seq", 1)
+        stub.user_roles.append((1, role))
+        stub.tables["sys_user_role"] += 1
+        if casbin:
+            grow("casbin_rule", "casbin_rule_id_seq", 2)
+
+    @staticmethod
+    def _tx(stub):
+        writes = [a[-1] for a in stub.log if "psql" in a and _pg_write_offenders([a[-1]])]
+        assert len(writes) == 1, writes
+        return writes[0]
+
+    def test_role_menu_surface_is_bounded_deletes_after_user_role_key_diff_then_setvals(self):
+        """③b 寫面逐字＋次序（T088②）：接在清理面 setval 之後、同一交易；指派鍵集差刪除先於四表（role_id 外鍵 RESTRICT）、
+        四表刪 `id >` 上界、四支 setval 值自基準檔現讀；四表與指派表皆無 DELETE 全表形；走完各面回基準、收尾 diff rc 0。"""
+        stub = _restore_stub()
+        path = self._baseline(stub)
+        self._dirty(stub)
+        self._dirty_role_menu(stub)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        tx = self._tx(stub)
+        self.assertTrue(tx.endswith("SELECT setval('sys_operation_log_id_seq', 1, false); "
+                                    + ROLE_MENU_SURFACE_AT_SEED + "COMMIT;"), msg=tx)
+        order = [tx.index(s) for s in ("DELETE FROM sys_user_role WHERE", "DELETE FROM sys_role WHERE",
+                                       "DELETE FROM sys_menu WHERE", "DELETE FROM casbin_rule WHERE",
+                                       "DELETE FROM sys_casbin_policy_archive WHERE",
+                                       "SELECT setval('sys_role_id_seq'")]
+        self.assertEqual(order, sorted(order), msg=order)
+        for t in ("sys_role", "sys_menu", "casbin_rule", "sys_casbin_policy_archive", "sys_user_role"):
+            self.assertNotIn(f"DELETE FROM {t};", tx)
+        self.assertEqual(stub.ids, {t: list(v) for t, v in STUB_BOUNDED_IDS.items()})
+        self.assertEqual(sorted(stub.user_roles), list(STUB_USER_ROLES))
+        self.assertEqual({t: stub.tables[t] for t in ROLE_MENU_TABLES},
+                         {t: RESTORE_FAKE_TABLES[t] for t in ROLE_MENU_TABLES})
+        self.assertEqual(stub.seqs, RESTORE_FAKE_SEQS)
+        self.assertIn("restore ③b", text)
+        self.assertIn("✓ 全等", text)
+
+    def test_role_menu_bounds_keys_and_setvals_are_read_from_the_baseline_and_empty_key_set_form(self):
+        """上界、鍵集與 setval 值皆自基準檔現讀（樁取非 seed 值）；空鍵集＝`DELETE FROM sys_user_role;`（目標為空表＝全清即正解）；
+        archive 上界非 0 時照刪 `id >` 上界（不因 seed 零列而改 DELETE 全表形）。"""
+        ids = {"sys_role": (1, 2, 3, 9), "sys_menu": (1, 2), "casbin_rule": (5,), "sys_casbin_policy_archive": (7,)}
+        stub = _restore_stub(ids=ids, user_roles=((2, 9),),
+                             tables=dict(RESTORE_FAKE_TABLES, sys_role=4, sys_menu=2, casbin_rule=1,
+                                         sys_casbin_policy_archive=1, sys_user_role=1),
+                             seqs=dict(RESTORE_FAKE_SEQS, sys_role_id_seq=(12, "t"), sys_menu_id_seq=(2, "t"),
+                                       casbin_rule_id_seq=(5, "t"), sys_casbin_policy_archive_id_seq=(7, "t")))
+        path = self._baseline(stub)
+        self._dirty_role_menu(stub)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        self.assertTrue(self._tx(stub).endswith(
+            "DELETE FROM sys_user_role WHERE (user_id, role_id) NOT IN (VALUES (2, 9)); "
+            "DELETE FROM sys_role WHERE id > 9; DELETE FROM sys_menu WHERE id > 2; "
+            "DELETE FROM casbin_rule WHERE id > 5; DELETE FROM sys_casbin_policy_archive WHERE id > 7; "
+            "SELECT setval('sys_role_id_seq', 12, true); SELECT setval('sys_menu_id_seq', 2, true); "
+            "SELECT setval('casbin_rule_id_seq', 5, true); SELECT setval('sys_casbin_policy_archive_id_seq', 7, true); "
+            "COMMIT;"), msg=self._tx(stub))
+        seqs = {s: {"last_value": 1, "is_called": False} for s in BOUNDED_TABLES.values()}
+        self.assertEqual(seed_surface_sql(_snap(user_role_keys=[], sequences=seqs))[0], "DELETE FROM sys_user_role;")
+        self.assertEqual(seed_surface_sql(_snap(user_role_keys=[[3, 1], [1, 2]], sequences=seqs))[0],
+                         "DELETE FROM sys_user_role WHERE (user_id, role_id) NOT IN (VALUES (1, 2), (3, 1));")
+
+    def test_safety_belt_does_not_refuse_role_menu_tables_that_have_rows(self):
+        """安全帶「列數非 0 即拒」只套清理面五表：基準檔四表／指派表有列（含 archive 2 列）與凍結 seed 之該面 COPY 有列
+        皆照常 restore、不出拒跑句。"""
+        stub = _restore_stub(ids=dict(STUB_BOUNDED_IDS, sys_casbin_policy_archive=(1, 2)),
+                             tables=dict(RESTORE_FAKE_TABLES, sys_casbin_policy_archive=2),
+                             seqs=dict(RESTORE_FAKE_SEQS, sys_casbin_policy_archive_id_seq=(2, "t")))
+        path = self._baseline(stub)
+        check_restore_baseline(load_snapshot(path))                 # 不拋
+        self._dirty_role_menu(stub, casbin=False)
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        self.assertNotIn("基準非空", text)
+        self.assertIn("DELETE FROM sys_casbin_policy_archive WHERE id > 2;", self._tx(stub))
+        self.assertEqual(stub.ids["sys_casbin_policy_archive"], [1, 2])
+        check_restore_baseline(seed_restore_target(SEED_RESTORE_TEXT), seed_mode=True)   # 不拋
+        rc, text = self._restore_seed(_restore_stub())
+        self.assertEqual(rc, RC_OK, msg=text)
+        self.assertNotIn("清理面非空", text)
+
+    def test_baseline_bound_above_its_sequence_refuses_rc2_and_snapshot_warns(self):
+        """★③b 前置（基準檔模式）：基準檔四表任一之 id 上界高於其序列位置（is_called 真＝last_value、假＝last_value-1＝nextval
+        已發出之最大值）＝取樣時已有顯式 id 殘列越過序列——照跑則走查以 nextval 造之列落在序列與上界之間、`id >` 上界刪不到，
+        序列卻被 setval 回其下＝下一次 nextval 撞 PK。四表逐一（殘列取號段形大 id）：snapshot rc 0 照寫、stderr 告警指名；
+        走查後 restore rc 2 指名、零 docker 呼叫＝零寫入；補救句所指之 `restore --seed` 實跑可收（殘列與走查列一併刪、四支序列
+        回 seed 值、rc 0）。另釘 is_called 假之邊界（上界 1 對 (1,f)＝nextval 下一值恰為既存之 1）同拒；上界＝序列位置（seed 形）
+        不告警；seed 模式同判準、對象＝凍結 seed（setval 低於 COPY 列 id 最大值＝凍結面受損 rc 2、補救不指回自己、零 docker 呼叫）。
+        表名與序列名手寫。"""
+        big = 9_300_000_001
+        seed_ids = {t: list(v) for t, v in STUB_BOUNDED_IDS.items()}
+        seed_seqs = {"sys_role_id_seq": (3, "t"), "sys_menu_id_seq": (78, "t"), "casbin_rule_id_seq": (163, "t"),
+                     "sys_casbin_policy_archive_id_seq": (1, "f")}
+
+        def snapshot(stub):
+            path = os.path.join(self.d, "walk.json")
+            out, err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                self.assertEqual(main([PROG, "snapshot", path], run=stub), RC_OK)
+            self.assertIn("基準已寫", out.getvalue())
+            return path, err.getvalue()
+
+        def refused(stub, path, table, seq, bound):
+            stub.log.clear()
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main([PROG, "restore", path], run=stub), RC_ENV, msg=table)
+            for needle in (f"{table} 上界 {bound}", seq, "撞 PK", "零寫入", "restore --seed"):
+                self.assertIn(needle, err.getvalue(), msg=(table, needle))
+            self.assertEqual(stub.log, [], msg=table)
+
+        for table, seq, ids in (("sys_role", "sys_role_id_seq", (1, 2, 3, big)),
+                                ("sys_menu", "sys_menu_id_seq", tuple(range(1, 79)) + (big,)),
+                                ("casbin_rule", "casbin_rule_id_seq", tuple(range(1, 164)) + (big,)),
+                                ("sys_casbin_policy_archive", "sys_casbin_policy_archive_id_seq", (big,))):
+            stub = _restore_stub(ids=dict(STUB_BOUNDED_IDS, **{table: ids}),
+                                 tables=dict(RESTORE_FAKE_TABLES, **{table: len(ids)}))
+            path, warned = snapshot(stub)
+            for needle in ("告警", f"{table} 上界 {big}", seq, "restore --seed"):
+                self.assertIn(needle, warned, msg=(table, needle))
+            self._dirty_role_menu(stub)                     # 走查以 nextval 造列：新 id 落在序列與上界之間
+            refused(stub, path, table, seq, big)
+            rc, text = self._restore_seed(stub)             # 補救句所指之 seed 模式實跑可收
+            self.assertEqual(rc, RC_OK, msg=(table, text))
+            self.assertEqual(stub.ids, seed_ids, msg=table)
+            self.assertEqual({s: stub.seqs[s] for s in seed_seqs}, seed_seqs, msg=table)
+        stub = _restore_stub(ids=dict(STUB_BOUNDED_IDS, sys_casbin_policy_archive=(1,)),
+                             tables=dict(RESTORE_FAKE_TABLES, sys_casbin_policy_archive=1))
+        path, warned = snapshot(stub)
+        self.assertIn("sys_casbin_policy_archive 上界 1", warned)
+        refused(stub, path, "sys_casbin_policy_archive", "sys_casbin_policy_archive_id_seq", 1)
+        _, warned = snapshot(_restore_stub())               # 上界＝序列位置（seed 形）＝不告警
+        self.assertEqual(warned, "")
+        damaged = SEED_RESTORE_TEXT.replace("setval('public.sys_menu_id_seq', 78, true)",
+                                            "setval('public.sys_menu_id_seq', 77, true)")
+        self.assertNotEqual(damaged, SEED_RESTORE_TEXT)
+        stub = _restore_stub()                              # seed 模式：凍結 seed 之上界高於其 setval 位置＝凍結面受損
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+            self._restore_seed(stub, damaged)
+        for needle in ("凍結 seed 之角色／選單域上界高於其序列位置", "sys_menu 上界 78", "凍結面受損", "零寫入"):
+            self.assertIn(needle, str(ctx.exception))
+        self.assertNotIn("restore --seed", str(ctx.exception))   # 補救不得指回自己
+        self.assertEqual(stub.log, [])
+
+    def test_restart_hint_iff_restore_deleted_casbin_rows_or_changed_its_sequence(self):
+        """T088④重啟句（restore 步⑥）：字面逐字釘；刪過 casbin_rule 列或改過其序列＝收尾輸出一次（兩模式皆然）——兩腿各自獨立成案：「只刪列」
+        ＝顯式 id 直插、序列停在目標值（走查以 psql 顯式 id 直植 casbin_rule 之形、不經 nextval），「只改序列」＝列未增、序列三形各自
+        成案——前進（170,t）／後退（160,t）／is_called 異（163,f）（判準是 (last_value, is_called) 元組之「≠」、不是「前進」：
+        只比 last_value 或只判大於之判準會漏後兩形）；兩腿之參照值＝目標上界／目標序列值各自區辨：上列各形之目標皆上界 163＝序列
+        (163,t)、比錯參照也測不出，另設目標上界 163＜序列 (166,t) 之形（上界低於序列位置＝合法基準、bounds_above_sequence 不拒；
+        基準檔模式取自樁、seed 模式以改過 setval 行之樁 seed 造出）——顯式 id 165 直插（落在兩參照值之間）、序列未動＝輸出一次
+        （刪列腿誤比目標序列值會漏）、全未動＝不輸出（序列腿誤比目標上界會誤報）；只動角色／選單／歸檔／指派或全未動＝不輸出；
+        交易失敗（整筆回滾）＝不輸出；提交後步驟失敗（DEL 回非整數）＝仍輸出（finally）。"""
+        self.assertEqual(RUST_API_RESTART_CLI,
+                         "docker compose -f docker-compose.yml -f docker-compose.dev.yml restart rust-api")
+        self.assertEqual(CASBIN_RESTART_HINT,
+                         "[walkthrough-baseline] ★MUST 重啟 rust-api：本次 restore 以 SQL 直改 casbin_rule（刪列或改序列）、"
+                         "判定面無外部通知管道——執行中的 rust-api 仍持 restore 前之政策集、重啟即自庫重載；照抄："
+                         "docker compose -f docker-compose.yml -f docker-compose.dev.yml restart rust-api")
+
+        def seq_only(value):
+            def dirt(stub):
+                self.assertEqual(stub.seqs["casbin_rule_id_seq"], (163, "t"))   # 前置自證：目標值、髒形須與之異
+                stub.seqs["casbin_rule_id_seq"] = value
+            return dirt
+
+        def rows_only(stub):
+            # 顯式大 id 直插、不經 nextval：列 id > 上界 163、序列停在目標值＝只「刪列」腿成立（前置自證、免本案退化成兩腿齊成立）
+            stub.ids["casbin_rule"] += [900, 901]
+            stub.tables["casbin_rule"] += 2
+            self.assertEqual(stub.seqs["casbin_rule_id_seq"], (163, "t"))
+
+        for label, dirt, want in (("casbin 列＋序列（nextval 形）", lambda s: self._dirty_role_menu(s), 1),
+                                  ("casbin 只刪列（顯式 id、序列未動）", rows_only, 1),
+                                  ("casbin 只改序列：前進", seq_only((170, "t")), 1),
+                                  ("casbin 只改序列：後退", seq_only((160, "t")), 1),
+                                  ("casbin 只改序列：is_called 異", seq_only((163, "f")), 1),
+                                  ("非 casbin 面", lambda s: self._dirty_role_menu(s, casbin=False), 0),
+                                  ("全未動", lambda s: None, 0)):
+            stub = _restore_stub()
+            path = self._baseline(stub)
+            dirt(stub)
+            rc, text = self._restore(path, stub)
+            self.assertEqual(rc, RC_OK, msg=(label, text))
+            self.assertEqual(text.count("MUST 重啟 rust-api"), want, msg=label)
+            self.assertIn("DELETE FROM casbin_rule WHERE id > 163;", self._tx(stub), msg=label)
+            self.assertEqual(stub.ids["casbin_rule"], list(range(1, 164)), msg=label)
+            if want:
+                self.assertTrue(text.rstrip("\n").endswith(CASBIN_RESTART_HINT), msg=(label, text))
+                self.assertEqual(stub.seqs["casbin_rule_id_seq"], (163, "t"), msg=label)
+            stub = _restore_stub()                              # seed 模式同判準
+            dirt(stub)
+            rc, text = self._restore_seed(stub)
+            self.assertEqual(rc, RC_OK, msg=(label, text))
+            self.assertEqual(text.count("MUST 重啟 rust-api"), want, msg=("seed", label))
+            self.assertEqual(text.count(CASBIN_RESTART_HINT), want, msg=("seed", label))
+            self.assertIn("DELETE FROM casbin_rule WHERE id > 163;", self._tx(stub), msg=("seed", label))
+            self.assertEqual(stub.ids["casbin_rule"], list(range(1, 164)), msg=("seed", label))
+        # 兩參照值各自區辨：目標上界 163＜目標序列 (166,t)；顯式 id 165 落在兩值之間（高於上界、不高於序列值）
+        gap_seed = SEED_RESTORE_TEXT.replace("setval('public.casbin_rule_id_seq', 163, true)",
+                                             "setval('public.casbin_rule_id_seq', 166, true)")
+        self.assertNotEqual(gap_seed, SEED_RESTORE_TEXT)
+        for label, explicit, want in (("上界＜序列：只刪列（顯式 id 165、序列未動）", [165], 1),
+                                      ("上界＜序列：全未動", [], 0)):
+            for seed_mode in (False, True):
+                msg = (label, "seed" if seed_mode else "基準檔")
+                stub = _restore_stub(seqs=dict(RESTORE_FAKE_SEQS, casbin_rule_id_seq=(166, "t")))
+                path = None if seed_mode else self._baseline(stub)
+                stub.ids["casbin_rule"] += explicit
+                stub.tables["casbin_rule"] += len(explicit)
+                rc, text = self._restore_seed(stub, gap_seed) if seed_mode else self._restore(path, stub)
+                self.assertEqual(rc, RC_OK, msg=(msg, text))
+                self.assertEqual(text.count("MUST 重啟 rust-api"), want, msg=msg)
+                self.assertEqual(text.count(CASBIN_RESTART_HINT), want, msg=msg)
+                tx = self._tx(stub)
+                self.assertIn("DELETE FROM casbin_rule WHERE id > 163;", tx, msg=msg)
+                self.assertIn("SELECT setval('casbin_rule_id_seq', 166, true);", tx, msg=msg)
+                self.assertEqual(stub.ids["casbin_rule"], list(range(1, 164)), msg=msg)
+                self.assertEqual(stub.seqs["casbin_rule_id_seq"], (166, "t"), msg=msg)
+        stub = _restore_stub()                                  # 交易失敗＝整筆回滾＝未動
+        path = self._baseline(stub)
+        self._dirty_role_menu(stub)
+        stub.fail = "tx"
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(BaselineError):
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        self.assertNotIn("MUST 重啟 rust-api", out.getvalue())
+        stub = _restore_stub()                                  # 提交後失敗＝已動、仍須重啟
+        path = self._baseline(stub)
+        self._dirty(stub)
+        self._dirty_role_menu(stub)
+        stub.fail = "del"
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(BaselineError):
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        self.assertIn(CASBIN_RESTART_HINT, out.getvalue())
+        stub = _restore_stub(garble="casbin")                   # 現讀輸出壞形＝寫入前 rc 2
+        path = self._baseline(stub)
+        self._dirty_role_menu(stub)
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+            cmd_restore(path, DB_USER, DB_NAME, stub, seed_path=self.seed, ledger_path=self.ledger)
+        self.assertIn("casbin_rule", str(ctx.exception))
+        self.assertEqual(_pg_write_offenders([a[-1] for a in stub.log if "psql" in a]), [])
+
+    def test_seed_mode_role_menu_surface_targets_frozen_seed_bounds_keys_and_setvals(self):
+        """seed 模式新腿（T088③）：目標上界＝seed COPY 列 id 最大值、setval 值＝seed setval 行（樁把 sys_role_id_seq 改
+        9,true≠上界 3，證兩值各自現讀）、指派鍵集＝seed COPY 鍵集；寫面逐字；走完四表回 seed 形、收尾 rc 0。"""
+        text = SEED_RESTORE_TEXT.replace("setval('public.sys_role_id_seq', 3, true)",
+                                         "setval('public.sys_role_id_seq', 9, true)")
+        self.assertNotEqual(text, SEED_RESTORE_TEXT)
+        stub = _restore_stub()
+        self._dirty(stub)
+        self._dirty_role_menu(stub)
+        rc, out = self._restore_seed(stub, text)
+        self.assertEqual(rc, RC_OK, msg=out)
+        self.assertTrue(self._tx(stub).endswith(
+            "SELECT setval('sys_ip_rule_id_seq', 7, true); "
+            + ROLE_MENU_SURFACE_AT_SEED.replace("setval('sys_role_id_seq', 3, true)", "setval('sys_role_id_seq', 9, true)")
+            + "COMMIT;"), msg=self._tx(stub))
+        self.assertEqual(stub.ids, {t: list(v) for t, v in STUB_BOUNDED_IDS.items()})
+        self.assertEqual(sorted(stub.user_roles), list(STUB_USER_ROLES))
+        self.assertEqual(stub.seqs["sys_role_id_seq"], (9, "t"))
+        self.assertIn(CASBIN_RESTART_HINT, out)
+        # 收尾判準面含該面：seed 列被硬刪（restore 只刪不補）＝rc 1 指名
+        stub = _restore_stub()
+        stub.ids["sys_menu"].remove(5)
+        stub.tables["sys_menu"] -= 1
+        stub.user_roles.remove((2, 2))
+        stub.tables["sys_user_role"] -= 1
+        rc, out = self._restore_seed(stub)
+        self.assertEqual(rc, RC_DIFF, msg=out)
+        self.assertIn("表｜sys_menu｜78｜77｜-1", out)
+        self.assertIn("鍵集｜sys_user_role(2,2)｜有｜（無）｜-1", out)
+
+    def test_seed_target_parses_role_menu_copy_segments_and_refuses_damage(self):
+        """凍結 seed 之角色／選單域五段解析（樁＋真檔皆 3／78／163／0 列、指派 3 對）；段首缺 id 欄／id 非整數／指派列欄數不符
+        ＝凍結面受損 rc 2；缺 COPY 段或 setval 行＝指名清理面缺席；皆零 docker 呼叫。"""
+        want_bounds = {"sys_role": 3, "sys_menu": 78, "casbin_rule": 163, "sys_casbin_policy_archive": 0}
+        want_seqs = {"sys_role_id_seq": {"last_value": 3, "is_called": True},
+                     "sys_menu_id_seq": {"last_value": 78, "is_called": True},
+                     "casbin_rule_id_seq": {"last_value": 163, "is_called": True},
+                     "sys_casbin_policy_archive_id_seq": {"last_value": 1, "is_called": False}}
+        with open(os.path.join(REPO_ROOT, SEED_FIXTURE), encoding="utf-8") as fh:
+            real_text = fh.read()
+        for text in (SEED_RESTORE_TEXT, real_text):
+            target = seed_restore_target(text)
+            self.assertEqual(target["id_bounds"], want_bounds)
+            self.assertEqual(target["user_role_keys"], [[1, 1], [2, 2], [3, 3]])
+            self.assertEqual({t: target["tables"][t] for t in ROLE_MENU_TABLES},
+                             {"sys_role": 3, "sys_menu": 78, "casbin_rule": 163, "sys_casbin_policy_archive": 0,
+                              "sys_user_role": 3})
+            self.assertEqual({s: target["sequences"][s] for s in want_seqs}, want_seqs)
+        for bad, needle in (
+                (SEED_RESTORE_TEXT.replace("COPY public.sys_role (id, ", "COPY public.sys_role (rid, "), "sys_role"),
+                (SEED_RESTORE_TEXT.replace("\n2\t2026-08-05 00:00:00+00\tR_2\n", "\nx\t2026-08-05 00:00:00+00\tR_2\n"),
+                 "sys_role"),
+                (SEED_RESTORE_TEXT.replace("\n2\t2\n3\t3\n", "\n2\t2\t9\n3\t3\n"), "sys_user_role")):
+            self.assertNotEqual(bad, SEED_RESTORE_TEXT)
+            with self.assertRaises(BaselineError, msg=needle) as ctx:
+                seed_restore_target(bad)
+            self.assertIn(needle, str(ctx.exception))
+            self.assertIn("凍結面受損", str(ctx.exception))
+        for bad, needle in (
+                (SEED_RESTORE_TEXT.replace("COPY public.sys_menu ", "COPY public.other_menu "), "sys_menu"),
+                (SEED_RESTORE_TEXT.replace("COPY public.sys_user_role ", "COPY public.other_ur "), "sys_user_role"),
+                (SEED_RESTORE_TEXT.replace("public.casbin_rule_id_seq'", "public.other_id_seq'"), "casbin_rule_id_seq")):
+            self.assertNotEqual(bad, SEED_RESTORE_TEXT)
+            stub = _restore_stub()
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+                self._restore_seed(stub, bad)
+            self.assertIn("凍結 seed 缺 restore 清理面", str(ctx.exception))
+            self.assertIn(needle, str(ctx.exception))
+            self.assertEqual(stub.log, [])
+
+    def test_seed_mode_evolution_entries_on_role_menu_tables_refuse_by_id(self):
+        """seed 模式演進帳拒跑判定擴及角色／選單域五表（有其 seed_* 登記＝凍結段非期望 seed、照刪會毀演進帳定義之 seed 列）：
+        逐表指名登記 id、零 docker 呼叫；基準檔模式之目標態＝基準檔、不因此拒跑。"""
+        other = _ledger_entry("E-001", "seed_update", "sys_user", {"pk": {"id": 3}, "set": {"nick_name": "User01"}})
+        for eid, table in (("E-002", "sys_role"), ("E-003", "sys_menu"), ("E-004", "casbin_rule"),
+                           ("E-005", "sys_casbin_policy_archive"), ("E-006", "sys_user_role")):
+            self._write_ledger(other, _ledger_entry(eid, "seed_add", table, {"pk": ["id"], "values": {"id": 999}}))
+            stub = _restore_stub()
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(BaselineError) as ctx:
+                self._restore_seed(stub)
+            for needle in (eid, table, "先擴充本工具", "零寫入"):
+                self.assertIn(needle, str(ctx.exception), msg=table)
+            self.assertNotIn("E-001", str(ctx.exception), msg=table)
+            self.assertEqual(stub.log, [], msg=table)
+            stub = _restore_stub()
+            path = self._baseline(stub)
+            rc, text = self._restore(path, stub)
+            self.assertEqual(rc, RC_OK, msg=(table, text))
 
 
 if __name__ == "__main__":
