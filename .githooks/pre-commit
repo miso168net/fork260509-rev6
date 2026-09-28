@@ -84,7 +84,8 @@ fi
 # byte 比對——★雙側觸發（BL-00037③；對稱於下方 entity-drift）：typings 側住 base-web、快照側住 rust-api worktree（外層 staged 面
 # 只看得到 rust-api gitlink、快照檔本身永不現身於此），任一側動到自己那面就得重抽；sh 只做粗判（哪個 gitlink staged）、
 # 兩側 pin 區間各自零變動之細判在 python 內（--staged-gate 收窄、省 npx 秒數）；
-# docker 缺／base-web 容器未起＝具名跳過 rc 0；容器可用但重抽失敗、快照缺席或不一致＝rc 2 擋（補救見工具輸出）。
+# 跨子庫純讀檔錨兩腿（BL-00109 qs 前提／ADR-00044 決定 8 保留路由名對賬）先於收窄與容器探測無條件執行、任一違規＝rc 2；
+# 其後 docker 缺／base-web 容器未起＝具名跳過 rc 0；容器可用但重抽失敗、快照缺席或不一致＝rc 2 擋（補救見工具輸出）。
 if echo "$staged" | grep -qxF -e 'base-web' -e 'rust-api'; then
   pc_run "wire-schema" python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate
 fi

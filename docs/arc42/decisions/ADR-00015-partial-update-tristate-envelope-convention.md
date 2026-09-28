@@ -2,9 +2,9 @@
 id: "ADR-00015"
 title: 部分更新請求之 envelope 級三態約定——欄位缺席＝不動、JSON null＝顯式清空、有值＝設值
 date: 2026-09-05
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00047]
 provenance: "rev5:ADR 0023（rev5 002 刀三態約定）；rev5:L-009（serde 預設把 null 落外層 None、三態塌兩態）；docs/brainstorms/002-system-settings.md §0 Q1；specs/002-system-settings/data-model.md §8 條文轉錄；spec FR-011／FR-012／US5；user 於 brainstorm 過目、主線擬稿即 accepted（2026-09-05）"
 tags: [wire, envelope, serde]
 ---

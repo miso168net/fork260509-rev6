@@ -11,7 +11,7 @@ admin 後台系統第六代重跑版：前端 fork 自 soybean-admin（Vue3＋na
 fork260509-rev6/
 ├── README.md                        本檔：人類入口導覽；下列樹之 tools/、deploy/、.githooks/、.claude/ 與實檔集由 GT-09 雙向對賬；docs/ 列項為地圖、出現時機標於括號
 ├── CLAUDE.md                        操作規則書：拓樸／工作流／git 手冊／文件規則／決策紀律／硬禁令／rev5 對照
-├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.4.0＝ADR-00034；前版 1.3.0＝ADR-00026、1.2.0＝ADR-00022／ADR-00023／ADR-00024 三筆同批、1.1.0＝ADR-00009、創世 1.0.0＝ADR-00003）
+├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.5.2＝ADR-00051；前版 1.5.1＝ADR-00048、1.5.0＝ADR-00042、1.4.0＝ADR-00034、1.3.0＝ADR-00026、1.2.0＝ADR-00022／ADR-00023／ADR-00024 三筆同批、1.1.0＝ADR-00009、創世 1.0.0＝ADR-00003）
 ├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00011（數值續自其翻案之 ADR-00004 表）；名詞段住此
 ├── docs/ops/NOTES.md                當前意圖；首行 <!-- wave: N --> 為「現在波」唯一真源
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES、reference/perf、STATE（帳面統計與治理指標）、DECISIONS-INDEX（feature 欄）
@@ -28,14 +28,14 @@ fork260509-rev6/
 ├── tools/                           repo 治理面工具鏈（pre-commit／bootstrap 掛勾；管「版控品質」）
 │   ├── bootstrap.sh                 新機重建／體檢：源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數
 │   ├── wf-watchdog.py               workflow 編排看門狗（stall／runaway 保險絲、可鎖定目標 run）
-│   ├── walkthrough-baseline.py      走查前後全表基準對賬：snapshot／diff（三面現算、唯讀、需 rev6 dev stack）＋restore（走查後清理面機器化＋收尾 diff、基準須為空；`--seed`＝無須基準檔、以凍結 seed 為目標態）／test（離線）；diff 對 runtime-append 四表之序列只比存在性；隨遷自 rev5、非碼面閘（NON_GATE_TOOLS）
+│   ├── walkthrough-baseline.py      走查前後全表基準對賬：snapshot／diff（三面現算、唯讀、需 rev6 dev stack）＋restore（走查後清理面機器化＋收尾 diff；清理面五表之基準須為空、角色／選單域五表刪上界以上列與鍵集差、動過 casbin_rule 即輸出重啟 rust-api 句；`--seed`＝無須基準檔、以凍結 seed 為目標態）／test（離線）；diff 對 runtime-append 四表之序列只比存在性；隨遷自 rev5、非碼面閘（NON_GATE_TOOLS）
 │   ├── schema-gate.py               三閘 schema 驗證閘：check（凍結 fixtures ⊕ 演進帳 vs 實庫）／test／doccheck（隨遷自 rev5、碼面閘不入 GATES 名冊）
 │   ├── entity-drift-gate.py         entity×schema 快照漂移閘：check／test（隨遷自 rev5；自測入 pre-commit 條件觸發名冊、check 入 pre-commit entity-drift 段＝rust-api pin bump 或快照 staged 時實跑、快照缺席即紅 rc 2＋refresh 提示）
 │   ├── rust-fmt-gate.py             rust 格式閘：check＝容器內 cargo fmt --all --check 唯讀比對／test（隨遷自 rev5；pre-commit rust-fmt 段＝rust-api pin bump 或本檔 staged 時實跑、docker 缺或容器未起＝具名跳過 rc 0、容器在而 cargo-fmt 缺＝rc 2）
-│   ├── wire-schema.py               wire 契約閘：extract（typings→JSON Schema 快照、需 stack）／check [--staged-gate]（重抽 byte 比對、絕不覆寫；pre-commit wire-schema 段＝base-web 或 rust-api pin bump 時、容器未起＝具名跳過 rc 0）／test（隨遷自 rev5）
+│   ├── wire-schema.py               wire 契約閘：extract（typings→JSON Schema 快照、需 stack）／check [--staged-gate]（先跑跨子庫純讀檔錨兩腿＝BL-00109 qs 前提〔前端查詢串序列化器與 qs 版本〕＋保留路由名對賬〔rust `RESERVED_ROUTE_NAMES`⇔base-web 常量路由名∪內建根路由名、ADR-00044 決定 8〕——無條件、零 docker、讀工作樹、違規 rc 2；再重抽 byte 比對、絕不覆寫；pre-commit wire-schema 段＝base-web 或 rust-api pin bump 時、容器未起＝重抽比對具名跳過 rc 0）／test（隨遷自 rev5）
 │   ├── fork-delta-lint.py           base-web fork-delta 標記閘：修改型缺原行／新增型缺圈界（含新檔檔頭一行＋所稱軌道×檔路徑）／授權判定（§III.1 檔面收窄＋§III.2 三元組）、空 ★表以哨兵句守（隨遷自 rev5；pre-commit fork-delta 段＝base-web pin bump、本檔或憲法 staged 時全掃；test＝離線自測；--constitution 只供自身變異驗證）
 │   ├── msg-key-gate.py              msg key 跨端閘：check＝rust-api `error.rs` 之 MSG_KEYS ⇔ base-web 三檔 locale 各自 backend 子樹逐檔雙向全等（無白名單）＋Biz 構造點守衛（`Cow::Borrowed(字面|msg_key::NAME)`、`#[cfg(test)]` 排除）＋前端 msg 字面消費點名冊（base-web src 剝註解後之 wire 字面 ⇔ 工具內名冊逐項雙向全等、安全前綴現算）／test＝離線自測（契約案＋判準補強案＋真 repo 左源綠案＋斷言 3 案；案數以 `test` 輸出為準）；零 docker；pre-commit msg-key-gate 段＝rust-api 或 base-web pin bump、本檔 staged 時實跑
-│   ├── view-render-guard.py         管理頁原始 HTML 注入寫法閘：check＝逐行掃 `base-web/src/views/manage/**`（`.vue`／`.ts`／`.tsx`／`.js`／`.jsx`）之被禁字面（模板原始 HTML 指令、DOM 原始 HTML 屬性與插入 API；不分註解與碼）、命中 rc 1 指名檔:行、工作樹或射程缺席與零受掃檔＝rc 2／test＝離線自測；零 docker；pre-commit view-render-guard 段＝base-web pin bump 或本檔 staged 時實跑（零條件段、不設跳過分支）
+│   ├── view-render-guard.py         管理頁原始 HTML 注入寫法閘＋IP 規則頁表頭 prop 形錨：check＝①逐行掃 `base-web/src/views/manage/**`（`.vue`／`.ts`／`.tsx`／`.js`／`.jsx`）之被禁字面（模板原始 HTML 指令、DOM 原始 HTML 屬性與插入 API；不分註解與碼）②`ip-rule/index.vue` 表頭寫入口須由兩布林 prop 控制、標籤自閉合、零 default 插槽覆寫（BL-00117）；任一腿命中 rc 1 指名檔:行、工作樹／射程／錨檔缺席與零受掃檔＝rc 2／test＝離線自測；零 docker；pre-commit view-render-guard 段＝base-web pin bump 或本檔 staged 時實跑（零條件段、不設跳過分支）
 │   ├── route-artifact-gate.py       路由外掛產物檔閘：check [--constitution <path>]＝base-web 容器內 `/tmp` 沙盒重跑路由外掛、三道斷言（①實產出集＝帶產物檔頭之檔集＝憲法 §III.2 `★BASE-WEB-MANAGE-PAGE-WIRING` (i) 列範圍欄「（產物檔 N 支）」注記所轄路徑集〔雙向差集即紅〕 ②工作樹為種重算冪等 ③上游基線為種重算＝工作樹〔手改一行即紅〕）、對工作樹唯讀；docker 缺或 base-web 容器未起＝具名跳過 rc 0、容器在而重算失敗＝rc 2、基線源倉缺席＝只③具名跳過／test＝離線自測；pre-commit route-artifact-gate 段＝base-web pin bump、本檔或憲法 staged 時實跑；--constitution 只供自身變異驗證
 │   ├── comment-overlap.py           rev5↔rev6 註解逐字重疊核（解析四形：`//` 家族／`/* */`／`.vue` 之 `<!-- -->`／`.py` 以 tokenize＋ast 取 `#` 與真 docstring、`.sh`／`.bash` 取行首 `#`；★「隨遷工具」逐字承襲允許、不適用 RL-0076）：對 rev5 對應檔（同相對路徑；缺席且檔名 `rev6-` 起首者映射同目錄 `rev5-` 同名檔）量共同子字串比（預設 40 字元／5%、超標 rc 1；解析 `//` 行＋`/* */` 塊註解＋`.vue` 之 `<!-- -->`；base-web 路徑三型豁免後量；全路徑碼面豁免〔code span／doc 註與塊註解內之三反引號圍欄〕；比對面為空 rc 2）／test 自測（RL-0076 量尺；非閘工具＝`NON_GATE_TOOLS` 成員、自測入 pre-commit 條件觸發名冊）
 │   ├── docsync/                     治理工具 package：generate／check／lint（GT-01～GT-12）／refresh（快照照相、需 dev stack）／rules emit／errata／vendored-check（§I.5 例外① 自證、bootstrap 3c）／test；tests/ 為語料面

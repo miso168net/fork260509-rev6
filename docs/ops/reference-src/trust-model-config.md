@@ -18,7 +18,7 @@
 
 六集合聯集同時導出受信集與跳過集（同源對稱、F4／F6）。未知鍵＝載入告警（不當機）。
 
-## 載入失敗語意（三層＋一、方向皆「只縮小信任」、皆不當機、皆發結構化告警＋`ip_domain_degraded_total`）
+## 載入失敗語意（三層＋二、方向皆「只縮小信任」、皆不當機、皆發結構化告警；前四列另計 `ip_domain_degraded_total`、非法標頭名列不計）
 
 | 情境 | 行為 | source |
 |---|---|---|
@@ -26,16 +26,13 @@
 | 檔案存在但整體解析失敗 | 全空＝全直連；★不套扁平退路 | `trust_model_invalid` |
 | 單一集合含無效 CIDR | 只清空該集合 | `trust_model_set_cleared` |
 | 單一集合含 IPv4-mapped 網段字面（如 `::ffff:10.0.0.0/104`；`rev5:B-074`） | 指名集合與壞字面、附改寫建議（`10.0.0.0/8`）、清空該集合；判別取位址本身而非遮罩後網段 | `trust_model_set_cleared` |
+| `[tunnel]` 或某筆 `[[cdn]]` 之 `connecting_ip_header` 不是合法 HTTP 標頭名（如尾隨空白、內含空白、空字串） | 原字面照載、模型不改、不改讀預設名；請求層依此名恆查無＝覆蓋 A 整條停用／覆蓋 B 該條目取不到訪客位址（受信網段不變）；告警 kind `UnusableHeaderName`、`reason` 指名鍵路徑並附改寫建議（BL-00082） | —（不計降級） |
 
-## dev 交付形（現檔、零改）
+## dev 交付形
 
-```toml
-internal_default = [
-  "172.16.0.0/12",   # docker 預設橋接網段
-]
-```
+值不在本檔另抄：唯一一份＝交付檔 `deploy/trust-model.dev.toml`（只宣告 `internal_default`＝docker 預設橋接網段）。rust 測試 fixture `dev_trust_model()` 與它逐欄對賬（`rust-api/server/src/model/facade/test_kit.rs` 之 `tests` 子模組；dev 容器內經 `APP_TRUST_MODEL_PATH` 讀掛載檔，變數缺席即具名跳過）。
 
-只填此項、其餘留空 ⇒ 經反向代理可達 `fallback`／`proxy_clean` 二態（research R7）。
+只填此項、其餘留空 ⇒ 經反向代理端到端可達之來源信心恰三態：`fallback`／`proxy_clean`（由信任模型決定）與 `chain_rejected`（轉發鏈原始非空欄數逾 `MAX_XFF_TOKENS` 即成立、判準不依賴信任模型）；其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00046 款 2）。
 
 ## prod 樣例（RUNBOOK §16 實文由此擴充；FR-066）
 
