@@ -2,7 +2,7 @@
 id: "ADR-00049"
 title: 角色與選單拒因譯文對 rev5 之對照口徑——純換句話說者逐字對齊 rev5、帶 rev6 語意延伸之四鍵保留 rev6 措辭並入 CDP 排除清單
 date: 2026-09-28
-status: accepted
+status: superseded
 supersedes: []
 superseded_by: []
 provenance: "005-role-menu-crud U16 CDP 三方對照（T089 揭出 `biz.role.*` 拒因 toast 措辭與 rev5 不同、T090 同形）；user 2026-09-28 以 AskUserQuestion 兩題親決"

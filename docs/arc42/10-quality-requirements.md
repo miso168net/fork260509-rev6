@@ -16,7 +16,7 @@ rev5_blueprint:
 | 契約一致性 | 契約守恆 | 每條 route 有 contract case、13 碼矩陣零偏離 | 憲法 §I.3；`rust-api/server/tests/contract.rs`（ROUTES×case 雙向覆蓋閘）／`src/error.rs` 13 碼矩陣斷言；wire 快照面另由 `tools/wire-schema.py`（碼面閘）守 |
 | 可重現性 | 可重現 | 任一外層 commit 的 pin＝子庫 worktree HEAD；新機 bootstrap rc 0 | GT-02；`tools/bootstrap.sh` |
 | 文件正確性 | 文件與碼零漂移 | generate 兩次同 bytes；名冊同源；預算表「內」 | GT-01／GT-12；STATE 預算對賬 |
-| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之三支管理頁（system-settings／policy-archive／audit）之選單標題於側邊欄展開態與選單管理頁治理清單顯路由裸鍵（ADR-00045 款 2／款 6；帳＝BL-00045），收合態零差異；拒因 toast 之措辭差異限 ADR-00049 排除清單所列鍵 | 走查流程（CLAUDE.md §7） |
+| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之三支管理頁（system-settings／policy-archive／audit）之選單標題於側邊欄展開態與選單管理頁治理清單顯路由裸鍵（ADR-00045 款 2／款 6；帳＝BL-00045），收合態零差異；拒因 toast 之措辭差異限 ADR-00050 排除清單所列鍵；選單彈窗排序／頁籤固定序號兩欄限整數輸入（rev6 修正、rev5 可輸入小數） | 走查流程（CLAUDE.md §7） |
 
 ## 10.2 品質情境
 

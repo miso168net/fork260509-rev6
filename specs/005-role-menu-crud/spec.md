@@ -439,7 +439,7 @@ i18n 三檔仍是基線最熱之檔；緩解＝一律新增型圈界、不與 up
 - **SC-010**: 連帶零退化——模糊搜尋共用件之轉義案、具型交易簽章後 IP 規則既有案全綠；信任模型非法標頭名一正一反＋反案＋對拍四案綠、降級來源名冊仍恰八；系統設定寫端空字串行為之既有案零改形全綠；
   IP 規則清單未知類型列於管理頁以原字串呈現。
 - **SC-011**: CDP 三方對照（rev5 22080 vs rev6 32080、必要時加 upstream 22089）以**結構清單逐項全等**為判準（表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜與彈窗欄位與校驗訊息／分頁列形／回收桶流程／toast 文案；
-  另含已刪模式寫入口不現、備註欄），任一項不等即紅；間距／字體／顏色只記入走查紀錄、不擋收刀；已知態各款以「觀察路徑→症狀」實際操作觀察記錄；排除清單＝rev5 22080 之 006～008 增量（三顆授權彈窗接真、角色抽屜之端點權限鈕與其彈窗、policy-archive 頁、user 頁、audit 頁）＋已知態各款＋治理清單三列路由裸鍵＋請求次數維度＋rev6 翻案與新增腿（受保護選單停用／改父、href、按鈕碼清單、保留路由名之拒因）與 `protectedMenu`／`routeNameExists` 譯文改寫及帶 rev6 語意延伸之 `biz.role.inUse`／`biz.menu.constantParent`／`biz.menu.hasChildren`／`biz.menu.notFound` 四鍵譯文（ADR-00049）造成之 toast 差異；
+  另含已刪模式寫入口不現、備註欄），任一項不等即紅；間距／字體／顏色只記入走查紀錄、不擋收刀；已知態各款以「觀察路徑→症狀」實際操作觀察記錄；排除清單＝rev5 22080 之 006～008 增量（三顆授權彈窗接真、角色抽屜之端點權限鈕與其彈窗、policy-archive 頁、user 頁、audit 頁）＋已知態各款＋治理清單三列路由裸鍵＋請求次數維度＋rev6 翻案與新增腿（受保護選單停用／改父、href、按鈕碼清單、保留路由名之拒因）與 `protectedMenu`／`routeNameExists` 譯文改寫及帶 rev6 語意延伸之 `biz.role.inUse`／`biz.role.nameRequired`／`biz.menu.constantParent`／`biz.menu.hasChildren`／`biz.menu.notFound`／`biz.menu.nameRequired` 六鍵譯文（ADR-00050）造成之 toast 差異、選單彈窗排序／頁籤固定序號兩欄限整數輸入（final holistic review 修正、user 2026-09-28 親決）；
   role 與 user 頁表頭對 upstream example 驗新增批刪鈕仍在；常量選單端到端一步（FR-021）通過；編輯請求之 body 以網路請求事件斷言不含不可變欄。
 - **SC-012**: 治理面全綠——憲法 1.5.0 且 accepted 前 base-web 既有檔零 diff（git 史可證）；新用途列被名冊載入器讀進（變異自證）；用途 (ii) 修改型標記只出現於九檔、base-web 變更檔集 ⊆ 授權檔集（機器斷言）、兩顆授權彈窗零 diff、`components.d.ts` 只有兩行增列；
   各新增圈界塊拔標記必紅；docsync lint 零錯誤。
