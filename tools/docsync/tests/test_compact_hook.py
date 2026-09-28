@@ -1,8 +1,10 @@
 """語料面：context 壓縮 hook（`.claude/hooks/compact-hook.py`；BL-00126）——三模式以 subprocess 實跑，transcript／進度表／壓縮備忘檔皆為暫存目錄合成樣本。
 守：①規則源＝`tools/orchestration/compact-rules.md` 之 A／B 圍欄全文注入 ②進度表與壓縮備忘檔只取本 session 主線工具呼叫碰過者
-（未碰過之較新檔不取、sidechain 不算、不存在與萬用字元形不算），碰過者取 mtime 最新 ③§C 只在手動觸發且備忘檔 30 分鐘內改過時附
-④auto 觸發而主線 context 過小＝靜默（PreCompact 輸入不帶 agent_id、workflow agent 自身壓縮亦觸發本 hook）⑤帶 agent_id＝三模式皆靜默
-⑥remind 級距：未達不報、跨級一報、同級不重報、回落歸零後再報、只計主線 usage ⑦任何輸入恆 exit 0（exit 2 會擋下壓縮）。
+（未碰過之較新檔不取、sidechain 不算、不存在與萬用字元形不算；路徑鍵整值、引號內整段、全形標點斷詞皆認得），碰過者取 mtime 最新
+③§C 只在手動觸發且備忘檔 30 分鐘內改過時附、備忘檔非 UTF-8 亦不丟整段注入 ④precompact 與 rehydrate 文首帶主線限定句，auto 觸發
+不因主線 context 小而靜默（PreCompact／SessionStart 輸入不帶 agent_id、刻意不設數值門檻）⑤帶 agent_id＝三模式皆靜默
+⑥remind 級距：未達不報、跨級一報、同級不重報、回落歸零後再報、只計主線實 usage（sidechain、`<synthetic>` 與零 usage 列不算）
+⑦任何輸入恆 exit 0（exit 2 會擋下壓縮；含壞環境變數與不可編碼 stdout）⑧座標段 porcelain 首行前導空白（XY 欄）不被吃掉。
 ★precompact 之座標段跑 git status（drvfs 上一次約 4 秒）——本檔不跑真 git：precompact 案於行程內載入 hook 模組、座標段換樁，
 座標段本身另以查表樁驗命令參數與字面（docsync test 全套已逾 pre-commit 警戒秒數）；選檔邏輯走不碰 git 的 rehydrate 模式以 subprocess 驗。"""
 import contextlib
@@ -42,10 +44,12 @@ def tool_line(inp, name="Bash", sidechain=False):
         "role": "assistant", "content": [{"type": "tool_use", "id": "t", "name": name, "input": inp}]}}, ensure_ascii=False)
 
 
-def usage_line(n, sidechain=False):
+def usage_line(n, sidechain=False, model="claude-opus-5-5"):
+    """實機形：主量落在 cache_read_input_tokens（n=0＝零 usage 列，配 model="<synthetic>" 即 API 錯誤／No response requested. 形）。"""
     return json.dumps({"type": "assistant", "isSidechain": sidechain, "message": {
-        "role": "assistant", "content": [{"type": "text", "text": "…"}],
-        "usage": {"input_tokens": n, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0}}})
+        "role": "assistant", "model": model, "content": [{"type": "text", "text": "…"}],
+        "usage": {"input_tokens": min(n, 2), "cache_creation_input_tokens": 0, "cache_read_input_tokens": max(n - 2, 0),
+                  "output_tokens": 0}}})
 
 
 class _Base(unittest.TestCase):
@@ -79,16 +83,18 @@ class _Base(unittest.TestCase):
         data = raw if raw is not None else json.dumps(self.payload(payload))
         e = {k: v for k, v in os.environ.items() if k not in ("CLAUDE_CODE_AUTO_COMPACT_WINDOW", "COMPACT_REMIND_FROM")}
         e.update(env or {})
-        p = subprocess.run(["python3", HOOK, mode], input=data, capture_output=True, text=True, cwd=ROOT, env=e, timeout=60)
+        p = subprocess.run(["python3", HOOK, mode], input=data, capture_output=True, encoding="utf-8", errors="replace",
+                           cwd=ROOT, env=e, timeout=60)
         return p.returncode, p.stdout, p.stderr
 
-    def run_inproc(self, mode, payload=None, raw=None):
+    def run_inproc(self, mode, payload=None, raw=None, env=None):
         """行程內跑 main()（座標段換樁、不碰 git）；回傳 (exit code, stdout)。"""
         buf = io.StringIO()
         stdin = io.StringIO(raw if raw is not None else json.dumps(self.payload(payload)))
         with mock.patch.object(hook, "coords", lambda: "- (座標樁)"), mock.patch.object(sys, "argv", ["compact-hook.py", mode]), \
                 mock.patch.object(sys, "stdin", stdin), mock.patch.dict(os.environ), contextlib.redirect_stdout(buf):
             os.environ.pop("CLAUDE_CODE_AUTO_COMPACT_WINDOW", None)
+            os.environ.update(env or {})
             with self.assertRaises(SystemExit) as cm:
                 hook.main()
         return cm.exception.code, buf.getvalue()
@@ -112,6 +118,26 @@ class TestSessionFiles(_Base):
         self.assertNotIn("UNSEEN", out)
         self.assertIn(notes, out)
         self.assertIn("用法備忘", out)
+        self.assertIn("僅適用於主線", out)
+
+    def test_path_key_quoted_and_fullwidth_forms_recognized(self):
+        spaced = os.path.join(self.d, "with space")
+        os.makedirs(spaced)
+        a = os.path.join(spaced, "a-progress.md")
+        q = os.path.join(spaced, "q-progress.md")
+        for path, m in ((a, "PATHKEY"), (q, "QUOTED")):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(LEDGER.format(m=m))
+        fw = self.put("f-progress.md", LEDGER.format(m="FULLWIDTH"))
+        cases = (("PATHKEY", tool_line({"file_path": a, "content": "x"}, name="Write")),
+                 ("QUOTED", tool_line({"command": f'cat >> "{q}" <<\'EOF\'\n- x\nEOF'})),
+                 ("FULLWIDTH", tool_line({"command": f"echo 見（{fw}）與「{fw}」"})))
+        for m, line in cases:
+            with self.subTest(m):
+                self.transcript(line)
+                rc, out, _ = self.run_hook("rehydrate")
+                self.assertEqual(rc, 0)
+                self.assertIn(f"{m}-next", out)
 
     def test_sidechain_missing_and_glob_tokens_not_counted(self):
         side = self.put("s-progress.md", LEDGER.format(m="SIDE"))
@@ -163,10 +189,22 @@ class TestPrecompact(_Base):
         self.assertIn("自動觸發", out)
         self.assertNotIn("CSNAP-snapshot", out)
 
-    def test_auto_small_main_context_is_silent(self):
+    def test_auto_small_main_context_still_injects(self):
+        """刻意不設「主線 context 過小即靜默」門檻：誤靜默主線（丟失全部注入）遠比誤注入 agent（有限定句兜底）嚴重。"""
         self.scene(main_tokens=50_000)
         rc, out = self.run_inproc("precompact", {"trigger": "auto"})
-        self.assertEqual((rc, out), (0, ""))
+        self.assertEqual(rc, 0)
+        self.assertIn("僅適用於主線", out)
+        self.assertIn(fence("A."), out)
+
+    def test_non_utf8_notes_keeps_rest_of_injection(self):
+        self.scene()
+        with open(os.path.join(self.d, "x-compact-prompt.md"), "wb") as f:
+            f.write(b"## C. snap\n\xff\xfe bad \x80\n")
+        rc, out = self.run_inproc("precompact", {"trigger": "manual"})
+        self.assertEqual(rc, 0)
+        for s in (fence("A."), "MAN-next", "## §C"):
+            self.assertIn(s, out)
 
 
 class TestCoords(unittest.TestCase):
@@ -194,6 +232,21 @@ class TestCoords(unittest.TestCase):
             self.assertIn(s, out)
         self.assertNotIn("樁查無", out)
 
+    def test_sh_keeps_leading_space_of_porcelain(self):
+        self.assertEqual(hook.sh("printf", " M a\\n?? b\\n"), " M a\n?? b")
+
+
+class TestTasksDir(unittest.TestCase):
+    def test_scratchpad_sibling_then_tmpdir_fallback(self):
+        self.assertEqual(hook.tasks_dir({"scratchpad_dir": "/x/sess/scratchpad"}), hook.Path("/x/sess/tasks"))
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"CLAUDE_CODE_TMPDIR": d}):
+            data = {"transcript_path": os.path.join(d, "proj-slug", "sid.jsonl"), "session_id": "sid"}
+            want = os.path.join(d, f"claude-{os.getuid()}", "proj-slug", "sid", "tasks")
+            self.assertEqual(str(hook.tasks_dir(data)), want)
+            os.makedirs(want)
+            open(os.path.join(want, "bgfallback7.output"), "w").close()
+            self.assertIn("bgfallback7", hook.bg_tasks(data))
+
 
 class TestMainOnlyAndExitCode(_Base):
     def test_agent_id_silences_all_modes(self):
@@ -210,6 +263,14 @@ class TestMainOnlyAndExitCode(_Base):
             for mode in ("rehydrate", "remind"):
                 rc, _, err = self.run_hook(mode, raw=raw)
                 self.assertEqual(rc, 0, (mode, raw, err))
+
+    def test_bad_env_and_unencodable_stdout_exit_zero(self):
+        for mode in ("precompact", "rehydrate", "remind"):  # 帶 agent_id＝模組載入後即早退：驗的是模組層解析
+            rc, _, err = self.run_hook(mode, {"agent_id": "a1"}, env={"COMPACT_REMIND_FROM": "600k"})
+            self.assertEqual(rc, 0, (mode, err))
+        rc, out, err = self.run_hook("rehydrate", env={"PYTHONIOENCODING": "ascii"})
+        self.assertEqual(rc, 0, err)
+        self.assertIn("壓縮後回灌", out)
 
 
 class TestRemind(_Base):
@@ -232,6 +293,16 @@ class TestRemind(_Base):
         self.assertIn("650k", json.loads(o[3])["systemMessage"])
         self.assertEqual(o[4], "")
         self.assertTrue(o[5])
+
+    def test_synthetic_and_zero_usage_rows_skipped(self):
+        self.transcript(usage_line(700_000), usage_line(0, model="<synthetic>"), usage_line(0))
+        self.assertEqual(hook.context_tokens(self.tp), 700_000)
+        self.transcript(usage_line(700_000), usage_line(5, model="<synthetic>"))  # synthetic 即使帶數也不算
+        self.assertEqual(hook.context_tokens(self.tp), 700_000)
+        o = self.seq([usage_line(610_000)], [usage_line(610_000), usage_line(0, model="<synthetic>")],
+                     [usage_line(610_000), usage_line(0)], [usage_line(610_000)])
+        self.assertTrue(o[0])
+        self.assertEqual(o[1:], ["", "", ""])  # 零 usage 列不致歸零、不重複提醒
 
     def test_sidechain_usage_ignored_and_window_text(self):
         o = self.seq([usage_line(610_000), usage_line(10_000, sidechain=True)],

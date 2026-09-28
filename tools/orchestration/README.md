@@ -16,7 +16,7 @@
 | `EXAMPLE-review-unitdef.py` | review 形單元定義範例（explore＋inline 兩鏡＋一支冷啟動探針；lens 任務＝編排骨架名冊與規則承載一致性——可原樣當骨架改動後的冒煙 review）；發射前照抄到 tmp/ 改 `UNIT`／`FEATURE`／`SMOKE`／`CONTEXT` |
 | `EXAMPLE-review-verify-unitdef.py` | review 形單元定義範例（verify：兩批 findings×兩鏡＋探針 grader→refuter＋critic）；批文與作答為形制樣本、真跑時由主線自探索 run 的 journal 渲染 |
 | `cdp.mjs` | CDP 對照工具：接 host 瀏覽器除錯埠、開分頁對照 rev5／rev6 UI（CLAUDE.md §7） |
-| `compact-rules.md` | context 壓縮規則範本＝`.claude/hooks/compact-hook.py` 之 PreCompact 注入源（`## A.`／`## B.` 圍欄內文每次壓縮注入；標題形與圍欄不可改）；檔頭記工作區兩檔約定（進度表 `*progress*.md` 摘 ③⑦⑧、壓縮備忘檔 `*compact-prompt*.md` 之 §C 與用法備忘；hook 只認本 session 主線碰過者） |
+| `compact-rules.md` | context 壓縮規則範本＝`.claude/hooks/compact-hook.py` 之 PreCompact 注入源（`## A.`／`## B.` 圍欄內文；標題形與圍欄不可改）；工作區兩檔（進度表、壓縮備忘檔）之約定住其檔頭 |
 | `EXAMPLE-dual-implementer.mjs` | TDD 形完整組裝成品（＝001 刀 U1 原樣、改形前 cycle）：雙 implementer serial、impl-1 的 report 原文轉交 impl-2；供組裝法參考、勿照抄執行（事實接地以該單元 commit 訊息為準） |
 
 組裝成品範例＝`EXAMPLE-dual-implementer.mjs`（001 刀 U1 原樣；前代 rev5:008 兩支成品已刪＝000-r1 R1-059／060／062／087／088：內含 rev5 事實與行號形引用）；review 形以兩支 `EXAMPLE-review-*-unitdef.py`、TDD 形以 `EXAMPLE-tdd-unitdef.py` 為起手範本，成品由組裝器現產（gitignored `tmp/`）。

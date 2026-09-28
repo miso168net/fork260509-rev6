@@ -4,41 +4,56 @@
   precompact：PreCompact——stdout 併入壓縮指示（auto／manual 皆然）。輸出＝主線限定句＋`tools/orchestration/compact-rules.md` 之 A＋B
              圍欄規則＋hook 當下機器快照（座標、本 session 最近四支 workflow run、近 6 小時背景 task）＋進度表 ③⑦⑧＋依觸發方式之收尾句；
              §C（壓縮備忘檔之 `## C.` 節）只在手動觸發且該檔 30 分鐘內改過時才附。
-  rehydrate：SessionStart(matcher=compact)——壓完後回灌壓縮備忘檔「用法備忘」指針、近期 workflow run／背景 task、進度表 ⑧。
-  remind：PostToolUse（每次工具呼叫後）——自 transcript 末筆主線 usage 算 context；過 600k 起每 50k 一級距提醒一次
+  rehydrate：SessionStart(matcher=compact)——壓完後回灌主線限定句、壓縮備忘檔「用法備忘」指針、近期 workflow run／背景 task、進度表 ⑧。
+  remind：PostToolUse（每次工具呼叫後）——自 transcript 末筆主線實 usage（跳過 `<synthetic>` 與零 usage 列）算 context；過 600k 起每 50k 一級距提醒一次
           （additionalContext 回灌主線＋systemMessage 給 user）；級距記於本 session 暫存目錄、壓縮後回落即歸零。
 
 工作區兩檔的定位（受版控檔不寫工作區路徑；RL-0077）：transcript 之主線工具呼叫輸入中出現過、且現存之檔，各取 mtime 最新——
   進度表＝`*progress*.md`、壓縮備忘檔＝`*compact-prompt*.md`；本 session 未碰過＝不附、並明講。兩檔內容約定＝compact-rules.md 檔頭。
-★主線限定（Claude Code 2.1.283 執行檔實證）：PostToolUse 輸入於 subagent 內觸發時帶 `agent_id`＝靜默（三模式同判）；
-  但 PreCompact 輸入**不帶** `agent_id`，而 workflow agent 與主線共用 session（session_id／transcript_path 同值）、其自身壓縮時本 hook
-  照跑且 stdout 照樣併入——故 precompact 另設兩道：①注入文首之主線限定句 ②auto 觸發而主線 context 低於 0.5×min(視窗, 200k)
-  ＝主線不可能在此壓縮（預壓臂點 ≥0.8×實效視窗−20k）＝靜默。
-視窗＝`CLAUDE_CODE_AUTO_COMPACT_WINDOW` → `.claude/settings.local.json` → `.claude/settings.json` 之 `autoCompactWindow`（同 CC 解析序；
-實效另受模型視窗夾限、本 hook 只拿來定門檻與提示字面）。恆 exit 0（exit 2 會擋下壓縮）；各段自帶 try、單段失敗只印一行錯誤。
+  認檔字面＝路徑鍵（file_path／path／notebook_path）整值、引號內整段、其餘以空白／shell 分隔字元／全形標點斷詞；相對路徑一律以 repo
+  根解析。認不到：未加引號而含空白之路徑、緊鄰 CJK 字的路徑、非 repo 根 cwd 下的相對路徑、`~` 與 `$VAR` 形——以 Read／Edit／Write
+  或 repo 根相對路徑觸碰即可。
+★主線限定（Claude Code 2.1.283／2.1.284 執行檔實證；LL-00040）：只有 PostToolUse 輸入於 subagent 內觸發時帶 `agent_id`（＝靜默；
+  三模式同判、防未來版本補欄）。PreCompact 與 SessionStart(compact) 的輸入都**不帶** `agent_id`，workflow agent 自身壓縮時兩者照跑、
+  stdout 照樣併入該 agent，且 hook 收到的 session_id／transcript_path 與主線同值——輸入面無從分辨，故 precompact 與 rehydrate 一律
+  於文首放主線限定句、由摘要者自判。★刻意不設「主線 context 過小即靜默」一類數值門檻：`<synthetic>` 零 usage 列、PCT 覆寫、伺服器端
+  預壓比例與 usage 落後都可能讓主線真壓縮落在門檻下，而誤靜默主線（丟失全部注入）遠比誤注入 agent（有限定句兜底）嚴重。
+視窗＝`CLAUDE_CODE_AUTO_COMPACT_WINDOW`（純數字才認）→ `.claude/settings.local.json` → `.claude/settings.json` 之 `autoCompactWindow`；
+只用於提醒字面（實效另受模型視窗夾限、以 /context 為準）。恆 exit 0（exit 2 會擋下壓縮）：各段自帶 try、單段失敗只印一行錯誤；
+stdout 一律 utf-8（不可編碼字元以替代字元輸出）。
 手動試跑：echo '{"trigger":"manual","transcript_path":"<session>.jsonl","session_id":"<id>"}' | python3 .claude/hooks/compact-hook.py precompact
 """
 import fnmatch, glob, json, os, re, subprocess, sys, tempfile, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+
+def env_int(name, default):
+    try:
+        return int(os.environ.get(name, default))
+    except ValueError:
+        return default
+
+
 REPO = Path(__file__).resolve().parent.parent.parent
 RULES_MD = REPO / "tools" / "orchestration" / "compact-rules.md"
 LEDGER_GLOB, NOTES_GLOB = "*progress*.md", "*compact-prompt*.md"
 C_FRESH_SECS = 1800
-REMIND_FROM = int(os.environ.get("COMPACT_REMIND_FROM", 600_000))
+REMIND_FROM = env_int("COMPACT_REMIND_FROM", 600_000)
 REMIND_STEP = 50_000
-MAIN_FLOOR_RATIO, MAIN_FLOOR_CAP = 0.5, 200_000
 SCOPE = ("★本段僅適用於主線 session（與 user 對話、派發 workflow 的那一方）；若本對話是被派發任務的 workflow／subagent"
          "（implementer、review、fix、lens 等），忽略本段全部內容、照預設格式摘要你自己的任務。")
-# 工具呼叫輸入中的 .md 路徑字面：遇空白、引號、shell 分隔字元、全形標點即斷
-RE_MD = re.compile(r"[^\s\"'`<>|;&(){}=,　-〿＀-￯]+\.md")
+PATH_KEYS = ("file_path", "path", "notebook_path")
+# 工具呼叫輸入中的 .md 路徑字面：路徑鍵整值與引號內整段另收；其餘遇空白、引號、shell 分隔字元、全形標點（U+3000～303F、U+FF00～FFEF）即斷
+_FULLWIDTH = "".join(f"{chr(a)}-{chr(b)}" for a, b in ((0x3000, 0x303F), (0xFF00, 0xFFEF)))
+RE_MD = re.compile(r"[^\s\"'`<>|;&(){}=," + _FULLWIDTH + r"]+\.md")
+RE_QUOTED_MD = re.compile(r"""(["'])([^"'\n]+?\.md)\1""")
 
 
 def sh(*args, cwd=REPO):
     try:
         r = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=10)
-        return r.stdout.strip() if r.returncode == 0 else f"(rc={r.returncode} {r.stderr.strip()[:120]})"
+        return r.stdout.rstrip("\n") if r.returncode == 0 else f"(rc={r.returncode} {r.stderr.strip()[:120]})"
     except Exception as e:  # noqa: BLE001
         return f"(err {e})"
 
@@ -56,6 +71,10 @@ def fenced(sec):
 
 def cap(s, n, tail=True):
     return s if len(s) <= n else (("…（前略）\n" + s[-n:]) if tail else (s[:n] + "\n…（後略）"))
+
+
+def text(p):
+    return p.read_text(encoding="utf-8", errors="replace")
 
 
 def rel(p):
@@ -91,6 +110,17 @@ def strings(x):
             yield from strings(v)
 
 
+def mentions(inp):
+    """工具呼叫輸入中的 .md 路徑字面（路徑鍵整值＋引號內整段＋斷詞）。"""
+    toks = set()
+    if isinstance(inp, dict):
+        toks.update(v for k in PATH_KEYS if isinstance(v := inp.get(k), str) and v.endswith(".md"))
+    for s in strings(inp):
+        toks.update(m.group(2) for m in RE_QUOTED_MD.finditer(s))
+        toks.update(RE_MD.findall(s))
+    return toks
+
+
 def session_files(data):
     """{glob: 本 session 主線工具呼叫輸入中出現過、且現存之檔（mtime 升冪）}；transcript 為證、sidechain 不計。"""
     globs = (LEDGER_GLOB, NOTES_GLOB)
@@ -111,11 +141,10 @@ def session_files(data):
                 for c in (d.get("message") or {}).get("content") or []:
                     if not (isinstance(c, dict) and c.get("type") == "tool_use"):
                         continue
-                    for s in strings(c.get("input")):
-                        for tok in RE_MD.findall(s):
-                            for g in globs:
-                                if fnmatch.fnmatch(os.path.basename(tok), g):
-                                    found[g].add(tok)
+                    for tok in mentions(c.get("input")):
+                        for g in globs:
+                            if fnmatch.fnmatch(os.path.basename(tok), g):
+                                found[g].add(tok)
     out = {}
     for g, toks in found.items():
         paths = {(Path(t) if os.path.isabs(t) else REPO / t).resolve() for t in toks}
@@ -210,7 +239,8 @@ def bg_tasks(data, hours=6):
 
 
 def context_tokens(tp):
-    """transcript 末筆主線 assistant 之 usage 總量（≈ 當下 context）；找不到回 None。"""
+    """transcript 末筆主線 assistant 之實 usage 總量（≈ 當下 context）；`<synthetic>`（API 錯誤、No response requested.）與零 usage 列
+    不算、續往前找；找不到回 None。"""
     if not tp or not os.path.isfile(tp):
         return None
     path = Path(tp)
@@ -227,25 +257,24 @@ def context_tokens(tp):
             except Exception:  # noqa: BLE001
                 continue
             m = d.get("message") if isinstance(d, dict) else None
-            if d.get("type") == "assistant" and isinstance(m, dict) and m.get("usage") and not d.get("isSidechain"):
+            if (d.get("type") == "assistant" and isinstance(m, dict) and m.get("usage") and not d.get("isSidechain")
+                    and m.get("model") != "<synthetic>"):
                 u = m["usage"]
-                return sum(u.get(k, 0) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
-                                                       "cache_read_input_tokens", "output_tokens"))
+                n = sum(u.get(k, 0) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
+                                                    "cache_read_input_tokens", "output_tokens"))
+                if n:
+                    return n
         if back >= size:
             break
     return None
 
 
-def main_context_too_small(data):
-    n = context_tokens(data.get("transcript_path"))
-    return n is not None and n < MAIN_FLOOR_RATIO * min(window() or MAIN_FLOOR_CAP, MAIN_FLOOR_CAP)
-
-
 def precompact(data):
     trig = data.get("trigger", "?")
-    if trig == "auto" and main_context_too_small(data):
-        return  # workflow agent 自身之壓縮（主線 context 遠低於任何可能的臂點）＝不注入
-    rules = RULES_MD.read_text(encoding="utf-8") if RULES_MD.is_file() else ""
+    try:
+        rules = text(RULES_MD)
+    except Exception:  # noqa: BLE001
+        rules = ""
     a, b = fenced(section(rules, "A.")), fenced(section(rules, "B."))
     parts = [f"【壓縮指示｜PreCompact hook 注入｜trigger={trig}｜{time.strftime('%Y-%m-%d %H:%M:%S')}】", SCOPE,
              "摘要一律 zh-TW，以下規則取代預設摘要格式。",
@@ -266,7 +295,7 @@ def precompact(data):
     notes = (files.get(NOTES_GLOB) or [None])[-1]
     if ledger:
         try:
-            t = ledger.read_text(encoding="utf-8")
+            t = text(ledger)
             parts.append(f"\n## 進度表摘錄（`{rel(ledger)}`；壓後以該檔為接手依據）")
             for pre, n in (("③", 3000), ("⑦", 5000), ("⑧", 4000)):
                 parts.append(cap(section(t, pre), n))
@@ -274,12 +303,15 @@ def precompact(data):
             parts.append(f"(進度表讀取失敗 {e})")
     else:
         parts.append("\n（本 session 尚未觸及任何 `*progress*.md` 進度表——摘要以對話為準。）")
-    fresh = notes is not None and time.time() - notes.stat().st_mtime < C_FRESH_SECS
-    if trig == "manual" and fresh:
-        parts.append(f"\n## §C（`{rel(notes)}`；手動觸發、30 分鐘內寫過＝附上）\n"
-                     + cap(section(notes.read_text(encoding="utf-8"), "C."), 15000, tail=False))
-    else:
-        parts.append("\n（§C 未附：非手動觸發、本 session 未觸及壓縮備忘檔、或逾 30 分鐘未更新——以對話與本快照為準、勿引用舊 §C。）")
+    try:
+        fresh = notes is not None and time.time() - notes.stat().st_mtime < C_FRESH_SECS
+        if trig == "manual" and fresh:
+            parts.append(f"\n## §C（`{rel(notes)}`；手動觸發、30 分鐘內寫過＝附上）\n"
+                         + cap(section(text(notes), "C."), 15000, tail=False))
+        else:
+            parts.append("\n（§C 未附：非手動觸發、本 session 未觸及壓縮備忘檔、或逾 30 分鐘未更新——以對話與本快照為準、勿引用舊 §C。）")
+    except Exception as e:  # noqa: BLE001
+        parts.append(f"\n(§C 讀取失敗 {e}——以對話與本快照為準)")
     if trig == "auto":
         parts.append("\n★本次為**自動觸發**（主線工作可能停在中段）：摘要末段寫明「壓完直接接續被打斷的那一步、不等 user」，"
                      "並列出下一個具體動作（命令級）與其前置檢查（六步序第幾步、在飛 run 勿重發射）。")
@@ -289,7 +321,7 @@ def precompact(data):
 
 
 def rehydrate(data):
-    parts = ["=== 壓縮後回灌（compact hook）==="]
+    parts = ["=== 壓縮後回灌（compact hook）===", SCOPE]
     try:
         files = session_files(data)
     except Exception as e:  # noqa: BLE001
@@ -309,7 +341,7 @@ def rehydrate(data):
             parts.append(f"[{title}] (失敗 {e})")
     if ledger:
         try:
-            parts.append(f"[進度表 `{rel(ledger)}` ⑧]\n" + cap(section(ledger.read_text(encoding="utf-8"), "⑧"), 3000))
+            parts.append(f"[進度表 `{rel(ledger)}` ⑧]\n" + cap(section(text(ledger), "⑧"), 3000))
         except Exception as e:  # noqa: BLE001
             parts.append(f"(進度表讀取失敗 {e})")
     else:
@@ -357,6 +389,10 @@ def remind(data):
 
 
 def main():
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
     mode = sys.argv[1] if len(sys.argv) > 1 else "precompact"
     try:
         raw = "" if sys.stdin.isatty() else sys.stdin.read()
@@ -370,7 +406,10 @@ def main():
     try:
         {"rehydrate": rehydrate, "remind": remind}.get(mode, precompact)(data)
     except Exception as e:  # noqa: BLE001
-        print(f"(compact-hook 失敗 {e}；以對話為準)")
+        try:
+            print(f"(compact-hook 失敗 {e}；以對話為準)")
+        except Exception:  # noqa: BLE001
+            pass
     sys.exit(0)
 
 
