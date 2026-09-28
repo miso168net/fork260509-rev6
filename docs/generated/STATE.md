@@ -16,7 +16,7 @@
 - RULES：79 條／上限 92（implementer 42/48、review 15/18、fix 17/19、主線 45/52、人 10/12）
 - BACKLOG 開放：22｜滯後：4
 - LESSONS：40 筆
-- events：95 筆（erratum 2、feature_close 5、misc 35、perf 46、review 7）
+- events：96 筆（erratum 2、feature_close 5、misc 35、perf 47、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 3916 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-29｜perf｜close_bookkeeping｜close_bookkeeping 14.59 秒 rc=0
 - 2026-09-29｜misc｜governance｜maint-backlog-126｜輕量軌 maint-backlog-126 收單（user 2026-09-29 令、主線直改）：context 自動壓縮機制入版控——compact-hoo…
 - 2026-09-29｜perf｜precommit_chain｜precommit_chain 43.63 秒 rc=0
-- 2026-09-29｜perf｜precommit_chain｜precommit_chain 69.32 秒 rc=0
