@@ -3,12 +3,13 @@ import inspect
 import json
 import os
 import re
-import subprocess
 import tempfile
 import unittest
 
 from docsync import common, events, EVENTS, ROOT
+from docsync.tests import tmprepo
 from docsync.tests.test_book_ids import stub
+from docsync.tests.tmprepo import git as _git
 
 
 def ev(**k):
@@ -16,13 +17,6 @@ def ev(**k):
 
 
 MISC = ev(type="misc", date="2026-09-03", summary="s", category="governance", backlog_add=[])
-
-
-def _git(cwd, *args):
-    return subprocess.run(
-        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", cwd, *args],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
 
 
 def make_repo():
@@ -153,38 +147,38 @@ class TestGt02(unittest.TestCase):
         return json.dumps(base)
 
     def test_empty_face_is_red(self):
-        c = common.Ctx(self.root)
+        c = tmprepo.Ctx(self.root)
         self.assertTrue(any(f[0] == "ERROR" and "空集合" in f[3] for f in events.gt_02(c)))
 
     def test_true_sha_green_fake_sha_red(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + self._fc() + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_02(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
         write(self.root, "docs/ops/events.jsonl", self._fc(merge="d" * 40) + "\n")
-        self.assertTrue(any("merge" in f[3] and "實證" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("merge" in f[3] and "實證" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
         write(self.root, "docs/ops/events.jsonl", self._fc(pins={"web": "e" * 40, "api": self.subs["api"]}) + "\n")
-        self.assertTrue(any("pins.web" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("pins.web" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_window_must_be_ordinal(self):
         write(self.root, "docs/ops/events.jsonl", self._fc(window=1) + "\n" + self._fc(feature="002-y", merge=self.sha2, window=3) + "\n")
-        self.assertTrue(any("window" in f[3] and "2" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("window" in f[3] and "2" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_erratum_corrects_target(self):
         bad = self._fc(merge="d" * 40)
         err = ev(type="erratum", date="2026-09-03", target_line=1, field="merge", corrected=self.sha1, reason="短 SHA 誤植")
         write(self.root, "docs/ops/events.jsonl", bad + "\n" + err + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_02(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
         err2 = ev(type="erratum", date="2026-09-03", target_line=9, field="merge", corrected=self.sha1, reason="r")
         write(self.root, "docs/ops/events.jsonl", bad + "\n" + err2 + "\n")
-        self.assertTrue(any("target_line" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("target_line" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_erratum_probe_backfills_review_only(self):
         """ADR-00021：probe 型 erratum 補 review 事件缺席之 probe 欄（000-r1 回填形）＝綠；指向 misc＝紅指名。"""
         rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
         p = dict(questions=3, found=2, detour=1, not_found=0, wrong=0, avg_min_hops=2.0)
         write(self.root, "docs/ops/events.jsonl", rv + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="回填") + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_02(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="錯型") + "\n")
-        self.assertTrue(any("probe" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("probe" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_append_only_vs_head(self):
         """BL-00035②：events.jsonl 自稱 append 型單一事實源，既有列卻可被靜默改寫＝erratum 機制
@@ -195,7 +189,7 @@ class TestGt02(unittest.TestCase):
         write(self.root, rel, MISC + "\n" + fc + "\n")
         _git(self.root, "add", rel)
         _git(self.root, "commit", "-qm", "events")
-        only = lambda: [f for f in events.gt_02(common.Ctx(self.root)) if "append-only" in f[3]]
+        only = lambda: [f for f in events.gt_02(tmprepo.Ctx(self.root)) if "append-only" in f[3]]
         later = ev(type="misc", date="2026-09-04", summary="t", category="governance", backlog_add=[])
         write(self.root, rel, MISC + "\n" + fc + "\n" + later + "\n")
         self.assertEqual(only(), [])                                   # 案1 尾端 append＝綠
@@ -219,7 +213,7 @@ class TestGt02(unittest.TestCase):
         with open(os.path.join(sub, "f"), "a") as f:
             f.write("y\n")
         _git(sub, "commit", "-qam", "drift")
-        self.assertTrue(any("pin" in f[3] and "base-web" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("pin" in f[3] and "base-web" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
 
 class TestGt03(unittest.TestCase):
@@ -235,22 +229,22 @@ class TestGt03(unittest.TestCase):
 
     def test_error_when_no_close_events(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertTrue(any(f[0] == "ERROR" and "掃描面空集合" in f[3] for f in fs))
 
     def test_close_completeness(self):
         write(self.root, "docs/ops/events.jsonl", self._fc() + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertTrue(any("spec.md" in f[3] for f in fs) and any("ADR-00001" in f[3] for f in fs))
         write(self.root, "specs/001-x/spec.md", "# spec\n")
         write(self.root, "docs/arc42/decisions/ADR-00001-x.md", "---\nid: \"ADR-00001\"\n---\n")
-        self.assertEqual([f for f in events.gt_03(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_03(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
 
     def test_review_report_and_wontfix_adr(self):
         rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-s.md",
                 findings={"total": 1, "fixed": 0, "to_backlog": [], "wontfix_adr": ["ADR-00002"]})
         write(self.root, "docs/ops/events.jsonl", rv + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertTrue(any("report" in f[3] for f in fs) and any("ADR-00002" in f[3] for f in fs))
 
 
@@ -263,13 +257,13 @@ class TestGt03(unittest.TestCase):
         bad = ev(type="misc", date="2026-09-04", summary="長" * (events.SUMMARY_CHAR_LIMIT + 1),
                  category="governance", backlog_add=[])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + bad + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertEqual(len(fs), 1, fs)
         self.assertEqual(fs[0][0], "ERROR")
         self.assertIn("下游判讀中止", fs[0][3])
         self.assertTrue(fs[0][2].endswith(":2"), fs[0][2])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
-        self.assertFalse(any("下游判讀中止" in f[3] for f in events.gt_03(common.Ctx(self.root))))
+        self.assertFalse(any("下游判讀中止" in f[3] for f in events.gt_03(tmprepo.Ctx(self.root))))
 
 
 class TestNotesGt06Guard(unittest.TestCase):

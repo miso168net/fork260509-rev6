@@ -1,13 +1,13 @@
 """守 RL-0050／RL-0046：配號取 next 後 bump、唯一、單調、永不回收；前代編號一律帶 rev5:／rev4: 前綴、裸刀號禁。
 
 book.py（一）：GT-05 ID 家族（BL／LL／RL 三帳＋ADR 檔名）、現在式面跨代裸編號（提及豁免、rev6 刀集豁免）、ID 引用存在性與書寫形兩腿、兩子庫碼面掃描。
-（二）GT-06／GT-11／errata 與（三）GT-10 隨後續 Task 併入本檔。
+（二）GT-06 引用健康／GT-11 bash 面／errata；（三）GT-10 文件形制。
 """
 import os
 import re
 
 from . import BACKLOG, BACKLOG_DEFERRED, LESSONS_INDEX, LESSONS_DIR, RULES, ADR_DIR, EVENTS, NOTES, SUBMODULES, CONSTITUTION, COMPOSE_FILES
-from .common import ERROR, WARN, SKIP, GitError, finding, head_fail_msg
+from .common import ERROR, SKIP, GitError, finding, head_fail_msg
 
 ID_FAMILIES = {"BL": (BACKLOG, [BACKLOG_DEFERRED]), "LL": (LESSONS_INDEX, [LESSONS_DIR]), "RL": (RULES, [])}
 RE_NEXT_ID = re.compile(r"<!--\s*next:\s*(BL|LL|RL)-(\d{4,5})\s*-->")
@@ -296,7 +296,7 @@ def _sub_judge(content, knives):
 def gt_05(ctx):
     """GATE:
       id=GT-05
-      rule=RL-0050
+      rule=RL-0050、RL-0046
       source=rev5:ADR 0012
       drift=配號唯一單調、跨代裸編號、ID 引用存在性與書寫形
       face=docs/ops 三帳＋現在式面＋兩子庫 pin 樹＋ID 引用面（現在式面之 *.md〔含憲法〕 ∪ tools/**、去生成鏡像與 vendored、ADR body 存量豁免）
@@ -407,8 +407,16 @@ RE_WRAP_HEAD = re.compile(r"^[\s#>*/!<`-]*([A-Za-z0-9_][A-Za-z0-9_./-]*)")
 RE_SPEC_DIR_DANGLING = re.compile(r"specs/\d{3}-[a-z0-9-]+/(?:contracts/)?\s*$")
 SPEC_CONTRACT_EXEMPT_DIR = "docs/ops/reference-src/"
 SPEC_CONTRACT_EXEMPT_PREFIX = "> 凍結存證＝"
-TENSE_ERR = ("待決", "TBD", "⏳", "已完成", "下一步")
-TENSE_WARN = ("屆時", "日後", "將由")
+# 活書家族時態禁詞（RL-0015／RL-0048）：同義集單一家、一律 ERROR——RL-0015 carrier=lint、無 ADR 定 WARN 分級。
+# 「隨…進場」形：間隔有界（≤25 字；全 repo 實掃校準＝真命中最長 25、跨子句誤併最短 29）、不跨句讀標點（。，、；！？與半形 ,;!?——半形句點不當界：節號如 §I.7 含之）
+# 與表格欄界（|／｜）。★「：」刻意不當界：ADR-00006 決定 1 之值形 `隨刀：<…>` 正以之分隔，當界即讓正文同形漏網。
+RE_TENSE_ENTER = re.compile(r"隨[^。，、；！？,;!?|｜\n]{0,25}?進場")
+TENSE_FORMS = tuple(re.compile(re.escape(w)) for w in ("待決", "TBD", "⏳", "已完成", "下一步", "屆時", "日後", "將由", "尚無")) + (RE_TENSE_ENTER,)
+# ADR-00006 決定 1 值形豁免（權威鏈 ADR accepted ＞ RULES；非 Day-1 豁免、不入 DAY1_EXEMPTIONS）：活書 frontmatter
+# `rev5_blueprint:` 子鍵之值以「隨刀：」起頭者（`隨刀：<刀類或憲法 §I.7 島>`＝該決定所定去處值形），只免該值內「隨…進場」形；
+# 同行他詞、鍵字面、其他 frontmatter 欄與正文照判。
+BLUEPRINT_KEY = "rev5_blueprint"
+BLUEPRINT_FOLLOW = "隨刀："
 RE_SHEBANG_SH = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:/bin/|/usr/bin/)?(?:ba)?sh\b")
 SHEBANG_OK = ("#!/usr/bin/env bash", "#!/bin/sh", "#!/usr/bin/env sh", "#!/bin/bash")
 RE_GLUE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]")
@@ -417,6 +425,26 @@ RE_GLUE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]")
 def strip_code(text):
     """剝除 fenced code（保留行數）與行內程式碼——連結／行號／路徑腿不看程式碼內文字（提及原則）。"""
     return INLINE.sub("", FENCE.sub(lambda m: "\n" * m.group(0).count("\n"), text or ""))
+
+
+def _blueprint_follow_cols(lines):
+    """行清單（gt_06 所掃之 strip_code 後逐行）→ {行號（1 起）: 「隨刀：」值起始欄}：只收 frontmatter 內 `rev5_blueprint:`
+    子鍵、值（可帶引號）以「隨刀：」起頭者。子鍵口徑比照 common.parse_front_matter——頂層鍵行不縮排且值空＝巢狀對映起點、
+    子鍵行兩空格縮排且含半形冒號、以首個半形冒號切鍵值、首個不合形之行即結束該對映；無閉合 `---`＝無 frontmatter。"""
+    if not lines or lines[0] != "---" or "---" not in lines[1:]:
+        return {}
+    out, in_bp = {}, False
+    for i, line in enumerate(lines[1:lines.index("---", 1)], 2):
+        if in_bp and line.startswith("  ") and ":" in line:
+            col = line.index(":") + 1
+            col += len(line[col:]) - len(line[col:].lstrip(" "))
+            col += line[col:col + 1] in ("\"", "'")
+            if line.startswith(BLUEPRINT_FOLLOW, col):
+                out[i] = col
+            continue
+        key, sep, val = line.partition(":")
+        in_bp = bool(sep) and not line.startswith(" ") and key.strip() == BLUEPRINT_KEY and not val.strip()
+    return out
 
 
 def _forbidden_refs(ctx):
@@ -476,7 +504,7 @@ def _forbidden_refs(ctx):
 def gt_06(ctx):
     """GATE:
       id=GT-06
-      rule=RL-0048
+      rule=RL-0048、RL-0015、RL-0077
       source=rev5:ADR 0012
       drift=引用斷鏈、時態混入、tmp 具名路徑、spec 契約檔引用
       face=tracked *.md；活書家族；現在式面全副檔名（tmp 腿與 spec 契約腿）
@@ -495,7 +523,9 @@ def gt_06(ctx):
         base = os.path.dirname(rel)
         book = is_book(rel)
         book_seen = book_seen or book
-        for i, line in enumerate(strip_code(text).split("\n"), 1):
+        lines = strip_code(text).split("\n")
+        follow = _blueprint_follow_cols(lines) if book else {}
+        for i, line in enumerate(lines, 1):
             where = f"{rel}:{i}"
             for m in LINK.finditer(line):
                 t = m.group(1)
@@ -511,12 +541,13 @@ def gt_06(ctx):
             for m in RE_HOME.finditer(line):
                 out.append(finding(ERROR, "GT-06", where, f"per-machine 路徑「{m.group(0)}」——repo 文件不引用本機 .claude 路徑"))
             if book:
-                for w in TENSE_ERR:
-                    if w in line:
-                        out.append(finding(ERROR, "GT-06", where, f"活書家族時態禁詞「{w}」（未來式住 ops、過去式住 git＋events）"))
-                for w in TENSE_WARN:
-                    if w in line:
-                        out.append(finding(WARN, "GT-06", where, f"活書家族預告詞「{w}」——預告必標成預告並附回填義務"))
+                for rx in TENSE_FORMS:
+                    for m in rx.finditer(line):
+                        if rx is RE_TENSE_ENTER and m.start() >= follow.get(i, len(line) + 1):
+                            continue   # ADR-00006 決定 1 值形豁免（依據見 BLUEPRINT_KEY 上方註解）
+                        out.append(finding(ERROR, "GT-06", where, f"活書家族時態禁詞「{m.group(0)}」（RL-0015；活書家族零未來式、未來式住 ops、"
+                                                                  "過去式住 git＋events）——補救＝改寫為現在式（以 as-built 為準、無實體寫「目前無」附理由），"
+                                                                  "未來義務移 ops（BACKLOG／NOTES）"))
     out += _forbidden_refs(ctx)
     if not book_seen:
         out.append(finding(ERROR, "GT-06", "docs/arc42", "活書家族缺席（現在式面必在；RL-0051 掃描面空集合即紅）——連結／行號／路徑腿照跑"))
@@ -686,7 +717,7 @@ def _mermaid_nodes(text):
 def gt_10(ctx):
     """GATE:
       id=GT-10
-      rule=RL-0035
+      rule=RL-0035、RL-0041
       source=ADR-00004
       drift=佔位與樣板文、子項名冊（鍵集＋值↔標題）、圖表對賬
       face=BOOK_FACE（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process）

@@ -1,10 +1,10 @@
 """語料面：GT-06 引用健康（連結／行號／deep-link／per-machine 路徑／活書時態）、GT-11 bash 面、errata。"""
 import os
-import subprocess
 import tempfile
 import unittest
 
-from docsync import book, common, RULES
+from docsync import book, RULES, ROOT
+from docsync.tests import tmprepo
 from docsync.tests.test_book_ids import stub, errs
 
 
@@ -38,7 +38,8 @@ class TestGt06(unittest.TestCase):
 
     def test_tense_only_on_book_face(self):
         fs = self._run({BOOK: "# 1\n\n下一步再說；日後補。\n"})
-        self.assertTrue(any("下一步" in f[3] for f in errs(fs)) and any("日後" in f[3] for f in warns(fs)))
+        self.assertTrue(any("下一步" in f[3] for f in errs(fs)) and any("日後" in f[3] for f in errs(fs)))
+        self.assertEqual(warns(fs), [])   # BL-00036③：時態不留 WARN 分級（RL-0015 carrier=lint）
         self.assertEqual(errs(self._run({"docs/brainstorms/x.md": "下一步\n", "docs/ops/NOTES.md": "下一步\n"})), [])
         self.assertEqual(errs(self._run({"docs/arc42/decisions/ADR-00001-x.md": "下一步\n"})), [])
 
@@ -105,21 +106,21 @@ class TestGt11(unittest.TestCase):
 class TestErrata(unittest.TestCase):
     def test_outer_and_submodule_hits(self):
         root = tempfile.mkdtemp()
-        subprocess.run(["git", "init", "-q", "-b", "main", root], check=True)
+        tmprepo.git(root, "init", "-q", "-b", "main")
         with open(os.path.join(root, "a.md"), "w", encoding="utf-8") as f:
             f.write("第一行\n含 Foo 的行\n")
-        subprocess.run(["git", "-C", root, "add", "a.md"], check=True)
+        tmprepo.git(root, "add", "a.md")
         sub = os.path.join(root, "base-web")
         os.makedirs(sub)
-        subprocess.run(["git", "init", "-q", "-b", "main", sub], check=True)
+        tmprepo.git(sub, "init", "-q", "-b", "main")
         with open(os.path.join(sub, "s.ts"), "w", encoding="utf-8") as f:
             f.write("// foo here\n")
-        subprocess.run(["git", "-C", sub, "add", "s.ts"], check=True)
-        subprocess.run(["git", "-C", sub, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], check=True)
-        hits = book.errata_scan(common.Ctx(root), "foo")
+        tmprepo.git(sub, "add", "s.ts")
+        tmprepo.git(sub, "commit", "-qm", "x")
+        hits = book.errata_scan(tmprepo.Ctx(root), "foo")
         self.assertIn(("a.md", 2, "含 Foo 的行"), hits)
         self.assertTrue(any(h[0] == "base-web/s.ts" and h[1] == 1 for h in hits))
-        self.assertEqual(book.errata_scan(common.Ctx(root), "zzz"), [])
+        self.assertEqual(book.errata_scan(tmprepo.Ctx(root), "zzz"), [])
 
 
 if __name__ == "__main__":
@@ -195,4 +196,88 @@ class TestGt06WrappedContractRef(unittest.TestCase):
         self.assertEqual(errs(self._run({"docs/ops/a.md": "凍結存證住 `specs/004-ip-trust-anchor/`\n",
                                          "docs/ops/b.md": "見 specs/004-ip-trust-anchor/spec.md\n",
                                          "docs/ops/reference-src/x.md": "> 凍結存證＝specs/001-a/contracts/\n"})), [])
+
+
+
+TENSE = "時態禁詞"   # 時態腿全部訊息共有的字面
+BOOK6 = "docs/arc42/06-runtime-view.md"
+
+
+def _bp(key, val, top="rev5_blueprint"):
+    """活書 frontmatter 樁：`<top>:` 一層巢狀對映、單一子鍵（ADR-00006 決定 1 之 rev5_blueprint 形）。"""
+    return f"---\nsection: 6\n{top}:\n  {key}: {val}\n---\n# 6\n\n目前無。\n"
+
+
+class TestGt06Tense(unittest.TestCase):
+    """RL-0015 承載（BL-00036③）：活書家族未來式同義集——待決／TBD／⏳／已完成／下一步＋屆時／日後／將由＋「隨…進場」與「尚無」——
+    詞表單一家、一律 ERROR（RL-0015 carrier=lint、無 ADR 定 WARN）；提及形口徑＝現行 `strip_code`（程式碼剝除、「」不剝）。
+    唯一豁免＝ADR-00006 決定 1 之值形：活書 frontmatter `rev5_blueprint:` 子鍵中以「隨刀：」起頭之值，只免該值內「隨…進場」形。"""
+
+    def _run(self, text, rel=BOOK):
+        return book.gt_06(stub({rel: text}))
+
+    def tense(self, fs):
+        return [f for f in fs if TENSE in f[3]]
+
+    def test_all_synonyms_are_error_without_warn_tier(self):
+        """反：兩新形與三舊預告詞各一行→逐行 ERROR（訊息引 RL-0015、附補救）、零 WARN；詞表不再分 WARN 級。"""
+        fs = self._run("# 1\n\n甲隨各域刀進場。\n乙系統層尚無實例。\n丙屆時補。\n丁日後補。\n戊將由某刀補。\n")
+        tense = self.tense(fs)
+        self.assertEqual(sorted(f[2] for f in tense), [f"{BOOK}:{i}" for i in (3, 4, 5, 6, 7)], tense)
+        self.assertTrue(all(f[0] == "ERROR" and "RL-0015" in f[3] and "補救" in f[3] for f in tense), tense)
+        self.assertEqual(warns(fs), [])
+        self.assertFalse(hasattr(book, "TENSE_WARN"))
+
+    def test_present_tense_and_code_mentions_are_green(self):
+        """正：現在式、行內程式碼與 fenced 內之同義詞（提及形）不判；「隨…、…進場」跨句讀標點不成形。"""
+        text = ("# 1\n\n目前無實例（理由：系統本體無此元件）。\n見 `隨刀進場`、`尚無` 與 `日後` 三形。\n"
+                "```\n隨各域刀進場；尚無；屆時\n```\n隨機抽樣、進場檢查分屬兩事。\n")
+        self.assertEqual(self.tense(self._run(text)), [])
+
+    def test_follow_form_is_bounded_and_stops_at_clause_punctuation(self):
+        """「隨…進場」間隔上界 25 字（全 repo 實掃：真命中最長 25、跨子句誤併最短 29）、不跨句讀標點與表格欄界；
+        「：」刻意不當界——ADR-00006 值形 `隨刀：<…>` 以之分隔，當界即讓正文同形漏網。"""
+        self.assertEqual(len(self.tense(self._run("# 1\n\n隨" + "甲" * 25 + "進場\n"))), 1)
+        self.assertEqual(self.tense(self._run("# 1\n\n隨" + "甲" * 26 + "進場\n")), [])
+        for sep in "。，、；！？,;!?|｜":
+            self.assertEqual(self.tense(self._run(f"# 1\n\n隨島{sep}另案進場\n")), [], sep)
+        self.assertEqual(len(self.tense(self._run("# 1\n\n隨刀：憲法 §I.7 島 X 進場刀\n"))), 1)
+
+    def test_adr00006_follow_value_exempts_only_its_follow_form(self):
+        """正：rev5_blueprint 子鍵值以「隨刀：」起頭（含引號值）→ 該值內「隨…進場」免判；
+        反：同值他詞（尚無）照判、只指該詞；鍵字面內之「隨…進場」照判。"""
+        self.assertEqual(self.tense(self._run(_bp("使用者域斷權", "隨刀：憲法 §I.7 島 I 進場刀（使用者域）"))), [])
+        self.assertEqual(self.tense(self._run(_bp("k", '"隨刀：憲法 §I.7 島 I 進場刀"'))), [])
+        fs = self.tense(self._run(_bp("k", "隨刀：島 I 進場刀；尚無內容")))
+        self.assertTrue(len(fs) == 1 and "「尚無」" in fs[0][3] and fs[0][2] == f"{BOOK}:4", fs)
+        fs = self.tense(self._run(_bp("隨島進場之節", "隨刀：島 I 進場刀")))
+        self.assertTrue(len(fs) == 1 and "「隨島進場」" in fs[0][3], fs)
+
+    def test_other_frontmatter_and_body_are_judged(self):
+        """反：非「隨刀：」起頭之 rev5_blueprint 值、非 rev5_blueprint 之欄（含他巢狀對映）同值形、正文同形——逐一照判。"""
+        for text in (_bp("§6", "承襲（方針段）；情境隨島進場"),
+                     _bp("§3", "不承襲：rev5 空節（該節自述尚無內容）"),
+                     "---\nsection: 6\nsummary: 隨刀：島 I 進場刀\n---\n# 6\n",
+                     _bp("k", "隨刀：島 I 進場刀", top="other"),
+                     "---\nsection: 6\n---\n# 6\n\n  k: 隨刀：島 I 進場刀\n"):
+            self.assertEqual(len(self.tense(self._run(text))), 1, text)
+
+    def test_follow_value_exemption_is_bounded_to_frontmatter(self):
+        """反：豁免只在 frontmatter 界內（檔首 `---` 起、首個閉合 `---` 止）——界外即使帶完整 `rev5_blueprint:` 鍵行＋
+        「隨刀：」子行也照判。①frontmatter 閉合後的正文 ②檔首非 `---`（無 frontmatter）、後文水平線 `---` 之前——各恰 1 筆、指該子行。
+        ★判準變異：拿掉 frontmatter 界（逐行掃全檔）→①②皆轉紅；只拿掉「檔首須為 `---`」→②轉紅。"""
+        for text, line in (("---\nsection: 6\n---\n# 6\n\nrev5_blueprint:\n  k: 隨刀：島 I 進場刀\n", 7),
+                           ("# 6\n\nrev5_blueprint:\n  k: 隨刀：島 I 進場刀\n\n---\n", 4)):
+            fs = self.tense(self._run(text))
+            self.assertEqual([f[2] for f in fs], [f"{BOOK}:{line}"], text)
+
+    def test_real_book_face_zero_hits_and_exemption_has_real_instance(self):
+        """真 repo：活書家族時態零命中；豁免的受守面有實例（RL-0067：06 節檔之 `隨刀：` 值確有「隨…進場」被免）。"""
+        from docsync.tests.test_gates import real_lint
+        fs, _ = real_lint()
+        self.assertEqual([f for f in fs if TENSE in f[3]], [])
+        with open(os.path.join(ROOT, BOOK6), encoding="utf-8") as fh:
+            lines = book.strip_code(fh.read()).split("\n")
+        cols = book._blueprint_follow_cols(lines)
+        self.assertTrue(any(book.RE_TENSE_ENTER.search(lines[i - 1], c) for i, c in cols.items()), cols)
 

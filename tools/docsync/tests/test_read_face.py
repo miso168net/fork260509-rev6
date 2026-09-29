@@ -1,27 +1,14 @@
 """語料面：閘取值口徑（ADR-00052）——HEAD 版讀取口徑（決定 2／3）與「工作樹＝暫存區」一致性腿（決定 1）。
 
-★本檔的臨時 repo 一律在剝掉 `GIT_*` 的環境下跑：pre-commit 期間 git 匯出 `GIT_INDEX_FILE`，`commit -a`／部分 commit
-時其值為外層 lock index 的絕對路徑——不剝即對外層 index 讀寫（LL-00012 同源）。"""
+★本檔的臨時 repo 一律經 `tmprepo` 建立與讀取：其 git 在剝掉 `GIT_*` 的環境下跑——pre-commit 期間 git 匯出 `GIT_INDEX_FILE`，
+`commit -a`／部分 commit 時其值為外層 lock index 的絕對路徑，不剝即對外層 index 讀寫（LL-00012 同源；機制與自證見 `tmprepo`／`test_tmprepo`）。"""
 import os
 import shutil
-import subprocess
-import tempfile
 import unittest
-import unittest.mock
 
 from docsync import adr, book, common, events, gates, ADR_DIR, BACKLOG, EVENTS
-
-
-def _git(cwd, *args):
-    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", cwd, *args],
-                          check=True, capture_output=True, text=True).stdout.strip()
-
-
-def _write(root, rel, text):
-    p = os.path.join(root, rel)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w", encoding="utf-8") as f:
-        f.write(text)
+from docsync.tests import tmprepo
+from docsync.tests.tmprepo import git as _git, write as _write
 
 
 def _drop_blob(root, rel):
@@ -30,26 +17,11 @@ def _drop_blob(root, rel):
     os.remove(os.path.join(root, ".git", "objects", sha[:2], sha[2:]))
 
 
-class _CleanGit(unittest.TestCase):
-    def setUp(self):
-        env = unittest.mock.patch.dict(os.environ)
-        env.start()
-        self.addCleanup(env.stop)
-        for k in [k for k in os.environ if k.startswith("GIT_")]:
-            del os.environ[k]
-
+class _TmpRepoCase(unittest.TestCase):
     def repo(self, files, commit=True):
-        """臨時 repo：files 全數 add；commit=False＝HEAD 未誕生（暫存區非空）。
-        core.quotePath 釘回 git 預設 true：機器全域若設 false，不帶 -z 的輸出也不轉義非 ASCII，-z 切分守門案即失去牙齒。"""
-        root = tempfile.mkdtemp()
+        """臨時 repo（`tmprepo.make_repo`、含 core.quotePath 釘值）＋測後清除；commit=False＝HEAD 未誕生（暫存區非空）。"""
+        root = tmprepo.make_repo(files, commit=commit)
         self.addCleanup(shutil.rmtree, root, True)
-        _git(root, "init", "-q", "-b", "main")
-        _git(root, "config", "core.quotePath", "true")
-        for rel, text in files.items():
-            _write(root, rel, text)
-        _git(root, "add", "-A")
-        if commit:
-            _git(root, "commit", "-qm", "x")
         return root
 
 
@@ -59,11 +31,11 @@ ADR_TEXT = ('---\nid: "ADR-00001"\ntitle: t\ndate: 2026-09-29\nstatus: accepted\
 READ_FAIL = "HEAD 版讀取失敗"
 
 
-class TestHeadText(_CleanGit):
+class TestHeadText(_TmpRepoCase):
     """決定 2：HEAD 未誕生或路徑不在 HEAD 樹＝None（新檔、比對面空）；在樹卻讀不到＝GitError（fail-loud）。"""
 
     def test_unborn_head_is_none(self):
-        ctx = common.Ctx(self.repo({"a.md": "A\n"}, commit=False))
+        ctx = tmprepo.Ctx(self.repo({"a.md": "A\n"}, commit=False))
         self.assertIsNone(ctx.head_text("a.md"))
         self.assertEqual(ctx.head_paths(), frozenset())
 
@@ -71,7 +43,7 @@ class TestHeadText(_CleanGit):
         root = self.repo({"a.md": "A\n"})
         _write(root, "b.md", "B\n")
         _git(root, "add", "b.md")
-        ctx = common.Ctx(root)
+        ctx = tmprepo.Ctx(root)
         self.assertIsNone(ctx.head_text("b.md"))
         self.assertEqual(ctx.head_text("a.md"), "A\n")
         self.assertEqual(ctx.head_paths(), frozenset({"a.md"}))
@@ -81,7 +53,7 @@ class TestHeadText(_CleanGit):
     def test_non_ascii_and_space_paths_listed_verbatim(self):
         """HEAD 樹清單以 -z 切分、路徑原樣入集。不帶 -z 時 ls-tree 把非 ASCII 路徑轉義成 `"\\344…"` 字面——
         「路徑在 HEAD」恆判否、head_text 回 None＝被當新檔靜默放行（決定 2 要消滅的與通過同形）。"""
-        ctx = common.Ctx(self.repo(self.ODD_PATHS))
+        ctx = tmprepo.Ctx(self.repo(self.ODD_PATHS))
         self.assertEqual(ctx.head_paths(), frozenset(self.ODD_PATHS))
         for rel, text in self.ODD_PATHS.items():
             self.assertEqual(ctx.head_text(rel), text, rel)
@@ -90,7 +62,7 @@ class TestHeadText(_CleanGit):
         root = self.repo({"a.md": "A\n"})
         _drop_blob(root, "a.md")
         with self.assertRaises(common.GitError) as cm:
-            common.Ctx(root).head_text("a.md")
+            tmprepo.Ctx(root).head_text("a.md")
         self.assertIn("a.md", str(cm.exception))
 
     def test_head_tree_listing_failure_is_not_unborn(self):
@@ -99,48 +71,48 @@ class TestHeadText(_CleanGit):
         with open(os.path.join(root, ".git", "refs", "heads", "main"), "w") as f:
             f.write("0" * 39 + "1\n")
         with self.assertRaises(common.GitError):
-            common.Ctx(root).head_text("a.md")
+            tmprepo.Ctx(root).head_text("a.md")
 
 
-class TestHeadReadCallSites(_CleanGit):
+class TestHeadReadCallSites(_TmpRepoCase):
     """決定 3 射程：HEAD 版讀取失敗一律轉該閘 ERROR finding（指名檔＋錯誤摘要），不得靜默放行、不得 traceback；
     HEAD 缺席（新檔）照常通過、不印 SKIP。"""
 
     def test_gt02_append_only_unreadable_head_is_error(self):
         root = self.repo({EVENTS: "{}\n"})
         _drop_blob(root, EVENTS)
-        fs = events._append_only_leg(common.Ctx(root), "{}\n{}\n")
+        fs = events._append_only_leg(tmprepo.Ctx(root), "{}\n{}\n")
         self.assertEqual([f[:3] for f in fs], [("ERROR", "GT-02", EVENTS)], fs)
         self.assertIn(READ_FAIL, fs[0][3])
 
     def test_gt02_append_only_new_file_passes_without_skip(self):
-        self.assertEqual(events._append_only_leg(common.Ctx(self.repo({"a.md": "A\n"})), "{}\n"), [])
-        self.assertEqual(events._append_only_leg(common.Ctx(self.repo({EVENTS: "{}\n"}, commit=False)), "{}\n"), [])
+        self.assertEqual(events._append_only_leg(tmprepo.Ctx(self.repo({"a.md": "A\n"})), "{}\n"), [])
+        self.assertEqual(events._append_only_leg(tmprepo.Ctx(self.repo({EVENTS: "{}\n"}, commit=False)), "{}\n"), [])
 
     def test_gt04_unreadable_head_is_error_naming_file(self):
         root = self.repo({ADR_REL: ADR_TEXT})
         _drop_blob(root, ADR_REL)
         _write(root, ADR_REL, ADR_TEXT.replace("原文", "改寫"))   # 與 HEAD 相同者以工作樹代之、不讀 HEAD 版——須改動才進讀取面
-        fs = [f for f in adr.gt_04(common.Ctx(root)) if f[0] == "ERROR" and READ_FAIL in f[3]]
+        fs = [f for f in adr.gt_04(tmprepo.Ctx(root)) if f[0] == "ERROR" and READ_FAIL in f[3]]
         self.assertEqual(len(fs), 1, fs)
         self.assertIn("ADR-00001-x.md", fs[0][3])
 
     def test_gt04_unborn_head_is_empty_face(self):
         root = self.repo({ADR_REL: ADR_TEXT}, commit=False)
-        self.assertEqual(adr._files(common.Ctx(root), head=True), {})
-        self.assertEqual([f for f in adr.gt_04(common.Ctx(root)) if f[0] != "WARN"], [])
+        self.assertEqual(adr._files(tmprepo.Ctx(root), head=True), {})
+        self.assertEqual([f for f in adr.gt_04(tmprepo.Ctx(root)) if f[0] != "WARN"], [])
 
     def test_gt05_next_id_head_unreadable_is_error(self):
         root = self.repo({BACKLOG: "<!-- next: BL-00002 -->\n- BL-00001｜a\n"})
         _drop_blob(root, BACKLOG)
-        fs = [f for f in book.gt_05(common.Ctx(root)) if READ_FAIL in f[3]]
+        fs = [f for f in book.gt_05(tmprepo.Ctx(root)) if READ_FAIL in f[3]]
         self.assertEqual([f[:3] for f in fs], [("ERROR", "GT-05", BACKLOG)], fs)
 
     def test_gt05_next_id_head_absent_passes(self):
         """BACKLOG 不在 HEAD（首次建帳）＝單調腿無基準、正常通過。"""
         root = self.repo({"a.md": "A\n"})
         _write(root, BACKLOG, "<!-- next: BL-00002 -->\n- BL-00001｜a\n")
-        fs = book.gt_05(common.Ctx(root))
+        fs = book.gt_05(tmprepo.Ctx(root))
         self.assertEqual([f for f in fs if READ_FAIL in f[3] or "單調" in f[3] or "回收" in f[3]], [])
 
     FROZEN_TEXT = "引用 RL-9999。\n縮寫 ADR-00022／00023。\n"
@@ -149,24 +121,24 @@ class TestHeadReadCallSites(_CleanGit):
         """兩處「該行逐字在 HEAD」存量豁免：HEAD 版讀不到＝豁免基準不明——指名 ERROR，命中照「HEAD 無檔＝全報」。"""
         root = self.repo({ADR_REL: self.FROZEN_TEXT})
         _drop_blob(root, ADR_REL)
-        ctx = common.Ctx(root)
+        ctx = tmprepo.Ctx(root)
         for leg in (book._id_reference_legs, book._id_form_legs):
             fs = leg(ctx)
             self.assertEqual([f[:3] for f in fs if READ_FAIL in f[3]], [("ERROR", "GT-05", ADR_REL)], (leg.__name__, fs))
             self.assertTrue([f for f in fs if READ_FAIL not in f[3]], (leg.__name__, fs))
 
     def test_gt05_frozen_exemption_readable_head_exempts_verbatim_lines(self):
-        ctx = common.Ctx(self.repo({ADR_REL: self.FROZEN_TEXT}))
+        ctx = tmprepo.Ctx(self.repo({ADR_REL: self.FROZEN_TEXT}))
         self.assertEqual(book._id_reference_legs(ctx), [])
         self.assertEqual(book._id_form_legs(ctx), [])
 
 
-class TestIndexConsistencyLeg(_CleanGit):
+class TestIndexConsistencyLeg(_TmpRepoCase):
     """決定 1（掛 GT-12）：暫存區≠HEAD（有 commit 在準備）時，外層 tracked 檔工作樹≠暫存區（gitlink 除外）與
     未追蹤未 ignore 檔逐檔 ERROR；暫存區＝HEAD 時整腿不跑（手動 lint 不誤報）；git 失敗＝ERROR。"""
 
     def leg(self, root_or_ctx):
-        ctx = root_or_ctx if isinstance(root_or_ctx, common.Ctx) else common.Ctx(root_or_ctx)
+        ctx = root_or_ctx if isinstance(root_or_ctx, common.Ctx) else tmprepo.Ctx(root_or_ctx)
         return gates._index_consistency_leg(ctx)
 
     def test_index_equals_head_does_not_run(self):
@@ -255,7 +227,7 @@ class TestIndexConsistencyLeg(_CleanGit):
         root = self.repo({"a.md": "A\n"})
         _write(root, "a.md", "A2\n")
         _git(root, "add", "a.md")
-        ctx = common.Ctx(root)
+        ctx = tmprepo.Ctx(root)
         real = ctx.git_try
         ctx.git_try = lambda *a, cwd=None: (128, "") if "status" in a else real(*a, cwd=cwd)
         fs = self.leg(ctx)
@@ -267,7 +239,7 @@ class TestIndexConsistencyLeg(_CleanGit):
         _git(root, "add", "a.md")
         _write(root, "a.md", "A3\n")
         self.assertTrue(any(f[:3] == ("ERROR", "GT-12", "a.md") and "工作樹≠暫存區" in f[3]
-                            for f in gates.gt_12(common.Ctx(root))))
+                            for f in gates.gt_12(tmprepo.Ctx(root))))
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ rev5_blueprint:
 
 ## 5.3 第三層
 
-隨各域刀進場；本節以指針列各刀 spec（`specs/<NNN>-<feature>/`），不預載模組拓樸。
+目前無獨立的第三層視圖——as-built 模組分層住 §5.2；各域設計見該刀 spec（`specs/<NNN>-<feature>/`），本節不預載模組拓樸。
 
 ## 5.4 E2 模型登錄視圖
 

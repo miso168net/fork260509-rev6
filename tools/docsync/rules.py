@@ -1,4 +1,4 @@
-"""守 RL-0049／RL-0052：RULES 為規則層唯一家；數量預算只擋新增。
+"""守 RL-0049／RL-0052：RULES 為規則層唯一家；數量預算只計數、由 GT-12 定級（一律只警告、不擋 commit；ADR-00011）。
 
 rules.py：解析 docs/ops/RULES.md、依 scope 輸出規則塊（含 RULES-VERSION）、emit_js 產編排骨架的三區塊、GT-08 RULES 側三腿。
 """

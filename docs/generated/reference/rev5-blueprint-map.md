@@ -7,10 +7,10 @@
 |---|---|---|---|
 | §1 簡介與目標 | ## | [01-introduction-and-goals.md](../../arc42/01-introduction-and-goals.md) | 承襲（能力級／明確不做／建置狀態改寫為 rev6 現況） |
 | §2 約束 | ## | [02-architecture-constraints.md](../../arc42/02-architecture-constraints.md) | 承襲（技術棧／拓樸／環境／上游關係四條＋rev6 新約束） |
-| §3 系統脈絡 | ## | [03-context-and-scope.md](../../arc42/03-context-and-scope.md) | 不承襲：rev5 空節（該節自述尚無內容）；rev6 §3 自 C4-L1 起手 |
+| §3 系統脈絡 | ## | [03-context-and-scope.md](../../arc42/03-context-and-scope.md) | 不承襲：rev5 空節（該節只有標題與一句空節註記）；rev6 §3 自 C4-L1 起手 |
 | §4 解法策略 | ## | [04-solution-strategy.md](../../arc42/04-solution-strategy.md) | 承襲（五條策略對 rev6 仍真、上位＝憲法 §I.1～I.5） |
 | §5 Building blocks | ## | [05-building-block-view.md](../../arc42/05-building-block-view.md) | 承襲（rust-api workspace 四 crate＝migration／entity／sea-orm-adapter／server；server 管線 as-built 見 §5.2、以 rev5 活書 §5 為藍本重打字＝憲法 §I.5） |
-| §6 Runtime | ## | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 承襲（方針段：不變式凍結面住憲法 §I.7、本節只寫 as-built）；情境隨島進場（§6.1「選單域生命週期——島 H」情境：rev5 活書 §6 無同主題子節、藍本改取 rev5 活書 §5 Building blocks 之選單域段＋rev5:ADR 0048／rev5:ADR 0049，依憲法 §I.5 重打字） |
+| §6 Runtime | ## | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 承襲（方針段：不變式凍結面住憲法 §I.7、本節只寫 as-built）；情境依已入憲島分則（§6.1「選單域生命週期——島 H」情境：rev5 活書 §6 無同主題子節、藍本改取 rev5 活書 §5 Building blocks 之選單域段＋rev5:ADR 0048／rev5:ADR 0049，依憲法 §I.5 重打字） |
 | 信任錨與 IP 存取閘 | ### §6 | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 承襲（§6.1「信任錨與 IP 存取閘——島 F」情境：boot 載入信任模型與規則集→每請求信任錨三層＋兩覆蓋＋溢出短路→請求上下文注入→存取閘六步→規則寫端防自鎖與門鈴熱重載；凍結面住憲法 §I.7 島 F、rev5 該子節為藍本重打字） |
 | 會話狀態機（sys_token） | ### §6 | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 承襲（§6.1「會話狀態機——島 A～D」情境：登入簽發對→每請求驗章＋denylist→續期 rotate／grace／reuse→撤銷三型 logout／kick／idle；凍結面住憲法 §I.7 島 A～D、rev5 該子節為藍本重打字） |
 | 登入失敗節流三區（帳號維＋來源維） | ### §6 | [06-runtime-view.md](../../arc42/06-runtime-view.md) | 承襲（§6.1「登入失敗節流——島 E」情境：解鎖標記讀取→帳號維→來源維→合成→captcha gate、兩維皆每次嘗試由 PG 滑動窗定案、管理員解鎖、降級源可觀測；凍結面住憲法 §I.7 島 E〔來源維的位址輸入與跳過條件＝島 F 之 F4／F5〕、rev5 該子節為藍本重打字） |
@@ -22,7 +22,7 @@
 | API 慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（信封／碼表／i64 守衛＝憲法 §I.3；契約機器化與部分更新三態＝§8.2、ADR-00047；msg 名冊後端側閉環＝ADR-00017、跨端閘與譯文之家＝ADR-00039） |
 | 授權慣例 | ### §8 | [08-crosscutting-concepts.md](../../arc42/08-crosscutting-concepts.md) | 承襲（判定單點／DB-fresh＝憲法 §I.2；拒絕語意與 no-escalation 掛點＝§8.3、ADR-00014；no-escalation 本體與三維授權治理＝憲法 §I.7 島 G／I 承襲指針） |
 | §9 架構決策 | ## | [09-architecture-decisions.md](../../arc42/09-architecture-decisions.md) | 承襲（decisions/ 一決策一檔＋DECISIONS-INDEX 指針；波 2 落地） |
-| §10 品質要求 | ## | [10-quality-requirements.md](../../arc42/10-quality-requirements.md) | 不承襲：rev5 空節；rev6 §10 自 §1.2 品質目標展開、情境隨島進場 |
+| §10 品質要求 | ## | [10-quality-requirements.md](../../arc42/10-quality-requirements.md) | 不承襲：rev5 空節；rev6 §10 自 §1.2 品質目標展開、情境逐已入憲行為島一則（§10.2） |
 | §11 風險與技術債 | ## | [11-risks-and-technical-debt.md](../../arc42/11-risks-and-technical-debt.md) | 承襲（BACKLOG／LESSONS 指針；rev6 加 ※11.1 風險） |
 | §12 名詞表 | ## | [12-glossary.md](../../arc42/12-glossary.md) | 承襲（治理詞入 §12 系統術語；踢除／撤銷、鎖定兩組域詞、IP 域詞組〔信任錨、來源信心、來源維、存取閘等〕與選單域詞組〔選單序列化域、治理域／顯示域、絕版、常量父鏈、reason gate、兩回收桶分立、casbin 判定面與判定面同步〕已入表，使用者域之停用／軟刪、重設／修改密碼兩組屬未入憲之島 I） |
 

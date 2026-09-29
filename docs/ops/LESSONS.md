@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00047 -->
+<!-- next: LL-00048 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -52,3 +52,4 @@
 | LL-00044 | 先 `git add` 再跑 generate，generate 回填的 ADR `superseded_by` 沒進這顆 commit，閘卻全綠（005 刀 final holistic review 修正顆 2bfabcf、2026-09-28） | none：機器承載＝GT-12 之「工作樹＝暫存區」一致性腿（ADR-00052），不另立流程規則 | gate | [LL-00044-generate-backfills-superseded-by-after-git-add.md](LESSONS/LL-00044-generate-backfills-superseded-by-after-git-add.md) |
 | LL-00045 | 在 base-web 跨多行的元素標籤裡加屬性，修改型的 `原行:` 標記沒有位置可放（005 刀、2026-09-28） | none：fork-delta 標記寫法細節，判準住 tools/fork-delta-lint.py 與憲法 §III | none | [LL-00045-multiline-tag-origin-marker-placement.md](LESSONS/LL-00045-multiline-tag-origin-marker-placement.md) |
 | LL-00046 | ADR-00039 accepted 時全文沒有任何 rev5 出處，而 ADR body 不可變，缺口永遠補不回來（004 刀；2026-09-29 以紀律收） | RL-0081 | rules | [LL-00046-adr-accepted-without-predecessor-provenance.md](LESSONS/LL-00046-adr-accepted-without-predecessor-provenance.md) |
+| LL-00047 | GT-04 在 lint 路徑用 `git diff --name-only HEAD` 取捷徑，會回寫 index 的 stat 快取，`--no-optional-locks` 也擋不住（maint-backlog-28-35-36-39-74-101-102-120 U1 實測、U2 修；2026-09-29） | none：閘取值命令的唯讀寫法，判準住兩個取值點的碼註與 pre-commit 檔頭「各閘唯讀」即可承 | code | [LL-00047-git-diff-rewrites-index-stat-cache-despite-no-optional-locks.md](LESSONS/LL-00047-git-diff-rewrites-index-stat-cache-despite-no-optional-locks.md) |

@@ -2,8 +2,8 @@
 
 gates.py：ROSTER（恰 12 閘）、parse_gate_blocks／derive_anchor_codes（兩層真源）、DAY1_EXEMPTIONS（四欄制）、
 gt_01（generated 零漂移）、gt_07（機密樣式＋值比對）、gt_09（README 樹／EXEC_REQUIRED／settings.json 接線）、
-gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記＋SKIP 鍵登記＋主張對賬＋工作樹＝暫存區一致性）、ENV_SKIPS（ADR-00019 環境型跳過登記）、
-registered_skip_keys／skip_key_of（登記集合與鍵抽取的單一權威、靜態面與執行期面同取）、run_lint、gen_gates_md。
+gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記＋SKIP 鍵登記＋閘↔規則對賬＋主張對賬＋工作樹＝暫存區一致性）、ENV_SKIPS（ADR-00019 環境型跳過登記）、
+registered_skip_keys／skip_key_of（登記集合與鍵抽取的單一權威、靜態面與執行期面同取）、rule_values（`rule=` 解析單一家）、run_lint、gen_gates_md。
 """
 import importlib.util
 import json
@@ -81,6 +81,16 @@ def parse_gate_blocks(source_text):
     return blocks
 
 
+RULE_SEP = "、"
+
+
+def rule_values(block):
+    """GATE 區塊 → `rule=` 值清單（以「、」切、逐值去空白；缺鍵＝空清單，由 GT-12 缺鍵腿指名）。
+    ★`rule=` 的解析只此一處：閘↔規則對賬腿與 gen_gates_md 渲染同取，不得各切一份。"""
+    raw = block.get("rule")
+    return [] if raw is None else [v.strip() for v in raw.split(RULE_SEP)]
+
+
 def derive_anchor_codes(source_text):
     return set(RE_ANCHOR.findall(source_text or ""))
 
@@ -93,14 +103,14 @@ def gate_id(fn):
 # Day-1 具名豁免（§4.6 四欄：鍵→理由、解除謂詞、到期即紅、登記日）
 # ---------------------------------------------------------------------------
 DAY1_EXEMPTIONS = {
-    # 目前零筆：GT-08.lessons-absent（登記 2026-09-03）隨 LL-00001 落地（2026-09-04）解除、依 RL-0052 到期即移除；新豁免逐筆具名帶解除謂詞。
+    # 目前零筆：GT-08.lessons-absent（登記 2026-09-03）隨 LL-00001 落地（2026-09-04）解除、依 RL-0051 到期即移除；新豁免逐筆具名帶解除謂詞。
 }
 
 
 # ---------------------------------------------------------------------------
 # 環境型具名跳過登記（ADR-00019 形；000-r2 修單＝BL-00003②）
 # ---------------------------------------------------------------------------
-# 與 Day-1 豁免兩制、不可混：Day-1 豁免有「解除謂詞」、到期即紅（RL-0052）；環境型跳過不會到期，
+# 與 Day-1 豁免兩制、不可混：Day-1 豁免有「解除謂詞」、到期即紅（RL-0051）；環境型跳過不會到期，
 # 只在**本機環境缺席**時觸發、印一行「⤳ 跳過：」rc 0（ADR-00019 決定 3：跳過與通過在輸出上必須可辨）。
 # 欄＝鍵 →（命中謂詞的人可讀字面, 理由）；GT-12 斷言原始碼全部 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ 本表。
 ENV_SKIPS = {
@@ -610,6 +620,41 @@ def _index_consistency_leg(ctx):
     return out
 
 
+# 閘↔規則對賬腿（BL-00036①；掛 GT-12、不新增閘）：GATE 區塊 `rule=`＝本閘專屬承擔之規則（多值以「、」分隔、主守規則在前、
+# 其餘依號遞增），RULES carrier=lint＝「GT 閘機器守」——兩面此前零機器對賬、可單邊漂移。雙向：carrier=lint 之 RL 皆須被
+# 至少一閘指名；`rule=` 所列 RL 皆須存在於 RULES 且 carrier=lint（ADR 值照舊允許、不驗 carrier）。RULES 解析取 rules.py 既有解析。
+# ★「掃描面空集合即紅」（RL-0051）為各閘通則、由各閘既有空集合腿承擔、不逐閘補名；對賬只求每條 lint 規則至少一閘。
+RE_RULE_VALUE = re.compile(r"(?:RL-[0-9]{4}|ADR-[0-9]{5})")   # 半形數字：`\d` 另認全形數字
+
+
+def _rule_reconcile_leg(blocks, rules_text, origin=None):
+    """blocks＝{閘: GATE 區塊}、rules_text＝RULES 原文、origin＝{閘: 所在檔}（where 用）→ findings。"""
+    origin = origin or {}
+    carrier = {r.id: r.carrier for r in rules_mod.parse_rules(rules_text)[1]}
+    out, named = [], set()
+    for gid in sorted(blocks):
+        where = origin.get(gid, "tools/docsync")
+        for v in rule_values(blocks[gid]):
+            if not RE_RULE_VALUE.fullmatch(v):
+                out.append(finding(ERROR, "GT-12", where, f"閘↔規則對賬：{gid} 之 rule= 值「{v}」形制不合——每值須為 RL-NNNN 或 ADR-NNNNN、"
+                                                          f"多值以「{RULE_SEP}」分隔；補救＝改寫該值後跑 generate"))
+                continue
+            if v.startswith("ADR-"):
+                continue
+            named.add(v)
+            if v not in carrier:
+                out.append(finding(ERROR, "GT-12", where, f"閘↔規則對賬：{gid} 之 rule= 列 {v}，但 RULES 查無此列——補救＝改列本閘實際承擔之"
+                                                          "carrier=lint 規則（或 ADR）、或先於 RULES 立列，改後跑 generate"))
+            elif carrier[v] != "lint":
+                out.append(finding(ERROR, "GT-12", where, f"閘↔規則對賬：{gid} 之 rule= 列 {v}，但其 carrier={carrier[v]}（非 lint）——"
+                                                          "rule= 只列機器守之規則；補救＝自 rule= 移除後跑 generate、或該規則 carrier 改 lint（RULES 輕量軌）"))
+    for rid in sorted(r for r, c in carrier.items() if c == "lint" and r not in named):
+        out.append(finding(ERROR, "GT-12", f"{RULES}｜{rid}", f"閘↔規則對賬：{rid}（carrier=lint）無任何閘 rule= 指名——補救＝於實作其腿之閘的"
+                                                              f" GATE 區塊 rule= 補名（「{RULE_SEP}」分隔、主守在前、其餘依號遞增）後跑 generate；"
+                                                              "實無機器腿者 carrier 改 prompt／checklist（RULES 輕量軌）"))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # GT-12
 # ---------------------------------------------------------------------------
@@ -651,13 +696,13 @@ def _gt_ids_in(text):
 def gt_12(ctx, extra_sources=None):
     """GATE:
       id=GT-12
-      rule=RL-0052
+      rule=RL-0052、RL-0051
       source=rev5:ADR 0024
-      drift=名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源、閘讀取面（工作樹）與 commit 內容（暫存區）一致
-      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）、外層工作樹 ⇔ 暫存區（僅暫存區≠HEAD 時：tracked 檔未暫存改動〔gitlink 除外〕與未追蹤未 ignore 檔）
+      drift=名冊同源與數量預算、SKIP 鍵登記、Day-1 豁免到期、閘 rule= ↔ RULES carrier=lint 雙向對賬、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源、閘讀取面（工作樹）與 commit 內容（暫存區）一致
+      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS、各閘 GATE 區塊 rule= ⇔ RULES carrier=lint 列）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）、外層工作樹 ⇔ 暫存區（僅暫存區≠HEAD 時：tracked 檔未暫存改動〔gitlink 除外〕與未追蹤未 ignore 檔）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移、閘讀工作樹而 commit 收暫存區的另一版時全綠放行（先 add 改寫版再還原工作樹、LESSONS 漏 stage、generate 回填落在 add 之後）
+      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、到期豁免可長留、lint 規則可無閘承擔而閘可指名非 lint 或已退役規則、人寫面數值與工具常數可單邊漂移、閘讀工作樹而 commit 收暫存區的另一版時全綠放行（先 add 改寫版再還原工作樹、LESSONS 漏 stage、generate 回填落在 add 之後）
     """
     out = []
     sources = package_sources()
@@ -675,6 +720,8 @@ def gt_12(ctx, extra_sources=None):
             out.append(finding(ERROR, "GT-12", "tools/docsync", f"{gid} GATE 區塊缺鍵：{'、'.join(missing)}"))
     if set(blocks) != roster_ids:   # 只驗名冊一致；數量歸下方預算腿（ADR-00011：兩種語意分離）
         out.append(finding(ERROR, "GT-12", "tools/docsync", f"區塊集合 {sorted(blocks)} ≠ ROSTER {sorted(roster_ids)}"))
+    origin = {gid: rel for rel, text in sources.items() for gid in parse_gate_blocks(text)}
+    out += _rule_reconcile_leg(blocks, ctx.text(RULES) or "", origin)
     # SKIP 鍵登記腿（000-r2 修單＝BL-00003②）：原始碼全部 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS
     skip_keys, anchorless = derive_skip_keys(joined)
     for k in sorted(skip_keys - registered_skip_keys()):
@@ -767,7 +814,7 @@ def gen_gates_md(ctx):
         b = blocks.get(gid, {})
         pending = [k for k, ex in DAY1_EXEMPTIONS.items() if k.startswith(gid + ".") and not ex.released(ctx)]
         status = "未解除：" + "、".join(pending) if pending else "—"
-        lines.append(f"| {gid} | {b.get('rule', '')} | {b.get('drift', '')} | {b.get('source', '')} | {b.get('face', '')} | {b.get('trigger', '')} | {b.get('rc', '')} | {status} | {b.get('breaks-if-removed', '')} |")
+        lines.append(f"| {gid} | {RULE_SEP.join(rule_values(b))} | {b.get('drift', '')} | {b.get('source', '')} | {b.get('face', '')} | {b.get('trigger', '')} | {b.get('rc', '')} | {status} | {b.get('breaks-if-removed', '')} |")
     lines += ["", "## Day-1 豁免登記（鍵｜理由｜解除謂詞｜登記日）", "", "| 鍵 | 理由 | 解除謂詞 | 登記日 |", "|---|---|---|---|"]
     for k, ex in DAY1_EXEMPTIONS.items():
         lines.append(f"| {k} | {ex.reason} | {ex.predicate_text or '（見 gates.py）'} | {ex.registered} |")
