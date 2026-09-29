@@ -67,21 +67,21 @@ rad_ai_map:
 
 ### 設定債
 
-類比張力：對得上——RAD-AI 說設定債是散落各處、無人擁有的旗標；`*_OPTS`、保險絲值、effort 就是。
+類比張力：對得上——RAD-AI 說設定債是散落各處、無人擁有的旗標；`*_OPTS`、保險絲值、effort 就是（模型家拍板＝ADR-00056）。
 
 | 債型 | 徵狀 | 來源 | 影響面 | 觸發 | 處置 | 守門 | 狀態 | 覆審條件 |
 |---|---|---|---|---|---|---|---|---|
 | 保險絲手挑 | 保險絲值小於結構最壞值 | rev5:L-068 | Workflow | 寫 script 時 | 由同檔常數推導並自我斷言 | RL-0062 | 已守 | 次個編排刀收刀 |
-| OPTS 散落 | `IMPL_OPTS`／`REVIEW_OPTS`／`FIX_OPTS`＋`DEEP_THINK` 單一常數家住 `_sk_head.js`；換模只改該檔一處、名冊由 generate 重算 | rev6 現況 | 換模 | 換模時 | 已收斂為單一常數家 | 名冊可見（`docs/generated/reference/agents.md`） | 已守 | 次個編排刀收刀 |
+| OPTS 散落 | 七個 `*_OPTS`（TDD 三角色＋review 四角色）＋`DEEP_THINK` 單一常數家住 `_sk_head.js`；換模＝翻案 ADR-00056、同批改該檔常數與 harness-test／harness-review 期望字面、名冊由 generate 重算 | rev6 現況 | 換模 | 換模時 | 已收斂為單一常數家 | harness 模型家斷言（ADR-00056）＋名冊可見（`docs/generated/reference/agents.md`） | 已守 | 次個編排刀收刀 |
 | 版本字面耦合 | 規則列一改、組裝成品 script 的 RULES-VERSION 字面過期 | rev6 現況 | 發射 | 改規則列時 | 同批重烤（RL-0038） | PreToolUse hook 擋發射 | 已守（偵測） | 改規則列時 |
 
 ### 模型陳舊
 
-類比張力：部分——model id 釘死在 `*_OPTS`；供應商下架即陳舊；無自動偵測、換模＝人決（P-E8 再訓練政策）。
+類比張力：部分——model id 釘死在 `*_OPTS`；供應商下架即陳舊；無自動偵測、換模＝人決（翻案 ADR-00056；P-E8 再訓練政策）。
 
 | 債型 | 徵狀 | 來源 | 影響面 | 觸發 | 處置 | 守門 | 狀態 | 覆審條件 |
 |---|---|---|---|---|---|---|---|---|
-| model id 釘死 | 供應商下架後派發失敗 | rev6 現況 | 全部 agent | 供應商公告 | 改 `*_OPTS` 一次 commit、名冊重算 | 無（人決事件） | 刻意不守 | 供應商公告時 |
+| model id 釘死 | 供應商下架後派發失敗 | rev6 現況 | 全部 agent | 供應商公告 | 翻案 ADR-00056、同批改 `*_OPTS` 與兩支 harness 期望字面、名冊重算 | 無（人決事件） | 刻意不守 | 供應商公告時 |
 
 ### 登記條目格式
 

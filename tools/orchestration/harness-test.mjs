@@ -233,18 +233,21 @@ await runNegative('案16 反例：UNIT 清成空字串（_vars 段；身分句�
 await runNegative('案17 反例：CONTEXT 清成空字串（_context 段；接地整段消失仍過 guard）→ 防呆② 零派發即 throw', src.replace(/const CONTEXT = \[[\s\S]*?\]\.join\('\\n'\)/, "const CONTEXT = ''"), undefined, '防呆②')
 await runNegative('案18 反例：ALLOWED_BLOCK 清成空字串（_allowed 段；六件套⑥ 空間邊界靜默失效）→ 防呆② 零派發即 throw', src.replace(/const ALLOWED_BLOCK = \[[\s\S]*?\]\.join\('\\n'\)/, "const ALLOWED_BLOCK = ''"), undefined, '防呆②')
 
-// 案19：★ADR-00056 反例（RL-0080）——逐一把 IMPL／REVIEW／FIX 三常數之 effort 改 max（變異打在 _sk_head.js 常數行），
+// 案19：★ADR-00056 反例（RL-0080）——逐一把 IMPL／REVIEW／FIX 三常數之 effort 改 max、再逐一把 model 改 sonnet（變異打在 _sk_head.js 常數行；
+//   offFamily 的 effort 腿與 model 腿各有常駐反例），
 //   同一全路徑樁重跑（implementer→review 帶 blocker→fix→review 清空→另一段 review）：案1 的模型家偏離清單須非空且恰落在該角色。
 const fullPath = () => { let k = 0; return (label) => { if (label.includes('implementer')) return OKW; if (isRev(label)) { k++; return k === 1 ? B('缺陷') : CLEAN } if (isFix(label)) return OKW; return CLEAN } }
 for (const [name, role] of [['IMPL_OPTS', 'implementer'], ['REVIEW_OPTS', ':review'], ['FIX_OPTS', ':fix']]) {
   if (name === 'IMPL_OPTS' && N === 0) continue // 續跑形零 implementer、IMPL_OPTS 無派發面
   const m = src.match(new RegExp('^const ' + name + " = \\{ model: '[^']*', effort: '[^']*' \\}\\s*$", 'm'))
-  await run('案19 反例：' + name + ' 之 effort 改 max → 模型家斷言恰抓到 ' + role + ' 支（ADR-00056）', fullPath(), (o) => {
-    const off = offFamily(o.opts)
-    expect(m !== null, '變異已套用（' + name + ' 常數行命中）', '常數行形改了、變異正則未命中＝案退化為正例')
-    noThrow(o)
-    expect(off.length > 0 && off.every((x) => x.label.includes(role)), '偏離非空且恰落在 ' + role + ' 支', JSON.stringify(off.map((x) => x.label)))
-  }, m ? src.replace(m[0], 'const ' + name + " = { model: '" + FAMILY.model + "', effort: 'max' }") : src)
+  for (const [leg, model, effort] of [['effort 改 max', FAMILY.model, 'max'], ['model 改 sonnet', 'sonnet', FAMILY.effort]]) {
+    await run('案19 反例：' + name + ' 之 ' + leg + ' → 模型家斷言恰抓到 ' + role + ' 支（ADR-00056）', fullPath(), (o) => {
+      const off = offFamily(o.opts)
+      expect(m !== null, '變異已套用（' + name + ' 常數行命中）', '常數行形改了、變異正則未命中＝案退化為正例')
+      noThrow(o)
+      expect(off.length > 0 && off.every((x) => x.label.includes(role)), '偏離非空且恰落在 ' + role + ' 支', JSON.stringify(off.map((x) => x.label)))
+    }, m ? src.replace(m[0], 'const ' + name + " = { model: '" + model + "', effort: '" + effort + "' }") : src)
+  }
 }
 
 console.log('\n' + (failed ? '✗ harness：' + failed + ' 項斷言不符' : '✓ harness：十九案全過') + '（IMPLEMENTERS=' + N + '、模式=' + TAG + '）')

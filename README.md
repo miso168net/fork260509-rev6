@@ -115,7 +115,7 @@ fork260509-rev6/
 | RAD-AI 導入到哪、填實幾成 | `docs/generated/RAD-AI-MAP.md` |
 | 埠、效能資料點 | `docs/generated/reference/ports.md`、`docs/generated/reference/perf.md` |
 | rev5 活書哪節去了哪 | `docs/generated/reference/rev5-blueprint-map.md`（真源＝arc42 節檔 frontmatter `rev5_blueprint`；ADR-00006） |
-| 編排 agent 用哪個模型 | `docs/generated/reference/agents.md`（真源＝`tools/orchestration/` 的 `*_OPTS` 常數） |
+| 編排 agent 用哪個模型 | `docs/generated/reference/agents.md`（真源＝`tools/orchestration/` 的 `*_OPTS` 常數；拍板＝ADR-00056） |
 | 怎麼組一支 Workflow script（TDD／review 兩形）、怎麼自測 | `tools/orchestration/README.md`（組裝器 `assemble.py`＋harness 兩支；發射與看門狗＝`CLAUDE.md` §2） |
 | 全量正典 schema 長怎樣（表×archetype、欄／索引／約束） | `docs/generated/reference/schema.md`（真源＝`docs/ops/reference-src/` 快照＋archetype-map；`python3 tools/docsync refresh` 照相） |
 | dev 三帳與角色綁定 | `docs/generated/reference/accounts.md`（真源＝`docs/ops/reference-src/accounts-snapshot.json`） |
