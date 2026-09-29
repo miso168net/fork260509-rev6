@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | misc | governance｜maint-backlog-28-35-36-39-74-101-102-120 | 006 前 BACKLOG 體檢 B～E 組併批（user 2026-09-29 逐題裁定、八條全收）：GT-12 工作樹＝暫存區一致性腿與 HEAD 讀取口徑；事件自由文字欄寫入端守衛；GT-08 刀名腿；GT-04 前代出處腿（RL-0081）；閘↔規則雙向對賬＋RL-0015 五形升 ERROR；碼面閘讀子庫工作樹立已知態；探針 hops 口徑入骨架；seed 界內純測。立 ADR-00052～ADR-00055、LL-00041～LL-00048。 | 6f34eed | ADR-00052、ADR-00053、ADR-00054、ADR-00055 | — |
 | 2026-09-29 | misc | governance｜maint-backlog-126 | 輕量軌 maint-backlog-126 收單（user 2026-09-29 令、主線直改）：context 自動壓縮機制入版控——compact-hook.py 三模式＋compact-rules.md（A／B 規則與工作區兩檔約定）＋settings.json 三處註冊與 autoCompactWindow 750000；工作區檔改以本 session 碰過者定位（RL-0077）；LL-00040。併入 pre-commit 提速：lint 25.9s→13.5s、docsync test 約 75s→40.5s。BACKLOG 刪 BL-00126。 | 59250ea | — | — |
 | 2026-09-29 | feature_close | 005-role-menu-crud | 005 role-menu-crud 收單（rev6 第五刀）：角色與選單管理接真（角色 CRUD＋首頁、選單 CRUD＋樹＋回收桶）／島 H 選單域生命週期（域鎖、歸檔先於軟刪、判定面全新重建一步換上、失敗保留上一份、請求中斷不中止同步）／分頁通則＋全取例外／ROUTES 22→39、MSG_KEYS 19→43／新 lint 兩支＋wire_i64 型級三腿／走查還原工具擴面；零 migration；憲法 1.5.0→1.5.2 | 7f09ae0 | ADR-00042、ADR-00043、ADR-00044、ADR-00045、ADR-00046、ADR-00047、ADR-00048、ADR-00049、ADR-00050、ADR-00051 | §4、§5、§6、§8、§10、§11、§12 |
 | 2026-09-23 | misc | governance｜maint-orchestration-opus-all | 輕量軌 maint-orchestration-opus-all 收單（user 2026-09-23 令、005 SDD 重做前、主線直改零 cargo）：編排骨架全角色改 opus[1m] xhigh（_sk_head.js 之 IMPL_OPTS fable→opus）＋implementer prompt 首行烤 DEEP_THINK（_sk_main.js）；harness-test 案 1 補對應斷言；README 記 opus[1m] 別名現解析 claude-opus-5-5[1m]；agents.md 重算。RULES／ADR／閘數／BACKLOG 未動。 | 076fb3b | — | — |
@@ -54,6 +55,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-29｜misc｜governance｜maint-backlog-28-35-36-39-74-101-102-120
+
+5 單元＋收單：前置 959da9f／U1 a2e3a7b（run wf_a492459d-ae6）／5ca0ab5（主線直改 BL-00074＋BL-00039）／U2 2638e6e（run wf_0ed8197d-8f7）／U3 f2f716d（rust-api 5bc361d；run wf_f42b752d-5b2）／final holistic review 收單 821b639（rust-api 9952cfa）＋bfdf641（run wf_94731cba-c9a）。★final review（run wf_606647ae-3a2、三 lens＋兩鏡）18 筆＝修 17／駁回 1：major 四筆＝RL-0051 拆列（959da9f）漏跑 RL-0011 枚舉致 28 處引用失效（外層 10＋rust-api 18，改指 RL-0080；LL-00048）與一致性腿「沿用呼叫端 GIT_INDEX_FILE」「status 唯讀」兩判準無變異自證（補案）；L1-6 寫入端守衛擴至其餘渲染欄由 BL 改判本批收（現帳 34 值零命中）；駁回 L3-5（CLAUDE.md generate 後 add 清單不含 decisions＝LL-00044 已定由一致性腿機器承載）。★ADR-00053 決定 2 之守衛 as-built 擴至 review.scope、misc.workflow、spec_supersessions[].feature／.item（L1-6；方向同其驅動）。★ADR-00053 決定 3（000-r1 計數澄清）：修 75 含主線自提 R1-M01、不在 confirmed 86 之內；扣除後 74＋9＋1＋2＝86，與報告 §5 一致（報告與事件帳第 13 列一字不動）。★ADR-00052 後果之 pre-commit 牆鐘增量：一致性腿之 `git --no-optional-locks status` 只在暫存區≠HEAD（commit 準備中）時跑、中位 1.22 秒；每趟新增 `diff --cached --quiet` 0.05 秒與 HEAD 樹清單 ls-tree 0.20 秒（一次 memo、取代 GT-04 原目錄級 ls-tree）；GT-04 捷徑改唯讀 status 0.20 秒（原 git diff 0.18 秒）；lint 單跑現值 10.7～11.2 秒（maint-backlog-126 收單時約 13.5 秒、機器負載浮動）。★docsync 行數 4036→4136（超 4000 目標；ADR-00011 只報表、不擋）。★user 裁定：題 1～7、9 全採建議（題 8 主線定測試策略）；本批 merge＋push 為 user 2026-09-29 當次授權。批 A（BL-00093）另案、待 user 同意。淨流量：本批 −8、零新記。
 
 ### 2026-09-29｜misc｜governance｜maint-backlog-126
 
