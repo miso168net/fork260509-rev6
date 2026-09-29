@@ -57,3 +57,4 @@
 | ADR-00052 | accepted | 2026-09-29 | 治理閘取值口徑——文字類腿續讀工作樹＋「工作樹＝暫存區」一致性腿；HEAD 版本缺席＝新檔通過、其他 git 失敗＝ERROR | — | — | — |
 | ADR-00053 | accepted | 2026-09-29 | 事件帳自由文字欄（summary／reason／spec_supersessions[].note）不入更正欄位、寫錯以後續事件 notes 說明——三欄於寫入端套 notes 同一道守衛 | — | — | — |
 | ADR-00054 | accepted | 2026-09-29 | 設定界值唯一權威＝validation.rs 的 REGISTRY、不與設計文件做機器對賬——seed 界內以純測守衛 | — | — | — |
+| ADR-00055 | accepted | 2026-09-29 | 碼面閘讀子庫工作樹、不讀本顆 commit 所 pin 的子庫內容——照實登記兩型（閘面內延後偵測／閘面外無兜底）為已知態、不擴觸發（won't-fix） | — | — | — |
