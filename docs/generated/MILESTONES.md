@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | misc | product｜maint-backlog-27-44 | maint-backlog-27-44（批 F）收單（user 2026-09-29 v5 體檢 Q1①／Q2①）：ADR-00057 設定讀端回全部未刪列、不以 registry 鍵集過濾（任一列型別守衛不過即整支 5000；宣告集外型別合法之列讀得到、寫回 2222＝已知態）；ADR-00058 管理清單一律伺服器端固定穩定序、零 client 排序參數；base-web 碼註據實；BL-00047 條文修訂、BL-00064 戳記勘誤。 | 435b3bd | ADR-00057、ADR-00058 | — |
 | 2026-09-29 | misc | governance｜maint-backlog-127 | maint-backlog-127 收單（user 2026-09-29：BL-00127 單獨成輕量軌）：組裝形 workflow 每支 agent 之模型家 opus[1m]／xhigh 入 ADR-00056（明寫蓋過主線 session effort、換模＝翻案並同批改兩支 harness 期望字面）；harness-test 案1 補模型家斷言、新增案19 反例（三常數×effort／model 兩腿）、十八→十九案；現在式面案數與換模敘述同批對齊。 | 67a9b8f | ADR-00056 | — |
 | 2026-09-29 | misc | governance | 記帳 BL-00127（user 2026-09-29 指示先記 BACKLOG、另排輕量軌）：組裝形 workflow 之 agent effort＝xhigh 拍板零 ADR 承載、TDD 形 harness 零 model／effort 斷言；user 拍板維持 xhigh，待立 ADR 明定並補斷言。 | — | — | — |
 | 2026-09-29 | misc | governance｜maint-backlog-28-35-36-39-74-101-102-120 | 006 前 BACKLOG 體檢 B～E 組併批（user 2026-09-29 逐題裁定、八條全收）：GT-12 工作樹＝暫存區一致性腿與 HEAD 讀取口徑；事件自由文字欄寫入端守衛；GT-08 刀名腿；GT-04 前代出處腿（RL-0081）；閘↔規則雙向對賬＋RL-0015 五形升 ERROR；碼面閘讀子庫工作樹立已知態；探針 hops 口徑入骨架；seed 界內純測。立 ADR-00052～ADR-00055、LL-00041～LL-00048。 | 6f34eed | ADR-00052、ADR-00053、ADR-00054、ADR-00055 | — |
@@ -57,6 +58,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-29｜misc｜product｜maint-backlog-27-44
+
+實作＋final holistic review 收單 ea1c3d8（run wf_4f63dd25-dd8、兩 lens＋inline 兩鏡、6 支）；base-web 2248b89c（碼註）。★final review 7 筆＝修 3（L1-1／L1-2 ADR-00057 措辭改非濾除式與實際訊息鍵、L2-1 BL-00047 互斥段擴 §2／§6／§9）／轉入 BL-00029 連動 1（L1-4 端點級型別合法外來列真 DB 案，由批 A 同批補、不增開放帳）／簿記承載 1（L1-5＝L2-2：NOTES 下一刀輸入補 ADR-00057／ADR-00058 承接義務）／駁回 1（L1-3）。★前一版實作顆 ca5c594 未推即以 soft reset 重 commit（accepted ADR 以 HEAD 比對、不可 amend）。★主線自查：08 補句改「分頁、全取與不分頁之清單皆同」（選單治理清單為分頁或全取）。★category＝product：本批主體為兩支定產品行為之 by-design ADR（BL-00027／BL-00044 皆 product）；BL-00047／BL-00064 條文修訂為附帶。★BL-00064 勘誤依據：rev5:B-018 至 rev5 收官在開放帳、rev5:B-053 在滯後卷（唯讀取證）。★自驗：docsync test 395 OK、lint 0／0／0。★user 2026-09-29 當次授權 merge＋push（base-web 先推、外層後推）；下一支＝批 A（起容器前另問 user）。淨流量：本批 −2（落開放窗）。
 
 ### 2026-09-29｜misc｜governance｜maint-backlog-127
 
