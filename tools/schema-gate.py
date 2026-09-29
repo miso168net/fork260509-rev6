@@ -6,8 +6,9 @@
 
 子命令：
   check [--container 名] [--user U] [--db D]
-        三閘全跑（gate1 結構＋gate2 欄序/seed＋audit archetype）；入口無條件先跑合成
-        self-test（敗＝rc 2、不讀任何真檔）。預設對 dev stack（compose exec postgres）；
+        三閘全跑（gate1 結構＋gate2 欄序/seed＋audit archetype）＋時間欄型別斷言；入口無條件
+        先跑合成 self-test（敗＝rc 2、不讀任何真檔），右源照相前先斷言目標庫時區＝UTC（不符＝
+        rc 2）。預設對 dev stack（compose exec postgres）；
         `--container` 指向一次性 pristine 容器（fixtures 產製／演進帳往返驗證場景）。
   test  跑自帶測試（unittest、離線、零 docker）——含 SC-003 五類 negative 注入
         （結構／欄序／seed 值／sequence 落值／假 delta 登記合成）與登記檔壞形自測。
@@ -44,11 +45,19 @@
         人讀註記）；created_by 可空性顯式驗（NN 恰四表）；表清單守門（實庫表集≠map
         表集＝紅）。
 
+三閘之外（check 同跑）：
+  時區前置（ADR-00059 決定 3）——右源照相段最先查目標庫 SHOW timezone（psql 撈取不帶 PGTZ＝
+        伺服器側值）；字面≠UTC＝rc 2 附補救、不往下照相比對。
+  時間欄型別（憲法 §I.6 時間點欄通則、ADR-00060 決定 2）——對實庫照相之全庫欄（不限審計欄）：
+        無時區 timestamp 一律紅、無豁免出口；date 須列於 DATE_COLUMNS_REGISTERED 名冊
+        （{(表, 欄): spec 出處}、現為空）方過——合法化路徑＝名冊、非演進帳；time／interval
+        類不在射程。
+
 退出碼：0 全綠／1 漂移（逐項指名）／2 環境或結構異常（fixtures 缺、登記檔壞形、庫不可達、
-比對面為空、self-test 敗——附補救提示）／64 用法錯誤（usage 走 stderr）。
-只跑唯讀查詢與 pg_dump、絕不寫庫；pg_dump 帶 PGTZ=UTC（閘不依賴 session timezone、
-schema-definition.md §4 UTC+0 拍板）；輸出不含 deploy 機密值（seed 定稿值〔含 PHC 常數〕本在
-版控、gate2 seed diff 可回顯——非洩密面）。
+目標庫時區非 UTC、比對面為空、self-test 敗——附補救提示）／64 用法錯誤（usage 走 stderr）。
+只跑唯讀查詢與 pg_dump、絕不寫庫；pg_dump 帶 PGTZ=UTC（閘不依賴 session timezone；UTC 慣例
+之現在式家＝docs/arc42/08-crosscutting-concepts.md §8.1、ADR-00059）；輸出不含 deploy 機密值
+（seed 定稿值〔含 PHC 常數〕本在版控、gate2 seed diff 可回顯——非洩密面）。
 
 雙源互證（rev6 pristine 萃取之 fixtures vs rev5 同名檔逐位元全等；`docs/ops/reference-src/schema-gates.md` §2）＝
 fixtures 產製之一次性驗證（紀錄住 fixtures/provenance.md）、非三閘常態比對面；工具不內建
@@ -181,9 +190,16 @@ SQL_CONSTRAINTS = _JSON_WRAP.format(
     " WHERE ns.nspname = 'public' AND rel.relname <> 'seaql_migrations'"
     " ORDER BY rel.relname, con.conname")
 
+# ── 時區前置（ADR-00059 決定 3）：右源照相段最先查目標庫時區。psql 撈取不帶 PGTZ（只 pg_dump
+#    帶）＝讀到的是未指定時區之連線所得值（伺服器命令列或設定檔，再疊 ALTER DATABASE／
+#    ALTER ROLE 設定）；判準＝與期望值字面全等。
+SQL_TIMEZONE = "SHOW timezone"
+EXPECTED_TIMEZONE = "UTC"
+
 
 class GateError(Exception):
-    """環境／結構異常（fixtures 缺、登記檔壞形、庫不可達、比對面為空）——rc 2 fail-loud。"""
+    """環境／結構異常（fixtures 缺、登記檔壞形、庫不可達、目標庫時區非 UTC、比對面為空）——
+    rc 2 fail-loud。"""
 
 
 # ---------------------------------------------------------------------------
@@ -227,6 +243,20 @@ def psql(sql, parse=False, container=None, user=DB_USER, db=DB_NAME, run=subproc
         return json.loads(out or "[]")
     except json.JSONDecodeError as ex:
         raise GateError(f"psql 輸出非合法 JSON：{ex}；前 200 字＝{out[:200]}")
+
+
+def timezone_problem(value):
+    """時區前置判準（ADR-00059 決定 3）：SHOW timezone 值字面＝UTC → None；否則回可操作之失敗
+    訊息（現值、期望、修法）——cmd_check 轉 GateError→rc 2、不往下照相比對。"""
+    if value == EXPECTED_TIMEZONE:
+        return None
+    return (f"目標庫時區不符：SHOW timezone＝{value!r}、期望＝{EXPECTED_TIMEZONE!r}"
+            "（ADR-00059：DB 伺服器時區固定 UTC；psql 顯示、pg_dump 文字輸出與伺服器日誌皆依此）"
+            "——補救：dev stack＝確認 docker-compose.yml 之 postgres 服務 command 帶 "
+            "`-c timezone=UTC -c log_timezone=UTC`，再以 docker compose -f docker-compose.yml "
+            "-f docker-compose.dev.yml up -d --wait postgres 重建該容器；一次性容器場景"
+            "（--container）＝起容器時於映像名後附 `-c timezone=UTC`；命令列已帶仍不符＝查 "
+            "ALTER DATABASE／ALTER ROLE 之 timezone 設定")
 
 
 def pg_dump_data(container=None, user=DB_USER, db=DB_NAME, run=subprocess.run):
@@ -1236,6 +1266,45 @@ def audit_archetype(map_rows, actual_cols, actual_idxs, actual_cons):
 
 
 # ---------------------------------------------------------------------------
+# 全時間欄型別斷言（憲法 §I.6 時間點欄通則、ADR-00060 決定 2）：射程＝右源 columns 照相之
+# 全庫欄、不限審計欄。型別字面＝format_type 輸出，帶精度（timestamp(3) …）與陣列（…[]）形
+# 同判：無時區 timestamp 一律紅、無豁免出口；date 須列於登記名冊方過；time／interval 類不在射程。
+# ---------------------------------------------------------------------------
+
+RE_TS_TZ_TYPE = re.compile(r"timestamp(\(\d+\))? with time zone(\[\])*")
+RE_TS_NAIVE_TYPE = re.compile(r"timestamp(\(\d+\))? without time zone(\[\])*")
+RE_DATE_TYPE = re.compile(r"date(\[\])*")
+# date 欄登記名冊（純日曆日期、不表示瞬間——例：生日；須於引入該欄之刀 spec 具名理由）：
+# 格式＝{(表名, 欄名): "<spec 出處>"}；加列＝引入該欄之刀同 commit 加列＋出處字串
+# （TestConstantsPinned 同改）。合法化路徑＝本名冊、非演進帳——演進帳登記只合法化 gate1
+# 結構差異、不豁免本斷言。現為空集。
+DATE_COLUMNS_REGISTERED = {}
+
+
+def audit_time_columns(actual_cols, registered=None):
+    """回 (findings, timestamptz 欄數, 已登記 date 欄數)；registered=None＝本檔名冊常數。"""
+    registered = DATE_COLUMNS_REGISTERED if registered is None else registered
+    fnd, n_tz, n_date = [], 0, 0
+    for c in actual_cols:
+        t, name, typ = c["table"], c["column"], c["type"]
+        if RE_TS_TZ_TYPE.fullmatch(typ):
+            n_tz += 1
+        elif RE_TS_NAIVE_TYPE.fullmatch(typ):
+            fnd.append(f"[時間欄] {t}.{name}｜型別={typ}——表示瞬間之欄一律 timestamptz、禁無時區 "
+                       "timestamp（憲法 §I.6 時間點欄通則／ADR-00060）；改為 timestamp with "
+                       "time zone（本項無豁免出口、演進帳登記亦不合法化）")
+        elif RE_DATE_TYPE.fullmatch(typ):
+            if (t, name) in registered:
+                n_date += 1
+            else:
+                fnd.append(f"[時間欄] {t}.{name}｜型別={typ} 未登記——純日曆日期欄須於引入該欄之刀 "
+                           "spec 具名理由、並登記本工具 DATE_COLUMNS_REGISTERED 名冊（憲法 §I.6 "
+                           "時間點欄通則／ADR-00060；合法化路徑＝登記名冊、非演進帳）；表示瞬間者"
+                           "改為 timestamp with time zone")
+    return fnd, n_tz, n_date
+
+
+# ---------------------------------------------------------------------------
 # self-test（check 入口無條件合成；敗＝rc 2 不讀真檔——防恆綠假閘）
 # ---------------------------------------------------------------------------
 
@@ -1320,8 +1389,8 @@ _RT_DUMP = ("COPY public.session_event (id, event_type) FROM stdin;\n"
 
 def check_self_test():
     """健康對必綠＋注入假漂移必紅（四類：結構／欄序／seed 值／sequence 落值）＋
-    normalize 冪等＋rev5:B-065 收窄三點探針——任一敗＝AssertionError（呼叫端轉 rc 2、
-    不讀真檔）。"""
+    normalize 冪等＋rev5:B-065 收窄三點探針＋時區前置與時間欄型別判準一正一反——任一敗＝
+    AssertionError（呼叫端轉 rc 2、不讀真檔）。"""
     fix = _st_fixtures()
     healthy = synth_expected(fix, [])
     # gate1：健康綠
@@ -1461,6 +1530,24 @@ def check_self_test():
                 "type": TS_TZ, "nullable": True, "default": None})
     if not any("禁欄 updated_at" in x for x in audit_archetype(amap, bad, aidx, [])):
         raise AssertionError("audit 變體 B 禁欄假漂移未被攔")
+    # 時區前置（ADR-00059）：UTC 放行／非 UTC 必攔
+    if timezone_problem("UTC") is not None:
+        raise AssertionError("時區前置對 UTC 誤攔")
+    if timezone_problem("Asia/Tokyo") is None:
+        raise AssertionError("時區前置未攔非 UTC")
+    # 時間欄型別（ADR-00060）：健康 timestamptz 綠／無時區 timestamp 紅／date 未登記紅、登記後綠
+    if audit_time_columns(acols, {}) != ([], 4, 0):
+        raise AssertionError("時間欄型別健康合成對被誤判或計數錯")
+    naive = acols + [{"table": "t_biz", "column": "fired_at", "ordinal": 8,
+                      "type": "timestamp without time zone", "nullable": True, "default": None}]
+    if not any("t_biz.fired_at" in x for x in audit_time_columns(naive, {})[0]):
+        raise AssertionError("時間欄型別未攔無時區 timestamp")
+    dated = acols + [{"table": "t_biz", "column": "birthday", "ordinal": 8,
+                      "type": "date", "nullable": True, "default": None}]
+    if not any("t_biz.birthday" in x for x in audit_time_columns(dated, {})[0]):
+        raise AssertionError("時間欄型別未攔未登記 date")
+    if audit_time_columns(dated, {("t_biz", "birthday"): "self-test"}) != ([], 4, 1):
+        raise AssertionError("時間欄型別對已登記 date 誤攔或計數錯")
 
 
 # ---------------------------------------------------------------------------
@@ -1484,8 +1571,12 @@ def cmd_check(root=REPO_ROOT, container=None, user=DB_USER, db=DB_NAME,
     except GateError as ex:
         print(f"[check] ✗ {ex}", file=sys.stderr)
         return 2
-    # ③ 右源照相＋dump（唯讀）
+    # ③ 右源照相＋dump（唯讀）；最先斷言目標庫時區（ADR-00059 決定 3；≠UTC＝rc 2、不往下比對）
     try:
+        problem = timezone_problem(psql(SQL_TIMEZONE, container=container, user=user,
+                                        db=db, run=run))
+        if problem:
+            raise GateError(problem)
         actual = {
             "columns": sorted(psql(SQL_COLUMNS, parse=True, container=container,
                                    user=user, db=db, run=run),
@@ -1522,16 +1613,20 @@ def cmd_check(root=REPO_ROOT, container=None, user=DB_USER, db=DB_NAME,
         findings += compare_dump_owner(dump, user)
         findings += audit_archetype(map_rows, actual["columns"], actual["indexes"],
                                     actual["constraints"])
+        # 全時間欄型別斷言（憲法 §I.6 時間點欄通則、ADR-00060 決定 2）
+        time_findings, n_tz, n_date = audit_time_columns(actual["columns"])
+        findings += time_findings
     except GateError as ex:
         print(f"[check] ✗ {ex}", file=sys.stderr)
         return 2
     if findings:
         print(f"[check] ✗ {len(findings)} 項漂移（未登記差異一律紅；合法化唯一路徑＝"
-              "schema-evolution.json 登記）：", file=sys.stderr)
+              "schema-evolution.json 登記——[時間欄] 項除外、見該項訊息）：", file=sys.stderr)
         for x in findings:
             print(f"    DRIFT {x}", file=sys.stderr)
         return 1
     n_entries = len(ledger["entries"])
+    print(f"[check] ✓ 時區：SHOW timezone＝{EXPECTED_TIMEZONE}")
     print(f"[check] ✓ gate1 結構：columns {len(actual['columns'])}／indexes "
           f"{len(actual['indexes'])}／constraints {len(actual['constraints'])} 全等"
           f"（演進帳合成 {n_entries} 筆）")
@@ -1542,6 +1637,7 @@ def cmd_check(root=REPO_ROOT, container=None, user=DB_USER, db=DB_NAME,
           f"{len(RUNTIME_APPEND_TABLES)} 表）")
     print(f"[check] ✓ audit archetype：{len(map_rows)}/{len(map_rows)} 綠"
           "（表清單守門通過）")
+    print(f"[check] ✓ 時間欄型別：{n_tz} 欄 timestamptz、date 登記 {n_date}")
     return 0
 
 
@@ -2127,11 +2223,11 @@ class TestPgDumpArgv(unittest.TestCase):
 
 
 class TestCmdCheckGreenPath(unittest.TestCase):
-    """rev5:B-013 缺口①：cmd_check 綠路徑離線全程（照相→合成→三閘→四行摘要→rc 0）。樁沿
-    TestPgDumpArgv fake_run 法：按 SQL 常數分派 fixtures 三節 JSON、pg_dump 回凍結
-    seed.sql。★驗 SQL 分派正確＋四行摘要格式計數＋rc 0；比對器邏輯歸 check_self_test
-    承載、此處刻意不重驗（分工）。凍結基線複製入暫存 root＋空演進帳＝真登記檔日後長
-    entries 也不影響本測（凍結面永不改寫、字面計數可釘）。"""
+    """rev5:B-013 缺口①：cmd_check 綠路徑離線全程（時區前置→照相→合成→三閘＋時間欄型別→
+    六行摘要→rc 0）。樁沿 TestPgDumpArgv fake_run 法：SHOW timezone 回 UTC、按 SQL 常數分派
+    fixtures 三節 JSON、pg_dump 回凍結 seed.sql。★驗 SQL 分派正確（時區查詢居首）＋六行摘要
+    格式計數＋rc 0；比對器邏輯歸 check_self_test 承載、此處刻意不重驗（分工）。凍結基線複製入
+    暫存 root＋空演進帳＝真登記檔日後長 entries 也不影響本測（凍結面永不改寫、字面計數可釘）。"""
 
     _COPY = ("specs/001-schema-baseline/fixtures/columns.json",
              "specs/001-schema-baseline/fixtures/indexes.json",
@@ -2157,6 +2253,9 @@ class TestCmdCheckGreenPath(unittest.TestCase):
                 calls.append("pg_dump")
                 return _R(fx["seed"])
             sql = cmd[-1]
+            if sql == SQL_TIMEZONE:
+                calls.append(sql)
+                return _R("UTC\n")
             if sql not in dispatch:
                 raise AssertionError(f"樁收到未知 SQL（分派錯）：{sql[:80]}")
             calls.append(sql)
@@ -2172,23 +2271,28 @@ class TestCmdCheckGreenPath(unittest.TestCase):
             with contextlib.redirect_stdout(out):
                 rc = cmd_check(root=d, run=fake_run)
         self.assertEqual(rc, 0)
-        # SQL 分派：三查詢恰各一次、序＝columns→indexes→constraints，殿後 pg_dump
-        self.assertEqual(calls, [SQL_COLUMNS, SQL_INDEXES, SQL_CONSTRAINTS, "pg_dump"])
+        # SQL 分派：時區查詢居首（ADR-00059 決定 3）、三查詢恰各一次、序＝columns→indexes→
+        # constraints，殿後 pg_dump
+        self.assertEqual(calls, [SQL_TIMEZONE, SQL_COLUMNS, SQL_INDEXES, SQL_CONSTRAINTS,
+                                 "pg_dump"])
         lines = out.getvalue().splitlines()
-        self.assertEqual(len(lines), 4)
+        self.assertEqual(len(lines), 6)
         self.assertTrue(all(ln.startswith("[check] ✓") for ln in lines), msg=lines)
+        self.assertIn("時區：SHOW timezone＝UTC", lines[0])
         self.assertIn("gate1 結構：columns 169／indexes 38／constraints 101 全等",
-                      lines[0])
-        self.assertIn("演進帳合成 0 筆", lines[0])
-        self.assertIn("gate2 欄序：14 親排表逐位全等", lines[1])
-        self.assertIn("casbin_rule 豁免", lines[1])
+                      lines[1])
+        self.assertIn("演進帳合成 0 筆", lines[1])
+        self.assertIn("gate2 欄序：14 親排表逐位全等", lines[2])
+        self.assertIn("casbin_rule 豁免", lines[2])
         # rev5:B-065 收窄後比對面行數：收窄各表 seed 側本就零列、setval 行原位改佔位——
         # 行數與未收窄時相等（凍結面字面可釘）
         n = len(narrow_runtime_append(normalize_seed_dump(fx["seed"])).splitlines())
         self.assertEqual(n, len(normalize_seed_dump(fx["seed"]).splitlines()))
         self.assertIn(f"gate2 seed：normalize 後 {n} 行逐列零差異（setval 名冊 11 支；"
-                      "runtime-append 收窄 4 表）", lines[2])
-        self.assertIn("audit archetype：15/15 綠", lines[3])
+                      "runtime-append 收窄 4 表）", lines[3])
+        self.assertIn("audit archetype：15/15 綠", lines[4])
+        # 凍結 columns.json 之時間欄恰 29 欄、全為 timestamptz（ADR-00060 背景之現況計數）
+        self.assertIn("時間欄型別：29 欄 timestamptz、date 登記 0", lines[5])
 
 
 class TestCmdCheckSeedEmptyWiring(unittest.TestCase):
@@ -2221,6 +2325,8 @@ class TestCmdCheckSeedEmptyWiring(unittest.TestCase):
         def fake_run(cmd, **kw):
             if "pg_dump" in cmd:
                 return _R(fx["seed"])    # 右源＝乾淨原文（左右可辨、餵右源即恆綠可測）
+            if cmd[-1] == SQL_TIMEZONE:
+                return _R("UTC\n")       # 時區前置放行（ADR-00059）
             return _R(json.dumps(dispatch[cmd[-1]]))
 
         with tempfile.TemporaryDirectory() as d:
@@ -2242,6 +2348,201 @@ class TestCmdCheckSeedEmptyWiring(unittest.TestCase):
         # ★鑑別力自保：塞列在收窄表 COPY 段內、兩側剝列後 diff 必不紅——若此處也紅，
         # 次序反轉／左右搞反版同樣 rc 1、本測即失去判別力
         self.assertNotIn("diff 非零", msg)
+
+
+def _check_fake(tz="UTC", columns=None):
+    """cmd_check 佈線測之共用樁：回 (calls, fake_run, root_ctx)。SHOW timezone 回 tz、三照相查詢
+    回凍結 fixtures（columns 可替換）、pg_dump 回凍結 seed.sql；root_ctx＝凍結基線副本＋空演進帳
+    之暫存 root（同 TestCmdCheckGreenPath 形）。calls 依序記錄收到之查詢。"""
+    fx = load_fixtures(REPO_ROOT)
+    dispatch = {SQL_COLUMNS: fx["columns"] if columns is None else columns,
+                SQL_INDEXES: fx["indexes"], SQL_CONSTRAINTS: fx["constraints"]}
+    calls = []
+
+    class _R:
+        returncode, stderr = 0, ""
+
+        def __init__(self, out):
+            self.stdout = out
+
+    def fake_run(cmd, **kw):
+        if "pg_dump" in cmd:
+            calls.append("pg_dump")
+            return _R(fx["seed"])
+        calls.append(cmd[-1])
+        if cmd[-1] == SQL_TIMEZONE:
+            return _R(tz + "\n")
+        return _R(json.dumps(dispatch[cmd[-1]]))
+
+    @contextlib.contextmanager
+    def root_ctx():
+        with tempfile.TemporaryDirectory() as d:
+            for rel in TestCmdCheckGreenPath._COPY:
+                dst = os.path.join(d, rel)
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copyfile(os.path.join(REPO_ROOT, rel), dst)
+            _write_ledger(d, _VALID_LEDGER)
+            yield d
+
+    return calls, fake_run, root_ctx
+
+
+class TestTimezonePrecheck(unittest.TestCase):
+    """時區前置（ADR-00059 決定 3）：右源照相段最先取 SHOW timezone；值≠UTC＝rc 2 附修法、
+    不往下照相比對（零照相查詢、零 pg_dump、零 ✓ 行）；＝UTC 放行（綠路徑全序與「✓ 時區」行由
+    TestCmdCheckGreenPath 逐位釘；本類之 UTC 案只作前置判準之正例對照）。判準＝字面全等 UTC——同義名（Etc/UTC）亦不放行（ADR-00059
+    決定 3 之「＝UTC」；compose 命令列固定值即此字面，postgres:18.4-alpine 映像 initdb 寫入
+    設定檔之值亦同——一次性容器不帶 -c 亦過）。"""
+
+    def test_judgement_utc_passes(self):
+        self.assertIsNone(timezone_problem("UTC"))
+
+    def test_judgement_non_utc_named_with_remedy(self):
+        for bad in ("Asia/Tokyo", "Etc/UTC", "UTC+9", "GMT", ""):
+            msg = timezone_problem(bad)
+            self.assertIsNotNone(msg, msg=bad)
+            self.assertIn(f"SHOW timezone＝{bad!r}", msg)
+            self.assertIn("期望＝'UTC'", msg)
+            self.assertIn("ADR-00059", msg)
+            self.assertIn("docker-compose.yml", msg)
+            self.assertIn("-c timezone=UTC", msg)
+            self.assertIn("-c log_timezone=UTC", msg)  # 只在 compose 命令列修法句出現
+
+    def test_cmd_check_non_utc_rc2_before_snapshot(self):
+        calls, run, root_ctx = _check_fake(tz="Asia/Tokyo")
+        err, out = io.StringIO(), io.StringIO()
+        with root_ctx() as d, contextlib.redirect_stderr(err), \
+                contextlib.redirect_stdout(out):
+            rc = cmd_check(root=d, run=run)
+        msg = err.getvalue()
+        self.assertEqual(rc, 2, msg=msg)
+        self.assertEqual(calls, [SQL_TIMEZONE])          # 最先、且不往下照相／dump
+        self.assertIn("SHOW timezone＝'Asia/Tokyo'", msg)
+        self.assertIn("ADR-00059", msg)
+        self.assertNotIn("self-test", msg)               # 鑑別力自保：rc 2 來自時區前置
+        self.assertEqual(out.getvalue(), "")
+
+    def test_cmd_check_utc_proceeds_rc0(self):
+        calls, run, root_ctx = _check_fake(tz="UTC")
+        out = io.StringIO()
+        with root_ctx() as d, contextlib.redirect_stdout(out):
+            rc = cmd_check(root=d, run=run)
+        self.assertEqual(rc, 0)
+        self.assertEqual(calls[0], SQL_TIMEZONE)
+        self.assertIn("[check] ✓ 時區：SHOW timezone＝UTC", out.getvalue())
+
+    def test_show_timezone_argv_reads_server_side(self):
+        """SHOW timezone 撈取「必不帶」PGTZ／PGOPTIONS／子行程 env（與 TestPgDumpArgv 釘 pg_dump
+        「必帶」成對）：session 時區一經強制為 UTC（-e PGTZ=UTC、-e PGOPTIONS=-c timezone=UTC、
+        env、連線字串 options）＝SHOW timezone 恆讀 UTC、前置斷言淪為恆綠假閘，而其餘樁只看
+        cmd[-1] 分派、察覺不到。兩形（compose／--container）各跑一次 cmd_check，截下該次呼叫之
+        完整 argv 逐位釘死＋逐元素掃 PGTZ／PGOPTIONS（_db_base 本身被塞 -e 時逐位釘值跟著變、
+        靠此掃描抓）＋kw 不得帶 env。"""
+        for container in (None, "pristine-pg"):
+            with self.subTest(container=container):
+                _, run, root_ctx = _check_fake(tz="UTC")
+                seen = []
+
+                def spy(cmd, **kw):
+                    seen.append((list(cmd), dict(kw)))
+                    return run(cmd, **kw)
+
+                with root_ctx() as d, contextlib.redirect_stdout(io.StringIO()):
+                    rc = cmd_check(root=d, container=container, run=spy)
+                self.assertEqual(rc, 0)
+                tz = [(c, kw) for c, kw in seen if c[-1] == SQL_TIMEZONE]
+                self.assertEqual(len(tz), 1, msg=seen)
+                cmd, kw = tz[0]
+                self.assertEqual(cmd, _db_base(container) + [
+                    "psql", "-U", DB_USER, "-d", DB_NAME, "-tA", "-v", "ON_ERROR_STOP=1",
+                    "-c", SQL_TIMEZONE])
+                self.assertEqual([x for x in cmd if "PGTZ" in x or "PGOPTIONS" in x], [])
+                self.assertNotIn("env", kw)
+                # 鑑別力自保：同一 run 之 pg_dump 呼叫確帶 PGTZ=UTC——掃描法看得見 PGTZ
+                dumps = [c for c, _ in seen if "pg_dump" in c]
+                self.assertEqual(len(dumps), 1)
+                self.assertIn("PGTZ=UTC", dumps[0])
+
+
+class TestTimeColumnTypes(unittest.TestCase):
+    """全時間欄型別斷言（憲法 §I.6 時間點欄通則、ADR-00060 決定 2）：以右源 columns 照相判定——
+    無時區 timestamp（含精度與陣列形）一律紅；date（含陣列形）須列於 DATE_COLUMNS_REGISTERED
+    （鍵＝(表, 欄)）方過；timestamptz 綠且計數；time／interval 不在射程。"""
+
+    @staticmethod
+    def _c(t, c, typ):
+        return {"table": t, "column": c, "ordinal": 1, "type": typ,
+                "nullable": True, "default": None}
+
+    def test_timestamptz_green_and_counted(self):
+        cols = [self._c("t", "a", TS_TZ), self._c("t", "b", "timestamp(3) with time zone"),
+                self._c("t", "c", "timestamp with time zone[]"), self._c("t", "id", "bigint"),
+                self._c("t", "d", "time without time zone"),
+                self._c("t", "e", "time with time zone"), self._c("t", "f", "interval"),
+                self._c("t", "g", "daterange"), self._c("t", "h", "datemultirange")]
+        self.assertEqual(audit_time_columns(cols, {}), ([], 3, 0))
+
+    def test_naive_timestamp_red_all_forms(self):
+        for typ in ("timestamp without time zone", "timestamp(3) without time zone",
+                    "timestamp without time zone[]", "timestamp(6) without time zone[]"):
+            fnd, n_tz, _ = audit_time_columns([self._c("t_x", "happened_at", typ)], {})
+            self.assertEqual(len(fnd), 1, msg=typ)
+            self.assertIn("t_x.happened_at", fnd[0])
+            self.assertIn(typ, fnd[0])
+            self.assertIn("憲法 §I.6 時間點欄通則", fnd[0])
+            self.assertIn("ADR-00060", fnd[0])
+            self.assertEqual(n_tz, 0)
+
+    def test_naive_timestamp_not_legalized_by_date_roster(self):
+        fnd, _, _ = audit_time_columns(
+            [self._c("t_x", "happened_at", "timestamp without time zone")],
+            {("t_x", "happened_at"): "specs/999-x/spec.md FR-001"})
+        self.assertEqual(len(fnd), 1)
+
+    def test_unregistered_date_red(self):
+        for typ in ("date", "date[]"):
+            fnd, _, n_date = audit_time_columns([self._c("t_x", "birthday", typ)], {})
+            self.assertEqual(len(fnd), 1, msg=typ)
+            self.assertIn("t_x.birthday", fnd[0])
+            self.assertIn("未登記", fnd[0])
+            self.assertIn("DATE_COLUMNS_REGISTERED", fnd[0])
+            self.assertIn("非演進帳", fnd[0])
+            self.assertIn("憲法 §I.6 時間點欄通則", fnd[0])
+            self.assertIn("ADR-00060", fnd[0])
+            self.assertEqual(n_date, 0)
+
+    def test_registered_date_green_and_counted(self):
+        reg = {("t_x", "birthday"): "specs/999-x/spec.md FR-001"}
+        self.assertEqual(
+            audit_time_columns([self._c("t_x", "birthday", "date"),
+                                self._c("t_x", "created_at", TS_TZ)], reg), ([], 1, 1))
+
+    def test_registration_keyed_by_table_and_column(self):
+        reg = {("t_x", "birthday"): "specs/999-x/spec.md FR-001"}
+        fnd, _, _ = audit_time_columns([self._c("t_y", "birthday", "date")], reg)
+        self.assertEqual(len(fnd), 1)
+        self.assertIn("t_y.birthday", fnd[0])
+
+    def test_default_roster_is_module_constant(self):
+        fnd, _, _ = audit_time_columns([self._c("t_x", "birthday", "date")])
+        self.assertEqual(len(fnd), 1)        # 名冊現為空：未傳 registered＝讀本檔常數
+
+    def test_cmd_check_wiring_naive_red_rc1(self):
+        fx = load_fixtures(REPO_ROOT)
+        cols = json.loads(json.dumps(fx["columns"]))
+        hit = [c for c in cols if (c["table"], c["column"]) == ("sys_token", "expires_at")]
+        self.assertEqual(len(hit), 1)
+        hit[0]["type"] = "timestamp without time zone"
+        _calls, run, root_ctx = _check_fake(columns=cols)
+        err = io.StringIO()
+        with root_ctx() as d, contextlib.redirect_stderr(err), \
+                contextlib.redirect_stdout(io.StringIO()):
+            rc = cmd_check(root=d, run=run)
+        msg = err.getvalue()
+        self.assertEqual(rc, 1, msg=msg)
+        self.assertIn("DRIFT [時間欄] sys_token.expires_at", msg)
+        self.assertIn("ADR-00060", msg)
+        self.assertIn("[時間欄] 項除外", msg)      # 漂移總述不對本項宣稱演進帳為合法化路徑
 
 
 class TestDockerUnavailable(unittest.TestCase):
@@ -2761,6 +3062,19 @@ class TestConstantsPinned(unittest.TestCase):
             self.assertEqual(len(key), 2)
             self.assertTrue(all(isinstance(x, str) and x for x in key))
             self.assertTrue(isinstance(reason, str) and reason.strip())
+
+    def test_time_constants_pinned(self):
+        """ADR-00059／ADR-00060 治理常數釘死：時區查詢字面、期望值；date 登記名冊現為空集——
+        加列＝引入該 date 欄之刀同 commit 改本案＋附 spec 出處；每筆形制機器強制
+        （(表, 欄) tuple＋非空出處字串）。"""
+        self.assertEqual(SQL_TIMEZONE, "SHOW timezone")
+        self.assertEqual(EXPECTED_TIMEZONE, "UTC")
+        self.assertEqual(DATE_COLUMNS_REGISTERED, {})
+        for key, source in DATE_COLUMNS_REGISTERED.items():
+            self.assertIsInstance(key, tuple)
+            self.assertEqual(len(key), 2)
+            self.assertTrue(all(isinstance(x, str) and x for x in key))
+            self.assertTrue(isinstance(source, str) and source.strip())
 
     def test_runtime_append_tables_pinned(self):
         """rev5:B-065 收窄集字面釘死（表→sequence 名、自 fixtures/seed.sql setval 行讀出）；
