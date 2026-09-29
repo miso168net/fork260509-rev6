@@ -84,8 +84,8 @@ def _check_probe(p, label="probe"):
 def notes_gt06_risks(text, field="notes"):
     """notes 全文會原樣進 MILESTONES 附錄（BL-00005 拍板：不截斷不轉義），因而落入 GT-06 掃描面
     （face＝全部 tracked md、含 GENERATED_FILES）。事件源 append-only、寫進去即無乾淨補救——故在**真源側**先擋（BL-00013）。
-    summary、erratum 的 reason、feature_close 的 spec_supersessions[].note 同樣原文進人讀面、且不在 ERRATUM_FIELDS，
-    共用本道守衛（ADR-00053 決定 2）；`field` 為訊息指名的欄名。
+    凡原文渲染進人讀面（MILESTONES／STATE）、且不在 ERRATUM_FIELDS 的事件自由文字欄同理，共用本道守衛（ADR-00053 決定 2）；
+    套用欄以 `_check_event` 為準、本處不枚舉（LL-00034）。`field` 為訊息指名的欄名。
     四腿正則自 `book.py` 取用、不另抄一份（判準單一家）。回錯誤訊息 list。"""
     from . import book as book_mod
     errs = []
@@ -157,8 +157,9 @@ def _check_event(e):
             if not (isinstance(ss, list) and all(isinstance(x, dict) and set(x) == {"feature", "item", "note"} for x in ss)):
                 errs.append("spec_supersessions 須為 [{feature,item,note},…]")
             for i, x in enumerate(ss if isinstance(ss, list) else []):
-                if isinstance(x, dict) and isinstance(x.get("note"), str):
-                    errs += notes_gt06_risks(x["note"], f"spec_supersessions[{i}].note")
+                for k in ("feature", "item", "note"):
+                    if isinstance(x, dict) and isinstance(x.get(k), str):
+                        errs += notes_gt06_risks(x[k], f"spec_supersessions[{i}].{k}")
     elif etype == "misc":
         if e["category"] not in CATEGORIES:
             errs.append(f"category 須為 {'/'.join(CATEGORIES)} 之一：{e['category']!r}")
@@ -170,11 +171,15 @@ def _check_event(e):
             errs.append(f"merge 須為 40 位 hex SHA：{e['merge']!r}")
         if "workflow" in e and not (isinstance(e["workflow"], str) and e["workflow"].strip()):
             errs.append("workflow 須為非空字串")
+        if isinstance(e.get("workflow"), str):
+            errs += notes_gt06_risks(e["workflow"], "workflow")
         if "adrs" in e and not _id_list_ok(e["adrs"], RE_ADR):
             errs.append("adrs 須為 ADR-NNNNN 字串 list（收單即立 ADR 的維護批用；DECISIONS-INDEX 反查左源）")
     elif etype == "review":
         if not (isinstance(e["scope"], str) and e["scope"].strip()):
             errs.append("scope 須為非空字串")
+        if isinstance(e["scope"], str):
+            errs += notes_gt06_risks(e["scope"], "scope")
         if not (isinstance(e["report"], str) and RE_REPORT.fullmatch(e["report"])):
             errs.append(f"report 須為 docs/reviews/YYYYMMDD-<scope>.md：{e['report']!r}")
         if "feature" in e and not RE_FEATURE.fullmatch(str(e["feature"])):

@@ -5,6 +5,7 @@
 import os
 import shutil
 import unittest
+import unittest.mock
 
 from docsync import adr, book, common, events, gates, ADR_DIR, BACKLOG, EVENTS
 from docsync.tests import tmprepo
@@ -232,6 +233,67 @@ class TestIndexConsistencyLeg(_TmpRepoCase):
         ctx.git_try = lambda *a, cwd=None: (128, "") if "status" in a else real(*a, cwd=cwd)
         fs = self.leg(ctx)
         self.assertTrue(fs and all(f[:2] == ("ERROR", "GT-12") and "rc=128" in f[3] for f in fs), fs)
+
+    def test_caller_git_index_file_is_the_judged_index(self):
+        """沿用呼叫端 `GIT_INDEX_FILE`（hook 期＝本次 commit 的暫存區）：以 `common.Ctx`（真 repo 面所用之類、非 `tmprepo.Ctx`）
+        在 `GIT_INDEX_FILE=<alt>` 下跑，findings 依 alt 判。alt＝`.git/index` 收 a.md 改寫版後的複本，其後 `.git/index` 還原為 HEAD：
+        alt 已收 a.md→不報；b.md 未暫存改動、new.md 未追蹤→照報。對照：同一 repo 以 `.git/index`（＝HEAD）判則整腿不跑。
+        ★`git_try` 若剝 `GIT_*`（讀回 `.git/index`＝HEAD、整腿不跑）＝本案紅。"""
+        root = self.repo({"a.md": "A\n", "b.md": "B\n"})
+        _write(root, "a.md", "A2\n")
+        _git(root, "add", "a.md")
+        alt = os.path.join(root, ".git", "alt-index")
+        shutil.copyfile(os.path.join(root, ".git", "index"), alt)
+        _git(root, "reset", "-q")                   # .git/index 回 HEAD；alt 仍收 a.md 改寫版（alt≠HEAD）
+        _write(root, "b.md", "B2\n")
+        _write(root, "new.md", "N\n")
+        self.assertEqual(self.leg(root), [])        # 對照：以 .git/index 判＝暫存區＝HEAD、整腿不跑
+        with unittest.mock.patch.dict(os.environ, {**tmprepo.clean_env(), "GIT_INDEX_FILE": alt}, clear=True):
+            fs = gates._index_consistency_leg(common.Ctx(root))
+        self.assertEqual(sorted((f[:3], "未追蹤" in f[3]) for f in fs),
+                         [(("ERROR", "GT-12", "b.md"), False), (("ERROR", "GT-12", "new.md"), True)], fs)
+
+    def test_leg_leaves_index_bytes_intact(self):
+        """唯讀（LL-00047）：暫存區≠HEAD（整腿會跑到 status）且另一檔 stat 髒而內容不變時，腿前後 `.git/index` 位元相同。
+        ★status 拿掉 `--no-optional-locks`＝刷新 stat 快取後回寫 index＝本案紅。"""
+        root = self.repo({"a.md": "A\n", "b.md": "B\n"})
+        _write(root, "a.md", "A2\n")
+        _git(root, "add", "a.md")
+        p = os.path.join(root, "b.md")
+        t = os.stat(p).st_mtime - 1000
+        os.utime(p, (t, t))                          # stat 髒、內容不變
+        # 前提：確入受檢面——plumbing diff-files 不刷新 stat 快取、只憑 stat 判，故列出 b.md
+        self.assertIn("b.md", _git(root, "diff-files", "--name-only").split("\n"))
+        idx = os.path.join(root, ".git", "index")
+        with open(idx, "rb") as f:
+            before = f.read()
+        fs = self.leg(root)
+        with open(idx, "rb") as f:
+            self.assertEqual(f.read(), before, "一致性腿回寫了 .git/index")
+        self.assertEqual(fs, [])                     # 內容未變＝不報；a.md 已全數暫存
+
+    RENAME_TEXT = "改名偵測以內容相同判定、本行供比對。\n"
+
+    def _renamed(self):
+        """old.md 以 `git mv` 改名為 new.md（全暫存）。status.renames 釘 true：機器全域若關改名偵測，拿掉 `--no-renames`
+        的變異即失牙齒（同 core.quotePath 釘值之理）。"""
+        root = self.repo({"a.md": "A\n", "old.md": self.RENAME_TEXT})
+        _git(root, "config", "status.renames", "true")
+        _git(root, "mv", "old.md", "new.md")
+        return root
+
+    def test_staged_rename_alone_is_green(self):
+        """`git mv` 全暫存＝零 finding。★拿掉 `--no-renames`：status 以 `R  <新>\\0<舊>\\0` 兩欄列改名項、-z 單欄切分把舊路徑
+        當成一筆（xy 取其前兩字）＝誤報＝本案紅。"""
+        self.assertEqual(self.leg(self._renamed()), [])
+
+    def test_renamed_then_edited_names_new_path_once(self):
+        """`git mv` 後再改新檔＝恰一筆、指名新路徑（舊路徑為已暫存刪除、不報）。★拿掉 `--no-renames`＝多出舊路徑殘段一筆＝本案紅。"""
+        root = self._renamed()
+        _write(root, "new.md", self.RENAME_TEXT + "改了。\n")
+        fs = self.leg(root)
+        self.assertEqual([f[:3] for f in fs], [("ERROR", "GT-12", "new.md")], fs)
+        self.assertIn("工作樹≠暫存區", fs[0][3])
 
     def test_wired_into_gt12(self):
         root = self.repo({"a.md": "A\n"})

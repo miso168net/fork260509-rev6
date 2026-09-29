@@ -298,9 +298,8 @@ class TestNotesGt06Guard(unittest.TestCase):
 
 
 class TestFreeTextFieldsGuard(unittest.TestCase):
-    """ADR-00053 決定 2（BL-00035①）：summary、erratum 的 reason、feature_close 的 spec_supersessions[].note
-    與 notes 同樣原文進 MILESTONES／STATE、且不在 ERRATUM_FIELDS＝寫壞無更正出口，故寫入端套同一道四腿守衛；
-    訊息指名欄名、行號由 parse_events 的列號承載。"""
+    """ADR-00053 決定 2（BL-00035①）：凡原文渲染進 MILESTONES／STATE、且不在 ERRATUM_FIELDS 的事件自由文字欄＝寫壞無更正出口，
+    故寫入端與 notes 套同一道四腿守衛；訊息指名欄名、行號由 parse_events 的列號承載。每欄一正（四腿各紅）一反（安全文字綠）。"""
 
     RISKY = (("見 docs/ops/RULES.md:12", "行號形"),
              ("見 BACKLOG.md#bl-00001", "deep-link"),
@@ -313,12 +312,21 @@ class TestFreeTextFieldsGuard(unittest.TestCase):
         return ev(type="misc", date="2026-09-29", summary=summary, category="governance", backlog_add=[])
 
     @staticmethod
-    def _fc(summary="s", note="n"):
+    def _fc(summary="s", note="n", feature="001-x", item="FR-002"):
         return ev(type="feature_close", date="2026-09-29", feature="001-x", summary=summary, merge="a" * 40,
                   pins={"web": "b" * 40, "api": "c" * 40}, adrs=[], arch_impact="none", backlog_add=[],
                   backlog_done=[], window=1,
                   spec_supersessions=[{"feature": "001-x", "item": "FR-001", "note": "首筆無事"},
-                                      {"feature": "001-x", "item": "FR-002", "note": note}])
+                                      {"feature": feature, "item": item, "note": note}])
+
+    @staticmethod
+    def _review(scope):
+        return ev(type="review", date="2026-09-29", scope=scope, report="docs/reviews/20260929-x.md",
+                  findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+
+    @staticmethod
+    def _misc_wf(workflow):
+        return ev(type="misc", date="2026-09-29", summary="s", category="governance", backlog_add=[], workflow=workflow)
 
     @staticmethod
     def _erratum(reason):
@@ -358,6 +366,32 @@ class TestFreeTextFieldsGuard(unittest.TestCase):
 
     def test_spec_supersession_note_safe_green(self):
         self.assertEqual(self._msgs(self._fc(note=self.SAFE)), [])
+
+    # review 的 scope（MILESTONES 標的欄／STATE 近期事件列）、misc 的 workflow（標的欄「category｜workflow」）、
+    # feature_close 的 spec_supersessions[].feature／.item（summary 尾附「翻案：<feature>/<item>」）同樣原文進人讀面。
+    def test_review_scope_each_leg_red(self):
+        self._assert_each_leg_red(self._review, "scope")
+
+    def test_review_scope_safe_green(self):
+        self.assertEqual(self._msgs(self._review(self.SAFE)), [])
+
+    def test_misc_workflow_each_leg_red(self):
+        self._assert_each_leg_red(self._misc_wf, "workflow")
+
+    def test_misc_workflow_safe_green(self):
+        self.assertEqual(self._msgs(self._misc_wf(self.SAFE)), [])
+
+    def test_spec_supersession_feature_and_item_each_leg_red(self):
+        """欄名帶索引：第二筆（index 1）壞、訊息指名 spec_supersessions[1].feature／.item、首筆不誤報。"""
+        self._assert_each_leg_red(lambda t: self._fc(feature=t), "spec_supersessions[1].feature")
+        self._assert_each_leg_red(lambda t: self._fc(item=t), "spec_supersessions[1].item")
+        for kw in ("feature", "item"):
+            msgs = self._msgs(self._fc(**{kw: self.RISKY[0][0]}))
+            self.assertFalse(any("spec_supersessions[0]" in m for m in msgs), msgs)
+
+    def test_spec_supersession_feature_and_item_safe_green(self):
+        self.assertEqual(self._msgs(self._fc(feature=self.SAFE)), [])
+        self.assertEqual(self._msgs(self._fc(item=self.SAFE)), [])
 
     def test_notes_message_keeps_its_field_name(self):
         """既有 notes 腿的訊息仍以「notes 含」起頭（欄名參數預設值＝notes）。"""

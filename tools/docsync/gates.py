@@ -594,6 +594,7 @@ def _doorbell_leg(ctx):
 # 只在暫存區≠HEAD（有 commit 在準備）時跑、手動 lint 不誤報。★git 呼叫沿用呼叫端環境：hook 期間 GIT_INDEX_FILE 指向本次 commit
 # 的 index（部分 commit／commit -a 為臨時 lock index）＝正要比對的一版、不得剝除（剝除只對子庫、LL-00012）。取值用 status 而非
 # `git diff`：後者會回寫 index 的 stat 快取（git 2.43 實測、--no-optional-locks 擋不住），違 pre-commit 並行 harness「各閘唯讀」。
+# `--no-renames`＝-z 單欄切分之前提：改名項否則多帶一欄舊路徑（`XY 新\0舊\0`），逐項切分會把舊路徑當成另一筆。
 def _index_consistency_leg(ctx):
     rc, _ = ctx.git_try("diff", "--cached", "--quiet")      # HEAD 未誕生時 git 以空樹對比＝暫存區非空即 rc 1
     if rc == 0:

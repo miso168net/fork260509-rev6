@@ -11,6 +11,6 @@ LL-00047｜GT-04 在 lint 路徑用 `git diff --name-only HEAD` 取捷徑，會�
 
 **處置**：兩個取值點都改用 `git --no-optional-locks status --porcelain -z …`：status 只在記憶體刷新、不回寫，列出的「HEAD≠暫存區」與「暫存區≠工作樹」聯集是「工作樹≠HEAD」的超集，比對面不減。GT-12 的「工作樹＝暫存區」一致性腿同理選 status。GT-04 另有一案把 ADR 弄成 stat 髒而內容不變，斷言 `_files(head=True)` 前後 `.git/index` 位元相同。plumbing `diff-index` 不回寫，但把 stat 髒檔全部當已改：在 drvfs 複本上把 55 支 ADR 全弄成 stat 髒時全數列出、退回逐檔讀 HEAD 版約 4.8 秒（status 同條件 0.3 秒），所以不用。
 
-**晉升面**：code——唯讀寫法住兩個取值點的碼註，由該案機器守；不另立規則。
+**晉升面**：code——唯讀寫法住兩個取值點的碼註，兩處各由一支「stat 髒而內容不變→前後 `.git/index` 位元相同」之案機器守（GT-04 `_files(head=True)` 與 GT-12 一致性腿）；不另立規則。
 
 **再犯面與守法**：閘或 lint 路徑新增 git 取值時，先在臨時 repo 把目標檔弄成 stat 髒而內容不變，比對命令前後 `.git/index` 的位元。會變的命令（`git diff` 工作樹側、不帶 `--no-optional-locks` 的 `git status`）不得進閘；要判「工作樹與 HEAD／暫存區是否不同」，一律用 `git --no-optional-locks status`。

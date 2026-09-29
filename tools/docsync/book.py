@@ -33,13 +33,14 @@ MENTION = re.compile(r"`[^`\n]*`|「[^」\n]*」")
 # 含黏斜線路徑段 `specs/002 史料面`／`specs/003/spec.md` 與單段後綴 `005-final`／`003-uN.py`（RL-0002 三形之二；
 # 故界不排除「/」、右側連字號只擋接數字的區間形 `010-1234`）。
 # 射程外：000～029 以外的單段 slug（`256-bit`）、計數（`rolling 3 刀`）、指代（本刀／各刀／跨刀）。入參須已剝提及形（MENTION）。
+# ★值域寫死之失效面：刀號達 030 起裸形（`030 前`）漏網、須同批擴值域（到期即紅之案見 tests/test_rules.py）。
 KNIFE_NAME = re.compile(
     r"(?<![A-Za-z0-9])(?:" + KNIFE_SLUG + r"|\d{3}-[a-z]\d+(?![A-Za-z0-9-])|\d{3}\s*刀)"
     r"|第\s*[一二三四五六七八九十百〇零\d]+\s*刀"
     r"|(?<![A-Za-z0-9])rev[45](?::\s*|\s+)\d{3}(?!\d)"
     r"|(?<![A-Za-z0-9-])maint-[a-z0-9]+(?:-[a-z0-9]+)*"
     r"|(?<![A-Za-z0-9])mb\d+[a-z0-9]*(?![A-Za-z0-9])"
-    r"|(?<![A-Za-z0-9-])spec-compliance-\d{3}(?!\d)"
+    r"|(?<![A-Za-z0-9])spec-compliance-\d{3}(?!\d)"
     r"|(?<![0-9A-Za-z.,:_-])0[0-2]\d(?![\d.:])(?!-\d)"
 )
 RE_KNIFE = re.compile(r"^\d{3}-")

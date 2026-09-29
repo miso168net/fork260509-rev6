@@ -17,6 +17,52 @@ from docsync.tests import tmprepo
 CONSISTENCY = "ADR-00052 決定 1"   # GT-12 一致性腿全部訊息共有的出處字面
 
 
+def _methods(cls_node):
+    return {f.name: f for f in cls_node.body if isinstance(f, ast.FunctionDef)}
+
+
+def _subprocess_refs(node):
+    return [n for n in ast.walk(node)
+            if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "subprocess"]
+
+
+def _wraps_stripped(fn):
+    return any(isinstance(n, ast.With) and any(isinstance(i.context_expr, ast.Call) and isinstance(i.context_expr.func, ast.Name)
+                                               and i.context_expr.func.id == "_stripped" for i in n.items)
+               for n in ast.walk(fn))
+
+
+def _override_gaps(common_src):
+    """common 原文 → 覆寫面缺口訊息 list（空＝完備）；覆寫側取 `tmprepo.Ctx` 現檔。
+    須覆寫集＝`Ctx` 方法體內直寫 `subprocess.` 者（會發 git 的底層）。★此口徑的前提＝起行程只經 Ctx 方法體內直寫：
+    模組層 helper 起行程、由 Ctx 方法呼叫者，方法體直寫口徑看不到＝覆寫面漏網。前提以「common 全模組之 `subprocess.`
+    引用皆落在 Ctx 方法體內」斷言（前提失效即紅）；不採呼叫圖閉包——閉包須另判間接呼叫（別名、getattr、經他類方法），
+    本身又是一道會過窄的前提，全模組禁令嚴格包含之，且 common 現況即零例。"""
+    mod = ast.parse(common_src)
+    gaps = []
+    imports = [(type(n).__name__, getattr(n, "module", None), [(a.name, a.asname) for a in n.names])
+               for n in ast.walk(mod) if isinstance(n, (ast.Import, ast.ImportFrom))
+               and ("subprocess" in [a.name for a in n.names] or getattr(n, "module", None) == "subprocess")]
+    if imports != [("Import", None, [("subprocess", None)])]:
+        gaps.append(f"前提失效：common 引入 subprocess 之形為 {imports}（只認 `import subprocess`；別名／from 形會讓掃描漏網）")
+    ctx = next(n for n in mod.body if isinstance(n, ast.ClassDef) and n.name == "Ctx")
+    inside = {id(n) for f in _methods(ctx).values() for n in _subprocess_refs(f)}
+    for n in _subprocess_refs(mod):
+        if id(n) not in inside:
+            gaps.append(f"前提失效：common 第 {n.lineno} 行於 Ctx 方法體外引用 subprocess.{n.attr}（模組層函式、他類或 Ctx 類層"
+                        "非方法）——經它起行程者不在覆寫面；移入 Ctx 方法體（並於 tmprepo.Ctx 覆寫）或擴本對賬")
+    spawning = sorted(name for name, f in _methods(ctx).items() if _subprocess_refs(f))
+    if not spawning:
+        gaps.append("受守面空集合：common.Ctx 零個直起 subprocess 的方法——掃描口徑失效（RL-0067）")
+    mine = _methods(ast.parse(textwrap.dedent(inspect.getsource(tmprepo.Ctx))).body[0])
+    for name in spawning:
+        if name not in mine:
+            gaps.append(f"common.Ctx.{name} 直起 subprocess、tmprepo.Ctx 未覆寫——臨時 repo 面會沿用呼叫端 GIT_*")
+        elif not _wraps_stripped(mine[name]):
+            gaps.append(f"tmprepo.Ctx.{name} 覆寫體未以 `with _stripped()` 包住呼叫")
+    return gaps
+
+
 class TestTmpRepoGitEnv(unittest.TestCase):
     """本類不經任何 setUp 剝環境：helper 須逐呼叫自行剝除，模組層與 setUpClass 期呼叫才同樣安全。"""
 
@@ -45,29 +91,21 @@ class TestTmpRepoGitEnv(unittest.TestCase):
         """名冊對賬（RL-0026：處數由測試釘、不靠 docstring 枚舉——LL-00034）：`common.Ctx` 方法體內直接起 `subprocess.` 者
         ＝會發 git 的底層，須全數在 `tmprepo.Ctx` 本類覆寫、且覆寫體以 `with _stripped()` 包住呼叫。集合由 AST 現取、不寫死：
         common.Ctx 日後新增直起 subprocess 的底層（例：以 `cat-file --batch` 改寫 HEAD 讀取）而本件未跟上＝本案轉紅，
-        不再靜默沿用呼叫端 `GIT_*`（LL-00012 同源）。前提＝common 只以 `import subprocess` 引入（別名／from 形會讓掃描漏網、一併斷言）。"""
-        mod = ast.parse(inspect.getsource(common))
-        imports = [(type(n).__name__, getattr(n, "module", None), [(a.name, a.asname) for a in n.names])
-                   for n in ast.walk(mod) if isinstance(n, (ast.Import, ast.ImportFrom))
-                   and ("subprocess" in [a.name for a in n.names] or getattr(n, "module", None) == "subprocess")]
-        self.assertEqual(imports, [("Import", None, [("subprocess", None)])])
+        不再靜默沿用呼叫端 `GIT_*`（LL-00012 同源）。前提兩條一併斷言：common 只以 `import subprocess` 引入（別名／from 形
+        會讓掃描漏網）、全模組之 `subprocess.` 引用皆在 Ctx 方法體內（模組層 helper 起行程者方法體直寫口徑看不到；見 `_override_gaps`）。"""
+        self.assertEqual(_override_gaps(inspect.getsource(common)), [])
 
-        def methods(cls):
-            node = ast.parse(textwrap.dedent(inspect.getsource(cls))).body[0]
-            return {f.name: f for f in node.body if isinstance(f, ast.FunctionDef)}
+    # 植入物：模組層起行程之 helper＋由 Ctx 新方法呼叫之（方法體內不直寫 `subprocess.`）
+    PLANT_HELPER = "def _spawn(*args):\n    return subprocess.run(args)\n\n\n"
+    PLANT_METHOD = "    def cat(self):\n        return _spawn(\"git\", \"cat-file\")\n\n"
 
-        spawning = {name for name, f in methods(common.Ctx).items()
-                    if any(isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "subprocess"
-                           for n in ast.walk(f))}
-        self.assertTrue(spawning)   # 受守面非空（RL-0067）：掃描口徑失效即紅、不空轉
-        mine = methods(tmprepo.Ctx)
-        for name in sorted(spawning):
-            self.assertIn(name, mine, f"common.Ctx.{name} 直起 subprocess、tmprepo.Ctx 未覆寫——臨時 repo 面會沿用呼叫端 GIT_*")
-            self.assertTrue(any(isinstance(n, ast.With) and any(isinstance(i.context_expr, ast.Call)
-                                                                and isinstance(i.context_expr.func, ast.Name)
-                                                                and i.context_expr.func.id == "_stripped" for i in n.items)
-                                for n in ast.walk(mine[name])),
-                            f"tmprepo.Ctx.{name} 覆寫體未以 `with _stripped()` 包住呼叫")
+    def test_module_level_spawner_called_from_ctx_is_red(self):
+        """記憶體內反例（不改 common.py 真檔）：common 植入模組層起行程之 helper、由 `Ctx` 新方法呼叫——覆寫面對賬須報。"""
+        src = inspect.getsource(common)
+        mutated = src.replace("\nclass Ctx:\n", "\n" + self.PLANT_HELPER + "class Ctx:\n" + self.PLANT_METHOD, 1)
+        self.assertNotEqual(mutated, src)   # 植入點存在
+        gaps = _override_gaps(mutated)
+        self.assertTrue(any("Ctx 方法體外引用 subprocess.run" in g for g in gaps), gaps)   # 模組層 helper 起行程、Ctx 方法經它發 git
 
     def test_each_ctx_git_primitive_strips_env(self):
         """`tmprepo.Ctx` 現有底層逐支實呼叫、驗剝除確實生效（名冊完備性由上一案對賬）：以指向不存在處的
