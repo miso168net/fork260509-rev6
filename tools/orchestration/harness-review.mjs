@@ -92,7 +92,7 @@ await run('案1 正常路徑：派發數＝結構、label 唯一、status ok、p
   noThrow(o); status(o, 'ok'); count(o, expectedBase(o))
   expect(new Set(labels(o)).size === o.calls.length, 'label 唯一', labels(o).join(','))
   expect(o.calls.every((c) => c.prompt.includes(SMOKE) && c.prompt.includes('zh-TW') && /RULES-VERSION:\s*[0-9a-f]{12}/.test(c.prompt) && c.prompt.length >= 400), '每支 prompt 含冒煙 token／zh-TW／RULES-VERSION 且 ≥400 字', '')
-  expect(o.calls.every((c) => c.model === 'opus[1m]' && c.effort === 'xhigh' && c.schema), '每支 opus[1m]／xhigh／帶 schema', JSON.stringify(o.calls.map((c) => [c.model, c.effort, c.schema])))
+  expect(o.calls.every((c) => c.model === 'opus[1m]' && c.effort === 'xhigh' && c.schema), '每支 opus[1m]／xhigh／帶 schema（ADR-00056）', JSON.stringify(o.calls.map((c) => [c.model, c.effort, c.schema])))
   expect(o.r.agentsSpawned === o.calls.length && o.calls.length <= worst(o) + 1, 'agentsSpawned＝派發數且 ≤ 結構最壞＋1（保險絲）', o.r.agentsSpawned + '/' + worst(o))
   expect(typeof o.r.summary === 'object' && typeof o.r.summary.findings === 'number', 'summary 結構化計數在', JSON.stringify(o.r.summary))
 })

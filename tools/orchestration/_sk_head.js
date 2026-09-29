@@ -64,7 +64,7 @@ if (AGENT_FUSE < WORST) {
 }
 let spawned = 0
 
-// 模型家（單一真源；生成表＝docs/generated/reference/agents.md、換模史＝本檔 git log；user 拍板 2026-09-23）：
+// 模型家（單一真源；拍板＝ADR-00056〔現行值 user 2026-09-23 定〕；生成表＝docs/generated/reference/agents.md、換模史＝本檔 git log）：
 //   全角色（implementer、review／fix 與 review 骨架四角色 lens／mirror／grader／critic）＝opus 1M xhigh、
 //   且 prompt 首行一律帶 DEEP_THINK 字面（深思關鍵詞；implementer 由 _sk_main.js、review／fix 由 _sk_cycle.js、四角色由 _sk_review.js 烤入）。
 const IMPL_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
