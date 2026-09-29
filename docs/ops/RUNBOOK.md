@@ -21,7 +21,7 @@
 
 ## 3. 觀測層 profiles（obs／metrics／jobs）
 
-compose profile 三組：`obs`（loki、alloy、socket-proxy、grafana）、`metrics`（prometheus、postgres_exporter、redis_exporter、pushgateway、grafana）、`jobs`（reaper）；起法 `--profile <名>` 追加於 §2 命令。隨觀測刀補實文。
+compose profile 三組：`obs`（loki、alloy、socket-proxy、grafana）、`metrics`（prometheus、postgres_exporter、redis_exporter、pushgateway、grafana）、`jobs`（reaper）；起法 `--profile <名>` 追加於 §2 命令。隨觀測刀補實文。★`jobs` 現況：rev6 無 reaper bin（rust-api 零 reaper 目標）——起了也跑不動、心跳零發射；承載＝BL-00043。
 
 ## 4. ★人工必填清單（腳本不代辦）
 
