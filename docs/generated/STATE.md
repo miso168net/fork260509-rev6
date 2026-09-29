@@ -16,7 +16,7 @@
 - RULES：84 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 49/52、人 10/12）
 - BACKLOG 開放：19｜滯後：3
 - LESSONS：49 筆
-- events：109 筆（erratum 2、feature_close 5、misc 42、perf 52、review 8）
+- events：110 筆（erratum 2、feature_close 5、misc 42、perf 53、review 8）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 4136 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-30｜perf｜close_bookkeeping｜close_bookkeeping 11.97 秒 rc=0
 - 2026-09-30｜misc｜governance｜maint-spec-compliance-005｜005 刀附屬規格對照審查輪（spec-compliance-005）收單：零 blocker、零 wire 行為缺陷；findings 24 筆原始＝修 3…
 - 2026-09-30｜review｜005-role-menu-crud｜findings 10（修 3／BL 7／ADR 0）；BL-00129、BL-00130、BL-00131、BL-00132、BL-00133、BL-001…
-- 2026-09-30｜perf｜close_bookkeeping｜close_bookkeeping 12.9 秒 rc=0

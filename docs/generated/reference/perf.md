@@ -57,3 +57,4 @@
 | 2026-09-29 | close_bookkeeping | 13.27 | 0 | ef441e3 | maint-backlog-27-44 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
 | 2026-09-29 | close_bookkeeping | 12.69 | 0 | b338053 | maint-backlog-29-93 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 兩檔〔STATE／MILESTONES〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
 | 2026-09-30 | close_bookkeeping | 12.9 | 0 | 3436c4c | maint-tz-utc 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
+| 2026-09-30 | close_bookkeeping | 11.97 | 0 | b7cd3d2 | spec-compliance-005 收單簿記一顆之牆鐘（pre-commit 全鏈：betterleaks→check＋lint）；該顆 staged 面＝events 兩列＋NOTES＋generate 兩檔、零子庫與工具本體；RL-0053 隨下一顆 commit 入帳。 |
