@@ -2,7 +2,7 @@
 
 gates.py：ROSTER（恰 12 閘）、parse_gate_blocks／derive_anchor_codes（兩層真源）、DAY1_EXEMPTIONS（四欄制）、
 gt_01（generated 零漂移）、gt_07（機密樣式＋值比對）、gt_09（README 樹／EXEC_REQUIRED／settings.json 接線）、
-gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記＋SKIP 鍵登記＋主張對賬）、ENV_SKIPS（ADR-00019 環境型跳過登記）、
+gt_12（名冊同源三處＋碼面閘表＋數量預算＋波標記＋SKIP 鍵登記＋主張對賬＋工作樹＝暫存區一致性）、ENV_SKIPS（ADR-00019 環境型跳過登記）、
 registered_skip_keys／skip_key_of（登記集合與鍵抽取的單一權威、靜態面與執行期面同取）、run_lint、gen_gates_md。
 """
 import importlib.util
@@ -580,6 +580,36 @@ def _doorbell_leg(ctx):
     return _doorbell_findings(outer, rust)
 
 
+# 「工作樹＝暫存區」一致性腿（ADR-00052 決定 1）：文字類腿讀工作樹、commit 收暫存區——兩版不一致時閘全綠而 commit 進去的是另一版。
+# 只在暫存區≠HEAD（有 commit 在準備）時跑、手動 lint 不誤報。★git 呼叫沿用呼叫端環境：hook 期間 GIT_INDEX_FILE 指向本次 commit
+# 的 index（部分 commit／commit -a 為臨時 lock index）＝正要比對的一版、不得剝除（剝除只對子庫、LL-00012）。取值用 status 而非
+# `git diff`：後者會回寫 index 的 stat 快取（git 2.43 實測、--no-optional-locks 擋不住），違 pre-commit 並行 harness「各閘唯讀」。
+def _index_consistency_leg(ctx):
+    rc, _ = ctx.git_try("diff", "--cached", "--quiet")      # HEAD 未誕生時 git 以空樹對比＝暫存區非空即 rc 1
+    if rc == 0:
+        return []
+    if rc != 1:
+        return [finding(ERROR, "GT-12", "（外層 repo）",
+                        f"工作樹＝暫存區一致性：git diff --cached --quiet rc={rc}——暫存區是否≠HEAD 無從判定、一致性未驗即紅（ADR-00052 決定 1）")]
+    rc, stdout = ctx.git_try("--no-optional-locks", "status", "--porcelain", "-z", "--untracked-files=all",
+                             "--ignore-submodules=all", "--no-renames")
+    if rc != 0:
+        return [finding(ERROR, "GT-12", "（外層 repo）",
+                        f"工作樹＝暫存區一致性：git status rc={rc}——一致性未驗即紅（ADR-00052 決定 1）")]
+    out = []
+    for entry in stdout.split("\0"):
+        xy, path = entry[:2], entry[3:]
+        if xy == "??":
+            out.append(finding(ERROR, "GT-12", path,
+                               "工作樹＝暫存區一致性：未追蹤且未被 ignore 的檔——閘以工作樹列目錄／查存在時算得到它、commit 卻不含"
+                               "（ADR-00052 決定 1）；補救＝`git add` 入本 commit，不入者移出工作樹或 `git stash push --include-untracked --keep-index` 後再 commit"))
+        elif len(xy) == 2 and xy[1] != " ":
+            out.append(finding(ERROR, "GT-12", path,
+                               "工作樹≠暫存區：本檔有未暫存改動——閘讀工作樹、commit 收暫存區，此刻之綠不代表本 commit 內容"
+                               "（ADR-00052 決定 1）；補救＝`git add` 該檔，刻意不入本 commit 者 `git stash push --keep-index`（或還原）後再 commit"))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # GT-12
 # ---------------------------------------------------------------------------
@@ -623,11 +653,11 @@ def gt_12(ctx, extra_sources=None):
       id=GT-12
       rule=RL-0052
       source=rev5:ADR 0024
-      drift=名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源
-      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）
+      drift=名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源、閘讀取面（工作樹）與 commit 內容（暫存區）一致
+      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）、外層工作樹 ⇔ 暫存區（僅暫存區≠HEAD 時：tracked 檔未暫存改動〔gitlink 除外〕與未追蹤未 ignore 檔）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移
+      breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移、閘讀工作樹而 commit 收暫存區的另一版時全綠放行（先 add 改寫版再還原工作樹、LESSONS 漏 stage、generate 回填落在 add 之後）
     """
     out = []
     sources = package_sources()
@@ -685,6 +715,7 @@ def gt_12(ctx, extra_sources=None):
                 out.append(finding(ERROR, "GT-12", x, f"tools/ 頂層 {x} 未列於 RUNBOOK 碼面閘表（碼面閘進場須同刀入表；非閘工具改 NON_GATE_TOOLS）"))
     out += _claim_legs(ctx)
     out += _doorbell_leg(ctx)
+    out += _index_consistency_leg(ctx)
     wave = book_mod.current_wave(ctx)
     if wave is None:
         out.append(finding(ERROR, "GT-12", NOTES, "波標記缺席：docs/ops/NOTES.md 首行須為 <!-- wave: N -->"))

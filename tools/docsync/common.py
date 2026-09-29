@@ -20,6 +20,12 @@ class GitError(RuntimeError):
     pass
 
 
+def head_fail_msg(ex):
+    """HEAD 版讀取失敗的 finding 訊息（ADR-00052 決定 2）：git 錯誤首個非空行＋處置句；各呼叫閘自帶錨形與 where。"""
+    first = next((ln.strip() for ln in str(ex).splitlines() if ln.strip()), "（git 無錯誤輸出）")
+    return f"HEAD 版讀取失敗（{first}）——比對基準不明即紅、不當新檔放行（ADR-00052 決定 2）"
+
+
 RE_FM = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 
 
@@ -63,7 +69,7 @@ def parse_front_matter(text):
 
 
 class Ctx:
-    """一次 lint／generate 的讀取上下文：root、tracked 名冊、工作樹讀檔快取、HEAD 讀檔。"""
+    """一次 lint／generate 的讀取上下文：root、tracked 名冊、工作樹讀檔快取、HEAD 樹清單與讀檔。"""
 
     def __init__(self, root):
         self.root = root
@@ -130,11 +136,31 @@ class Ctx:
             self._cache[rel] = open(p, encoding="utf-8").read() if os.path.isfile(p) else None
         return self._cache[rel]
 
+    _head = None   # HEAD 樹路徑集 memo；類別層預設＝測試樁以 __new__ 建構、不經 __init__ 亦可用
+
+    def head_paths(self):
+        """HEAD 樹全路徑集（一次 `ls-tree -r`、memo）；HEAD 未誕生＝空集。失敗→GitError。
+        ADR-00052 決定 2：「路徑在不在 HEAD」只由本清單判，不解析 git 錯誤訊息字面（隨語系變）——
+        ls-tree 失敗時才以 `rev-parse --verify -q HEAD` 的 rc 分流（1＝未誕生；其餘＝真失敗），常態只一支 git。"""
+        if self._head is None:
+            try:
+                out = self._git_raw("ls-tree", "-r", "-z", "--full-tree", "--name-only", "HEAD")
+            except GitError as ex:
+                if self.git_try("rev-parse", "--verify", "-q", "HEAD")[0] != 1:
+                    raise GitError(f"HEAD 樹清單（git ls-tree）：{ex}") from None
+                out = ""
+            self._head = frozenset(p for p in out.split("\0") if p)
+        return self._head
+
     def head_text(self, rel):
+        """HEAD 版原文。HEAD 未誕生或路徑不在 HEAD 樹＝None（新檔：比對面空、正常通過、不印 SKIP）；
+        路徑在 HEAD 樹卻讀取失敗＝GitError（訊息帶路徑）——呼叫端一律轉該閘 ERROR finding（ADR-00052 決定 2）。"""
+        if rel not in self.head_paths():
+            return None
         try:
             return self._git_raw("show", f"HEAD:{rel}")
-        except GitError:
-            return None
+        except GitError as ex:
+            raise GitError(f"HEAD:{rel}：{ex}") from None
 
     def md_texts(self, prefixes=()):
         return {

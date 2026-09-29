@@ -8,7 +8,7 @@ import os
 import re
 
 from . import EVENTS, ADR_DIR, BACKLOG, BACKLOG_DEFERRED
-from .common import ERROR, WARN, SKIP, finding, GitError
+from .common import ERROR, WARN, SKIP, finding, GitError, head_fail_msg
 
 RE_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RE_FEATURE = re.compile(r"^\d{3}-[a-z0-9][a-z0-9-]*$")
@@ -81,22 +81,24 @@ def _check_probe(p, label="probe"):
     return errs
 
 
-def notes_gt06_risks(text):
+def notes_gt06_risks(text, field="notes"):
     """notes 全文會原樣進 MILESTONES 附錄（BL-00005 拍板：不截斷不轉義），因而落入 GT-06 掃描面
     （face＝全部 tracked md、含 GENERATED_FILES）。事件源 append-only、寫進去即無乾淨補救——故在**真源側**先擋（BL-00013）。
+    summary、erratum 的 reason、feature_close 的 spec_supersessions[].note 同樣原文進人讀面、且不在 ERRATUM_FIELDS，
+    共用本道守衛（ADR-00053 決定 2）；`field` 為訊息指名的欄名。
     四腿正則自 `book.py` 取用、不另抄一份（判準單一家）。回錯誤訊息 list。"""
     from . import book as book_mod
     errs = []
     for m in book_mod.RE_LINENO.finditer(text):
-        errs.append(f"notes 含行號形引用「{m.group(0)}」——會讓 MILESTONES 觸 GT-06；改用節名或整檔")
+        errs.append(f"{field} 含行號形引用「{m.group(0)}」——會讓 MILESTONES 觸 GT-06；改用節名或整檔")
     for m in book_mod.RE_DEEP.finditer(text):
-        errs.append(f"notes 含帳本 deep-link「{m.group(0)}」——BACKLOG／NOTES／STATE 只可整檔引用")
+        errs.append(f"{field} 含帳本 deep-link「{m.group(0)}」——BACKLOG／NOTES／STATE 只可整檔引用")
     for m in book_mod.RE_HOME.finditer(text):
-        errs.append(f"notes 含 per-machine 路徑「{m.group(0)}」——repo 文件不引用本機 .claude 路徑")
+        errs.append(f"{field} 含 per-machine 路徑「{m.group(0)}」——repo 文件不引用本機 .claude 路徑")
     for m in book_mod.LINK.finditer(text):
         t = m.group(1)
         if not t.startswith(("http://", "https://", "mailto:", "#")):
-            errs.append(f"notes 含相對 markdown 連結「{t}」——渲染後基準為 docs/generated/、GT-06 連結腿必紅；改寫成純路徑文字")
+            errs.append(f"{field} 含相對 markdown 連結「{t}」——渲染後基準為 docs/generated/、GT-06 連結腿必紅；改寫成純路徑文字")
     return errs
 
 
@@ -128,6 +130,8 @@ def _check_event(e):
             errs.append("summary 須為單行字串（多段敘述移 notes）")
         elif len(s) > SUMMARY_CHAR_LIMIT:
             errs.append(f"summary {len(s)} 字超出單筆上限 {SUMMARY_CHAR_LIMIT}——細節移 notes／報告檔／LESSONS")
+        if isinstance(s, str):
+            errs += notes_gt06_risks(s, "summary")
     if etype == "feature_close":
         if not RE_FEATURE.fullmatch(str(e["feature"])):
             errs.append(f"feature 格式須為 NNN-slug：{e['feature']!r}")
@@ -152,6 +156,9 @@ def _check_event(e):
             ss = e["spec_supersessions"]
             if not (isinstance(ss, list) and all(isinstance(x, dict) and set(x) == {"feature", "item", "note"} for x in ss)):
                 errs.append("spec_supersessions 須為 [{feature,item,note},…]")
+            for i, x in enumerate(ss if isinstance(ss, list) else []):
+                if isinstance(x, dict) and isinstance(x.get("note"), str):
+                    errs += notes_gt06_risks(x["note"], f"spec_supersessions[{i}].note")
     elif etype == "misc":
         if e["category"] not in CATEGORIES:
             errs.append(f"category 須為 {'/'.join(CATEGORIES)} 之一：{e['category']!r}")
@@ -197,6 +204,8 @@ def _check_event(e):
         r = e["reason"]
         if not (isinstance(r, str) and r.strip() and "\n" not in r and "\r" not in r):
             errs.append("reason 須為非空單行字串")
+        if isinstance(r, str):
+            errs += notes_gt06_risks(r, "reason")
     elif etype == "perf":
         if e["kind"] not in PERF_KINDS:
             errs.append(f"kind 須為 {'/'.join(PERF_KINDS)} 之一：{e['kind']!r}")
@@ -328,8 +337,12 @@ def _append_only_leg(ctx, text):
     形制承 GT-04 的 HEAD 對比腿：HEAD 版須為現版的逐行前綴，只准在尾端新增。
     ★三態分流（mb35 review L1-1）：現版較長且前綴不符＝插入（其後所有 erratum 的 target_line
     會整體位移，補救是把該列移到尾端、不是 append erratum）／等長＝改寫／較短＝刪列。
-    ★HEAD 版缺席或空（創世首顆、檔剛建）＝無可對比、不報；同形前例＝GT-04 對無 HEAD 亦靜默。"""
-    head = ctx.head_text(EVENTS)
+    ★HEAD 版缺席（HEAD 未誕生或本檔不在 HEAD 樹＝創世首顆、檔剛建）或空＝無可對比、不報；
+    在 HEAD 樹卻讀不到＝ERROR 指名（ADR-00052 決定 2：比對基準不明不得與通過同形）。"""
+    try:
+        head = ctx.head_text(EVENTS)
+    except GitError as ex:
+        return [finding(ERROR, "GT-02", EVENTS, f"append-only 腿：{head_fail_msg(ex)}")]
     if not head or not head.strip():
         return []
     hl = head.rstrip("\n").split("\n")

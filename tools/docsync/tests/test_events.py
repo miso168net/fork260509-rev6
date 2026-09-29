@@ -303,6 +303,75 @@ class TestNotesGt06Guard(unittest.TestCase):
         self.assertNotIn("re.compile", src)
 
 
+class TestFreeTextFieldsGuard(unittest.TestCase):
+    """ADR-00053 決定 2（BL-00035①）：summary、erratum 的 reason、feature_close 的 spec_supersessions[].note
+    與 notes 同樣原文進 MILESTONES／STATE、且不在 ERRATUM_FIELDS＝寫壞無更正出口，故寫入端套同一道四腿守衛；
+    訊息指名欄名、行號由 parse_events 的列號承載。"""
+
+    RISKY = (("見 docs/ops/RULES.md:12", "行號形"),
+             ("見 BACKLOG.md#bl-00001", "deep-link"),
+             ("鑰在 ~/.claude/hooks/x.sh", "per-machine"),
+             ("詳見 [報告](../docs/reviews/a.md)", "相對 markdown 連結"))
+    SAFE = "改 docs/ops/RULES.md 檔頭括註、外連 [規格](https://example.invalid/spec)"
+
+    @staticmethod
+    def _misc(summary):
+        return ev(type="misc", date="2026-09-29", summary=summary, category="governance", backlog_add=[])
+
+    @staticmethod
+    def _fc(summary="s", note="n"):
+        return ev(type="feature_close", date="2026-09-29", feature="001-x", summary=summary, merge="a" * 40,
+                  pins={"web": "b" * 40, "api": "c" * 40}, adrs=[], arch_impact="none", backlog_add=[],
+                  backlog_done=[], window=1,
+                  spec_supersessions=[{"feature": "001-x", "item": "FR-001", "note": "首筆無事"},
+                                      {"feature": "001-x", "item": "FR-002", "note": note}])
+
+    @staticmethod
+    def _erratum(reason):
+        return ev(type="erratum", date="2026-09-29", target_line=1, field="merge", corrected="a" * 40, reason=reason)
+
+    def _msgs(self, line):
+        """單列事件置於第 2 列（首列墊 MISC），順帶釘住錯誤帶的是該列列號。"""
+        errs = events.parse_events(MISC + "\n" + line + "\n")[1]
+        self.assertTrue(all(ln == 2 for ln, _ in errs), errs)
+        return [m for _, m in errs]
+
+    def _assert_each_leg_red(self, build, field):
+        for text, needle in self.RISKY:
+            msgs = self._msgs(build(text))
+            self.assertTrue(any(m.startswith(f"{field} 含") and needle in m for m in msgs), (field, text, msgs))
+
+    def test_summary_each_leg_red(self):
+        """凡有 summary 欄的事件型皆受檢（misc 與 feature_close 兩型各跑四腿）。"""
+        self._assert_each_leg_red(self._misc, "summary")
+        self._assert_each_leg_red(lambda t: self._fc(summary=t), "summary")
+
+    def test_summary_safe_green(self):
+        self.assertEqual(self._msgs(self._misc(self.SAFE)), [])
+        self.assertEqual(self._msgs(self._fc(summary=self.SAFE)), [])
+
+    def test_erratum_reason_each_leg_red(self):
+        self._assert_each_leg_red(self._erratum, "reason")
+
+    def test_erratum_reason_safe_green(self):
+        self.assertEqual(self._msgs(self._erratum(self.SAFE)), [])
+
+    def test_spec_supersession_note_each_leg_red(self):
+        """欄名帶索引：第二筆（index 1）壞、訊息指名 spec_supersessions[1].note、首筆不誤報。"""
+        self._assert_each_leg_red(lambda t: self._fc(note=t), "spec_supersessions[1].note")
+        msgs = self._msgs(self._fc(note=self.RISKY[0][0]))
+        self.assertFalse(any("spec_supersessions[0]" in m for m in msgs), msgs)
+
+    def test_spec_supersession_note_safe_green(self):
+        self.assertEqual(self._msgs(self._fc(note=self.SAFE)), [])
+
+    def test_notes_message_keeps_its_field_name(self):
+        """既有 notes 腿的訊息仍以「notes 含」起頭（欄名參數預設值＝notes）。"""
+        e = json.loads(self._misc("s"))
+        e["notes"] = "見 STATE.md#git"
+        self.assertTrue(any(m.startswith("notes 含帳本 deep-link") for m in events._check_event(e)))
+
+
 class TestErrataViewAndMiscAdrs(unittest.TestCase):
     """erratum 更正視圖套用到人讀四面 ＋ misc 收單即立 ADR 的 DECISIONS-INDEX 反查（BL-00004／000-r1 R1-003／R1-008）。
     ★事件源 append-only：原列永不改，更正只活在 `events_view` 的視圖裡。"""

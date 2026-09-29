@@ -7,7 +7,7 @@ import os
 import re
 
 from . import BACKLOG, BACKLOG_DEFERRED, LESSONS_INDEX, LESSONS_DIR, RULES, ADR_DIR, EVENTS, NOTES, SUBMODULES, CONSTITUTION, COMPOSE_FILES
-from .common import ERROR, WARN, SKIP, finding
+from .common import ERROR, WARN, SKIP, GitError, finding, head_fail_msg
 
 ID_FAMILIES = {"BL": (BACKLOG, [BACKLOG_DEFERRED]), "LL": (LESSONS_INDEX, [LESSONS_DIR]), "RL": (RULES, [])}
 RE_NEXT_ID = re.compile(r"<!--\s*next:\s*(BL|LL|RL)-(\d{4,5})\s*-->")
@@ -20,8 +20,28 @@ RE_ENTRY = {
 RE_LL_FILE = re.compile(r"^(LL-\d{5})-[a-z0-9][a-z0-9-]*\.md$")
 RE_ADR_FILE = re.compile(r"^ADR-(\d{5})-")
 # 刀名腿要求「NNN-」後至少兩段（rev5 刀名皆兩段以上），單段形如 256-bit／404-page 不入射程
-BARE_REV5 = re.compile(r"(?<![A-Za-z0-9:_/-])(B-\d{3}|L-\d{3}|ADR 0\d{3}|Lint\d{2}|\d{3}-[a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![A-Za-z0-9-])")
+# KNIFE_SLUG＝刀名 slug 片段的單一家：BARE_REV5（GT-05）與 KNIFE_NAME（GT-08）共用、不另抄
+KNIFE_SLUG = r"\d{3}-[a-z][a-z0-9]*(?:-[a-z0-9]+)+"
+BARE_REV5 = re.compile(r"(?<![A-Za-z0-9:_/-])(B-\d{3}|L-\d{3}|ADR 0\d{3}|Lint\d{2}|" + KNIFE_SLUG + r")(?![A-Za-z0-9-])")
 MENTION = re.compile(r"`[^`\n]*`|「[^」\n]*」")
+# 規則句刀名形（GT-08「不帶刀名」腿；BL-00101）：規則句跨刀存活、出處一律住 source 欄，故與 GT-05 相反——
+# 不豁免 rev6 自家刀名，也不放行 rev5:／rev4: 前綴形（GT-05 管「前代編號要帶前綴」，本式管「規則句不帶任何刀名」）。
+# 樣式集＝repo 現存刀名書寫形之機器枚舉：①slug 形 `001-schema-baseline`（前綴不限，`specs/` 與 `rev5:` 皆算）
+# ②創世家族輪次短名 `000-r2` ③刀號形 `002 刀`／`第五刀` ④前代刀號 `rev5:002`／`rev5 002` ⑤維護批名 `maint-backlog-35`
+# 與其縮寫 `mb35` ⑥帶刀號的審查輪名 `spec-compliance-004` ⑦裸刀號 `006 前`（精度優先、承 rev5:Lint25 裸刀號族
+# 〔rev5:tools/docs-sync.py〕：0 開頭、值域 000～029，左右界擋小數／千分位／日期／權限 mode／ID 連字號形）——
+# 含黏斜線路徑段 `specs/002 史料面`／`specs/003/spec.md` 與單段後綴 `005-final`／`003-uN.py`（RL-0002 三形之二；
+# 故界不排除「/」、右側連字號只擋接數字的區間形 `010-1234`）。
+# 射程外：000～029 以外的單段 slug（`256-bit`）、計數（`rolling 3 刀`）、指代（本刀／各刀／跨刀）。入參須已剝提及形（MENTION）。
+KNIFE_NAME = re.compile(
+    r"(?<![A-Za-z0-9])(?:" + KNIFE_SLUG + r"|\d{3}-[a-z]\d+(?![A-Za-z0-9-])|\d{3}\s*刀)"
+    r"|第\s*[一二三四五六七八九十百〇零\d]+\s*刀"
+    r"|(?<![A-Za-z0-9])rev[45](?::\s*|\s+)\d{3}(?!\d)"
+    r"|(?<![A-Za-z0-9-])maint-[a-z0-9]+(?:-[a-z0-9]+)*"
+    r"|(?<![A-Za-z0-9])mb\d+[a-z0-9]*(?![A-Za-z0-9])"
+    r"|(?<![A-Za-z0-9-])spec-compliance-\d{3}(?!\d)"
+    r"|(?<![0-9A-Za-z.,:_-])0[0-2]\d(?![\d.:])(?!-\d)"
+)
 RE_KNIFE = re.compile(r"^\d{3}-")
 # 子庫 pin 樹粗篩（git grep ERE；六形＝五形與 BARE_REV5 同源＋第六形 `rev[45] NNN` 與 BARE_PREV_KNIFE_NUM 同源；
 # 精判（_sub_judge）與 rev6 刀集豁免共用外層那套——只對齊正則不共用豁免會讓自家刀名整批誤紅，BL-00017）
@@ -107,7 +127,8 @@ def _text_files(ctx, face="present"):
 
 
 def _family_state(ctx, fam, head=False):
-    """回 (present, next, [(id, where)…])；head=True 讀 HEAD 版（LESSONS/ 目錄以 tracked 名冊代）。"""
+    """回 (present, next, [(id, where)…])；head=True 讀 HEAD 版（LESSONS/ 目錄以 tracked 名冊代；
+    HEAD 無此帳＝present False、在 HEAD 樹卻讀不到＝GitError 上拋、gt_05 轉 ERROR）。"""
     main, extras = ID_FAMILIES[fam]
     read = ctx.head_text if head else ctx.text
     text = read(main)
@@ -183,6 +204,15 @@ def _id_ref_face(ctx):
         yield rel, text, rel.startswith(ID_FORM_FROZEN_FACE)
 
 
+def _frozen_lines(ctx, rel):
+    """存量豁免比對集 →（該檔 HEAD 版行集, 錯誤訊息或 None）。HEAD 無此檔＝空行集（全報、維持原判）；
+    在 HEAD 樹卻讀不到＝回錯誤訊息、行集同樣取空（豁免基準不明＝全報；ADR-00052 決定 2／3）。"""
+    try:
+        return set((ctx.head_text(rel) or "").split("\n")), None
+    except GitError as ex:
+        return {""}, head_fail_msg(ex)
+
+
 def _id_reference_legs(ctx):
     """引用的 ID 須在對應真源存在（BL-00003③c2）；`<!-- next: -->` 檔頭是配號指標、不算引用。
     面＝_id_ref_face（現在式面之 *.md〔含憲法〕 ∪ tools/**）。
@@ -202,7 +232,9 @@ def _id_reference_legs(ctx):
                 continue
             if frozen_face:
                 if frozen is None:
-                    frozen = set((ctx.head_text(rel) or "").split("\n"))
+                    frozen, err = _frozen_lines(ctx, rel)
+                    if err:
+                        out.append(finding(ERROR, "GT-05", rel, f"ID 引用存在性之存量豁免：{err}"))
                 if line in frozen:
                     continue
             out += [finding(ERROR, "GT-05", f"{rel}:{i}",
@@ -230,7 +262,9 @@ def _id_form_legs(ctx):
                 continue
             if frozen_face:
                 if frozen is None:
-                    frozen = set((ctx.head_text(rel) or "").split("\n"))
+                    frozen, err = _frozen_lines(ctx, rel)
+                    if err:
+                        out.append(finding(ERROR, "GT-05", rel, f"書寫形之存量豁免：{err}"))
                 if line in frozen:
                     continue
             out += [finding(ERROR, "GT-05", f"{rel}:{i}", msg) for msg in hits]
@@ -289,7 +323,11 @@ def gt_05(ctx):
             seen.setdefault(id_, where)
             if nxt is not None and _num(id_) >= nxt:
                 out.append(finding(ERROR, "GT-05", where, f"{id_} ≥ next {fam}-{nxt}（配號取 next 後 bump）"))
-        hpresent, hnxt, hids = _family_state(ctx, fam, head=True)
+        try:
+            hpresent, hnxt, hids = _family_state(ctx, fam, head=True)
+        except GitError as ex:
+            out.append(finding(ERROR, "GT-05", main, f"next-id 單調與不回收腿：{head_fail_msg(ex)}"))
+            continue
         if hpresent and hnxt is not None:
             if nxt is not None and nxt < hnxt:
                 out.append(finding(ERROR, "GT-05", main, f"next-id 單調違反：HEAD {fam}-{hnxt} → 現 {fam}-{nxt}"))

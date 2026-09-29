@@ -6,7 +6,7 @@ import os
 import re
 
 from . import ADR_DIR
-from .common import ERROR, GENERATED_HEADER, GitError, finding, parse_front_matter
+from .common import ERROR, GENERATED_HEADER, GitError, finding, head_fail_msg, parse_front_matter
 
 RE_ADR_FILENAME = re.compile(r"^(ADR-\d{5})-[a-z0-9][a-z0-9.-]*\.md$")
 RE_ADR_ID = re.compile(r"^ADR-\d{5}$")
@@ -38,14 +38,19 @@ def _as_list(v):
 
 
 def _files(ctx, head=False):
-    """{filename: text}；head=True 讀 git HEAD 樹（無 HEAD／無目錄→{}）。只收 *.md。"""
+    """{filename: text}；head=True 讀 git HEAD 樹（HEAD 未誕生／HEAD 樹無 ADR→{}；其他 git 失敗→GitError、
+    由 gt_04 轉 ERROR＝ADR-00052 決定 2）。只收 *.md。"""
     if head:
+        # 目錄直下檔名取自 Ctx 的一次性 HEAD 樹清單（與 head_text 同一判準、免另起 ls-tree）
+        names = sorted(p for p in ctx.head_paths() if p.startswith(ADR_DIR + "/") and "/" not in p[len(ADR_DIR) + 1:])
+        if not names:
+            return {}
+        # 工作樹與 HEAD 相同（git 判定、含 .gitattributes 換行正規化）者以工作樹內容代之、免逐檔 `git show`（drvfs 上每次約 0.1s）；
+        # 此 diff 只是捷徑：失敗即退回逐檔讀 HEAD 版＝比對面不減，讀不到者由 head_text 帶路徑上拋、gt_04 指名 ERROR。
         try:
-            names = ctx.git("ls-tree", "--name-only", "HEAD", f"{ADR_DIR}/").split("\n")
-            # 工作樹與 HEAD 相同（git 判定、含 .gitattributes 換行正規化）者以工作樹內容代之、免逐檔 `git show`（drvfs 上每次約 0.1s）
             changed = set(ctx.git("diff", "--name-only", "HEAD", "--", f"{ADR_DIR}/").split("\n"))
         except GitError:
-            return {}
+            changed = set(names)
         out = {}
         for p in names:
             fn = os.path.basename(p)
@@ -84,7 +89,12 @@ def gt_04(ctx):
       breaks-if-removed=拍板全文可被改寫、翻案可單向
     """
     out = []
-    cur, head = _files(ctx), _files(ctx, head=True)
+    cur = _files(ctx)
+    try:
+        head = _files(ctx, head=True)
+    except GitError as ex:
+        out.append(finding(ERROR, "GT-04", ADR_DIR, f"HEAD 側對比（禁刪除／不可變）未執行：{head_fail_msg(ex)}"))
+        head = {}
     for fn in sorted(head):
         if fn not in cur:
             out.append(finding(ERROR, "GT-04", f"{ADR_DIR}/{fn}", "ADR 禁刪除（編號永不重用；翻案＝新檔 supersedes）"))

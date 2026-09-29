@@ -6,7 +6,7 @@ import hashlib
 import os
 import re
 
-from . import RULES, ADR_DIR, LESSONS_DIR
+from . import RULES, ADR_DIR, LESSONS_DIR, book
 from .common import ERROR, finding
 
 RE_NEXT = re.compile(r"<!--\s*next:\s*RL-(\d{4})\s*-->")
@@ -88,11 +88,11 @@ def gt_08(ctx):
       id=GT-08
       rule=RL-0049
       source=rev5:ADR 0024
-      drift=RULES↔LESSONS 對賬
-      face=docs/ops/RULES.md；docs/ops/LESSONS/*.md
+      drift=RULES↔LESSONS 對賬、規則句夾帶刀名
+      face=docs/ops/RULES.md（規則句剝提及形後掃刀名形）；docs/ops/LESSONS/*.md
       trigger=pre-commit
       rc=1
-      breaks-if-removed=規則層可無來源、教訓可不指向規則
+      breaks-if-removed=規則層可無來源、教訓可不指向規則、規則句可夾帶刀名（跨刀即失準、出處未歸 source 欄）
     """
     out = []
     text = ctx.text(RULES)
@@ -112,8 +112,10 @@ def gt_08(ctx):
         extra = r.scopes - set(SCOPES)
         if extra:
             out.append(finding(ERROR, "GT-08", where, f"scope 值域外：{sorted(extra)}"))
-        if len(r.rule.splitlines()) > 2:
-            out.append(finding(ERROR, "GT-08", where, "規則句超過 2 行"))
+        # 不帶刀名腿（BL-00101）：樣式與提及形單一家住 book.py；rev6 自家刀名不豁免。
+        # 命令句與 ≤2 行屬人工檢核（RE_ROW 逐行錨定、規則句欄恆為單行，行數腿無從成立）。
+        for tok in dict.fromkeys(m.group(0) for m in book.KNIFE_NAME.finditer(book.MENTION.sub("", r.rule))):
+            out.append(finding(ERROR, "GT-08", where, f"規則句帶刀名「{tok}」——規則句跨刀存活、出處移 source 欄（RULES 檔頭）"))
     out += _lessons_side(ctx, {r.id for r in rows})
     return out
 

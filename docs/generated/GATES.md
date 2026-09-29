@@ -12,11 +12,11 @@
 | GT-05 | RL-0050 | 配號唯一單調、跨代裸編號、ID 引用存在性與書寫形 | rev5:ADR 0012 | docs/ops 三帳＋現在式面＋兩子庫 pin 樹＋ID 引用面（現在式面之 *.md〔含憲法〕 ∪ tools/**、去生成鏡像與 vendored、ADR body 存量豁免） | pre-commit | 1 | — | 號碼可回收、rev5 編號走私入 rev6 現在式文件、引用可指向不存在的 ID、縮寫形讓全字枚舉漏抓 |
 | GT-06 | RL-0048 | 引用斷鏈、時態混入、tmp 具名路徑、spec 契約檔引用 | rev5:ADR 0012 | tracked *.md；活書家族；現在式面全副檔名（tmp 腿與 spec 契約腿） | pre-commit | 1 | — | 死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針、跨刀活體契約回流 spec 目錄 |
 | GT-07 | RL-0054 | 機密入版控 | rev5:ADR 0003 | tracked 文字檔＋SECRETS_DIR 實值 | pre-commit | 1 | — | 機密實值或樣式進 git 歷史、不可逆 |
-| GT-08 | RL-0049 | RULES↔LESSONS 對賬 | rev5:ADR 0024 | docs/ops/RULES.md；docs/ops/LESSONS/*.md | pre-commit | 1 | — | 規則層可無來源、教訓可不指向規則 |
+| GT-08 | RL-0049 | RULES↔LESSONS 對賬、規則句夾帶刀名 | rev5:ADR 0024 | docs/ops/RULES.md（規則句剝提及形後掃刀名形）；docs/ops/LESSONS/*.md | pre-commit | 1 | — | 規則層可無來源、教訓可不指向規則、規則句可夾帶刀名（跨刀即失準、出處未歸 source 欄） |
 | GT-09 | RL-0057 | 接線與實檔集（含編排骨架子名冊） | rev5:L-061 | README 樹（含 docs/generated 成員行）、tools/deploy/.githooks/.claude、settings.json、EXEC_REQUIRED、tools/orchestration/README.md 檔表（⇔ tools/orchestration/ tracked 檔集；ADR-00020） | pre-commit | 1 | — | hook 被 pnpm install 覆寫或失去 exec bit 而靜默失效、README 地圖與實檔分叉 |
 | GT-10 | RL-0035 | 佔位與樣板文、子項名冊（鍵集＋值↔標題）、圖表對賬 | ADR-00004 | BOOK_FACE（docs/arc42 非 decisions、docs/c4、docs/compliance、docs/process） | pre-commit | 1 | — | RAD-AI 表可空殼交卷（22/22 假滿分重演） |
 | GT-11 | RL-0056 | bash 黏字與 shebang | rev5:L-001 | 外層 tracked bash 面（*.sh ∪ sh shebang；含 deploy/、.githooks/） | pre-commit | 1 | — | macOS bash 3.2 unbound variable 炸在 preflight |
-| GT-12 | RL-0052 | 名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源 | rev5:ADR 0024 | tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL） | pre-commit | 1 | — | 閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移 |
+| GT-12 | RL-0052 | 名冊同源與數量預算、SKIP 鍵登記、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源、閘讀取面（工作樹）與 commit 內容（暫存區）一致 | rev5:ADR 0024 | tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）、外層工作樹 ⇔ 暫存區（僅暫存區≠HEAD 時：tracked 檔未暫存改動〔gitlink 除外〕與未追蹤未 ignore 檔） | pre-commit | 1 | — | 閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、人寫面數值與工具常數可單邊漂移、閘讀工作樹而 commit 收暫存區的另一版時全綠放行（先 add 改寫版再還原工作樹、LESSONS 漏 stage、generate 回填落在 add 之後） |
 
 ## Day-1 豁免登記（鍵｜理由｜解除謂詞｜登記日）
 

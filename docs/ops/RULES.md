@@ -4,7 +4,7 @@
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
 上限（D8；ADR-00011；數值續自其所翻案之 ADR-00004 表）：總 92｜implementer 48｜review 18｜fix 19｜主線 52｜人 12。scope 可多值、逗號分隔。
 carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --scope <s>` 產出）／lint（GT 閘機器守）／checklist（主線或人的單元邊界檢核）；source ∈ LL-NNNNN／ADR-NNNNN／rev5:L-NNN／rev5:ADR 00NN。
-改動本表走輕量軌（不走 Amendment）；配號取檔頭 next 後 bump、號碼不回收；每列規則句為命令句、不帶刀名、≤2 行（GT-08 機器強制三項）。
+改動本表走輕量軌（不走 Amendment）；配號取檔頭 next 後 bump、號碼不回收；每列規則句為命令句、不帶刀名、≤2 行（不帶刀名＝GT-08 機器強制；命令句、≤2 行＝人工檢核）。
 
 | id | 規則 | scope | carrier | source |
 |---|---|---|---|---|
