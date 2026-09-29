@@ -365,7 +365,7 @@ groups:
       # ══ ③d accesslog-write-fail：loki、存取軌跡寫入故障事件（島 J2）══
       # ★現況＝無事件源：rev6 尚無存取軌跡中介層（`access_log_mw`／target `audit.access_log` 於 rust-api 零發射點；
       #   島 J 未進場），本規則恆無資料（noDataState=OK＝不誤紅）。雙錨字面（target＋degraded="access_log_write"）
-      #   承母版留位；存取軌跡刀進場時依 as-built 重錨、或屆時判定不需而刪（承載＝BACKLOG 之 rules.yml 稽核條目）。
+      #   承母版留位；存取軌跡刀進場時依 as-built 重錨、或屆時判定不需而刪（承載＝BL-00043）。
       - uid: obs016-accesslog-write-fail
         title: accesslog-write-fail
         condition: C
@@ -420,7 +420,7 @@ groups:
                   type: query
 
       # ══ ④ audit-capacity 稽核容量：pg_stat_user_tables_n_live_tup 四表 > 1,000,000（rev5:B-016；規則內可調）══
-      # ★四表實名＝purge 四表封閉白名單（rust-api/server/src/handler/audit.rs 之 entity_table：
+      # ★四表實名＝稽核四表（`docs/ops/reference-src/archetype-map.json` 變體 B；前代為 purge 封閉白名單、rev6 尚無該 handler：
       #   sys_operation_log/sys_access_log/sys_login_attempt/session_event）；datname 錨定業務庫。
       # for: 0s（n_live_tup 慢變量、無 flapping 風險、即紅即投遞）。
       - uid: obs016-audit-capacity
@@ -484,6 +484,8 @@ groups:
       #   （契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
       # ★noDataState=OK：未部署 jobs profile＝零序列＝視為健康、不誤紅（spec rev4:US1-AC4；
       #   「僅 dry-run 在而 execute 缺席」的誤配案由 ⑤b 承載、本 rule 不管）。
+      # ★現況＝無事件源：rust-api 無 reaper bin（compose jobs profile 之 `cargo run --bin reaper` 起了也跑不動）、
+      #   `reaper_last_success_timestamp` 零發射點＝本規則恆無資料（noDataState=OK＝恆綠；承載＝BL-00043）。
       - uid: obs016-reaper-heartbeat-timeout
         title: reaper-heartbeat-timeout
         condition: C
@@ -543,6 +545,7 @@ groups:
       #   （mode=dry-run／mode=execute）。正向與誤配全驗歸 rev4:US3/rev4:T026。
       # ★rev4:017 rev4:T010 射程收斂：expr 兩側補 reaper_job="token-reap"——`ignoring(mode)` 對 reaper_job
       #   參與匹配＝per-job 配對、與⑥b 射程互斥。
+      # ★現況＝無事件源（同⑤；承載＝BL-00043）。
       - uid: obs016-reaper-mode-misconfig
         title: reaper-mode-misconfig
         condition: C
@@ -600,6 +603,7 @@ groups:
       # ★門檻 172800 = 2 × 86400（REAPER_INTERVAL_SECS 預設一日）——與⑤共用同一互錨（三檔同步：
       #   本檔＋compose 兩檔 reaper 段）：調 REAPER_INTERVAL_SECS MUST 同步改⑤/⑥兩門檻（維持 2× 關係）。
       # ★noDataState=OK：未起 jobs profile／零序列＝視為健康、不誤紅（⑤ 拍板沿用）。
+      # ★現況＝無事件源（同⑤；承載＝BL-00043）。
       - uid: obs017-audit-retention-heartbeat-timeout
         title: audit-retention-heartbeat-timeout
         condition: C
@@ -656,6 +660,7 @@ groups:
       # ★rev4:017 rev4:T010 新增：鏡像⑤b 全結構、matcher 收斂 reaper_job="audit-retention"——`ignoring(mode)`
       #   對 reaper_job 參與匹配＝per-job 配對、與⑤b 射程互斥。復歸機制＝execute 心跳 PUT 整組
       #   替換汰換本組 dry-run 序列（契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
+      # ★現況＝無事件源（同⑤；承載＝BL-00043）。
       - uid: obs017-audit-retention-mode-misconfig
         title: audit-retention-mode-misconfig
         condition: C

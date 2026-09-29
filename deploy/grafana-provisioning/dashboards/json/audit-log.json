@@ -229,7 +229,7 @@
       "id": 5,
       "type": "timeseries",
       "title": "稽核容量趨勢 (n_live_tup 四表)",
-      "description": "pg_stat_user_tables_n_live_tup{relname=~\"sys_operation_log|sys_access_log|sys_login_attempt|session_event\"}；稽核四表活列數趨勢（告警④同錨：purge 封閉白名單四表、門檻 1000000）。",
+      "description": "pg_stat_user_tables_n_live_tup{relname=~\"sys_operation_log|sys_access_log|sys_login_attempt|session_event\"}；稽核四表活列數趨勢（告警④同錨：稽核四表＝`docs/ops/reference-src/archetype-map.json` 變體 B、門檻 1000000）。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
