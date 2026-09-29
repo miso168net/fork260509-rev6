@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00049 -->
+<!-- next: LL-00050 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -54,3 +54,4 @@
 | LL-00046 | ADR-00039 accepted 時全文沒有任何 rev5 出處，而 ADR body 不可變，缺口永遠補不回來（004 刀；2026-09-29 以紀律收） | RL-0081 | rules | [LL-00046-adr-accepted-without-predecessor-provenance.md](LESSONS/LL-00046-adr-accepted-without-predecessor-provenance.md) |
 | LL-00047 | GT-04 在 lint 路徑用 `git diff --name-only HEAD` 取捷徑，會回寫 index 的 stat 快取，`--no-optional-locks` 也擋不住（maint-backlog-28-35-36-39-74-101-102-120 U1 實測、U2 修；2026-09-29） | none：閘取值命令的唯讀寫法，判準住兩個取值點的碼註與 pre-commit 檔頭「各閘唯讀」即可承 | code | [LL-00047-git-diff-rewrites-index-stat-cache-despite-no-optional-locks.md](LESSONS/LL-00047-git-diff-rewrites-index-stat-cache-despite-no-optional-locks.md) |
 | LL-00048 | RULES 拆列改了 RL-0051 的語意、號本身字面沒變，勘誤只掃了拆出的新字面——被拆走的子句仍有 28 處以舊號引用（maint-backlog-28-35-36-39-74-101-102-120 前置顆 959da9f 拆列、final holistic review 抓到；2026-09-29） | RL-0011 | none | [LL-00048-rules-split-changes-id-meaning-errata-missed-the-id.md](LESSONS/LL-00048-rules-split-changes-id-meaning-errata-missed-the-id.md) |
+| LL-00049 | spec 標「收刀面於簿記 commit 後驗」的 SC 子句沒有任何收刀程序步驟承接——005 刀收刀漏了 NOTES 下一步指向與淨流量分型兩處（spec-compliance-005 L7-3 抓到；2026-09-30） | RL-0084 | rules | [LL-00049-post-bookkeeping-sc-clauses-had-no-procedure-step.md](LESSONS/LL-00049-post-bookkeeping-sc-clauses-had-no-procedure-step.md) |
