@@ -1,10 +1,10 @@
 """語料面：common 的正反自證（front-matter 解析、Ctx 讀檔、finding 形）。"""
 import os
-import subprocess
 import tempfile
 import unittest
 
 from docsync import common
+from docsync.tests import tmprepo
 
 
 class TestFrontMatter(unittest.TestCase):
@@ -30,17 +30,14 @@ class TestFrontMatter(unittest.TestCase):
 class TestCtx(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
-        subprocess.run(["git", "init", "-q", "-b", "main", self.d], check=True)
+        tmprepo.git(self.d, "init", "-q", "-b", "main")
         with open(os.path.join(self.d, "a.md"), "w", encoding="utf-8") as f:
             f.write("A\n")
-        subprocess.run(["git", "-C", self.d, "add", "a.md"], check=True)
-        subprocess.run(
-            ["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"],
-            check=True,
-        )
+        tmprepo.git(self.d, "add", "a.md")
+        tmprepo.git(self.d, "commit", "-qm", "x")
 
     def test_tracked_text_head(self):
-        ctx = common.Ctx(self.d)
+        ctx = tmprepo.Ctx(self.d)
         self.assertEqual(ctx.tracked, ["a.md"])
         self.assertEqual(ctx.text("a.md"), "A\n")
         self.assertEqual(ctx.head_text("a.md"), "A\n")
@@ -49,13 +46,13 @@ class TestCtx(unittest.TestCase):
 
     def test_commit_prefetch_matches_single_and_fills_memo(self):
         """批次預取與逐個查同判（commit 真／假 SHA 假／tree 物件不算 commit）；memo 須由批次填入——批次若壞、退路會默默兜住結果而慢回原樣。"""
-        ctx = common.Ctx(self.d)
+        ctx = tmprepo.Ctx(self.d)
         head, tree, fake = ctx.git("rev-parse", "HEAD"), ctx.git("rev-parse", "HEAD^{tree}"), "0" * 40
         ctx.prefetch_commits([head, head[:7], tree, fake, "a b"])
         self.assertEqual({s: ctx._commits.get((None, s)) for s in (head, head[:7], tree, fake)},
                          {head: True, head[:7]: True, tree: False, fake: False})
         self.assertNotIn((None, "a b"), ctx._commits)  # 含空白＝不入批次、改走逐個查
-        fresh = common.Ctx(self.d)
+        fresh = tmprepo.Ctx(self.d)
         self.assertEqual([fresh.commit_exists(s) for s in (head, tree, fake, "a b")], [True, False, False, False])
 
     def test_finding_shape(self):

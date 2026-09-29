@@ -45,7 +45,7 @@ const PROBES = [
     key: 'P1',
     task: [
       '【探針 P1｜冷啟動】你是一支只有 repo 內容、沒有任何對話脈絡的新 session（探針）。冒煙 token：r-orch-example-4b2c。一切書面產物一律 zh-TW；識別字、路徑、命令保留原形。',
-      '規則：只准讀 repo（Read／Grep／Glob 與唯讀 Bash）；每題記你依序開的檔（path）與開檔次數（hops）；答不出就 found=false、寫 dead_ends；文件缺口寫 suggestion。',
+      '規則：只准讀 repo（Read／Grep／Glob 與唯讀 Bash）；每題記你依序開的檔（path）與開檔次數（hops；`ls`／`find`／`grep`／`git log` 等確認存在與否的查找不計入）；答不出就 found=false、寫 dead_ends；文件缺口寫 suggestion。',
       'Q1 要組一支 review 形的 Workflow script（探索 lens＋兩鏡驗證），該從 repo 哪個檔起手、用什麼命令組裝與自測？',
       'Q2 review 形各角色（lens／mirror／grader／critic）用哪個模型與 effort、真源在哪個檔？',
       'Q3 組好的 script 發射時，看門狗命令是什麼、冒煙 token 有什麼限制？',

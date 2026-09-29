@@ -77,7 +77,7 @@ const FINDINGS_OUT = [
 ].join('\n')
 const PROBE_OUT = [
   '=== 回傳 ===',
-  '以 StructuredOutput 回傳：answers 每題一元素（question 抄原文、answer、path＝你依序開的檔、hops＝開檔次數、found、confidence、ambiguity／dead_ends／suggestion 選填）；agentStatus 只表你自身能否完成。',
+  '以 StructuredOutput 回傳：answers 每題一元素（question 抄原文、answer、path＝你依序開的檔、hops＝開檔次數〔`ls`／`find`／`grep`／`git log` 等確認存在與否的查找不計入〕、found、confidence、ambiguity／dead_ends／suggestion 選填）；agentStatus 只表你自身能否完成。',
 ].join('\n')
 const VERDICT_OUT = [
   '=== 回傳 ===',
@@ -203,7 +203,7 @@ function graderPrompt(key, answersText) {
   return [DEEP_THINK, who('探針評分 grader', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
     '=== 任務：探針評分 ===',
     '以下是一支「只有 repo 內容」的新 session（探針）對數題的作答紀錄。對每題：1. 你自己獨立找真相（唯讀），記你的最短路徑 truth_path（依序開檔）與 min_hops（開檔次數）；',
-    '2. 判 verdict：找得到（探針 ≤3 跳且答對）／繞路（>3 跳但答對）／找不到（探針 found=false 或答不出）／答錯（答案與真相不符；說明哪裡錯）；',
+    '2. 判 verdict：找得到（探針 ≤3 跳且答對）／繞路（>3 跳但答對；★探針多走的跳若帶來與題目相關的額外查獲＝增益跳、不計入繞路判定，只算沒帶來新資訊的開檔；跳數一律以開檔口徑計）／找不到（探針 found=false 或答不出）／答錯（答案與真相不符；說明哪裡錯）；',
     '3. 探針的 suggestion 逐條評：採納→寫成 finding；不採納→在 note 說理由；4. findings 只報文件面缺口、每筆附可重跑的唯讀證據命令與輸出摘錄。',
     '', answersText, '', GRADE_OUT, '', RULES_REVIEW].join('\n')
 }

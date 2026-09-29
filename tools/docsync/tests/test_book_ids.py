@@ -1,11 +1,11 @@
 """語料面：GT-05 ID 家族（next／唯一／單調／不回收）、跨代裸編號（面×提及×刀集）、子庫碼面；GT-08 LESSONS 側。"""
 import os
 import re
-import subprocess
 import tempfile
 import unittest
 
 from docsync import book, common, rules, BACKLOG, CONSTITUTION, LESSONS_DIR, RULES, ROOT
+from docsync.tests import tmprepo
 
 RULES_TEXT = """<!-- next: RL-0003 -->
 # RULES
@@ -19,7 +19,8 @@ RULES_TEXT = """<!-- next: RL-0003 -->
 
 
 def stub(files, head=None, tracked=None):
-    """假 Ctx：text／head_text 讀 dict、exists 看鍵或目錄前綴、git 一律 GitError（無子庫）；commit 批次預取為空操作（存在性一律走 git＝恆假）。"""
+    """假 Ctx：text／head_text 讀 dict、exists 看鍵或目錄前綴、git 一律 GitError（無子庫）；commit 批次預取為空操作（存在性一律走 git＝恆假）。
+    git_try 只有外層 `diff --cached --quiet` 回 (0, "")＝暫存區＝HEAD（一致性腿整腿不跑）、其餘命令回 (128, "")。"""
     c = common.Ctx.__new__(common.Ctx)
     c.root = "/nonexistent"
     c._cache = dict(files)
@@ -32,12 +33,29 @@ def stub(files, head=None, tracked=None):
     def _git(*a, cwd=None):
         raise common.GitError("no git")
     c.git = _git
-    c.git_try = lambda *a, cwd=None: (128, "")
+    c.git_try = lambda *a, cwd=None: (0, "") if a == ("diff", "--cached", "--quiet") and cwd is None else (128, "")
     return c
 
 
 def errs(fs):
     return [f for f in fs if f[0] == "ERROR"]
+
+
+class TestStubIndexEqualsHead(unittest.TestCase):
+    """樁如實：`stub()` 代表「暫存區＝HEAD」——`diff --cached --quiet` 回 (0, "")，GT-12 一致性腿（ADR-00052 決定 1）整腿不跑；
+    其餘 git_try 命令照舊回 (128, "")。樁若對一切命令回 128，對樁跑 gt_12 恆多出一筆 rc=128 ERROR、既有案只靠訊息字面過濾才綠。"""
+
+    def test_gt12_on_stub_has_no_consistency_leg_finding(self):
+        from docsync import gates, NOTES
+        fs = gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}))
+        self.assertEqual([f for f in fs if "rc=128" in f[3] or "ADR-00052 決定 1" in f[3]], [], fs)
+
+    def test_only_staged_diff_probe_succeeds(self):
+        c = stub({})
+        self.assertEqual(c.git_try("diff", "--cached", "--quiet"), (0, ""))
+        self.assertEqual(c.git_try("--no-optional-locks", "status", "--porcelain", "-z"), (128, ""))
+        self.assertEqual(c.git_try("diff", "--cached", "--quiet", cwd="/nonexistent/rust-api"), (128, ""))
+        self.assertEqual(c.git_try("show", "HEAD:x", cwd="/nonexistent/rust-api"), (128, ""))
 
 
 class TestFamilies(unittest.TestCase):
@@ -100,22 +118,22 @@ class TestBareRev5(unittest.TestCase):
 def _synth_pin_tree(rel, content):
     """合成外層＋一個 base-web 子庫（rust-api 缺席＝具名 SKIP）：把 content 寫進子庫 rel 並 commit，回外層 root。"""
     root = tempfile.mkdtemp()
-    subprocess.run(["git", "init", "-q", "-b", "main", root], check=True)
+    tmprepo.git(root, "init", "-q", "-b", "main")
     with open(os.path.join(root, "RULES.md"), "w") as f:
         f.write("x")
     sub = os.path.join(root, "base-web")
     os.makedirs(sub)
-    subprocess.run(["git", "init", "-q", "-b", "main", sub], check=True)
+    tmprepo.git(sub, "init", "-q", "-b", "main")
     with open(os.path.join(sub, rel), "w", encoding="utf-8") as f:
         f.write(content)
-    subprocess.run(["git", "-C", sub, "add", rel], check=True)
-    subprocess.run(["git", "-C", sub, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], check=True)
+    tmprepo.git(sub, "add", rel)
+    tmprepo.git(sub, "commit", "-qm", "x")
     return root
 
 
 class TestSubmoduleScan(unittest.TestCase):
     def test_hit_in_submodule_is_red(self):
-        fs = book.gt_05(common.Ctx(_synth_pin_tree("a.ts", "// see L-011 and B-042\n")))
+        fs = book.gt_05(tmprepo.Ctx(_synth_pin_tree("a.ts", "// see L-011 and B-042\n")))
         self.assertTrue(any(f[0] == "ERROR" and "base-web" in f[2] for f in fs))
         self.assertTrue(any(f[0] == "SKIP" and "rust-api" in f[3] for f in fs))
 
@@ -123,7 +141,7 @@ class TestSubmoduleScan(unittest.TestCase):
         """第六形（003 刀 U10）：子庫 pin 樹之裸三碼前代刀號「rev5 002」→ ERROR 指名 <子庫>/<檔>:<行>（精判＝BARE_PREV_KNIFE_NUM、與外層同源）。
         ★第三行走真 git grep 驗非 ASCII 空白分隔（U+3000）：粗篩由 ERE 引擎跑、Python 側的超集案證不到它，
         分隔若只收半形空白與 tab，這行外層紅、子庫綠＝判準分裂（U10 fix 輪實證）。"""
-        fs = book.gt_05(common.Ctx(_synth_pin_tree("a.rs", "//! 守衛族\n//! 承 rev5 002 收刀坑\n//! 承 rev5\u3000002 全形空白分隔\n")))
+        fs = book.gt_05(tmprepo.Ctx(_synth_pin_tree("a.rs", "//! 守衛族\n//! 承 rev5 002 收刀坑\n//! 承 rev5\u3000002 全形空白分隔\n")))
         named = {f[2]: f[3] for f in fs if f[0] == "ERROR" and f[2].startswith("base-web")}
         self.assertEqual(sorted(named), ["base-web/a.rs:2", "base-web/a.rs:3"], fs)
         self.assertTrue(all("裸前代刀號" in m for m in named.values()), named)
@@ -132,7 +150,7 @@ class TestSubmoduleScan(unittest.TestCase):
 
     def test_prefixed_and_mention_forms_in_submodule_are_green(self):
         """正向：冒號前綴形與提及形（反引號／「」）皆不紅——「rev5 002」提及形會被粗篩撈起、再由精判剝提及形放行。"""
-        fs = book.gt_05(common.Ctx(_synth_pin_tree("a.rs", "//! `rev5:002` 收刀坑；「rev5 002」提及；承 `rev5 002` 之形；rev5:002 冒號形\n")))
+        fs = book.gt_05(tmprepo.Ctx(_synth_pin_tree("a.rs", "//! `rev5:002` 收刀坑；「rev5 002」提及；承 `rev5 002` 之形；rev5:002 冒號形\n")))
         self.assertEqual([f for f in fs if f[0] == "ERROR" and f[2].startswith("base-web")], [], fs)
 
 

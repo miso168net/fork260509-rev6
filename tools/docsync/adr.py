@@ -1,12 +1,12 @@
-"""守 RL-0047／RL-0050：ADR accepted 後不可變、翻案走 supersede 對稱；編號永不重用、禁刪除。
+"""守 RL-0074／RL-0081：ADR accepted 後不可變、翻案走 supersede 對稱；編號永不重用、禁刪除；新 ADR 帶前代出處。
 
-adr.py：load_adrs（工作樹或 HEAD）、gt_04（形制／不可變／對稱／禁刪除／撞號）、gen_decisions_index（三輪出身反查）、backfill_superseded_by。
+adr.py：load_adrs（工作樹或 HEAD）、gt_04（形制／不可變／對稱／禁刪除／撞號／前代出處）、gen_decisions_index（三輪出身反查）、backfill_superseded_by。
 """
 import os
 import re
 
 from . import ADR_DIR
-from .common import ERROR, GENERATED_HEADER, GitError, finding, parse_front_matter
+from .common import ERROR, GENERATED_HEADER, GitError, finding, head_fail_msg, parse_front_matter
 
 RE_ADR_FILENAME = re.compile(r"^(ADR-\d{5})-[a-z0-9][a-z0-9.-]*\.md$")
 RE_ADR_ID = re.compile(r"^ADR-\d{5}$")
@@ -14,6 +14,11 @@ RE_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ADR_STATUSES = ("proposed", "accepted", "superseded")
 ADR_REQUIRED = ("id", "title", "date", "status")
 ADR_MUTABLE_AFTER_ACCEPT = ("superseded_by",)
+# 前代出處腿（RL-0081）：編號 ≥ 本常數之 ADR（不分 status）的 provenance 須含 `rev5:`／`rev4:` 前代出處或「前代無對應：<理由>」，
+# 冒號後皆須緊接非空白字元。門檻＝LL-00046 所定之 ADR-00052（與 RL-0081 同批立檔之首號）：RL-0081「已 accepted 者不回改」——
+# ADR-00051 以前缺出處者 body／front-matter 已不可變、補不回，列為已知態、本腿不查。
+PREDECESSOR_FROM = 52
+RE_PREDECESSOR = re.compile(r"rev[45]:\S|前代無對應：\S")
 
 
 class Adr:
@@ -38,14 +43,22 @@ def _as_list(v):
 
 
 def _files(ctx, head=False):
-    """{filename: text}；head=True 讀 git HEAD 樹（無 HEAD／無目錄→{}）。只收 *.md。"""
+    """{filename: text}；head=True 讀 git HEAD 樹（HEAD 未誕生／HEAD 樹無 ADR→{}；其他 git 失敗→GitError、
+    由 gt_04 轉 ERROR＝ADR-00052 決定 2）。只收 *.md。"""
     if head:
-        try:
-            names = ctx.git("ls-tree", "--name-only", "HEAD", f"{ADR_DIR}/").split("\n")
-            # 工作樹與 HEAD 相同（git 判定、含 .gitattributes 換行正規化）者以工作樹內容代之、免逐檔 `git show`（drvfs 上每次約 0.1s）
-            changed = set(ctx.git("diff", "--name-only", "HEAD", "--", f"{ADR_DIR}/").split("\n"))
-        except GitError:
+        # 目錄直下檔名取自 Ctx 的一次性 HEAD 樹清單（與 head_text 同一判準、免另起 ls-tree）
+        names = sorted(p for p in ctx.head_paths() if p.startswith(ADR_DIR + "/") and "/" not in p[len(ADR_DIR) + 1:])
+        if not names:
             return {}
+        # 工作樹與 HEAD 相同（git 判定、含 .gitattributes 換行正規化）者以工作樹內容代之、免逐檔 `git show`（drvfs 上每次約 0.1s）。
+        # ★判定必須唯讀：`git diff`（工作樹側）遇 stat 髒而內容不變之檔會回寫 index 的 stat 快取（`--no-optional-locks` 擋不住），
+        # hook 期即改寫本次 commit 的暫存區檔（GIT_INDEX_FILE）；`--no-optional-locks status` 只在記憶體刷新、不回寫。
+        # status 列「HEAD≠暫存區」與「暫存區≠工作樹」之聯集＝「工作樹≠HEAD」的超集：多列者只多讀 HEAD 版＝比對面不減。
+        # 輸出不得 strip（首筆「 M <路徑>」的首欄空白被吃即路徑錯位）；此判定只是捷徑：失敗即退回逐檔讀 HEAD 版，
+        # 讀不到者由 head_text 帶路徑上拋、gt_04 指名 ERROR。
+        rc, stdout = ctx.git_try("--no-optional-locks", "status", "--porcelain", "-z", "--untracked-files=no", "--no-renames",
+                                 "--", f"{ADR_DIR}/")
+        changed = {e[3:] for e in stdout.split("\0") if e} if rc == 0 else set(names)
         out = {}
         for p in names:
             fn = os.path.basename(p)
@@ -75,16 +88,21 @@ def load_adrs(ctx, head=False):
 def gt_04(ctx):
     """GATE:
       id=GT-04
-      rule=RL-0074
+      rule=RL-0074、RL-0081
       source=rev5:ADR 0012
-      drift=ADR 不可變與 supersede 對稱
+      drift=ADR 不可變與 supersede 對稱；新 ADR 前代出處
       face=docs/arc42/decisions/*.md
       trigger=pre-commit
       rc=1
-      breaks-if-removed=拍板全文可被改寫、翻案可單向
+      breaks-if-removed=拍板全文可被改寫、翻案可單向；新 ADR 可不帶前代出處即 accepted、缺口永遠補不回
     """
     out = []
-    cur, head = _files(ctx), _files(ctx, head=True)
+    cur = _files(ctx)
+    try:
+        head = _files(ctx, head=True)
+    except GitError as ex:
+        out.append(finding(ERROR, "GT-04", ADR_DIR, f"HEAD 側對比（禁刪除／不可變）未執行：{head_fail_msg(ex)}"))
+        head = {}
     for fn in sorted(head):
         if fn not in cur:
             out.append(finding(ERROR, "GT-04", f"{ADR_DIR}/{fn}", "ADR 禁刪除（編號永不重用；翻案＝新檔 supersedes）"))
@@ -121,6 +139,13 @@ def gt_04(ctx):
             out.append(finding(ERROR, "GT-04", where, "tags 須為 list"))
         if "provenance" in meta and not isinstance(meta["provenance"], str):
             out.append(finding(ERROR, "GT-04", where, "provenance 須為字串"))
+        num = int(m.group(1)[4:]) if m else (int(mid[4:]) if valid_id else None)   # 編號＝檔名；檔名不合形才退取 id
+        prov = meta.get("provenance")
+        if num is not None and num >= PREDECESSOR_FROM and not (isinstance(prov, str) and RE_PREDECESSOR.search(prov)):
+            out.append(finding(ERROR, "GT-04", where,
+                               f"前代出處缺（RL-0081；LL-00046）：ADR-{PREDECESSOR_FROM:05d} 起之 ADR 的 provenance 須含 `rev5:`／`rev4:` 前代出處"
+                               "（冒號後緊接非空白字元），無前代對應者寫「前代無對應：<理由>」；補救＝於 front-matter provenance 補齊"
+                               "（accepted 後 front-matter 不可變、缺口補不回——須於本 commit 補）"))
     seen = {}
     for fn, (meta, _) in sorted(metas.items()):
         i = meta.get("id")

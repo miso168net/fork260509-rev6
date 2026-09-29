@@ -1,7 +1,6 @@
 """語料面：references 的正反自證（ports 解析、STATE 空值、check 三分支、generate 冪等）。"""
 import json
 import os
-import subprocess
 import tempfile
 import re
 import unittest
@@ -9,7 +8,7 @@ import unittest.mock
 
 from docsync import references, common, book, events as ev_mod, ROOT, EVENTS, RULES, NOTES, CONSTITUTION, ADR_DIR, LESSONS_DIR
 from docsync.tests.test_book_ids import stub, RULES_TEXT
-from docsync.tests import test_snapshot
+from docsync.tests import test_snapshot, tmprepo
 
 
 class TestPorts(unittest.TestCase):
@@ -79,7 +78,7 @@ class TestMilestonesAndStateRendering(unittest.TestCase):
 class TestGenerateIdempotent(unittest.TestCase):
     def test_generate_twice_same_bytes_and_check_green(self):
         root = tempfile.mkdtemp()
-        subprocess.run(["git", "init", "-q", "-b", "main", root], check=True)
+        tmprepo.git(root, "init", "-q", "-b", "main")
         def w(rel, text):
             p = os.path.join(root, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
             with open(p, "w", encoding="utf-8") as f: f.write(text)
@@ -96,15 +95,15 @@ class TestGenerateIdempotent(unittest.TestCase):
             w(rel, text)
         w(references.ROUTER_SOURCE, TestRoutes.ROUTES_TEXT)   # router.rs＝reference/routes.md 的存在前提（同樣缺席 fail-loud）：合成 repo 補樁、與 TestRoutes 共用同一份語料
         w("tools/orchestration/EXAMPLE-x.mjs", "const IMPL_OPTS = { model: 'm', effort: 'e' }\n")   # *_OPTS 掃描面非空（000-r2 L4-08：空集合＝GT-01 警示）
-        subprocess.run(["git", "-C", root, "add", "-A"], check=True)
-        written = references.cmd_generate(common.Ctx(root))
+        tmprepo.git(root, "add", "-A")
+        written = references.cmd_generate(tmprepo.Ctx(root))
         self.assertIn(f"{ADR_DIR}/ADR-00001-a.md", written)  # 對稱回填
-        first = {rel: open(os.path.join(root, rel), encoding="utf-8").read() for rel in references.compute_generated(common.Ctx(root))}
-        subprocess.run(["git", "-C", root, "add", "-A"], check=True)
-        references.cmd_generate(common.Ctx(root))
+        first = {rel: open(os.path.join(root, rel), encoding="utf-8").read() for rel in references.compute_generated(tmprepo.Ctx(root))}
+        tmprepo.git(root, "add", "-A")
+        references.cmd_generate(tmprepo.Ctx(root))
         second = {rel: open(os.path.join(root, rel), encoding="utf-8").read() for rel in first}
         self.assertEqual(first, second)
-        ctx = common.Ctx(root)
+        ctx = tmprepo.Ctx(root)
         self.assertEqual(references.check_generated(ctx, references.compute_generated(ctx)), [])
         self.assertTrue(all(t.startswith(common.GENERATED_HEADER) or t.startswith("// 機器生成") for t in first.values()))
 

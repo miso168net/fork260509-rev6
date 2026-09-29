@@ -3,33 +3,14 @@
 import json
 import os
 import re
-import subprocess
 import tempfile
 import unittest
 import unittest.mock
 
 from docsync import gates, common, ROOT, RULES, NOTES, CONSTITUTION
+from docsync.tests import tmprepo
 from docsync.tests.test_book_ids import stub, errs, RULES_TEXT
-
-
-def _git(cwd, *args):
-    return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", cwd, *args],
-                          check=True, capture_output=True, text=True).stdout.strip()
-
-
-def make_repo(files, exec_paths=()):
-    root = tempfile.mkdtemp()
-    _git(root, "init", "-q", "-b", "main")
-    for rel, text in files.items():
-        p = os.path.join(root, rel)
-        os.makedirs(os.path.dirname(p) or root, exist_ok=True)
-        with open(p, "w", encoding="utf-8") as f:
-            f.write(text)
-    _git(root, "add", "-A")
-    for rel in exec_paths:
-        _git(root, "update-index", "--chmod=+x", rel)
-    _git(root, "commit", "-qm", "x")
-    return root
+from docsync.tests.tmprepo import make_repo
 
 
 _REAL_LINT = []
@@ -105,7 +86,7 @@ class TestGt07(unittest.TestCase):
         old = os.environ.get("SECRETS_DIR")
         os.environ["SECRETS_DIR"] = sdir
         try:
-            fs = gates.gt_07(common.Ctx(root))
+            fs = gates.gt_07(tmprepo.Ctx(root))
         finally:
             if old is None:
                 del os.environ["SECRETS_DIR"]
@@ -123,7 +104,7 @@ class TestGt07(unittest.TestCase):
         old = os.environ.get("SECRETS_DIR")
         os.environ["SECRETS_DIR"] = os.path.join(root, "nope")
         try:
-            fs = gates.gt_07(common.Ctx(root))
+            fs = gates.gt_07(tmprepo.Ctx(root))
         finally:
             if old is None:
                 del os.environ["SECRETS_DIR"]
@@ -141,7 +122,7 @@ class TestGt09(unittest.TestCase):
         readme = "# R\n\n```text\n.\n├── tools/\n│   ├── x.py\n│   └── z.py\n├── deploy/\n│   └── sops.sh\n└── .claude/\n    └── hooks/\n        └── s.sh\n```\n"
         root = make_repo({"README.md": readme, "tools/x.py": "1\n", "tools/y.py": "2\n", "deploy/sops.sh": "#!/bin/sh\n",
                           ".claude/settings.json": self.SETTINGS, ".claude/hooks/s.sh": "#!/bin/sh\n", ".claude/hooks/orphan.py": "1\n"})
-        fs = errs(gates.gt_09(common.Ctx(root)))
+        fs = errs(gates.gt_09(tmprepo.Ctx(root)))
         msgs = " ".join(f[3] + f[2] for f in fs)
         self.assertIn("tools/y.py", msgs)
         self.assertIn("tools/z.py", msgs)
@@ -155,12 +136,12 @@ class TestGt09(unittest.TestCase):
         files = {"README.md": readme, "tools/x.py": "1\n", ".claude/settings.json": self.SETTINGS, ".claude/hooks/s.sh": "#!/bin/sh\n"}
         files.update({e: "#!/bin/sh\n" for e in execs})
         root = make_repo(files, exec_paths=execs)
-        fs = gates.gt_09(common.Ctx(root))
+        fs = gates.gt_09(tmprepo.Ctx(root))
         self.assertEqual([f for f in errs(fs) if "deploy/sops.sh" in f[2] or "tools/" in f[2]], [])
         # 000-r2 修單：Day-1 型 SKIP 退場為 ERROR（.githooks／README 今日全在、分支已死）
         self.assertTrue(any(f[0] == "ERROR" and ".githooks" in f[3] and "缺席" in f[3] for f in fs), fs)
         self.assertFalse(any(f[0] == "SKIP" for f in fs))
-        fs2 = gates.gt_09(common.Ctx(make_repo({"tools/x.py": "1\n"})))
+        fs2 = gates.gt_09(tmprepo.Ctx(make_repo({"tools/x.py": "1\n"})))
         self.assertTrue(any(f[0] == "ERROR" and "README" in f[3] and "缺席" in f[3] for f in fs2), fs2)
         self.assertFalse(any(f[0] == "SKIP" for f in fs2))
 
@@ -172,7 +153,7 @@ class TestGt09OrchestrationRoster(unittest.TestCase):
     TABLE = "# orch\n\n| 檔 | 內容 |\n|---|---|\n| `_sk_head.js` | 首段 |\n| `assemble.py` | 組裝器 |\n"
 
     def _msgs(self, files):
-        return [f for f in errs(gates.gt_09(common.Ctx(make_repo(files)))) if "檔表" in f[3]]
+        return [f for f in errs(gates.gt_09(tmprepo.Ctx(make_repo(files)))) if "檔表" in f[3]]
 
     def test_green_two_way(self):
         files = {"README.md": self.README, "tools/orchestration/README.md": self.TABLE,
@@ -548,7 +529,7 @@ class TestGt09PrefixAndTreeParsing(unittest.TestCase):
 
     def test_hooks_absent_does_not_exempt_githooks_submodule(self):
         """`.githooks` 前綴會把 `.githooks-submodule/*` 一併吃掉，與同筆訊息「其餘 EXEC_REQUIRED 照驗」矛盾。"""
-        fs = errs(gates.gt_09(common.Ctx(make_repo({"tools/x.py": "1\n"}))))
+        fs = errs(gates.gt_09(tmprepo.Ctx(make_repo({"tools/x.py": "1\n"}))))
         named = " ".join(f[2] for f in fs if "EXEC_REQUIRED" in f[3])
         self.assertIn(".githooks-submodule/pre-commit", named)
         self.assertIn(".githooks-submodule/pre-push", named)
@@ -659,3 +640,96 @@ class TestGt12Doorbell(unittest.TestCase):
     def test_real_repo_doorbell_reconciles(self):
         self.assertEqual([f for f in errs(gates.gt_12(common.Ctx(ROOT))) if "門鈴字面對賬" in f[3]], [])
 
+
+
+RECON = "閘↔規則對賬"   # 對賬腿全部訊息共有的字面
+RECON_RULES = """<!-- next: RL-0005 -->
+| id | 規則 | scope | carrier | source |
+|---|---|---|---|---|
+| RL-0001 | 甲。 | implementer | lint | rev5:L-003 |
+| RL-0002 | 乙。 | implementer | lint | rev5:L-003 |
+| RL-0003 | 丙。 | implementer | prompt | rev5:L-003 |
+| RL-0004 | 丁。 | 主線 | checklist | rev5:L-003 |
+"""
+
+
+class TestGt12RuleReconcile(unittest.TestCase):
+    """BL-00036①：閘 GATE 區塊 `rule=` ⇔ RULES carrier=lint 雙向對賬（掛 GT-12、不新增閘）。
+    `rule=` 多值以「、」分隔、解析只一處（`gates.rule_values`；對賬腿與 GATES.md 渲染同取）；每值須為 RL-NNNN／ADR-NNNNN 形；
+    carrier=lint 之 RL 皆須被至少一閘指名、`rule=` 所列 RL 皆須在 RULES 且 carrier=lint；ADR 值照舊允許、不驗 carrier。"""
+
+    def leg(self, rules, rules_text=RECON_RULES):
+        blocks = {gid: {"id": gid, "rule": r} for gid, r in rules.items()}
+        return errs(gates._rule_reconcile_leg(blocks, rules_text, {gid: f"tools/docsync/{gid}.py" for gid in blocks}))
+
+    def test_every_lint_rule_named_is_green(self):
+        """正：每條 lint 規則皆有閘指名、所列 RL 皆 lint、ADR 值混列——零 finding。"""
+        self.assertEqual(self.leg({"GT-01": "RL-0001", "GT-02": "RL-0002、ADR-00006"}), [])
+
+    def test_lint_rule_named_by_no_gate_is_red(self):
+        """反①：RL-0002（carrier=lint）無閘指名→恰一筆、指名該 RL 並附補救；已指名的 RL-0001 不報。"""
+        fs = self.leg({"GT-01": "RL-0001"})
+        self.assertEqual([f[2] for f in fs], [f"{RULES}｜RL-0002"], fs)
+        self.assertTrue(RECON in fs[0][3] and "RL-0002" in fs[0][3] and "carrier=lint" in fs[0][3] and "補救" in fs[0][3], fs)
+
+    def test_rule_naming_non_lint_or_absent_rl_is_red(self):
+        """反②：`rule=` 列 carrier=prompt／checklist 之 RL 與 RULES 查無之 RL→各一筆、指名閘與 RL、where＝該閘所在檔。"""
+        fs = self.leg({"GT-01": "RL-0001、RL-0003、RL-0004、RL-0009", "GT-02": "RL-0002"})
+        self.assertEqual(len(fs), 3, fs)
+        self.assertTrue(all(f[2] == "tools/docsync/GT-01.py" and "GT-01" in f[3] and "補救" in f[3] for f in fs), fs)
+        by = {rid: [f[3] for f in fs if rid in f[3]] for rid in ("RL-0003", "RL-0004", "RL-0009")}
+        self.assertTrue(len(by["RL-0003"]) == 1 and "carrier=prompt" in by["RL-0003"][0], by)
+        self.assertTrue(len(by["RL-0004"]) == 1 and "carrier=checklist" in by["RL-0004"][0], by)
+        self.assertTrue(len(by["RL-0009"]) == 1 and "查無" in by["RL-0009"][0], by)
+        # RULES 零列（掃描面空集合）：每個 RL 值皆「查無」即紅、不因對賬面空而靜默
+        fs = self.leg({"GT-01": "RL-0001"}, rules_text="")
+        self.assertTrue(len(fs) == 1 and "查無" in fs[0][3] and "RL-0001" in fs[0][3], fs)
+
+    def test_malformed_values_are_red(self):
+        """反③：每值須為 RL-NNNN 或 ADR-NNNNN（半形數字）、多值只認「、」——他形逐值指名。"""
+        for bad in ("RL-15", "RL-00015", "rl-0001", "RL-" + "００１５", "ADR-0006", "GT-01",
+                    "RL-0001,RL-0002", "RL-0001／RL-0002", "RL-0001 RL-0002", ""):
+            fs = self.leg({"GT-01": bad, "GT-02": "RL-0001、RL-0002"})
+            self.assertTrue(len(fs) == 1 and "形制" in fs[0][3] and f"「{bad}」" in fs[0][3] and "GT-01" in fs[0][3], (bad, fs))
+        fs = self.leg({"GT-01": "RL-0001、", "GT-02": "RL-0002"})   # 尾隨分隔＝多出一個空值
+        self.assertTrue(len(fs) == 1 and "「」" in fs[0][3], fs)
+
+    def test_multi_value_parse_single_source(self):
+        """多值解析：以「、」切、逐值去空白、缺鍵＝空清單（缺鍵由缺鍵腿指名、此處不重報）；對賬逐值計入指名。"""
+        self.assertEqual(gates.rule_values({"rule": "RL-0001、 RL-0002 、ADR-00006"}), ["RL-0001", "RL-0002", "ADR-00006"])
+        self.assertEqual(gates.rule_values({"rule": "RL-0001"}), ["RL-0001"])
+        self.assertEqual(gates.rule_values({"id": "GT-01"}), [])
+        self.assertEqual(self.leg({"GT-01": "RL-0002 、RL-0001"}), [])
+
+    def test_adr_value_is_allowed_without_carrier_check(self):
+        """ADR 值照舊允許、不驗 carrier 與存在（ADR 引用存在性歸 GT-05 引用腿）：RULES 零 lint 列時純 ADR 值零 finding。"""
+        no_lint = RECON_RULES.replace("| lint |", "| prompt |")
+        self.assertEqual(self.leg({"GT-01": "ADR-00099"}, rules_text=no_lint), [])
+        self.assertEqual(self.leg({"GT-01": "ADR-00099、RL-0001", "GT-02": "RL-0002"}), [])
+
+    def test_wired_into_gt12_with_gate_source_as_where(self):
+        """接線：gt_12 以真 package 各閘區塊對 RULES 現文對賬——樁 RULES 兩列皆 prompt，故真閘所列 RL 一律「查無」、
+        where＝該閘所在檔（GT-12 在 gates.py、GT-04 在 adr.py）。"""
+        fs = [f for f in errs(gates.gt_12(stub({RULES: RULES_TEXT, NOTES: "<!-- wave: 1 -->\n"}))) if RECON in f[3]]
+        self.assertTrue(any(f[2] == "tools/docsync/gates.py" and "GT-12" in f[3] and "RL-0052" in f[3] for f in fs), fs)
+        self.assertTrue(any(f[2] == "tools/docsync/adr.py" and "GT-04" in f[3] and "RL-0081" in f[3] for f in fs), fs)
+
+    def test_real_repo_zero_hits_on_non_empty_face(self):
+        """真 repo：對賬零命中；前提＝受檢面非空（carrier=lint 列 ≥1、每閘 rule= ≥1 值；RL-0067）。"""
+        fs, _ = real_lint()
+        self.assertEqual([f for f in fs if RECON in f[3]], [])
+        from docsync import rules as rules_mod
+        with open(os.path.join(ROOT, RULES), encoding="utf-8") as fh:
+            lint = {r.id for r in rules_mod.parse_rules(fh.read())[1] if r.carrier == "lint"}
+        blocks = gates.parse_gate_blocks("\n".join(gates.package_sources().values()))
+        self.assertTrue(lint)
+        self.assertTrue(all(gates.rule_values(b) for b in blocks.values()), blocks)
+        self.assertTrue(lint <= {v for b in blocks.values() for v in gates.rule_values(b)})
+
+    def test_gates_md_renders_rule_via_single_parser(self):
+        """同源：GATES.md「守哪條 RULES／ADR」欄經 `rule_values` 渲染——把它換掉即見替身值；真值多值以「、」連。"""
+        with unittest.mock.patch.object(gates, "rule_values", lambda b: ["RL-9999"]):
+            self.assertIn("| GT-01 | RL-9999 |", gates.gen_gates_md(stub({})))
+        out = gates.gen_gates_md(stub({}))
+        self.assertIn("| GT-12 | RL-0052、RL-0051 |", out)
+        self.assertIn("| GT-06 | RL-0048、RL-0015、RL-0077 |", out)

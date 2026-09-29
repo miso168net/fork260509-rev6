@@ -68,4 +68,4 @@ rev6 現況：零越界點；流程層的傳播規則＝非確定產物只經閘
 
 ### 測試含意
 
-系統測試全為確定性（contract test、fault-injection 隨刀進場）；AI 元件進場時加五類：門檻路由測、fallback 啟動與品質測、串聯測、恢復測、人工審核佇列量測。
+系統測試全為確定性（contract test；fault-injection 以確定性樁構造，例：壞 redis 形＝`rust-api/server/src/model/facade/test_kit.rs` 之 `bad_cache`／`real_app_with_bad_cache`、每個 redis 命令回 `Err`）；AI 元件進場時加五類：門檻路由測、fallback 啟動與品質測、串聯測、恢復測、人工審核佇列量測。

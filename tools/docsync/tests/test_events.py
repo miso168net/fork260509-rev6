@@ -3,12 +3,13 @@ import inspect
 import json
 import os
 import re
-import subprocess
 import tempfile
 import unittest
 
 from docsync import common, events, EVENTS, ROOT
+from docsync.tests import tmprepo
 from docsync.tests.test_book_ids import stub
+from docsync.tests.tmprepo import git as _git
 
 
 def ev(**k):
@@ -16,13 +17,6 @@ def ev(**k):
 
 
 MISC = ev(type="misc", date="2026-09-03", summary="s", category="governance", backlog_add=[])
-
-
-def _git(cwd, *args):
-    return subprocess.run(
-        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-C", cwd, *args],
-        check=True, capture_output=True, text=True,
-    ).stdout.strip()
 
 
 def make_repo():
@@ -153,38 +147,38 @@ class TestGt02(unittest.TestCase):
         return json.dumps(base)
 
     def test_empty_face_is_red(self):
-        c = common.Ctx(self.root)
+        c = tmprepo.Ctx(self.root)
         self.assertTrue(any(f[0] == "ERROR" and "空集合" in f[3] for f in events.gt_02(c)))
 
     def test_true_sha_green_fake_sha_red(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + self._fc() + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_02(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
         write(self.root, "docs/ops/events.jsonl", self._fc(merge="d" * 40) + "\n")
-        self.assertTrue(any("merge" in f[3] and "實證" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("merge" in f[3] and "實證" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
         write(self.root, "docs/ops/events.jsonl", self._fc(pins={"web": "e" * 40, "api": self.subs["api"]}) + "\n")
-        self.assertTrue(any("pins.web" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("pins.web" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_window_must_be_ordinal(self):
         write(self.root, "docs/ops/events.jsonl", self._fc(window=1) + "\n" + self._fc(feature="002-y", merge=self.sha2, window=3) + "\n")
-        self.assertTrue(any("window" in f[3] and "2" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("window" in f[3] and "2" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_erratum_corrects_target(self):
         bad = self._fc(merge="d" * 40)
         err = ev(type="erratum", date="2026-09-03", target_line=1, field="merge", corrected=self.sha1, reason="短 SHA 誤植")
         write(self.root, "docs/ops/events.jsonl", bad + "\n" + err + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_02(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
         err2 = ev(type="erratum", date="2026-09-03", target_line=9, field="merge", corrected=self.sha1, reason="r")
         write(self.root, "docs/ops/events.jsonl", bad + "\n" + err2 + "\n")
-        self.assertTrue(any("target_line" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("target_line" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_erratum_probe_backfills_review_only(self):
         """ADR-00021：probe 型 erratum 補 review 事件缺席之 probe 欄（000-r1 回填形）＝綠；指向 misc＝紅指名。"""
         rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-x.md", findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
         p = dict(questions=3, found=2, detour=1, not_found=0, wrong=0, avg_min_hops=2.0)
         write(self.root, "docs/ops/events.jsonl", rv + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="回填") + "\n")
-        self.assertEqual([f for f in events.gt_02(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_02(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + ev(type="erratum", date="2026-09-03", target_line=1, field="probe", corrected=p, reason="錯型") + "\n")
-        self.assertTrue(any("probe" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("probe" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
     def test_append_only_vs_head(self):
         """BL-00035②：events.jsonl 自稱 append 型單一事實源，既有列卻可被靜默改寫＝erratum 機制
@@ -195,7 +189,7 @@ class TestGt02(unittest.TestCase):
         write(self.root, rel, MISC + "\n" + fc + "\n")
         _git(self.root, "add", rel)
         _git(self.root, "commit", "-qm", "events")
-        only = lambda: [f for f in events.gt_02(common.Ctx(self.root)) if "append-only" in f[3]]
+        only = lambda: [f for f in events.gt_02(tmprepo.Ctx(self.root)) if "append-only" in f[3]]
         later = ev(type="misc", date="2026-09-04", summary="t", category="governance", backlog_add=[])
         write(self.root, rel, MISC + "\n" + fc + "\n" + later + "\n")
         self.assertEqual(only(), [])                                   # 案1 尾端 append＝綠
@@ -219,7 +213,7 @@ class TestGt02(unittest.TestCase):
         with open(os.path.join(sub, "f"), "a") as f:
             f.write("y\n")
         _git(sub, "commit", "-qam", "drift")
-        self.assertTrue(any("pin" in f[3] and "base-web" in f[3] for f in events.gt_02(common.Ctx(self.root))))
+        self.assertTrue(any("pin" in f[3] and "base-web" in f[3] for f in events.gt_02(tmprepo.Ctx(self.root))))
 
 
 class TestGt03(unittest.TestCase):
@@ -235,22 +229,22 @@ class TestGt03(unittest.TestCase):
 
     def test_error_when_no_close_events(self):
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertTrue(any(f[0] == "ERROR" and "掃描面空集合" in f[3] for f in fs))
 
     def test_close_completeness(self):
         write(self.root, "docs/ops/events.jsonl", self._fc() + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertTrue(any("spec.md" in f[3] for f in fs) and any("ADR-00001" in f[3] for f in fs))
         write(self.root, "specs/001-x/spec.md", "# spec\n")
         write(self.root, "docs/arc42/decisions/ADR-00001-x.md", "---\nid: \"ADR-00001\"\n---\n")
-        self.assertEqual([f for f in events.gt_03(common.Ctx(self.root)) if f[0] == "ERROR"], [])
+        self.assertEqual([f for f in events.gt_03(tmprepo.Ctx(self.root)) if f[0] == "ERROR"], [])
 
     def test_review_report_and_wontfix_adr(self):
         rv = ev(type="review", date="2026-09-03", scope="s", report="docs/reviews/20260903-s.md",
                 findings={"total": 1, "fixed": 0, "to_backlog": [], "wontfix_adr": ["ADR-00002"]})
         write(self.root, "docs/ops/events.jsonl", rv + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertTrue(any("report" in f[3] for f in fs) and any("ADR-00002" in f[3] for f in fs))
 
 
@@ -263,13 +257,13 @@ class TestGt03(unittest.TestCase):
         bad = ev(type="misc", date="2026-09-04", summary="長" * (events.SUMMARY_CHAR_LIMIT + 1),
                  category="governance", backlog_add=[])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n" + bad + "\n")
-        fs = events.gt_03(common.Ctx(self.root))
+        fs = events.gt_03(tmprepo.Ctx(self.root))
         self.assertEqual(len(fs), 1, fs)
         self.assertEqual(fs[0][0], "ERROR")
         self.assertIn("下游判讀中止", fs[0][3])
         self.assertTrue(fs[0][2].endswith(":2"), fs[0][2])
         write(self.root, "docs/ops/events.jsonl", MISC + "\n")
-        self.assertFalse(any("下游判讀中止" in f[3] for f in events.gt_03(common.Ctx(self.root))))
+        self.assertFalse(any("下游判讀中止" in f[3] for f in events.gt_03(tmprepo.Ctx(self.root))))
 
 
 class TestNotesGt06Guard(unittest.TestCase):
@@ -301,6 +295,109 @@ class TestNotesGt06Guard(unittest.TestCase):
         self.assertIn("book_mod.RE_LINENO", src)
         self.assertIn("book_mod.LINK", src)
         self.assertNotIn("re.compile", src)
+
+
+class TestFreeTextFieldsGuard(unittest.TestCase):
+    """ADR-00053 決定 2（BL-00035①）：凡原文渲染進 MILESTONES／STATE、且不在 ERRATUM_FIELDS 的事件自由文字欄＝寫壞無更正出口，
+    故寫入端與 notes 套同一道四腿守衛；訊息指名欄名、行號由 parse_events 的列號承載。每欄一正（四腿各紅）一反（安全文字綠）。"""
+
+    RISKY = (("見 docs/ops/RULES.md:12", "行號形"),
+             ("見 BACKLOG.md#bl-00001", "deep-link"),
+             ("鑰在 ~/.claude/hooks/x.sh", "per-machine"),
+             ("詳見 [報告](../docs/reviews/a.md)", "相對 markdown 連結"))
+    SAFE = "改 docs/ops/RULES.md 檔頭括註、外連 [規格](https://example.invalid/spec)"
+
+    @staticmethod
+    def _misc(summary):
+        return ev(type="misc", date="2026-09-29", summary=summary, category="governance", backlog_add=[])
+
+    @staticmethod
+    def _fc(summary="s", note="n", feature="001-x", item="FR-002"):
+        return ev(type="feature_close", date="2026-09-29", feature="001-x", summary=summary, merge="a" * 40,
+                  pins={"web": "b" * 40, "api": "c" * 40}, adrs=[], arch_impact="none", backlog_add=[],
+                  backlog_done=[], window=1,
+                  spec_supersessions=[{"feature": "001-x", "item": "FR-001", "note": "首筆無事"},
+                                      {"feature": feature, "item": item, "note": note}])
+
+    @staticmethod
+    def _review(scope):
+        return ev(type="review", date="2026-09-29", scope=scope, report="docs/reviews/20260929-x.md",
+                  findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []})
+
+    @staticmethod
+    def _misc_wf(workflow):
+        return ev(type="misc", date="2026-09-29", summary="s", category="governance", backlog_add=[], workflow=workflow)
+
+    @staticmethod
+    def _erratum(reason):
+        return ev(type="erratum", date="2026-09-29", target_line=1, field="merge", corrected="a" * 40, reason=reason)
+
+    def _msgs(self, line):
+        """單列事件置於第 2 列（首列墊 MISC），順帶釘住錯誤帶的是該列列號。"""
+        errs = events.parse_events(MISC + "\n" + line + "\n")[1]
+        self.assertTrue(all(ln == 2 for ln, _ in errs), errs)
+        return [m for _, m in errs]
+
+    def _assert_each_leg_red(self, build, field):
+        for text, needle in self.RISKY:
+            msgs = self._msgs(build(text))
+            self.assertTrue(any(m.startswith(f"{field} 含") and needle in m for m in msgs), (field, text, msgs))
+
+    def test_summary_each_leg_red(self):
+        """凡有 summary 欄的事件型皆受檢（misc 與 feature_close 兩型各跑四腿）。"""
+        self._assert_each_leg_red(self._misc, "summary")
+        self._assert_each_leg_red(lambda t: self._fc(summary=t), "summary")
+
+    def test_summary_safe_green(self):
+        self.assertEqual(self._msgs(self._misc(self.SAFE)), [])
+        self.assertEqual(self._msgs(self._fc(summary=self.SAFE)), [])
+
+    def test_erratum_reason_each_leg_red(self):
+        self._assert_each_leg_red(self._erratum, "reason")
+
+    def test_erratum_reason_safe_green(self):
+        self.assertEqual(self._msgs(self._erratum(self.SAFE)), [])
+
+    def test_spec_supersession_note_each_leg_red(self):
+        """欄名帶索引：第二筆（index 1）壞、訊息指名 spec_supersessions[1].note、首筆不誤報。"""
+        self._assert_each_leg_red(lambda t: self._fc(note=t), "spec_supersessions[1].note")
+        msgs = self._msgs(self._fc(note=self.RISKY[0][0]))
+        self.assertFalse(any("spec_supersessions[0]" in m for m in msgs), msgs)
+
+    def test_spec_supersession_note_safe_green(self):
+        self.assertEqual(self._msgs(self._fc(note=self.SAFE)), [])
+
+    # review 的 scope（MILESTONES 標的欄／STATE 近期事件列）、misc 的 workflow（標的欄「category｜workflow」）、
+    # feature_close 的 spec_supersessions[].feature／.item（summary 尾附「翻案：<feature>/<item>」）同樣原文進人讀面。
+    def test_review_scope_each_leg_red(self):
+        self._assert_each_leg_red(self._review, "scope")
+
+    def test_review_scope_safe_green(self):
+        self.assertEqual(self._msgs(self._review(self.SAFE)), [])
+
+    def test_misc_workflow_each_leg_red(self):
+        self._assert_each_leg_red(self._misc_wf, "workflow")
+
+    def test_misc_workflow_safe_green(self):
+        self.assertEqual(self._msgs(self._misc_wf(self.SAFE)), [])
+
+    def test_spec_supersession_feature_and_item_each_leg_red(self):
+        """欄名帶索引：第二筆（index 1）壞、訊息指名 spec_supersessions[1].feature／.item、首筆不誤報。"""
+        self._assert_each_leg_red(lambda t: self._fc(feature=t), "spec_supersessions[1].feature")
+        self._assert_each_leg_red(lambda t: self._fc(item=t), "spec_supersessions[1].item")
+        for kw in ("feature", "item"):
+            msgs = self._msgs(self._fc(**{kw: self.RISKY[0][0]}))
+            self.assertFalse(any("spec_supersessions[0]" in m for m in msgs), msgs)
+
+    def test_spec_supersession_feature_and_item_safe_green(self):
+        self.assertEqual(self._msgs(self._fc(feature=self.SAFE)), [])
+        self.assertEqual(self._msgs(self._fc(item=self.SAFE)), [])
+
+    def test_notes_message_keeps_its_field_name(self):
+        """既有 notes 腿的訊息仍以「notes 含」起頭（欄名參數預設值＝notes）。"""
+        e = json.loads(self._misc("s"))
+        e["notes"] = "見 STATE.md#git"
+        self.assertTrue(any(m.startswith("notes 含帳本 deep-link") for m in events._check_event(e)))
 
 
 class TestErrataViewAndMiscAdrs(unittest.TestCase):

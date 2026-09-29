@@ -43,7 +43,7 @@ REV5_BLUEPRINT = (  # rev5 活書標題名冊（凍結 SHA 7eab28a；欄＝字�
     ("fork-delta 接線現況（base-web）", "###", 8), ("資料慣例", "###", 8), ("API 慣例", "###", 8), ("授權慣例", "###", 8),
     ("§9 架構決策", "##", 9), ("§10 品質要求", "##", 10), ("§11 風險與技術債", "##", 11), ("§12 名詞表", "##", 12),
 )
-BLUEPRINT_DISPOSITIONS = ("承襲", "隨刀：", "不承襲：")
+BLUEPRINT_DISPOSITIONS = ("承襲", book_mod.BLUEPRINT_FOLLOW, "不承襲：")
 BLUEPRINT_DIR = "docs/generated/reference"
 RE_OPTS = re.compile(r"^const ([A-Z][A-Z0-9_]*_OPTS)\s*=\s*\{\s*model:\s*'([^']*)'\s*,\s*effort:\s*'([^']*)'\s*\}", re.M)
 
@@ -313,7 +313,7 @@ def gen_rev5_blueprint_map(ctx):
     """rev5 藍本對照表（ADR-00006）：frontmatter rev5_blueprint 對 REV5_BLUEPRINT 名冊；缺／重複／未知鍵／形制只排列、永不拋錯（R2-F19 非常駐閘）。"""
     decl = {}
     for rel, meta, _ in _book_meta(ctx, "docs/arc42/"):
-        bp = meta.get("rev5_blueprint") if RE_CHAPTER.match(rel) else None
+        bp = meta.get(book_mod.BLUEPRINT_KEY) if RE_CHAPTER.match(rel) else None
         if isinstance(bp, dict):
             for k, v in bp.items():
                 decl.setdefault(k, []).append((rel, str(v)))
