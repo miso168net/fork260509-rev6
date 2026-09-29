@@ -76,6 +76,7 @@
 - `*_at`：`timestamptz`。`created_at` NOT NULL default `now()`；`updated_at`／`deleted_at` nullable
 - `*_by`：operator 的 `user_id`（`bigint` nullable／`Option<i64>`，**非 user_name 字串**）；system seed／migration／未認證情境無 operator → `null`
 - **成對**：`deleted_at` 必與 `deleted_by` 同寫；`updated_at`＋`updated_by` 同理
+- **時間點欄通則**（v1.6.0、ADR-00060）：表示瞬間之欄一律 `timestamptz`、不限審計欄；MUST NOT 用 `timestamp without time zone`；純日曆日期（不表示瞬間，例：生日）得用 `date`、須於該刀 spec 具名理由；機器守衛＝`tools/schema-gate.py check` 全庫時間欄型別斷言
 
 **archetype 四變體**（整組凍結；各表歸屬隨 schema 刀入活書與 generated/reference/schema）：
 - **A 業務全 6 欄**（例：使用者／角色／選單／系統設定表）：如上；soft-delete 表配 partial-uniq `WHERE deleted_at IS NULL`（PK 本身總體唯一者除外）
@@ -291,7 +292,7 @@
 
 ---
 
-**Version**: 1.5.2 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-28
+**Version**: 1.6.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-30
 
 **Amendment log**:
 - 1.0.0（2026-09-03）：創世初版——自 rev5 constitution v1.10.0（凍結 SHA `7eab28a`）依啟動書 §3.8 逐條表搬入：§I.1～§I.3、§I.6 承襲改字（分支名、基線 SHA、fork 標記 token、前代 ADR 引用一律 `rev5:` 前綴）；§I.4 收為方向性四句、程序細節移 RULES.md；§I.5 世代 bump（前代＝rev5、rev4 溯源、源倉 main `32c5254` 起全新寫）；§I.7 僅搬進場規則、十座行為島以承襲指針表列（rev5 入憲載體逐島註明）、島體隨刀重新進場；§I.8 新增（AI 代理產物必經人審與機器閘、review 只讀、push／merge 需 user 明確同意）；§II 三筆承襲（逐筆核 rev5 ADR 摘要無翻案）；§III fork-delta 紀律與 §III.1 三軌道承襲（token `rev6-inline`、wrapper 前綴 `rev6-`）、§III.2 僅機制骨架＋補完判準＋表外三項宣告＋空表頭、rev5 五條 ★ 軌道十七用途以承襲指針列名；§IV 九題承襲（第 2 題 token、第 5 題前代改引）；§V.1 權威鏈納 RULES.md、§V.2 第 4 步改 `python3 tools/docsync generate`、§V.3 MAJOR 款納 §I.8。user 親審 diff＋grill 三題親決（§I.4 錨定「刀」＝spec-kit feature、§I.8 人審＝merge 同意＋拍板親決、§III.2 宣告 2 改原則句）後定版（創世拍板）。ADR-00003 同 commit 轉 accepted。
@@ -302,3 +303,4 @@
 - 1.5.0（2026-09-24）：005-role-menu-crud Amendment（ADR-00042）——①§I.7 島 H（選單域生命週期）五條 H1～H5 入憲（rev5 v1.7.0 字面為底；rev6 增補兩處＝H3 受保護選單不可停用／不可改父、H2 同步失敗保留上一份之方向句；明文化三處＝H3 常量父鏈之寫端列舉、H4 兩域消費面補列、H5 常量標的之父鏈重驗；座標改寫依 ADR-00042 差異附表）；承襲指針表 H 列尾註、MAJOR 射程改七島；跨島重審結論＝跨島註與跨島總則不動 ②島 E 末尾補兩點（解鎖端點稽核先於標記；操作者上下文缺席或其來源位址取不到即拒寫 `5000`；BL-00098；前代位置 rev5 島 J5）③§III.2 新增 `BASE-WEB-MANAGE-PAGE-WIRING` (ii)（九檔：role 三、menu 兩、共用表頭元件、兩語 locale `page:` 樹、`app.d.ts` `Schema.page`；兩顆授權彈窗與 `shared.ts` 明文不入）④表外宣告 1 量法句（圈界形塊數；不預估／預估列得延至下次 Amendment 實數化並登記回填；BL-00118；既有各列範圍欄數字現算覆核相符）⑤§I.7 段首括號句改指 Amendment log（BL-00119）。版本取最高級別＝MINOR（§V.3「行為島隨刀進場」「軌道授權邊界擴展」「已入憲 invariant 細項調整」三款）。ADR-00042 同 commit accepted（§V.2 步 4）；user 親決 2026-09-24（005 刀 tasks T002）。
 - 1.5.1（2026-09-27）：005-role-menu-crud PATCH Amendment（ADR-00048）——§III.2 ★`BASE-WEB-AUTH-WIRING` (c) 列範圍欄 `src/hooks/business/captcha.ts` 修改型處數 3→5：`tools/fork-delta-lint.py` 之 `find_missing` 自集合判定改逐值比次數（非唯一基線行被刪改其一亦須帶 `原行:`）後，揭出該檔自 003 刀起即缺錄之兩處刪改（Promise 閉合行 `});`、移入圈界塊內條件式之 `start();`），補修改型註解標記（碼行零改）；依表外宣告 1 範圍欄實數化。用途、行為描述、檔級名單不變。版本取 §V.3 PATCH（文字校正）。ADR-00048 同 commit accepted（§V.2 步 4）；user 親決 2026-09-27（005 刀 U13b）。
 - 1.5.2（2026-09-28）：005-role-menu-crud PATCH Amendment（ADR-00051）——§III.2 ★`BASE-WEB-MANAGE-PAGE-WIRING` (ii) 列範圍欄六支 view／元件檔「不預估」實數化（兌現 ADR-00042 翻案觸發器之回填義務；final holistic review 揭出 1.5.1 未處理）：`role/index.vue` 6＋2、`role-operate-drawer.vue` 6＋4、`role-search.vue` 1＋1、`menu/index.vue` 16＋7、`menu-operate-modal.vue` 16＋6、`table-header-operation.vue` 3＋1（修改型處數＋圈界形塊數；以 final review 修正後現算為準）；用途、行為描述、檔級名單不變。
+- 1.6.0（2026-09-30）：maint-tz-utc Amendment（ADR-00060）——§I.6「型與約束」加「時間點欄通則」款：表示瞬間之欄一律 `timestamptz`、不限審計欄，禁 `timestamp without time zone`；純日曆日期得用 `date`、須該刀 spec 具名理由；機器守衛＝`tools/schema-gate.py check` 全庫時間欄型別斷言（user 2026-09-30 裁定：寫成規則並擴大檢查、落點本節）。
