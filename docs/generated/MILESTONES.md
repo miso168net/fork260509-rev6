@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-30 | misc | governance｜maint-tz-utc | maint-tz-utc（時區裁定施作）收單（user 2026-09-29 聲明＋2026-09-30 逐題裁定）：DB 伺服器時區以 compose 命令列固定 UTC、各服務 TZ=UTC、schema-gate 時區前置（ADR-00059）；憲法 1.6.0 時間點欄通則（ADR-00060）；wire 偏移恆 +00:00、管理頁原樣顯示 UTC（ADR-00061）；記時與帳本日期時區（ADR-00062、RL-0082／RL-0083）。 | a849365 | ADR-00059、ADR-00060、ADR-00061、ADR-00062 | — |
 | 2026-09-29 | misc | product｜maint-backlog-29-93 | maint-backlog-29-93（批 A）收單（user 2026-09-29 v5 體檢 Q3①＋批 A 開工同意）：A1 BL-00093 告警規則活體驗證（rev6 首次起 obs＋metrics profile、12 條告警自檔載入且評估健康、門鈴降級正樣本以 CLIENT KILL 實取並經 loki 規則 LogQL 命中）＋rules.yml 註解據實、殘餘併入 BL-00043；A2 BL-00029 設定寫端改條件式 UPDATE（往返 3→2、對外行為不變）＋ADR-00057 決定 1 之端點真 DB 釘。 | b97ad35 | — | — |
 | 2026-09-29 | misc | product｜maint-backlog-27-44 | maint-backlog-27-44（批 F）收單（user 2026-09-29 v5 體檢 Q1①／Q2①）：ADR-00057 設定讀端回全部未刪列、不以 registry 鍵集過濾（任一列型別守衛不過即整支 5000；宣告集外型別合法之列讀得到、寫回 2222＝已知態）；ADR-00058 管理清單一律伺服器端固定穩定序、零 client 排序參數；base-web 碼註據實；BL-00047 條文修訂、BL-00064 戳記勘誤。 | 435b3bd | ADR-00057、ADR-00058 | — |
 | 2026-09-29 | misc | governance｜maint-backlog-127 | maint-backlog-127 收單（user 2026-09-29：BL-00127 單獨成輕量軌）：組裝形 workflow 每支 agent 之模型家 opus[1m]／xhigh 入 ADR-00056（明寫蓋過主線 session effort、換模＝翻案並同批改兩支 harness 期望字面）；harness-test 案1 補模型家斷言、新增案19 反例（三常數×effort／model 兩腿）、十八→十九案；現在式面案數與換模敘述同批對齊。 | 67a9b8f | ADR-00056 | — |
@@ -59,6 +60,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-30｜misc｜governance｜maint-tz-utc
+
+★另含 backup-db pg_dump 帶 PGTZ=UTC、system_settings 改用 now_ts()。修憲 a2e33e6（1.5.2→1.6.0）；ADR＋RULES fafe491；compose 099da3f（16 服務 TZ=UTC、postgres 命令列時區；重建後 pg_settings source＝command line）；U1 5b3df99（run wf_6220af4e-42f、5 支；規格 2 輪〔r1 blocker＝SHOW timezone 撈取未釘不帶 PGTZ〕、品質 1 輪零 blocker；主線另採三項非阻斷建議；★首次 commit 被 selftest-backup-db 擋→系統化除錯取證為既存缺陷〔shell PWD 別名路徑×abspath ROOT〕、以 realpath＋回歸測修復）；文件 2691344；rust-api d9c4e2f（pin a5bbd3a）；final holistic review 收單 a837426（run wf_640d1abe-9eb、9 支；13 筆＝成立 11／駁回 2：改寫未推歷史 4〔ADR-00060 前代引文、ADR-00062 筆數、兩則 commit 訊息〕、本顆修 6、轉 BL-00128 1〔併 L2-2／L2-3〕；駁回 L1-5、L3-4）。★時區盤點前置：唯讀 run wf_167447ec-295（20 筆＝成立 16）。★category＝governance：主體為 DB／容器時區不變式、修憲與記時規則（ADR-00061 為 product by-design 附帶）。★自驗：容器全量 rc 0（server lib 769）、schema-gate test 134／check 6 行 ✓、backup-db test 51、lint 0 錯。★user 2026-09-30 預先授權 merge＋push（rust-api 先推、外層後推）。淨流量：開放 +1（BL-00128）。
 
 ### 2026-09-29｜misc｜product｜maint-backlog-29-93
 

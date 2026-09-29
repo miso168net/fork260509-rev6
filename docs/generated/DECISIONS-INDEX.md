@@ -61,7 +61,7 @@
 | ADR-00056 | accepted | 2026-09-29 | 組裝形 workflow 每支 agent 的模型家恆為 opus[1m]／xhigh、不隨主線 session effort——拍板入 ADR，TDD 形與 review 形 harness 皆以寫死字面機器守 | 輕量軌｜maint-backlog-127 | — | — |
 | ADR-00057 | accepted | 2026-09-29 | 系統設定讀端回全部未刪列、不以 registry 鍵集過濾（任一列型別守衛不過即整支 5000）——宣告集外而型別合法之列讀得到、寫端回 2222 為已知態（by-design） | 輕量軌｜maint-backlog-27-44 | — | — |
 | ADR-00058 | accepted | 2026-09-29 | 管理清單一律伺服器端固定穩定序、零 client 排序參數——列表排序能力不提供（by-design） | 輕量軌｜maint-backlog-27-44 | — | — |
-| ADR-00059 | accepted | 2026-09-30 | DB 伺服器時區以 compose 明文固定 UTC、全服務容器明設 TZ=UTC、schema-gate check 常設斷言——取代「postgres 容器預設、不另設定」 | — | — | — |
-| ADR-00060 | accepted | 2026-09-30 | 憲法 §I.6 修訂——表示瞬間之時間欄一律 timestamptz（不限審計欄）、禁無時區 timestamp；純日曆日期得用 date、須 spec 具名理由（v1.6.0） | — | — | — |
-| ADR-00061 | accepted | 2026-09-30 | 時間傳輸與顯示——wire 時間欄一律 RFC3339、偏移恆 +00:00（小數位數隨值）；管理頁原樣顯示 UTC、不依瀏覽器時區換算（by-design） | — | — | — |
-| ADR-00062 | accepted | 2026-09-30 | 記時與帳本日期時區——主線在 tmp/ 記時刻一律同指令取 OS 系統時間、不得估計；受版控帳本日期欄記 OS 系統時間之當地日期（UTC+8）；工具產出之機器時間欄不在此列 | — | — | — |
+| ADR-00059 | accepted | 2026-09-30 | DB 伺服器時區以 compose 明文固定 UTC、全服務容器明設 TZ=UTC、schema-gate check 常設斷言——取代「postgres 容器預設、不另設定」 | 輕量軌｜maint-tz-utc | — | — |
+| ADR-00060 | accepted | 2026-09-30 | 憲法 §I.6 修訂——表示瞬間之時間欄一律 timestamptz（不限審計欄）、禁無時區 timestamp；純日曆日期得用 date、須 spec 具名理由（v1.6.0） | 輕量軌｜maint-tz-utc | — | — |
+| ADR-00061 | accepted | 2026-09-30 | 時間傳輸與顯示——wire 時間欄一律 RFC3339、偏移恆 +00:00（小數位數隨值）；管理頁原樣顯示 UTC、不依瀏覽器時區換算（by-design） | 輕量軌｜maint-tz-utc | — | — |
+| ADR-00062 | accepted | 2026-09-30 | 記時與帳本日期時區——主線在 tmp/ 記時刻一律同指令取 OS 系統時間、不得估計；受版控帳本日期欄記 OS 系統時間之當地日期（UTC+8）；工具產出之機器時間欄不在此列 | 輕量軌｜maint-tz-utc | — | — |
