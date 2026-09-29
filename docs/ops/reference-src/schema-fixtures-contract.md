@@ -16,7 +16,7 @@
 ## 2. 產製程序（實作階段執行一次；U2）
 
 1. 一次性 pristine `postgres:18.4-alpine`（獨立 network、零 host 埠、容器名前綴 `rev6-u2-fix*`）以 `rev6-admin-rust-api:dev`
-   容器內重放 rev6 `m0001`＋`m0002`（`cargo run --bin migration up`、serial）。
+   容器內重放 rev6 `m0001`＋`m0002`（`cargo run --bin migration up`、serial）；容器時區須為 UTC（`SHOW timezone`＝UTC、ADR-00059——`tools/schema-gate.py check --container` 之前置即斷言），dump 帶 `PGTZ=UTC`。
 2. 先驗後凍（兩綠才照相落檔）：①實庫 vs data-model §2 欄序全等（`tools/schema-gate.py check --container <容器名>` 之 gate2 欄序面）
    ②照相三 json＋normalize 後 seed.sql 四份 vs `rev5:specs/001-schema-baseline/fixtures/` 同名檔**逐位元全等**（雙源互證；`cmp` 零差異、
    無 normalize 無映射）。任一不全等＝停手升級 user、禁止單源逕行凍結。

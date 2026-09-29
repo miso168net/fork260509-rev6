@@ -14,7 +14,9 @@ rev5_blueprint:
 
 ## 8.1 資料慣例
 
-紀律上位＝憲法 §I.6（業務表審計欄四變體：A 業務全六欄／B append-only／C join·狀態機·衛星／D 治理；成對條款）。schema 基線＝`rust-api/migration/src/m0001_baseline_schema.rs`（結構）＋`m0002_baseline_seeds.rs`（seed、完全決定性；程式內容逐位元承襲 rev5 終態、ADR-00009），對 pristine 重放兩支即得全庫；漂移三閘＝`tools/schema-gate.py`（gate1 結構／gate2 欄序＋seed／audit archetype）、entity 漂移閘＝`tools/entity-drift-gate.py`（pre-commit 條件實跑：rust-api pin bump 或 schema 快照 staged 時）、受管演進帳＝`docs/ops/reference-src/schema-evolution.json`、歸屬帳＝`docs/ops/reference-src/archetype-map.json`——四者的左源、判準與登記紀律＝ADR-00010（承 rev5:ADR 0006、rev5:ADR 0007 的形）；表清單與欄型正典的家＝`docs/generated/reference/schema.md`（`python3 tools/docsync refresh` 照相、generate 產）。
+紀律上位＝憲法 §I.6（業務表審計欄四變體：A 業務全六欄／B append-only／C join·狀態機·衛星／D 治理；成對條款）。schema 基線＝`rust-api/migration/src/m0001_baseline_schema.rs`（結構）＋`m0002_baseline_seeds.rs`（seed、完全決定性；程式內容逐位元承襲 rev5 終態、ADR-00009），對 pristine 重放兩支即得全庫；漂移三閘＝`tools/schema-gate.py`（gate1 結構／gate2 欄序＋seed／audit archetype；check 另跑時區前置與全時間欄型別斷言、見下段）、entity 漂移閘＝`tools/entity-drift-gate.py`（pre-commit 條件實跑：rust-api pin bump 或 schema 快照 staged 時）、受管演進帳＝`docs/ops/reference-src/schema-evolution.json`、歸屬帳＝`docs/ops/reference-src/archetype-map.json`——四者的左源、判準與登記紀律＝ADR-00010（承 rev5:ADR 0006、rev5:ADR 0007 的形）；表清單與欄型正典的家＝`docs/generated/reference/schema.md`（`python3 tools/docsync refresh` 照相、generate 產）。
+
+時間與時區：DB 以 UTC+0 運行——postgres 之 `timezone`／`log_timezone` 由 `docker-compose.yml` 命令列固定為 UTC、compose 各服務明設 `TZ=UTC`（ADR-00059；取代 001 刀「容器預設、不另設定」款），`tools/schema-gate.py check` 先斷言 `SHOW timezone`＝UTC（非 UTC 即 rc 2）；應用連線另由 sqlx 以啟動參數 `TimeZone=UTC` 建立。表示瞬間之欄一律 `timestamptz`、禁 `timestamp without time zone`，純日曆日期得用 `date` 並須 spec 具名理由（憲法 §I.6 時間點欄通則、ADR-00060；check 斷言全庫時間欄，`date` 欄須登記於閘內名冊）。migration 與閘不依賴 session 時區——pg_dump 一律帶 `PGTZ=UTC`（`tools/schema-gate.py`、`deploy/backup-db.py`）。wire 與顯示之時間形見 §8.2。
 
 memo 欄家族（`user_memo`／`role_memo`／`menu_memo`／`wbip_memo` 與 `role_desc` 的分工）語意權威＝`docs/ops/reference-src/schema-definition.md` §5；UI 兌現＝管理列表備註欄＋表單輸入：`wbip_memo`＝IP 規則頁、`role_memo`／`menu_memo`＝角色頁與選單頁（§8.4 用途 (ii)；輸入提示語註明僅管理員可見）；`user_memo` 所屬之使用者管理頁未接真、目前無 UI 兌現。
 
@@ -27,6 +29,8 @@ ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯
 13 碼矩陣整組凍結的機器承載住 `rust-api/server/src/error.rs`——`code` 常量 mod 與同檔 `#[cfg(test)]` 之 table-driven 矩陣逐列同序同值斷言（碼×msg key×HTTP 對映、表長恰 13）；保留碼零發出另有雙錨＝`AppError` 無對應變體之全變體窮舉見證（cargo 型別層）＋同一矩陣斷言，`tests/contract.rs` 不重寫第三份。
 
 部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00047，空字串語意逐域明文：系統設定寫端之空字串＝設值（落空字串）；角色與選單寫端之可空文字欄空字串＝清空落 NULL（新增同形）、名稱欄之 null 與空字串同拒；後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
+
+時間欄 wire 形（ADR-00061）：一律 RFC3339、偏移恆 `+00:00`（chrono `to_rfc3339`；小數位數隨值 0／3／6 位＝已知態）；管理頁原樣顯示該字串（UTC）、不依瀏覽器時區換算，與 rev5 同形。
 
 清單分頁通則（跨端點單一規則＝`rust-api/server/src/envelope.rs` 之 `PAGE_DEFAULT_SIZE`＝10／`PAGE_MAX_SIZE`＝100／`PAGE_MAX_CURRENT`＝10^7 三常數＋`page_params`）：`current`／`size` 缺席→第 1 頁、10 筆；`current` clamp [1, 10^7]、`size` clamp [1, 100]（顯式 0 取下界 1）；查詢串壞形整串收斂為預設（視同全缺席）；`current` 逾界回空頁、回應 `current`＝上界值；回應形＝`PageRes` 四欄（憲法 §I.3）。清單排序一律伺服器端固定穩定序、請求不收 client 排序參數（分頁、全取與不分頁之清單皆同；ADR-00058）。適用＝IP 規則清單、角色清單、已刪選單清單，另加下表例外（生產呼叫處以 grep `page_params(`／`page_or_all(` 為準）；逐端點缺席／逾界／`size=0&current=0`／壞形四案＝`tests/contract.rs`。例外表（恰一列；新增例外＝同批改名冊案、本表與 ADR）：
 
