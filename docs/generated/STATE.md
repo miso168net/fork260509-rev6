@@ -16,7 +16,7 @@
 - RULES：83 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 48/52、人 10/12）
 - BACKLOG 開放：12｜滯後：3
 - LESSONS：48 筆
-- events：106 筆（erratum 2、feature_close 5、misc 41、perf 51、review 7）
+- events：107 筆（erratum 2、feature_close 5、misc 41、perf 52、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 4136 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-30｜perf｜close_bookkeeping｜close_bookkeeping 12.9 秒 rc=0
 - 2026-09-30｜misc｜governance｜maint-tz-utc｜maint-tz-utc（時區裁定施作）收單（user 2026-09-29 聲明＋2026-09-30 逐題裁定）：DB 伺服器時區以 compose 命令…
 - 2026-09-29｜perf｜close_bookkeeping｜close_bookkeeping 12.69 秒 rc=0
-- 2026-09-29｜misc｜product｜maint-backlog-29-93｜maint-backlog-29-93（批 A）收單（user 2026-09-29 v5 體檢 Q3①＋批 A 開工同意）：A1 BL-00093 告警規則…
