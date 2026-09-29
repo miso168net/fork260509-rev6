@@ -42,7 +42,7 @@ flowchart LR
 
 ### 品質閘
 
-類比張力：對得上——三層閘：pre-commit 十二閘（名冊＝`docs/generated/GATES.md`、本節不重抄）、PreToolUse hook（RULES-VERSION 對賬、zh-TW 字面）、review 輪（findings 三分流）；每閘一正一反自證（RL-0051）。
+類比張力：對得上——三層閘：pre-commit 十二閘（名冊＝`docs/generated/GATES.md`、本節不重抄）、PreToolUse hook（RULES-VERSION 對賬、zh-TW 字面）、review 輪（findings 三分流）；每閘一正一反自證（RL-0080）。
 
 ### 特徵庫記載
 

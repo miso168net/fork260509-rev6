@@ -204,7 +204,7 @@ await run('案12 fix 部分改動＋結構化升級一項 → 次輪重報被過
   expect(p2.includes('前輪已升級主線之 findings 清單') && p2.includes('a.ts') && p2.includes('清單外真缺陷'), '次輪 review prompt 渲染結構化升級項（LL-00010）', p2.length)
 })
 
-// 案13～18：反例（RL-0051 一正一反、變異打在防呆判準上、皆須零派發）——以讀進來的 src 就地變異或改 args 驅動。
+// 案13～18：反例（RL-0080 一正一反、變異打在防呆判準上、皆須零派發）——以讀進來的 src 就地變異或改 args 驅動。
 // ★案16～18＝BL-00039①：_vars 三常數（head 段）與 _context／_allowed 兩常數（main 段）之型別＋非空腿；
 //   變異取「值被清空」而非「常數名打錯」——後者在頂層引用處即 ReferenceError（已 fail-loud），前者才是過得了 guard 的靜默洞。
 async function runNegative(name, mutatedSrc, argsValue, fragment) {

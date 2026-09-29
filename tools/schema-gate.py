@@ -2404,7 +2404,7 @@ class TestMapAssertions(unittest.TestCase):
 
 
 class TestAuditArchetypeNegative(unittest.TestCase):
-    """audit 變體判準的負向覆蓋（RL-0051「變異要打在判準上」；`docs/ops/reference-src/schema-gates.md` §4 negative 第六類）。
+    """audit 變體判準的負向覆蓋（RL-0080「變異要打在判準上」；`docs/ops/reference-src/schema-gates.md` §4 negative 第六類）。
     右源＝真凍結 fixtures ⊕ 真 archetype-map，離線注入假漂移逐條必紅：判準面任一腿被拿掉即有案轉紅。
     ★不同於本檔其餘 negative 組：那些注入的是「實庫漂移」、本組注入的是「變體驗則會不會抓」。"""
 

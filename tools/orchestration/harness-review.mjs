@@ -183,7 +183,7 @@ await run('案6 回傳形（status／stage／smoke／nulls／failed／summary／
   if (STAGE === 'verify') expect((o.r.critic !== null) === HAS_CRITIC, 'critic ' + (HAS_CRITIC ? '有' : '無') + '（與 script 常數一致）', o.r.critic)
 })
 
-// 案7～9：反例（RL-0051 一正一反、變異打在判準上）——以讀進來的 src 就地變異或改 args 驅動，斷言 throw 訊息含對應防呆號且零派發。
+// 案7～9：反例（RL-0080 一正一反、變異打在判準上）——以讀進來的 src 就地變異或改 args 驅動，斷言 throw 訊息含對應防呆號且零派發。
 async function runNegative(name, mutatedSrc, argsValue, fragment) {
   const calls = []
   const agent = async (p, o) => { calls.push(o.label); return null }
