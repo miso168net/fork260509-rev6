@@ -53,3 +53,4 @@
 | 2026-09-29 | precommit_chain | 43.63 | 0 | 76bb9b4 | maint-backlog-126 perf 顆（staged＝tools/docsync 之 common／events／adr＋三測試檔＋STATE；零 gitlink）：selftest-docsync 觸發＝docsync test 320 案 40.1s，無 WARN；lint 單跑 25.9s→13.5s（git 子行程 172→33）。量法＝RUNBOOK §12b 命令形。提速後首顆。 |
 | 2026-09-29 | close_bookkeeping | 14.59 | 0 | f503b79 | maint-backlog-126 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔；零 gitlink、零工具本體⇒條件段皆未觸發）：全鏈最長腿＝docsync lint（提速後單跑約 13.5s；005 收刀簿記顆為 26.52s）。量法＝RUNBOOK §12b 命令形。 |
 | 2026-09-29 | close_bookkeeping | 14.4 | 0 | 7821113 | maint-backlog-28-35-36-39-74-101-102-120 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
+| 2026-09-29 | close_bookkeeping | 11.86 | 0 | bc98dad | maint-backlog-127 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
