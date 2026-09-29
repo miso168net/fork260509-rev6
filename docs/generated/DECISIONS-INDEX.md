@@ -58,3 +58,4 @@
 | ADR-00053 | accepted | 2026-09-29 | 事件帳自由文字欄（summary／reason／spec_supersessions[].note）不入更正欄位、寫錯以後續事件 notes 說明——三欄於寫入端套 notes 同一道守衛 | 輕量軌｜maint-backlog-28-35-36-39-74-101-102-120 | — | — |
 | ADR-00054 | accepted | 2026-09-29 | 設定界值唯一權威＝validation.rs 的 REGISTRY、不與設計文件做機器對賬——seed 界內以純測守衛 | 輕量軌｜maint-backlog-28-35-36-39-74-101-102-120 | — | — |
 | ADR-00055 | accepted | 2026-09-29 | 碼面閘讀子庫工作樹、不讀本顆 commit 所 pin 的子庫內容——照實登記兩型（閘面內延後偵測／閘面外無兜底）為已知態、不擴觸發（won't-fix） | 輕量軌｜maint-backlog-28-35-36-39-74-101-102-120 | — | — |
+| ADR-00056 | accepted | 2026-09-29 | 組裝形 workflow 每支 agent 的模型家恆為 opus[1m]／xhigh、不隨主線 session effort——拍板入 ADR，TDD 形與 review 形 harness 皆以寫死字面機器守 | — | — | — |

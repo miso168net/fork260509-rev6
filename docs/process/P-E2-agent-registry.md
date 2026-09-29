@@ -12,7 +12,7 @@ rad_ai_map:
 
 ### 模型清冊表
 
-類比張力：對得上——名冊分兩家：角色×刻板型×產物閘是人的判斷（本表），模型與 effort 是 script 常數（生成表＝`docs/generated/reference/agents.md`、本表不重抄）。角色→OPTS 常數之實際綁定見 `tools/orchestration/_sk_review.js`／`_sk_cycle.js` 派發處；★探針（冷啟動）復用 `LENS_OPTS`、refuter 復用 `MIRROR_OPTS`，無獨立常數。
+類比張力：對得上——名冊分兩家：角色×刻板型×產物閘是人的判斷（本表），模型與 effort 是 script 常數（拍板＝ADR-00056；生成表＝`docs/generated/reference/agents.md`、本表不重抄）。角色→OPTS 常數之實際綁定見 `tools/orchestration/_sk_review.js`／`_sk_cycle.js` 派發處；★探針（冷啟動）復用 `LENS_OPTS`、refuter 復用 `MIRROR_OPTS`，無獨立常數。
 
 | 角色 | 刻板型（C4-E1） | 產物 | 進哪道閘 |
 |---|---|---|---|
@@ -32,7 +32,7 @@ rad_ai_map:
 
 ### 逐模型明細
 
-類比張力：硬套——RAD-AI 的逐模型明細要訓練資料、評估指標、負責人；託管 LLM 這些都不可得，明細只剩 model id、effort 與換模紀錄（`*_OPTS` 的 git log），本節不另立表。
+類比張力：硬套——RAD-AI 的逐模型明細要訓練資料、評估指標、負責人；託管 LLM 這些都不可得，明細只剩 model id、effort 與換模紀錄（`*_OPTS` 的 git log；拍板＝ADR-00056、換模＝翻案該 ADR），本節不另立表。
 
 ### 與模型卡的銜接
 

@@ -63,25 +63,25 @@ rad_ai_map:
 | resume 誤用 | 把續跑當「某支重跑」 | rev5:L-027 | 續跑 | 需重跑某階段時 | 新開只跑該階段的 workflow | RL-0010 | 已守 | 同上 |
 | 冒煙 token 蒸發 | 派生 script 時 token 隨 prompt 段消失 | rev5:L-057 | 冒煙 | 派生 script 時 | token 置於共用段、渲染斷言 | RL-0018 | 已守 | 同上 |
 | 現成工件不用 | 自拼射程更窄的 grep／helper | rev5:L-085、rev5:L-087 | 工具面 | 寫驅動件前 | 先 `ls -R tmp/`、errata 優先 | RL-0032 | 已守 | 同上 |
-| 骨架多變體 | 骨架收斂為單一 `_sk_head.js`（共用首段）＋`_sk_cycle.js`／`_sk_main.js`（TDD 形）＋`_sk_review.js`（review 形）；變動段（`_vars`／`_allowed`／`_context`／`_prompts`；review 形＝`_vars`／`_plan`／`_context`）逐單元另寫、組裝成品自帶複本屬必然 | rev6 現況 | 編排骨架 | 每次組裝 | 已收斂；成品由 `assemble.py` 組裝器產出、`harness-test.mjs` 十八案（六反例）與 `harness-review.mjs` 九案（三反例）守控制流 | 名冊可見（`docs/generated/reference/agents.md`）＋harness 退出碼 | 已守 | 次個編排刀收刀 |
+| 骨架多變體 | 骨架收斂為單一 `_sk_head.js`（共用首段）＋`_sk_cycle.js`／`_sk_main.js`（TDD 形）＋`_sk_review.js`（review 形）；變動段（`_vars`／`_allowed`／`_context`／`_prompts`；review 形＝`_vars`／`_plan`／`_context`）逐單元另寫、組裝成品自帶複本屬必然 | rev6 現況 | 編排骨架 | 每次組裝 | 已收斂；成品由 `assemble.py` 組裝器產出、`harness-test.mjs` 十九案（七反例）與 `harness-review.mjs` 九案（三反例）守控制流與模型家（ADR-00056） | 名冊可見（`docs/generated/reference/agents.md`）＋harness 退出碼 | 已守 | 次個編排刀收刀 |
 
 ### 設定債
 
-類比張力：對得上——RAD-AI 說設定債是散落各處、無人擁有的旗標；`*_OPTS`、保險絲值、effort 就是。
+類比張力：對得上——RAD-AI 說設定債是散落各處、無人擁有的旗標；`*_OPTS`、保險絲值、effort 就是（模型家拍板＝ADR-00056）。
 
 | 債型 | 徵狀 | 來源 | 影響面 | 觸發 | 處置 | 守門 | 狀態 | 覆審條件 |
 |---|---|---|---|---|---|---|---|---|
 | 保險絲手挑 | 保險絲值小於結構最壞值 | rev5:L-068 | Workflow | 寫 script 時 | 由同檔常數推導並自我斷言 | RL-0062 | 已守 | 次個編排刀收刀 |
-| OPTS 散落 | `IMPL_OPTS`／`REVIEW_OPTS`／`FIX_OPTS`＋`DEEP_THINK` 單一常數家住 `_sk_head.js`；換模只改該檔一處、名冊由 generate 重算 | rev6 現況 | 換模 | 換模時 | 已收斂為單一常數家 | 名冊可見（`docs/generated/reference/agents.md`） | 已守 | 次個編排刀收刀 |
+| OPTS 散落 | 七個 `*_OPTS`（TDD 三角色＋review 四角色）＋`DEEP_THINK` 單一常數家住 `_sk_head.js`；換模＝翻案 ADR-00056、同批改該檔常數與 harness-test／harness-review 期望字面、名冊由 generate 重算 | rev6 現況 | 換模 | 換模時 | 已收斂為單一常數家 | harness 模型家斷言（ADR-00056）＋名冊可見（`docs/generated/reference/agents.md`） | 已守 | 次個編排刀收刀 |
 | 版本字面耦合 | 規則列一改、組裝成品 script 的 RULES-VERSION 字面過期 | rev6 現況 | 發射 | 改規則列時 | 同批重烤（RL-0038） | PreToolUse hook 擋發射 | 已守（偵測） | 改規則列時 |
 
 ### 模型陳舊
 
-類比張力：部分——model id 釘死在 `*_OPTS`；供應商下架即陳舊；無自動偵測、換模＝人決（P-E8 再訓練政策）。
+類比張力：部分——model id 釘死在 `*_OPTS`；供應商下架即陳舊；無自動偵測、換模＝人決（翻案 ADR-00056；P-E8 再訓練政策）。
 
 | 債型 | 徵狀 | 來源 | 影響面 | 觸發 | 處置 | 守門 | 狀態 | 覆審條件 |
 |---|---|---|---|---|---|---|---|---|
-| model id 釘死 | 供應商下架後派發失敗 | rev6 現況 | 全部 agent | 供應商公告 | 改 `*_OPTS` 一次 commit、名冊重算 | 無（人決事件） | 刻意不守 | 供應商公告時 |
+| model id 釘死 | 供應商下架後派發失敗 | rev6 現況 | 全部 agent | 供應商公告 | 翻案 ADR-00056、同批改 `*_OPTS` 與兩支 harness 期望字面、名冊重算 | 無（人決事件） | 刻意不守 | 供應商公告時 |
 
 ### 登記條目格式
 

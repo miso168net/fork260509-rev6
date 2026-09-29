@@ -12,9 +12,9 @@
 - 版本：1.5.2
 
 ## 帳面統計
-- ADR：55（proposed 0、accepted 48、superseded 7）
+- ADR：56（proposed 0、accepted 49、superseded 7）
 - RULES：81 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 46/52、人 10/12）
-- BACKLOG 開放：15｜滯後：4
+- BACKLOG 開放：14｜滯後：4
 - LESSONS：48 筆
 - events：99 筆（erratum 2、feature_close 5、misc 37、perf 48、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）

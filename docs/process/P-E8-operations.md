@@ -23,7 +23,7 @@ rad_ai_map:
 
 ### 再訓練政策
 
-類比張力：硬套——無訓練；對應的是兩種換版觸發：換模（改 `*_OPTS` 常數、名冊重算）與規則層更新（LESSONS 晉升→RULES 一列→RULES-VERSION 變→重烤 script）；兩者皆事件觸發、人決。
+類比張力：硬套——無訓練；對應的是兩種換版觸發：換模（翻案 ADR-00056、同批改 `*_OPTS` 常數與兩支 harness 期望字面、名冊重算）與規則層更新（LESSONS 晉升→RULES 一列→RULES-VERSION 變→重烤 script）；兩者皆事件觸發、人決。
 
 ### 部署策略
 
@@ -31,7 +31,7 @@ rad_ai_map:
 
 ### 回退政策
 
-類比張力：對得上——治理閘改壞→`git revert` 該顆＋`python3 tools/docsync generate` 重算；規則列回退→RULES-VERSION 重算、組裝成品 script 版本字面同批重烤；換模回退＝改回 `*_OPTS`；一切回退走 pre-commit 全鏈、不 `--no-verify`。
+類比張力：對得上——治理閘改壞→`git revert` 該顆＋`python3 tools/docsync generate` 重算；規則列回退→RULES-VERSION 重算、組裝成品 script 版本字面同批重烤；換模回退＝回退換模那批（翻案 ADR、`*_OPTS` 與兩支 harness 期望字面同批）；一切回退走 pre-commit 全鏈、不 `--no-verify`。
 
 ### 事故應變
 

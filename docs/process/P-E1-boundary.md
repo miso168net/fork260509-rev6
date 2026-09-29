@@ -55,7 +55,7 @@ flowchart LR
 |---|---|---|
 | 輸出型 | 分類／連續／生成 | 生成型：報告、diff、findings；生成型的護欄＝規則塊烤入（`python3 tools/docsync rules emit`） |
 | 信心規格 | 指標與門檻 | 非數值：lint 全綠＋review 零 blocker＋人審；agent 自報不算、事實接地附出處（RL-0028） |
-| 換版頻率 | 排程／事件／連續／靜態 | 事件觸發：規則列改動→RULES-VERSION 變；換模＝改 `*_OPTS` 的一次 commit |
+| 換版頻率 | 排程／事件／連續／靜態 | 事件觸發：規則列改動→RULES-VERSION 變；換模＝翻案 ADR-00056、同批改 `*_OPTS` 與兩支 harness 期望字面 |
 | fallback | 規則預設／快取／人工升級／降級／斷路 | 人工升級：`blocked` 立即回主線、`done_with_escalation` 帶升級項回（RL-0012）；斷路＝保險絲與 TaskStop（RL-0060／RL-0017） |
 
 圖級同源＝`docs/c4/C4-E3-non-determinism-boundary.md` 邊界介面欄「三性質契約」（信心規格／fallback 策略／降級輪廓）；元件級四段與圖級三性質互指、不合併。
@@ -78,6 +78,6 @@ flowchart LR
 
 | 依賴 | 形 | 影響面與對策 |
 |---|---|---|
-| Anthropic 託管模型 | model id 住 `*_OPTS`（名冊＝`docs/generated/reference/agents.md`） | 供應商換版＝行為可能變；對策＝規則烤入 prompt＋機器閘、不依賴模型記憶；換模＝一次 commit |
+| Anthropic 託管模型 | model id 住 `*_OPTS`（名冊＝`docs/generated/reference/agents.md`） | 供應商換版＝行為可能變；對策＝規則烤入 prompt＋機器閘、不依賴模型記憶；換模＝翻案 ADR-00056、同批改 `*_OPTS` 與兩支 harness 期望字面 |
 | 第三方 skills | `.claude/skills/`（第三方面、不受 rev6 掃描） | skill 改版影響流程形；skill 指示不覆蓋本 repo 規則（CLAUDE.md 優先） |
 | upstream soybean-admin | 非 AI，但為 rebase 來源 | 軌道制（憲法 §III） |
