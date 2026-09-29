@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | misc | product｜maint-backlog-29-93 | maint-backlog-29-93（批 A）收單（user 2026-09-29 v5 體檢 Q3①＋批 A 開工同意）：A1 BL-00093 告警規則活體驗證（rev6 首次起 obs＋metrics profile、12 條告警自檔載入且評估健康、門鈴降級正樣本以 CLIENT KILL 實取並經 loki 規則 LogQL 命中）＋rules.yml 註解據實、殘餘併入 BL-00043；A2 BL-00029 設定寫端改條件式 UPDATE（往返 3→2、對外行為不變）＋ADR-00057 決定 1 之端點真 DB 釘。 | b97ad35 | — | — |
 | 2026-09-29 | misc | product｜maint-backlog-27-44 | maint-backlog-27-44（批 F）收單（user 2026-09-29 v5 體檢 Q1①／Q2①）：ADR-00057 設定讀端回全部未刪列、不以 registry 鍵集過濾（任一列型別守衛不過即整支 5000；宣告集外型別合法之列讀得到、寫回 2222＝已知態）；ADR-00058 管理清單一律伺服器端固定穩定序、零 client 排序參數；base-web 碼註據實；BL-00047 條文修訂、BL-00064 戳記勘誤。 | 435b3bd | ADR-00057、ADR-00058 | — |
 | 2026-09-29 | misc | governance｜maint-backlog-127 | maint-backlog-127 收單（user 2026-09-29：BL-00127 單獨成輕量軌）：組裝形 workflow 每支 agent 之模型家 opus[1m]／xhigh 入 ADR-00056（明寫蓋過主線 session effort、換模＝翻案並同批改兩支 harness 期望字面）；harness-test 案1 補模型家斷言、新增案19 反例（三常數×effort／model 兩腿）、十八→十九案；現在式面案數與換模敘述同批對齊。 | 67a9b8f | ADR-00056 | — |
 | 2026-09-29 | misc | governance | 記帳 BL-00127（user 2026-09-29 指示先記 BACKLOG、另排輕量軌）：組裝形 workflow 之 agent effort＝xhigh 拍板零 ADR 承載、TDD 形 harness 零 model／effort 斷言；user 拍板維持 xhigh，待立 ADR 明定並補斷言。 | — | — | — |
@@ -58,6 +59,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-29｜misc｜product｜maint-backlog-29-93
+
+A1 55aca0b（主線直做；rules.yml 只改註解、零 expr）；A2 8d9826c＝rust-api a77c966（run wf_4ed12298-a3c、3 支；規格與碼品質審查第 1 輪皆零 blocker；主線自跑容器全量 rc 0、server lib 767→769）；final holistic review 收單 cc936b3＝rust-api 896b6a9（run wf_7e8eb616-b10、兩 lens＋inline 兩鏡、6 支）。★final review 5 筆＝修 4（L1-1 audit-log.json 稽核容量描述錨改指 archetype-map 變體 B、L1-2 RUNBOOK §3 jobs 現況指針、L1-4 BL-00043 兩 job 與 ⑤⑤b／⑥⑥b 對應明示、L2-1 handler 寫端失敗矩陣區塊註補列 A2 新案為 rev5 無對應案）／駁回 1（L1-3 BL-00043 點名 reaper 儀表板與 compose 註解：compose 屬其他面、BL-00093 殘餘射程只及 rules.yml）。★category＝product：本批主體為 A2 產品碼改動（BL-00029 product）；A1 為觀測治理面（BL-00093 governance）。★主線另採 A2 碼品質審查非阻斷建議一（insert_alien_row doc）。★自驗：lint 0／0／0、rust-fmt-gate／schema-gate／walkthrough-baseline diff rc 0。★user 2026-09-29 當次授權 merge＋push（rust-api 先推、外層後推）。淨流量：開放 −1（BL-00093）、滯後 −1（BL-00029）。
 
 ### 2026-09-29｜misc｜product｜maint-backlog-27-44
 
