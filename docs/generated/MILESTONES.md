@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | misc | governance｜maint-backlog-127 | maint-backlog-127 收單（user 2026-09-29：BL-00127 單獨成輕量軌）：組裝形 workflow 每支 agent 之模型家 opus[1m]／xhigh 入 ADR-00056（明寫蓋過主線 session effort、換模＝翻案並同批改兩支 harness 期望字面）；harness-test 案1 補模型家斷言、新增案19 反例（三常數×effort／model 兩腿）、十八→十九案；現在式面案數與換模敘述同批對齊。 | 67a9b8f | ADR-00056 | — |
 | 2026-09-29 | misc | governance | 記帳 BL-00127（user 2026-09-29 指示先記 BACKLOG、另排輕量軌）：組裝形 workflow 之 agent effort＝xhigh 拍板零 ADR 承載、TDD 形 harness 零 model／effort 斷言；user 拍板維持 xhigh，待立 ADR 明定並補斷言。 | — | — | — |
 | 2026-09-29 | misc | governance｜maint-backlog-28-35-36-39-74-101-102-120 | 006 前 BACKLOG 體檢 B～E 組併批（user 2026-09-29 逐題裁定、八條全收）：GT-12 工作樹＝暫存區一致性腿與 HEAD 讀取口徑；事件自由文字欄寫入端守衛；GT-08 刀名腿；GT-04 前代出處腿（RL-0081）；閘↔規則雙向對賬＋RL-0015 五形升 ERROR；碼面閘讀子庫工作樹立已知態；探針 hops 口徑入骨架；seed 界內純測。立 ADR-00052～ADR-00055、LL-00041～LL-00048。 | 6f34eed | ADR-00052、ADR-00053、ADR-00054、ADR-00055 | — |
 | 2026-09-29 | misc | governance｜maint-backlog-126 | 輕量軌 maint-backlog-126 收單（user 2026-09-29 令、主線直改）：context 自動壓縮機制入版控——compact-hook.py 三模式＋compact-rules.md（A／B 規則與工作區兩檔約定）＋settings.json 三處註冊與 autoCompactWindow 750000；工作區檔改以本 session 碰過者定位（RL-0077）；LL-00040。併入 pre-commit 提速：lint 25.9s→13.5s、docsync test 約 75s→40.5s。BACKLOG 刪 BL-00126。 | 59250ea | — | — |
@@ -56,6 +57,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-29｜misc｜governance｜maint-backlog-127
+
+實作顆 aa4f5ce（主線直改）＋final holistic review 收單 3dd8955（run wf_ab60d7aa-dbd、兩 lens＋inline 兩鏡、6 支）。★final review 8 筆＝修 5（L1-1 案19 補 model 腿；L2-1／L2-2 現在式面換模敘述對齊 ADR-00056 決定 3；L2-4 README 補 n=0 但書；L2-3 由本事件承載）／駁回 3（L1-2、L1-3、L2-5）；逐項處置見 3dd8955 訊息。★ADR-00056 澄清（accepted body 不可變、由本事件承載）：①背景與 provenance 之「模型家拍板只住 _sk_head.js 註解與 git log」不完整——2026-09-23 全角色換 opus[1m]／xhigh 另記於事件帳第 88 列（maint-orchestration-opus-all 收單 misc）；核心論點（ADR 全集與 RULES 零命中）不變②決定 2 之 TDD 形反例於 IMPLEMENTERS=0 續跑形略過 IMPL_OPTS（零 implementer 無派發面；該常數由入庫範例 IMPLEMENTERS=1 之組裝守）；as-built 另為每常數加 model 腿一發（L1-1，方向同其驅動）。★自驗：變異 9 發皆紅、docsync test 395 OK、lint 0／0／0、三範例組裝綠。★BL-00127 記帳顆 a24bd52（default、governance misc）使治理比 7.2→7.4，本批再 +0.2。★user 2026-09-29 續裁：先批 F `maint-backlog-27-44`、再批 A `maint-backlog-29-93`（起容器前另問）；本批 merge＋push 為 user 當次授權。淨流量：記帳 +1、本批 −1（皆落開放窗）。
 
 ### 2026-09-29｜misc｜governance｜maint-backlog-28-35-36-39-74-101-102-120
 
