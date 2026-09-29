@@ -16,7 +16,7 @@
 - RULES：81 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 46/52、人 10/12）
 - BACKLOG 開放：12｜滯後：4
 - LESSONS：48 筆
-- events：102 筆（erratum 2、feature_close 5、misc 39、perf 49、review 7）
+- events：103 筆（erratum 2、feature_close 5、misc 39、perf 50、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 4136 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-09-29｜perf｜close_bookkeeping｜close_bookkeeping 13.27 秒 rc=0
 - 2026-09-29｜misc｜product｜maint-backlog-27-44｜maint-backlog-27-44（批 F）收單（user 2026-09-29 v5 體檢 Q1①／Q2①）：ADR-00057 設定讀端回全部未刪列、…
 - 2026-09-29｜perf｜close_bookkeeping｜close_bookkeeping 11.86 秒 rc=0
-- 2026-09-29｜misc｜governance｜maint-backlog-127｜maint-backlog-127 收單（user 2026-09-29：BL-00127 單獨成輕量軌）：組裝形 workflow 每支 agent 之模型…

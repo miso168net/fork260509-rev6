@@ -54,3 +54,4 @@
 | 2026-09-29 | close_bookkeeping | 14.59 | 0 | f503b79 | maint-backlog-126 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔；零 gitlink、零工具本體⇒條件段皆未觸發）：全鏈最長腿＝docsync lint（提速後單跑約 13.5s；005 收刀簿記顆為 26.52s）。量法＝RUNBOOK §12b 命令形。 |
 | 2026-09-29 | close_bookkeeping | 14.4 | 0 | 7821113 | maint-backlog-28-35-36-39-74-101-102-120 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
 | 2026-09-29 | close_bookkeeping | 11.86 | 0 | bc98dad | maint-backlog-127 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
+| 2026-09-29 | close_bookkeeping | 13.27 | 0 | ef441e3 | maint-backlog-27-44 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
