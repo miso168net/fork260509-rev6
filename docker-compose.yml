@@ -14,6 +14,8 @@ name: rev6-admin
 
 services:
   front-nginx:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     image: nginx:1.31.2-alpine
     depends_on:
       base-web:
@@ -32,6 +34,8 @@ services:
       - rev6_net
 
   base-web:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     # ★ image/build/command 故意不放 base 層：dev override（node image、無 build）才給；
     #   prod（nginx multi-stage build）異質，若 base 放 build 會被誤 build 並錯誤 tag。
     networks:
@@ -51,6 +55,7 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       # jwt／refresh／redis_url／captcha_secret 四支 secret 檔＋iss／aud 兩支裸 env：003 刀 U1 起由
       # config 六 getter 實讀、main.rs boot 鏈消費（JwtConfig／cache::connect／captcha_secret）；
       # SMTP／MAIL 群仍為接而不讀、消費歸各自功能刀。
@@ -111,6 +116,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       APP_DATABASE_URL_FILE: /run/secrets/database_url
     secrets:
       - database_url
@@ -120,7 +126,9 @@ services:
 
   postgres:
     image: postgres:18.4-alpine
+    command: ["postgres", "-c", "timezone=UTC", "-c", "log_timezone=UTC"]  # ADR-00059：伺服器時區以命令列固定（優先於 postgresql.conf）
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_USER: soybean
       POSTGRES_DB: soybean_admin_rust
@@ -141,6 +149,8 @@ services:
       - rev6_net
 
   redis:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     image: redis:8.8.0-alpine
     command:
       - sh
@@ -172,6 +182,8 @@ services:
   #   compose up -d；S8 實測兩腿分證。rev3 obs 段未設 restart、rev4 依 S8 驗收補上）。
   #   config bind-mount 住 dev override（沿 rev3 姿態）。
   loki:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     profiles: [obs]
     image: grafana/loki:3.7.3
     command: ["-config.file=/etc/loki/loki-config.yml"]
@@ -183,6 +195,8 @@ services:
       - rev6_net
 
   alloy:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     profiles: [obs]
     image: grafana/alloy:v1.17.1
     # ★ rev4:FR-015 非 root：473＝映像內建 alloy user（docker image inspect 實查：映像預設 USER
@@ -207,6 +221,8 @@ services:
       - socket_proxy_net
 
   socket-proxy:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     profiles: [obs]
     # wollomatic socket-proxy＝deny-by-default docker.sock 代理（rev4:research R3 選型；tecnativa
     # 前綴放行整棵 /containers 子樹、結構上無法滿足 rev4:FR-015 遂翻案）。
@@ -248,6 +264,7 @@ services:
     profiles: [obs, metrics]
     image: grafana/grafana:13.1.0
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       # $$__file → compose 不 interpolate、grafana 收到 $__file{...}（file provider 讀 secret；
       # rev3 as-built 慣例照搬）
       GF_SECURITY_ADMIN_PASSWORD: "$$__file{/run/secrets/grafana_admin_password}"
@@ -272,6 +289,8 @@ services:
 
   # ═══ rev4:016-observability rev4:T009 metrics（指標軌、profiles:[metrics] opt-in、一般 up 不啟）═══
   prometheus:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     profiles: [metrics]
     image: prom/prometheus:v3.13.1
     command:
@@ -290,6 +309,7 @@ services:
     profiles: [metrics]
     image: prometheuscommunity/postgres-exporter:v0.20.1
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       # DB 名＝soybean_admin_rust（對齊 postgres POSTGRES_DB）；reuse postgres_password、
       # 絕不明文密碼（rev3 as-built 形）。0.20.1 breaking＝replication_slot 系指標改名，
       # 單機 dev 該組資料本為空、面板受影響格歸 rev4:T018 grep 處理（R1）。
@@ -308,6 +328,7 @@ services:
     # ★ 必 -alpine 變體（bare＝FROM scratch 無 sh、下方 sh-wrapper 會掛；rev3 hindsight）
     image: oliver006/redis_exporter:v1.87.0-alpine
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       # rev4 redis 服務名＝redis（rev3 redis-stack 改名點）
       REDIS_ADDR: redis://redis:6379
     entrypoint:
@@ -323,6 +344,8 @@ services:
       - rev6_net
 
   pushgateway:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     profiles: [metrics]
     image: prom/pushgateway:v1.11.3
     # rev4:FR-008 持久卷＋重啟不失憶（rev3 in-memory 形＝有意識偏離修正）。
@@ -346,6 +369,7 @@ services:
       dockerfile: deploy/Dockerfile.rust-api
       # base 不給 target（沿 migrate 形）；dev override 提供 target＋entrypoint 姿態分派
     environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
       # ★最小權限連線（rev4:FR-013／rev4:ADR 0072）：reaper_database_url＝reaper role 憑證（composite
       #   secret；rev4:m012 建 role＋GRANT、deploy/setup-reaper-role.py 設密）——絕不掛 database_url
       #   （soybean 全權身分）。

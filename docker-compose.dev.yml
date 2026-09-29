@@ -131,6 +131,8 @@ services:
   # 8025＝官方預設值照 ADR-00001 規則不動；rev4:0087 配號歸位（前代判例）——SDD 原字面 8025 為 rev4:0019 對照疏漏；
   # ★IPv4 字面、絕不 localhost）；E2E 斷言走 /api/v1/search?query=to:… 撈信抽碼（rev4:research R2）。
   mailpit:
+    environment:
+      TZ: UTC  # ADR-00059：容器時區明設 UTC
     image: axllent/mailpit:v1.30.6
     expose:
       - "1025"

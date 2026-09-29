@@ -30,6 +30,7 @@ services:
     container_name: rev6-admin-example-dev
     working_dir: /app
     environment:
+      - TZ=UTC  # ADR-00059：容器時區明設 UTC
       - NODE_ENV=development
       - BROWSER=none
       - npm_config_store_dir=/pnpm-store
