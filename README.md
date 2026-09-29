@@ -11,7 +11,7 @@ admin 後台系統第六代重跑版：前端 fork 自 soybean-admin（Vue3＋na
 fork260509-rev6/
 ├── README.md                        本檔：人類入口導覽；下列樹之 tools/、deploy/、.githooks/、.claude/ 與實檔集由 GT-09 雙向對賬；docs/ 列項為地圖、出現時機標於括號
 ├── CLAUDE.md                        操作規則書：拓樸／工作流／git 手冊／文件規則／決策紀律／硬禁令／rev5 對照
-├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.5.2＝ADR-00051；前版 1.5.1＝ADR-00048、1.5.0＝ADR-00042、1.4.0＝ADR-00034、1.3.0＝ADR-00026、1.2.0＝ADR-00022／ADR-00023／ADR-00024 三筆同批、1.1.0＝ADR-00009、創世 1.0.0＝ADR-00003）
+├── .specify/memory/constitution.md  凍結權威：原則、wire 不變式、行為島與軌道凍結位、自查九題、Amendment 走 §V.2（現行 1.6.0＝ADR-00060；前版 1.5.2＝ADR-00051、1.5.1＝ADR-00048、1.5.0＝ADR-00042、1.4.0＝ADR-00034、1.3.0＝ADR-00026、1.2.0＝ADR-00022／ADR-00023／ADR-00024 三筆同批、1.1.0＝ADR-00009、創世 1.0.0＝ADR-00003）
 ├── docs/ops/RULES.md                規則層（人寫）：RL-NNNN｜命令句｜scope｜carrier｜source；上限＝ADR-00011（數值續自其翻案之 ADR-00004 表）；名詞段住此
 ├── docs/ops/NOTES.md                當前意圖；首行 <!-- wave: N --> 為「現在波」唯一真源
 ├── docs/ops/events.jsonl            事件源（機器讀）：feature_close／misc／review／erratum／perf；人讀 generated/MILESTONES、reference/perf、STATE（帳面統計與治理指標）、DECISIONS-INDEX（feature 欄）
@@ -29,7 +29,7 @@ fork260509-rev6/
 │   ├── bootstrap.sh                 新機重建／體檢：源倉 clone＋worktree＋hooksPath＋betterleaks 釘版＋hooks 指紋＋rev5 凍結斷言＋docsync 三段＋閘數
 │   ├── wf-watchdog.py               workflow 編排看門狗（stall／runaway 保險絲、可鎖定目標 run）
 │   ├── walkthrough-baseline.py      走查前後全表基準對賬：snapshot／diff（三面現算、唯讀、需 rev6 dev stack）＋restore（走查後清理面機器化＋收尾 diff；清理面五表之基準須為空、角色／選單域五表刪上界以上列與鍵集差、動過 casbin_rule 即輸出重啟 rust-api 句；`--seed`＝無須基準檔、以凍結 seed 為目標態）／test（離線）；diff 對 runtime-append 四表之序列只比存在性；隨遷自 rev5、非碼面閘（NON_GATE_TOOLS）
-│   ├── schema-gate.py               三閘 schema 驗證閘：check（凍結 fixtures ⊕ 演進帳 vs 實庫）／test／doccheck（隨遷自 rev5、碼面閘不入 GATES 名冊）
+│   ├── schema-gate.py               三閘 schema 驗證閘：check（時區前置＋凍結 fixtures ⊕ 演進帳 vs 實庫＋全時間欄型別斷言）／test／doccheck（隨遷自 rev5、碼面閘不入 GATES 名冊）
 │   ├── entity-drift-gate.py         entity×schema 快照漂移閘：check／test（隨遷自 rev5；自測入 pre-commit 條件觸發名冊、check 入 pre-commit entity-drift 段＝rust-api pin bump 或快照 staged 時實跑、快照缺席即紅 rc 2＋refresh 提示）
 │   ├── rust-fmt-gate.py             rust 格式閘：check＝容器內 cargo fmt --all --check 唯讀比對／test（隨遷自 rev5；pre-commit rust-fmt 段＝rust-api pin bump 或本檔 staged 時實跑、docker 缺或容器未起＝具名跳過 rc 0、容器在而 cargo-fmt 缺＝rc 2）
 │   ├── wire-schema.py               wire 契約閘：extract（typings→JSON Schema 快照、需 stack）／check [--staged-gate]（先跑跨子庫純讀檔錨兩腿＝BL-00109 qs 前提〔前端查詢串序列化器與 qs 版本〕＋保留路由名對賬〔rust `RESERVED_ROUTE_NAMES`⇔base-web 常量路由名∪內建根路由名、ADR-00044 決定 8〕——無條件、零 docker、讀工作樹、違規 rc 2；再重抽 byte 比對、絕不覆寫；pre-commit wire-schema 段＝base-web 或 rust-api pin bump 時、容器未起＝重抽比對具名跳過 rc 0）／test（隨遷自 rev5）

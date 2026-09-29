@@ -3,18 +3,18 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=2248b89｜rust-api=896b6a9
+- pins：base-web=2248b89｜rust-api=d9c4e2f
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
 
 ## constitution
-- 版本：1.5.2
+- 版本：1.6.0
 
 ## 帳面統計
-- ADR：58（proposed 0、accepted 51、superseded 7）
-- RULES：81 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 46/52、人 10/12）
-- BACKLOG 開放：11｜滯後：3
+- ADR：62（proposed 0、accepted 55、superseded 7）
+- RULES：83 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 48/52、人 10/12）
+- BACKLOG 開放：12｜滯後：3
 - LESSONS：48 筆
 - events：105 筆（erratum 2、feature_close 5、misc 40、perf 51、review 7）
 - CLAUDE.md 行數：162（只報表、不擋）
@@ -31,11 +31,11 @@
 | 項目 | 現值 | 上限 | 狀態 |
 |---|---|---|---|
 | 閘數 | 12 | 12 | 內 |
-| RULES 總 | 81 | 92 | 內 |
+| RULES 總 | 83 | 92 | 內 |
 | RULES implementer | 43 | 48 | 內 |
 | RULES review | 16 | 18 | 內 |
 | RULES fix | 17 | 19 | 內 |
-| RULES 主線 | 46 | 52 | 內 |
+| RULES 主線 | 48 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
 | docsync 行數 | 4136 | 4000 | 超 |
 

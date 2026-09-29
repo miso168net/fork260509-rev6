@@ -52,7 +52,9 @@ import time
 import unittest
 import unittest.mock
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+# realpath＝解開別名路徑（例：經 symlink 之 repo 路徑叫用時 abspath 保留別名、子行程 getcwd 卻回實體路徑，
+# 兩者比對即誤判；同 tools/wf-watchdog.py 之 realpath 前例）
+HERE = os.path.dirname(os.path.realpath(__file__))
 ROOT = os.path.dirname(HERE)
 
 DB_NAME = "soybean_admin_rust"
@@ -92,11 +94,14 @@ def backup_dir(env=None):
 
 
 def dump_argv(container=None):
-    """dump 的 docker argv：預設走 compose exec -T postgres；--container 走 docker exec。"""
+    """dump 的 docker argv：預設走 compose exec -T postgres；--container 走 docker exec。
+    兩形皆於 exec 子命令之後帶 `-e PGTZ=UTC`（同 tools/schema-gate.py 之 pg_dump 形；插在
+    docker compose 頂層＝unknown shorthand flag）：dump 文字之 timestamptz 值恆以 UTC 呈現、
+    不隨來源庫伺服器時區而變——drill 逐位元比對不因此假紅（ADR-00059）。"""
     if container is None:
-        return list(COMPOSE_ARGV) + ["exec", "-T", "postgres", "pg_dump",
+        return list(COMPOSE_ARGV) + ["exec", "-e", "PGTZ=UTC", "-T", "postgres", "pg_dump",
                                      "--no-password", "-U", DB_USER, DB_NAME]
-    return ["docker", "exec", container, "pg_dump",
+    return ["docker", "exec", "-e", "PGTZ=UTC", container, "pg_dump",
             "--no-password", "-U", DB_USER, DB_NAME]
 
 
@@ -1070,9 +1075,12 @@ class TestEntryAndUnits(_CliCase):
         """argv 逐位釘死（等價矩陣護欄：重排「看起來比較整齊」即紅）。"""
         self.assertEqual(dump_argv(None),
                          ["docker", "compose", "-f", "docker-compose.yml",
-                          "-f", "docker-compose.dev.yml", "exec", "-T", "postgres",
-                          "pg_dump", "--no-password", "-U", "soybean",
+                          "-f", "docker-compose.dev.yml", "exec", "-e", "PGTZ=UTC",
+                          "-T", "postgres", "pg_dump", "--no-password", "-U", "soybean",
                           "soybean_admin_rust"])
+        self.assertEqual(dump_argv("c1"),
+                         ["docker", "exec", "-e", "PGTZ=UTC", "c1", "pg_dump",
+                          "--no-password", "-U", "soybean", "soybean_admin_rust"])
         self.assertEqual(restore_argv("c1"),
                          ["docker", "exec", "-i", "c1", "psql", "-q", "--no-password",
                           "-v", "ON_ERROR_STOP=1", "-U", "soybean",
@@ -1087,6 +1095,19 @@ class TestEntryAndUnits(_CliCase):
                           "-h", "127.0.0.1", "-U", "soybean", "-d", "soybean_admin_rust"])
         self.assertEqual(docker_names_argv(), ["docker", "ps", "-a", "--format", "{{.Names}}"])
         self.assertEqual(docker_volumes_argv(), ["docker", "volume", "ls", "--format", "{{.Name}}"])
+
+    def test_root_resolves_alias_path(self):
+        """經別名路徑（symlink）載入本檔時 ROOT 仍為實體路徑：abspath 會保留別名、而子行程 getcwd 回實體路徑，
+        cwd 錨定斷言因叫用路徑而異（pre-commit 之 HOOK_DIR 取邏輯路徑時即紅）。"""
+        import importlib.util
+        with tempfile.TemporaryDirectory() as d:
+            alias = os.path.join(d, "alias")
+            os.symlink(ROOT, alias)
+            spec = importlib.util.spec_from_file_location(
+                "backup_db_alias", os.path.join(alias, "deploy", "backup-db.py"))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self.assertEqual(mod.ROOT, os.path.realpath(ROOT))
 
 
 if __name__ == "__main__":

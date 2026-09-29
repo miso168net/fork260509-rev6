@@ -1,4 +1,4 @@
-<!-- next: RL-0082 -->
+<!-- next: RL-0084 -->
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
@@ -89,6 +89,8 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0079 | run 回傳之空 blockers **不等於**審查通過——兩者回傳形狀不可分辨，一律先讀 `reason` 與 journal 判該輪審查是否確有執行；未執行即以續跑形補跑該階段（新 runId、CONTEXT 寫勿重報清單），不得逕進單元收尾。 | 主線 | checklist | LL-00031 |
 | RL-0080 | 每條閘一正一反自證、變異要打在判準上。 | implementer,review | prompt | rev5:ADR 0024 |
 | RL-0081 | 新 ADR 的 provenance 必帶 `rev5:`／`rev4:` 前代出處，無前代對應者寫「前代無對應：<理由>」；已 accepted 者不回改。 | 主線 | lint | LL-00046 |
+| RL-0082 | 主線在 tmp/ 手寫之時刻一律在寫入的同一指令以 `date` 取 OS 系統時間，不得估計或沿上一筆推算；工具產出之機器時間欄不在此限。 | 主線 | checklist | ADR-00062 |
+| RL-0083 | 受版控帳本之日期欄（events `date`、ADR `date`、滯後戳記）一律記 OS 系統時間之當地日期（UTC+8）；既有資料不回改。 | 主線 | checklist | ADR-00062 |
 
 ## 名詞
 
