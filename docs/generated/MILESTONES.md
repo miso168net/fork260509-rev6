@@ -3,6 +3,8 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-30 | misc | governance｜maint-spec-compliance-005 | 005 刀附屬規格對照審查輪（spec-compliance-005）收單：零 blocker、零 wire 行為缺陷；findings 24 筆原始＝修 3／轉帳 16 筆歸併為 7 條／駁回 4／記載 1。user 裁修項（文件五處、碼面五筆）全部轉帳、之後併批收；島 H2 過渡窗交 006 brainstorm、§III 模板屬性標記併入下次 Amendment；收刀程序補簿記後驗一步（RL-0084）。 | 78d4700 | — | — |
+| 2026-09-30 | review | 005-role-menu-crud | findings 10（修 3／BL 7／ADR 0）；BL-00129、BL-00130、BL-00131、BL-00132、BL-00133、BL-00134、BL-00135 | — | — | — |
 | 2026-09-30 | misc | governance｜maint-tz-utc | maint-tz-utc（時區裁定施作）收單（user 2026-09-29 聲明＋2026-09-30 逐題裁定）：DB 伺服器時區以 compose 命令列固定 UTC、各服務 TZ=UTC、schema-gate 時區前置（ADR-00059）；憲法 1.6.0 時間點欄通則（ADR-00060）；wire 偏移恆 +00:00、管理頁原樣顯示 UTC（ADR-00061）；記時與帳本日期時區（ADR-00062、RL-0082／RL-0083）。 | a849365 | ADR-00059、ADR-00060、ADR-00061、ADR-00062 | — |
 | 2026-09-29 | misc | product｜maint-backlog-29-93 | maint-backlog-29-93（批 A）收單（user 2026-09-29 v5 體檢 Q3①＋批 A 開工同意）：A1 BL-00093 告警規則活體驗證（rev6 首次起 obs＋metrics profile、12 條告警自檔載入且評估健康、門鈴降級正樣本以 CLIENT KILL 實取並經 loki 規則 LogQL 命中）＋rules.yml 註解據實、殘餘併入 BL-00043；A2 BL-00029 設定寫端改條件式 UPDATE（往返 3→2、對外行為不變）＋ADR-00057 決定 1 之端點真 DB 釘。 | b97ad35 | — | — |
 | 2026-09-29 | misc | product｜maint-backlog-27-44 | maint-backlog-27-44（批 F）收單（user 2026-09-29 v5 體檢 Q1①／Q2①）：ADR-00057 設定讀端回全部未刪列、不以 registry 鍵集過濾（任一列型別守衛不過即整支 5000；宣告集外型別合法之列讀得到、寫回 2222＝已知態）；ADR-00058 管理清單一律伺服器端固定穩定序、零 client 排序參數；base-web 碼註據實；BL-00047 條文修訂、BL-00064 戳記勘誤。 | 435b3bd | ADR-00057、ADR-00058 | — |
@@ -60,6 +62,14 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-30｜misc｜governance｜maint-spec-compliance-005
+
+報告 docs/reviews/20260930-spec-compliance-005.md；分支顆 9ee4362（報告＋BACKLOG 七條＋RL-0084／LL-00049＋CLAUDE.md §2 兩處指針），零碼面改動、兩子庫零變動。轉帳歸併：BL-00129 文件五處、BL-00130 碼面五筆（rust 測試四筆須容器 cargo、wire-schema 保留路由名讀面一筆）、BL-00131 停用護欄×抽屜重送現值（綁 007）、BL-00132 範圍欄實數對賬腿、BL-00133 授權歸檔表 retention＋事後對賬（綁 008 或背景 job 刀）、BL-00134 島 H2 過渡窗（006 brainstorm）、BL-00135 §III 模板屬性標記（下次 Amendment）。駁回四筆（L2-1 R9 已拍板、L7-4 user 親決承載、L8-1 時區盤點已處置、P1-P3 既有入口涵蓋）與記載一筆之理由見報告 §2。
+
+### 2026-09-30｜review｜005-role-menu-crud
+
+user 2026-09-30 發起之 005 刀附屬對照輪（RL-0073 ②；HEAD ee557f6 基準、收刀點只歸因、specs 本文不改；user 指定以 superpowers:requesting-code-review 對照 spec，其要點烤入 CONTEXT）。兩支唯讀 Workflow：run A wf_cf5bf8d6-62c（五鏡＋冷啟動探針、16 支、47.0 分）、run B wf_a5b89e75-f26（五鏡、13 支、48.9 分），皆零錯零 null。findings 24 筆原始、無重複：修 3（L7-1 本事件補記、L7-2 NOTES 下一步寫正、L7-3 調規 RL-0084＋LL-00049）／轉 BL 16 筆歸併為 7 條（BL-00129～BL-00135）／駁回 4／報告記載 1；total 10 只計已處置者（轉 BL 以條數計）。零 blocker、零 wire 行為缺陷；收刀後六支維護批對 005 面之改動全部找得到承載。★user 四題裁定：修項全部轉帳之後併批收、L4-1 交 006 brainstorm、L5-3 併入下次 Amendment、L7-3 本輪調規。★L7-1 補記（feature_close notes 不可更正、依 RUNBOOK §12c 於此說明）：005 刀收刀時點 rolling-3 淨流量＝14（brainstorm 工程判斷 41 預估 13，差 1＝BL-00126）；分型＝BL-00126 新欠型（治理工具面）、005 域揭露型零。探針三題皆 found、答錯 0、找不到 0、皆判繞路（最短 2／2／1 跳），不填 probe 欄（理由同前三輪）。兩支看門狗長尾腿約 35 分被執行環境背景時限停止（非 runaway），以帶 runId 之 rearm Monitor 補回覆蓋。
 
 ### 2026-09-30｜misc｜governance｜maint-tz-utc
 
