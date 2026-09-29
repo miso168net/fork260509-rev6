@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-29 | misc | governance | 記帳 BL-00127（user 2026-09-29 指示先記 BACKLOG、另排輕量軌）：組裝形 workflow 之 agent effort＝xhigh 拍板零 ADR 承載、TDD 形 harness 零 model／effort 斷言；user 拍板維持 xhigh，待立 ADR 明定並補斷言。 | — | — | — |
 | 2026-09-29 | misc | governance｜maint-backlog-28-35-36-39-74-101-102-120 | 006 前 BACKLOG 體檢 B～E 組併批（user 2026-09-29 逐題裁定、八條全收）：GT-12 工作樹＝暫存區一致性腿與 HEAD 讀取口徑；事件自由文字欄寫入端守衛；GT-08 刀名腿；GT-04 前代出處腿（RL-0081）；閘↔規則雙向對賬＋RL-0015 五形升 ERROR；碼面閘讀子庫工作樹立已知態；探針 hops 口徑入骨架；seed 界內純測。立 ADR-00052～ADR-00055、LL-00041～LL-00048。 | 6f34eed | ADR-00052、ADR-00053、ADR-00054、ADR-00055 | — |
 | 2026-09-29 | misc | governance｜maint-backlog-126 | 輕量軌 maint-backlog-126 收單（user 2026-09-29 令、主線直改）：context 自動壓縮機制入版控——compact-hook.py 三模式＋compact-rules.md（A／B 規則與工作區兩檔約定）＋settings.json 三處註冊與 autoCompactWindow 750000；工作區檔改以本 session 碰過者定位（RL-0077）；LL-00040。併入 pre-commit 提速：lint 25.9s→13.5s、docsync test 約 75s→40.5s。BACKLOG 刪 BL-00126。 | 59250ea | — | — |
 | 2026-09-29 | feature_close | 005-role-menu-crud | 005 role-menu-crud 收單（rev6 第五刀）：角色與選單管理接真（角色 CRUD＋首頁、選單 CRUD＋樹＋回收桶）／島 H 選單域生命週期（域鎖、歸檔先於軟刪、判定面全新重建一步換上、失敗保留上一份、請求中斷不中止同步）／分頁通則＋全取例外／ROUTES 22→39、MSG_KEYS 19→43／新 lint 兩支＋wire_i64 型級三腿／走查還原工具擴面；零 migration；憲法 1.5.0→1.5.2 | 7f09ae0 | ADR-00042、ADR-00043、ADR-00044、ADR-00045、ADR-00046、ADR-00047、ADR-00048、ADR-00049、ADR-00050、ADR-00051 | §4、§5、§6、§8、§10、§11、§12 |
