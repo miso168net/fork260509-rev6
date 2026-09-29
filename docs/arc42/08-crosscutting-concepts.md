@@ -28,7 +28,7 @@ ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯
 
 部分更新三態（欄缺席＝不動／JSON null＝清空／有值＝設值）＝ADR-00047，空字串語意逐域明文：系統設定寫端之空字串＝設值（落空字串）；角色與選單寫端之可空文字欄空字串＝清空落 NULL（新增同形）、名稱欄之 null 與空字串同拒；後端承載＝`Option<Option<String>>`＋`tristate` 反序列化、body 取用失敗一律 2222 信封。
 
-清單分頁通則（跨端點單一規則＝`rust-api/server/src/envelope.rs` 之 `PAGE_DEFAULT_SIZE`＝10／`PAGE_MAX_SIZE`＝100／`PAGE_MAX_CURRENT`＝10^7 三常數＋`page_params`）：`current`／`size` 缺席→第 1 頁、10 筆；`current` clamp [1, 10^7]、`size` clamp [1, 100]（顯式 0 取下界 1）；查詢串壞形整串收斂為預設（視同全缺席）；`current` 逾界回空頁、回應 `current`＝上界值；回應形＝`PageRes` 四欄（憲法 §I.3）。適用＝IP 規則清單、角色清單、已刪選單清單，另加下表例外（生產呼叫處以 grep `page_params(`／`page_or_all(` 為準）；逐端點缺席／逾界／`size=0&current=0`／壞形四案＝`tests/contract.rs`。例外表（恰一列；新增例外＝同批改名冊案、本表與 ADR）：
+清單分頁通則（跨端點單一規則＝`rust-api/server/src/envelope.rs` 之 `PAGE_DEFAULT_SIZE`＝10／`PAGE_MAX_SIZE`＝100／`PAGE_MAX_CURRENT`＝10^7 三常數＋`page_params`）：`current`／`size` 缺席→第 1 頁、10 筆；`current` clamp [1, 10^7]、`size` clamp [1, 100]（顯式 0 取下界 1）；查詢串壞形整串收斂為預設（視同全缺席）；`current` 逾界回空頁、回應 `current`＝上界值；回應形＝`PageRes` 四欄（憲法 §I.3）。清單排序一律伺服器端固定穩定序、請求不收 client 排序參數（分頁、全取與不分頁之清單皆同；ADR-00058）。適用＝IP 規則清單、角色清單、已刪選單清單，另加下表例外（生產呼叫處以 grep `page_params(`／`page_or_all(` 為準）；逐端點缺席／逾界／`size=0&current=0`／壞形四案＝`tests/contract.rs`。例外表（恰一列；新增例外＝同批改名冊案、本表與 ADR）：
 
 | 端點 | 例外 | 承載入口 | 機器守 |
 |---|---|---|---|
