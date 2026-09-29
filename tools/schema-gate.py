@@ -47,7 +47,7 @@
 
 三閘之外（check 同跑）：
   時區前置（ADR-00059 決定 3）——右源照相段最先查目標庫 SHOW timezone（psql 撈取不帶 PGTZ＝
-        伺服器側值）；字面≠UTC＝rc 2 附補救、不往下照相比對。
+        伺服器側值；前提＝目標容器環境亦不帶 PGTZ／PGOPTIONS、環境面守衛見 BL-00128）；字面≠UTC＝rc 2 附補救、不往下照相比對。
   時間欄型別（憲法 §I.6 時間點欄通則、ADR-00060 決定 2）——對實庫照相之全庫欄（不限審計欄）：
         無時區 timestamp 一律紅、無豁免出口；date 須列於 DATE_COLUMNS_REGISTERED 名冊
         （{(表, 欄): spec 出處}、現為空）方過——合法化路徑＝名冊、非演進帳；time／interval

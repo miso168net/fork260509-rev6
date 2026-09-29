@@ -92,7 +92,7 @@
 
 ## 3b. 時區前置與全時間欄型別斷言（ADR-00059／ADR-00060）
 
-- **時區前置**（ADR-00059 決定 3）：check 右源照相段最先以 psql 取 `SHOW timezone`——撈取不帶 `PGTZ`／`PGOPTIONS`＝讀伺服器側值；非字面 `UTC`（同義名如 `Etc/UTC` 亦不放行）即 rc 2、零照相零 pg_dump，訊息附現值、期望與修法（compose postgres 命令列、一次性容器附 `-c timezone=UTC`、ALTER DATABASE／ROLE 排查）；成功輸出首行「✓ 時區」。
+- **時區前置**（ADR-00059 決定 3）：check 右源照相段最先以 psql 取 `SHOW timezone`——撈取不帶 `PGTZ`／`PGOPTIONS`＝讀伺服器側值（前提＝目標容器環境亦不帶二者：psql 繼承容器環境變數、帶則讀到 client 值；環境面守衛見 BL-00128）；非字面 `UTC`（同義名如 `Etc/UTC` 亦不放行）即 rc 2、零照相零 pg_dump，訊息附現值、期望與修法（compose postgres 命令列、一次性容器附 `-c timezone=UTC`、ALTER DATABASE／ROLE 排查）；成功輸出首行「✓ 時區」。
 - **全時間欄型別斷言**（ADR-00060 決定 2、憲法 §I.6 時間點欄通則）：以右源 columns 照相判——`timestamp without time zone`（含精度與陣列形）一律 finding（rc 1、名冊亦不能合法化）；`date`（含陣列形）須登記於 `DATE_COLUMNS_REGISTERED`（以 (表, 欄) 為鍵、值＝spec 出處）方過；合法化路徑＝該名冊、非演進帳；成功輸出末行「✓ 時間欄型別」。
 - **射程界**：`time`／`interval`、範圍型別（`daterange`／`tsrange` 等）與以 domain 包裝之型別（format_type 只呈現 domain 名）不在斷言射程；名冊內已失效之條目不報紅。
 
@@ -111,7 +111,7 @@ D 治理欄、`created_by` 顯式驗——各至少 1 例。★與①～⑤不�
 ## 5. Day-1 營運紀律（隨刀常設）
 
 每支帶 migration 的刀收刀前 MUST：跑 refresh（快照前進）＋ schema-evolution.json 登記
-（該刀全部結構／seed 變更）＋三閘綠。此條入 `docs/ops/RUNBOOK.md` migration 操作節
+（該刀全部結構／seed 變更；新增 `date` 欄另登記 `DATE_COLUMNS_REGISTERED`）＋check 全綠（時區前置＋三閘＋全時間欄型別斷言）。此條入 `docs/ops/RUNBOOK.md` migration 操作節
 （`rev4:` 紅燈裸奔兩刀教訓、`rev5:K1-39`）。
 
 ## 6. doccheck 文件面對賬（`rev5:B-010`；三閘之外的離線子命令）

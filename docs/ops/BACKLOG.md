@@ -1,4 +1,4 @@
-<!-- next: BL-00128 -->
+<!-- next: BL-00129 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -16,3 +16,4 @@
 - BL-00091｜product｜管理員解鎖無 UI 按鈕與前端包裝：`POST /systemManage/unlockLogin` 為 API-only（ADR-00046 款 1）——base-web 無對應 service wrapper 與按鈕；憲法 §III.2 ★BASE-WEB-MANAGE-PAGE-WIRING (i) 列明文「解鎖按鈕與其包裝不在本次授權」。按鈕的自然位置＝使用者管理頁（按鈕權限碼 `user:unlock` 已在 seed、零 seed 變更；來源維解鎖的入口位置由該刀 brainstorm 定）；落地＝wrapper 走 §III.1 BASE-WEB-WRAPPER 新檔、頁面接線走 §V.2 Amendment 取得授權；帳號維解鎖的 no-escalation 守門另由 BL-00048 承載｜觸發＝使用者管理頁刀（007 user-password-admin）brainstorm 起手前納入範圍
 - BL-00108｜governance｜char 級源碼解析工具組已有**第二份**且已分岔：`rust-api/server/tests/entity_behavior_lint.rs` 持 `skip_ws`／`ident_at`／`close_of`／`split_top`／`peel_attrs`／`attr_spans`／`token_positions` 七支，`wire_i64_guard_lint.rs` 另持同形一組（後者多了 `r#` 前綴、可見性剝除、箭號守衛與角括號深度；前者以 `step()` 逐步跳常值而非預先換白）——同型警語曾住 `tests/common/mod.rs` 的 Drop 守衛面，已隨 BL-00089① 收攏為一支 `run_restore` 而移除；該收攏另使還原殼形成三份（src 側 `run_restore_stmts` 的 DB 腿殼／`RedisKeysGuard` 的鍵腿殼／tests 側合兩腿的 `run_restore`）、三份同改之維護指令已落 doc｜觸發＝第三份出現時，或下一支同時動這兩支 lint 之刀或維護批（先到者）
 - BL-00124｜product｜004 刀 spec Out of Scope 首條「通用化節流 seam」（004 刀只交付來源維本體、可掛任意敏感端點的通用 seam 待第二個消費者出現再做）在現在式帳本**零承載**：BACKLOG 兩卷、NOTES、RUNBOOK、憲法 §I.7 島表、ADR 全集皆零命中，延後義務只由凍結的 spec 承載、開刀前儀式（只掃 BACKLOG 觸發欄）結構上掃不到；前例＝`rev5:ADR 0066` §四（rev5 以四面比較判通用節流 seam won't-fix）——rev6 節流判定已改 PG 滑動窗（ADR-00038），四面比較須以 rev6 形重做｜觸發＝007 user-password-admin brainstorm 起手前（第二個節流消費端的最近候選＝改密舊密節流；進場與否由該 brainstorm 定，進場即重做四面比較）
+- BL-00128｜governance｜時區不變式之環境面守衛缺口（maint-tz-utc final review L2-2／L2-3）：①compose 各服務明設 `TZ=UTC`（ADR-00059 決定 2）無機器守衛——新增服務漏設不察；②`tools/schema-gate.py` 時區前置以容器內 psql 撈 `SHOW timezone`，psql 繼承容器環境變數——目標容器環境若帶 `PGTZ`／`PGOPTIONS` 即讀到 client 值（pg_settings 之 source＝client）而非伺服器值、前置可成恆綠。候選：schema-gate 改撈 `pg_settings` 之 setting 與 source、source＝client 即 rc 2（一正一反）；compose 面由既有閘腿或 bootstrap 體檢斷言各服務 TZ＝UTC 且 postgres 服務環境不帶 PGTZ／PGOPTIONS（閘數 12／12、新腿須評估預算）｜觸發＝下一支動 compose 服務或 schema-gate 時區前置之批
