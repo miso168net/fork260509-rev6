@@ -32,7 +32,7 @@ ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯
 
 時間欄 wire 形（ADR-00061）：一律 RFC3339、偏移恆 `+00:00`（chrono `to_rfc3339`；小數位數隨值 0／3／6 位＝已知態）；管理頁原樣顯示該字串（UTC）、不依瀏覽器時區換算，與 rev5 同形。
 
-清單分頁通則（跨端點單一規則＝`rust-api/server/src/envelope.rs` 之 `PAGE_DEFAULT_SIZE`＝10／`PAGE_MAX_SIZE`＝100／`PAGE_MAX_CURRENT`＝10^7 三常數＋`page_params`）：`current`／`size` 缺席→第 1 頁、10 筆；`current` clamp [1, 10^7]、`size` clamp [1, 100]（顯式 0 取下界 1）；查詢串壞形（型別不符如 `?size=abc`、負數〔`u64` 解析不過、不走 clamp〕、同名鍵重複）整串收斂為預設（視同全缺席，同串合法篩選一起落預設；承載＝各清單 query 型之 `FromRequestParts` 抽取器）；`current` 逾上界 10^7 回空頁、回應 `current`＝10^7，未逾上界而超出頁數亦回空頁、回應 `current` 照給值；回應形＝`PageRes` 四欄（憲法 §I.3）。清單排序一律伺服器端固定穩定序、請求不收 client 排序參數（分頁、全取與不分頁之清單皆同；ADR-00058）。適用＝IP 規則清單、角色清單、已刪選單清單，另加下表例外（生產呼叫處以 grep `page_params(`／`page_or_all(` 為準）；逐端點缺席／逾界／`size=0&current=0`／壞形四案＝`tests/contract.rs`。例外表（恰一列；新增例外＝同批改名冊案、本表與 ADR）：
+清單分頁通則（跨端點單一規則＝`rust-api/server/src/envelope.rs` 之 `PAGE_DEFAULT_SIZE`＝10／`PAGE_MAX_SIZE`＝100／`PAGE_MAX_CURRENT`＝10^7 三常數＋`page_params`）：`current`／`size` 缺席→第 1 頁、10 筆；`current` clamp [1, 10^7]、`size` clamp [1, 100]（顯式 0 取下界 1）；查詢串壞形（型別不符如 `?size=abc`、負數〔`u64` 解析不過、不走 clamp〕、同名鍵重複）整串收斂為預設（視同全缺席，同串合法篩選一起落預設；承載＝各清單 query 型之 `FromRequestParts` 抽取器）；`current` 逾上界 10^7 回空頁、回應 `current`＝10^7，未逾上界而超出頁數亦回空頁、回應 `current` 照給值；回應形＝`PageRes` 四欄（憲法 §I.3）。清單排序一律伺服器端固定穩定序、請求不收 client 排序參數（分頁、全取與不分頁之清單皆同；ADR-00058）。適用＝IP 規則清單、角色清單、已刪選單清單，另加下表例外（生產呼叫處以 grep `page_params(`／`page_or_all(` 為準）；逐端點缺席／逾界／`size=0&current=0`／壞形四案＋角色清單與已刪選單清單另一案 `size` 逾上界（`?size=1000`→100）＝`tests/contract.rs`。例外表（恰一列；新增例外＝同批改名冊案、本表與 ADR）：
 
 | 端點 | 例外 | 承載入口 | 機器守 |
 |---|---|---|---|
