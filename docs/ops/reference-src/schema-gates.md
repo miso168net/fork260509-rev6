@@ -92,7 +92,7 @@
 
 ## 3b. 時區前置與全時間欄型別斷言（ADR-00059／ADR-00060）
 
-- **時區前置**（ADR-00059 決定 3）：check 右源照相段最先以 psql 取 `SHOW timezone`——撈取不帶 `PGTZ`／`PGOPTIONS`＝讀伺服器側值（前提＝目標容器環境亦不帶二者：psql 繼承容器環境變數、帶則讀到 client 值；環境面守衛見 BL-00128）；非字面 `UTC`（同義名如 `Etc/UTC` 亦不放行）即 rc 2、零照相零 pg_dump，訊息附現值、期望與修法（compose postgres 命令列、一次性容器附 `-c timezone=UTC`、ALTER DATABASE／ROLE 排查）；成功輸出首行「✓ 時區」。
+- **時區前置**（ADR-00059 決定 3）：check 右源照相段最先以 psql（帶 `-X`＝不讀 psqlrc）取兩值、兩段判準——①`SHOW timezone` 非字面 `UTC`（同義名如 `Etc/UTC` 亦不放行）即 rc 2，訊息附現值、期望與修法（compose postgres 命令列、一次性容器附 `-c timezone=UTC`、ALTER DATABASE／ROLE 與目標容器環境之 `PGTZ`／`PGOPTIONS` 排查）②`pg_settings` 之 `TimeZone` source 為 `client`／`session`（值來自連線端：psql 繼承容器環境之 `PGTZ`／`PGOPTIONS`，或連線內 SET）或撈取為空即 rc 2，伺服器側來源（command line、configuration file、database、user 等）放行；兩段任一紅皆零照相零 pg_dump。成功輸出首行「✓ 時區」並附 source。環境面（compose 各服務 `TZ=UTC`、postgres 服務環境零 `PGTZ`／`PGOPTIONS`）由 `bash tools/bootstrap.sh` 體檢斷言（非閘）。
 - **全時間欄型別斷言**（ADR-00060 決定 2、憲法 §I.6 時間點欄通則）：以右源 columns 照相判——`timestamp without time zone`（含精度與陣列形）一律 finding（rc 1、名冊亦不能合法化）；`date`（含陣列形）須登記於 `DATE_COLUMNS_REGISTERED`（以 (表, 欄) 為鍵、值＝spec 出處）方過；合法化路徑＝該名冊、非演進帳；成功輸出末行「✓ 時間欄型別」。
 - **射程界**：`time`／`interval`、範圍型別（`daterange`／`tsrange` 等）與以 domain 包裝之型別（format_type 只呈現 domain 名）不在斷言射程；名冊內已失效之條目不報紅。
 
