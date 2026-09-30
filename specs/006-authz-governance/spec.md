@@ -13,6 +13,12 @@
 > 憲法一次 MINOR（1.6.0→1.7.0）：島 G 六條入憲（G6 新立）、§III.2 管理頁 ★ 軌道加用途 (iii)(iv)、併入 BL-00135／BL-00132 兩句、島 H 序言／H1／H2 連動改寫。`MSG_KEYS` 43→46。**零 migration、零 seed 變更**。ADR 九支。
 > 連帶面：走查還原工具與測試守衛擴至能補回被撤之 seed 授權列、fork-delta-lint 範圍欄對賬腿、seed-view-gate 新碼面閘；BACKLOG 開放 17 條中 5 條隨本刀收、3 條收窄、同批新記 2 條（本窗淨 −3）。
 
+## Clarifications
+
+### Session 2026-10-01
+
+- Q: 復原時若同一條授權已被重新授予、正在生效（NoOp），這次復原要不要留一筆操作稽核？ → A: 照 rev5 as-built 不留稽核——歸檔列照常消費移除、回成功、不同步、零稽核；「回收桶移除一列而無稽核痕跡」入已知態 ADR⑥（FR-030、Edge Cases、SC-007）。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 超管三維授權治理（選單／按鈕／端點） (Priority: P1)
@@ -141,7 +147,7 @@
 - 選單／按鈕維只剩閱覽：不可復原集含 `menu_revoke`／`button_revoke`；選單維授權只能重勾不能復原——UI 以停用態呈現、不另造提示。
 - 端點維下線列：歸檔列之（路徑,方法）已不在路由表 → 第④腿拒、旗標 false；現役中之下線端點授權列屬候選外、不被全量替換撤銷（候選集射程）。
 - 來源角色 id 為 NULL 之歷史列 → 可復原＝false、誠實退化（不補寫、不猜）；本刀後之撤銷列恆有來源角色 id（標的角色列已鎖且活性）。
-- 復原遇標的已在現役 → NoOp（成功、歸檔列消費移除、零稽核、不同步；與 Applied 對前端不可區分）；可復原旗標不加「是否現役」腿（Q16）。
+- 復原遇標的已在現役 → NoOp（成功、歸檔列消費移除、零稽核、不同步；與 Applied 對前端不可區分；回收桶少一列而稽核表無痕跡＝已知態、Clarifications 2026-10-01）；可復原旗標不加「是否現役」腿（Q16）。
 - 同一（角色,端點）多次撤銷 → 多列歸檔；復原其一後其餘列仍在、再復原即 NoOp。
 - 回收桶篩選之角色代碼為文字等值：可查已刪或停用角色之歸檔列（既有角色下拉只列活性且啟用者，故不用下拉）。
 
@@ -226,7 +232,7 @@
   旗標 MUST 與權威判定**逐腿同判準**（reason 半共用單點函式、其餘半與鎖內重驗同式；批次讀端一次取活性角色與受保護集、避免逐列查）；配「旗標＝權威」逐腿同判準測（①～④各一）。
 - **FR-028**: 不可復原 reason 集 MUST 擴為五值 {`role_soft_delete`, `menu_soft_delete`, `menu_button_removed`, `menu_revoke`, `button_revoke`}（單點函式承載、集合成員測更新）；唯一可復原 reason＝`endpoint_revoke`；既有釘案中斷言三撤銷原因「屬可復原」之負向臂 MUST 同批翻為兩值不可復原、`endpoint_revoke` 仍可復原（Q2）；零 migration、島 H2 零破口。
 - **FR-029**: restorePolicy MUST 鎖內固定序五腿重驗（ADR③；每腿註對應寫端守門）：①reason gate（五值集）②來源角色同實例（NULL 不可復原、誠實退化）③結構性封死（受保護端點政策不得復原給非 R_SUPER）④端點在路由表（不在→拒、免幽靈政策）⑤角色停用不擋（停用≠撤銷、島 H4 精神、已知態）。
-- **FR-030**: restorePolicy outcome MUST 三態：Applied（回灌現役〔新 id〕＋刪歸檔列＋稽核 `restore` 同交易 → 判定面同步）／NoOp（授權列身分鍵已在現役 → 回成功、歸檔列仍消費移除、不重複寫入、零稽核、不同步；與 Applied 對前端不可區分＝已知態；Q16）／NotRestorable（識別不存在或任一腿拒 → `biz.policy.notRestorable`）；後端 MUST 為最終防線。
+- **FR-030**: restorePolicy outcome MUST 三態：Applied（回灌現役〔新 id〕＋刪歸檔列＋稽核 `restore` 同交易 → 判定面同步）／NoOp（授權列身分鍵已在現役 → 回成功、歸檔列仍消費移除、不重複寫入、零稽核、不同步；與 Applied 對前端不可區分、回收桶移除該列而無稽核痕跡——兩者皆已知態、入 ADR⑥；Q16、Clarifications 2026-10-01）／NotRestorable（識別不存在或任一腿拒 → `biz.policy.notRestorable`）；後端 MUST 為最終防線。
 - **FR-031**: restorePolicy MUST NOT 進選單序列化域（可復原列只剩端點維）；鎖序＝歸檔表列 → 角色列（FOR UPDATE）→ 鎖內重驗 → 回灌 → 刪歸檔 → 稽核；與 updateRoleEndpoints 共用同一封死判準（雙路徑全覆蓋）。島 H1 括號之「授權回收桶復原之該兩維分支」由 Amendment 改寫為結構性不可達（FR-040）。
 - **FR-032**: 自救路徑 MUST 恆可走（Q14）：撤掉 R_SUPER 名下非受保護端點列致角色頁失能時，授權回收桶頁（其選單列與兩支端點皆受保護）MUST 仍可達並復原該列；spec 列 edge case、配一支端到端測試（撤 getRoleList → 回收桶復原 → 判定恢復）。
 
@@ -254,7 +260,7 @@
   ⑤島 H 連動：序言「島 G 條文入憲前之凍結位」句改寫、H1 括號改寫為「授權治理之選單維與按鈕維寫端已入域；授權回收桶復原之該兩維分支因不可復原集擴列而結構性不可達」、H2 記兩窗（FR-020）、MAJOR 射程「七島」改「八島」、承襲指針表 G 列補 rev6 入憲載體；H2「同步失敗保留上一份」方向句之落位（留 H2 或移 G1 並互引）於親決輪定（ADR-00042 翻案觸發器要求複核）
   ⑥README 憲法版本鏡像與 generate。Amendment accepted 前 base-web 既有檔 MUST 零 diff。
 - **FR-041**: ADR MUST 九支（feature branch 內、序號接續；plan 期草稿、proposed 期不宣告 supersedes、accepted 同顆補）：①島 G 入憲 Amendment（provenance `rev5:ADR 0053`）②G6 結構性封死（`rev5:ADR 0054`；承重前提 FR-024）③回收桶復原五腿＋不可復原集 3→5（`rev5:ADR 0055`；附 ADR-00044 決定 4 之復核結論＝選單維仍無可復原 reason、同實例欄續 won't-use）④全量替換射程＝候選集（`rev5:ADR 0056`）
-  ⑤判定面同步觸發列增列＋記窗（補述 ADR-00043 決定 9；聲明 ADR-00042 兩處同字面被取代；不 supersede ADR-00043）⑥ADR-00045 續行（款 1／3／4／7 之解除或改述＋新已知態：21 支可授出端點與 unlockLogin 窗、選單維受保護四列看得到點不動、並行編輯後送出者覆蓋、CDP 實測定稿之候選款）
+  ⑤判定面同步觸發列增列＋記窗（補述 ADR-00043 決定 9；聲明 ADR-00042 兩處同字面被取代；不 supersede ADR-00043）⑥ADR-00045 續行（款 1／3／4／7 之解除或改述＋新已知態：21 支可授出端點與 unlockLogin 窗、選單維受保護四列看得到點不動、並行編輯後送出者覆蓋、復原 NoOp 移除歸檔列而零稽核、CDP 實測定稿之候選款）
   ⑦ADR-00046 續行（款 3 操作稽核寫入者擴列 update／restore＋BL-00084 by-design 款〔每次阻擋恰一則結構化 warn、不設節流〕；改指現在式面）⑧BL-00131 前端修法（與 rev5 行為分岔登記）⑨seed-view-gate 碼面閘（RUNBOOK §12 讀面型、ADR-00055 決定 3 之首例）。
   親決時點：Amendment 顆只含 ADR① 與其連動條文、其餘另顆；ADR⑥⑦ 於治理單元定稿後 accepted。
 - **FR-042**: fork-delta-lint MUST 加範圍欄對賬腿（BL-00132）：修改型逐軌道×用途×檔比 `原行:` 數、新增型塊數逐檔加總比；範圍欄明文不預估或預估列跳過；零解析即紅；以植入反例變異自證；MUST 於首個 base-web 單元之前落地（碼面閘加腿、不佔 GT 名額）。
