@@ -57,7 +57,8 @@
 　⑥空間邊界：fix agent prompt 烤進允許檔案清單（＝該單元 tasks 涉檔＋review findings 指涉檔的聯集、寫死 script 常數）；清單外檔案需要動→絕不擅改、依④分值升級；
 　　次輪清單只縮不擴；清單另納連動釘值測所在檔、答「碰得到什麼」而非 task 寫了什麼（RL-0014／RL-0022）。
 ★主線看門狗（非終止型故障不會有完成通知；RL-0016／RL-0017／RL-0061／RL-0062）：★Workflow launch 與看門狗**雙掛**
-　**同一回合原子成對**發射、三 call 間零其他動作——①Monitor＝`timeout_ms: 1800000`（30 分鐘＝harness 硬上限；**預設只有 5 分鐘、必須明給**）、每行即時推播＝冒煙與早期告警、**到期不重掛** ②Bash `run_in_background` 長尾腿＝同一支腳本帶 `--bg`＋**明給 `timeout: 7200000`**（不給＝背景預設 30 分鐘即被停）、**例行**零重掛、退出即通知（五個出口在 `--bg` 下皆告警即退出）。★長尾腿重發一律 `<冒煙token> <runId> --bg --rearm`（同給 timeout；印 REARMED 行、不重做冒煙；重掛當下不重複 agent key 已逾上限＝預先承認、此後不再告 RUNAWAY）：因 RUNAWAY 退出＝主線先判形態——扇出型（正當超標）→重發、編排型→TaskStop wf；被背景時限停止→直接重發；皆不動 Monitor 腿。
+　**同一回合原子成對**發射、三 call 間零其他動作——①Monitor＝`timeout_ms: 1800000`（30 分鐘＝harness 硬上限；**預設只有 5 分鐘、必須明給**）、每行即時推播＝冒煙與早期告警、**到期不重掛** ②Bash `run_in_background` 長尾腿＝同一支腳本帶 `--bg`＋**明給 `timeout: 7200000`**（不給＝背景預設 30 分鐘即被停；明給亦只撐 2 小時）、退出即通知（五個出口在 `--bg` 下皆告警即退出）。
+　★長尾腿補回（同一 run、仍在飛＝未收完成通知才補）一律 `<冒煙token> <runId> --bg --rearm`（同給 timeout；印 REARMED 行、不重做冒煙；重掛當下不重複 agent key 已逾上限＝預先承認、此後不再告 RUNAWAY；重掛當下 run 已結束＝印 DONE 即退）：因 RUNAWAY 退出＝主線先判形態——扇出型（正當超標）→補回、編排型→TaskStop wf；被背景時限停止（逾 2 小時的 run 每 2 小時一次、屬預期）→直接補回——停止通知附的「已用最長 timeout 勿重啟」不適用監看腿（監看非工作），照補並向 user 報停止；皆不動 Monitor 腿。新 launch（被擋重發、resume）兩腿一律首掛形（不帶 `--rearm`）、驗 ARMED 冒煙。
 　command＝`python3 tools/wf-watchdog.py <冒煙token> [wf目錄|runId] [--bg]`（★冒煙 token 不可取字面 `test`＝會被當自測子命令）
 　（缺目標＝自動發現最新 wf 目錄；帶目標＝輪詢待其出現後鎖定、resume 沿用原 runId、launch 被擋重發＝TaskStop 舊 Monitor 與長尾腿、改帶新 runId 重發；rev5:L-049）；
 　完成通知一到→TaskStop 該 Monitor（防誤觸 stall；rev5:L-051）；長尾腿由 DONE 腿自行退出、毋需 TaskStop。判死迴圈／卡死→TaskStop→修 script→以 resumeFromRunId 續跑。

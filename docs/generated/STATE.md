@@ -17,7 +17,7 @@
 - BACKLOG 開放：19｜滯後：3
 - LESSONS：50 筆
 - events：110 筆（erratum 2、feature_close 5、misc 42、perf 53、review 8）
-- CLAUDE.md 行數：162（只報表、不擋）
+- CLAUDE.md 行數：163（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |

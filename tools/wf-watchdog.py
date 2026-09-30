@@ -5,7 +5,8 @@
 用法：`python3 tools/wf-watchdog.py <冒煙token> [wf目錄|runId] [--rearm] [--bg]`
   ★必與 Workflow launch 同一回合原子成對發射（call 間零其他動作；雙掛＝三 call）。
   ★雙掛形（CLAUDE.md §2、BL-00079）：Monitor 掛前 30 分鐘（每行即時推播＝冒煙與早期告警）
-    ＋Bash 背景任務掛全程（`--bg`、零重掛）；Monitor 到期不重掛、長尾由背景那支承擔。
+    ＋Bash 背景任務掛長尾（`--bg`＋明給 timeout: 7200000）；Monitor 到期不重掛、長尾由背景那支
+    承擔——背景腿單支至多 2 小時，逾時停止或 RUNAWAY 判扇出型後以 --rearm 形同 run 續掛（見下）。
   無第二參數＝自動發現本專案最新 wf_* transcript 目錄（毋需 launch 回傳值→可同回合並發；
     沿舊 bash 版語意先 sleep 10 讓 launch 建目錄）。
   第二參數＝硬編監看目標（rev5:B-005：「最新目錄」自動發現三次實彈鎖錯 run）：
@@ -18,16 +19,21 @@
     ★續跑時 ARMED 行的冒煙位元組數＝前一輪殘留、不可據以判斷新 prompt 送達；查核改看
     最新 agent-*.jsonl（mtime 是否剛剛＋grep 本輪新字串）、一次性查核不輪詢（rev5:L-023）。
   ★冒煙 token 不可取字面 test（會被當自測子命令）。
-  ★--bg＝Bash 背景任務模式：唯一差異＝RUNAWAY 由「告警不退出」改為「告警即退出」
-    （背景任務只有退出才通知主線；其餘四個出口本就是告警即退出）。ARMED 行照印進輸出檔。
+  ★--bg＝Bash 背景任務模式：watch_loop 內唯一差異＝RUNAWAY 由「告警不退出」改為「告警即
+    退出」（背景任務只有退出才通知主線；其餘四個出口本就是告警即退出）。ARMED 行照印進
+    輸出檔（重掛形改印 REARMED，見下）。
     ★該 Bash 呼叫必明給 timeout: 7200000——不給＝吃背景預設 30 分鐘時限、到點被停＝長尾
-    覆蓋歸零（本腿自身無從察覺、只有 harness 的停止通知）。
-  ★--rearm＝**例外**重發專用（雙掛形下 Monitor 到期不重掛）：必帶第二參數（重掛必知 runId、
-    不做自動發現）；不重做冒煙（首掛 ARMED 已驗）；發射失敗／參數錯誤訊息照印。
+    覆蓋歸零（本腿自身無從察覺、只有 harness 的停止通知）。明給亦只撐 2 小時：逾 2 小時的
+    run 每 2 小時被停一次、run 仍在飛即照 --rearm 形續掛（屬預期；CLAUDE.md §2）。
+  ★--rearm＝同一 run 之腿補回專用（新 launch——含被擋重發、resume——一律首掛形、驗 ARMED
+    冒煙）：必帶第二參數（重掛必知 runId、不做自動發現）；不重做冒煙（首掛 ARMED 已驗）；
+    發射失敗／參數錯誤訊息照印。
+    - 重掛當下 run 已結束（ended_before_rearm：持久 json 不早於目錄最新寫入減容差）＝印 DONE
+      一行即退出、不進監看迴圈（否則 DONE 腿永不成立、約 13 分後誤報 STALL）。
     - 預先承認：重掛當下不重複 agent key 已逾有效上限＝視為主線已判扇出型（正當超標）→
       本 watch 生命週期不再告 RUNAWAY（--bg 形亦不因此退出）、只盯其餘四個出口；未逾＝
       RUNAWAY 照常武裝。★首掛永不預先承認（首掛的告警正是主線判形態的觸發點）。
-    - `--bg --rearm`＝長尾腿重發形（因 RUNAWAY 退出且判扇出型、或被背景時限停止；同給
+    - `--bg --rearm`＝長尾腿補回形（因 RUNAWAY 退出且判扇出型、或被背景時限停止；同給
       timeout）：印 REARMED 一行進輸出檔（重掛當下 key 數／上限／是否預先承認）。
     - 不帶 --bg＝Monitor 形：零輸出（重掛再印＝一則雜訊事件）。
 
@@ -36,14 +42,16 @@
   只讀首行＝恆報 命中=0）→ 靜默迴圈（60s），stall／判準失效告警時輸出並退出；runaway
   告警一次後★不退出、續行監看（rev5:B-069：run 還活著時退出＝看門狗自我卸除、stall
   覆蓋歸零）——★`--bg` 為此契約的具名例外：背景腿改告警即退出（見上）；★run 結束（持久
-  json 於 ARMED 之後落地或更新）→ 印 DONE 一行並退出。
+  json 於 ARMED 之後落地或更新）→ 印 DONE 一行並退出（首掛鎖到早已結束的 run 不觸 DONE、
+  由 STALL 收；重掛形見上）。
 完成通知一到 TaskStop Monitor 腿（已自行退出者 TaskStop 無害；長尾腿不由 TaskStop 收、
   待其 DONE 自行退出）；DONE 腿＝兜底，
   使「忘了 TaskStop→正常完成 ~13min 後誤觸 stall」不再發生。
 自測：python3 tools/wf-watchdog.py test（離線、合成 fixtures、stdlib-only）。
 
 退出碼：0＝正常監看結束（含告警輸出後退出——告警屬正常職責、非故障）；1＝發射失敗
-  （自動發現無 wf 目錄／目標逾時未出現）；2＝第二參數無法解析；test＝全綠 0／有紅 1。
+  （自動發現無 wf 目錄／目標逾時未出現）；2＝參數無法解析（未知旗標／--rearm 缺第二參數／
+  第二參數形制不符）；test＝全綠 0／有紅 1。
 
 ★輸出紀律（BACKLOG rev5:B-005 陷阱明載）：python 於 pipe 後端預設塊緩衝——ARMED 行是唯一
   冒煙訊號，不即時 flush＝外觀同「發射失敗」。本檔一切輸出走 _say()（print flush=True）、
@@ -88,6 +96,9 @@ LOOP_SLEEP = 60            # 秒；靜默迴圈間隔
 DISCOVER_SLEEP = 10        # 秒；自動發現模式先讓 launch 建目錄（沿舊 bash 版語意）
 TARGET_POLL_INTERVAL = 5   # 秒；目標模式輪詢間隔
 TARGET_POLL_TIMEOUT = 180  # 秒；目標模式等待目標目錄出現的上限
+REARM_END_SLACK = 5        # 秒；--rearm 判「重掛前 run 已結束」之容差：持久 json 於 run 結束時落地，其後 agent
+#   transcript 仍可有收尾 flush（2026-09-30 實測已完成 run 143 支：json 減目錄最新寫入＝−0.19～+0.10s）；
+#   容差遠小於任何 resume 間隔（主線收到結束、修 script、重發，至少數十秒）。
 # ★script 快照內的保險絲「宣告形」＝錨定 const/let/var 關鍵字（rev5:B-069 fix 第 2 輪）：
 #   裸 `AGENT_FUSE\s*=\s*\d+` 匹配「任何提及」——註解先行（「前一輪 AGENT_FUSE = 20」）
 #   會把上限竄窄、前綴變體（MAX_AGENT_FUSE = 999）會把上限竄寬＝backstop 靜默卸除
@@ -294,6 +305,24 @@ def persist_status(wf_dir):
     return (data.get("status", "?"), data.get("agentCount", "?"))
 
 
+def ended_before_rearm(wf_dir):
+    """--rearm 專用：重掛當下 run 是否已結束 → persist_status 之 (status, agentCount)；未結束／無從判定→None。
+
+    判準＝持久 json 在且可解析、其 mtime 不早於「wf 目錄最新寫入 − REARM_END_SLACK」（run 結束時 json 最後
+    落地、其後至多 transcript 收尾 flush）。存在理由：鎖到已結束的 run 時 DONE 腿（「迴圈起點之後 json 新出現
+    或前進」）永不成立、約 13 分後誤報 STALL 並指示 resume——重掛與完成通知競態、或背景腿在 json 落地那一輪
+    先判 RUNAWAY 退出時即此形（mb128 審查 L1-1）。★首掛不用：resume 沿用原 runId、起手當下的舊 json 亦滿足此
+    式。重掛在長尾腿跑過至少一輪之後：因背景時限停止者，run 其間若無寫入早以 STALL 退出；殘餘誤判窗＝resume
+    後尚無任何新寫入即因 RUNAWAY 首輪退出而被重掛——此時印 DONE 退出，主線以「未收完成通知」為反證。"""
+    pj = persist_json_mtime(wf_dir)
+    if pj is None:
+        return None
+    newest = newest_mtime_under(wf_dir)
+    if newest is not None and pj < newest - REARM_END_SLACK:
+        return None
+    return persist_status(wf_dir)
+
+
 def derive_runaway_ceiling(wf_dir):
     """RUNAWAY 有效上限自被監看產物推導（rev5:B-069）→ (ceiling, final)。
 
@@ -402,7 +431,7 @@ def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_u
                  "本就可能超過門檻，屬預期、不要 TaskStop；編排型（單元 implementer＋"
                  "review 迴圈）超過才是防呆③保險絲疑失效→/workflows 查→TaskStop wf。"
                  + ("背景模式：告警即退出（背景任務只有退出才通知主線）→ 主線判形態：扇出型→"
-                    f"同一支腳本帶 `{base} --bg --rearm` 重發長尾腿（Bash 明給 timeout: 7200000；"
+                    f"同一支腳本以 `<冒煙token> {base} --bg --rearm` 補回長尾腿（Bash 明給 timeout: 7200000；"
                     "重掛當下已逾上限＝預先承認、不再告 RUNAWAY）；編排型→TaskStop wf。"
                     if bg else "看門狗續行監看。"))
             if bg:
@@ -479,6 +508,11 @@ def main(argv):
     base = os.path.basename(wf_dir.rstrip('/'))
     acked = False
     if rearm:
+        ended = ended_before_rearm(wf_dir)
+        if ended is not None:   # 重掛當下已結束：DONE 腿永不成立（見 ended_before_rearm）→ 當場收
+            _say(f"看門狗 DONE：{base} 重掛當下已結束（status={ended[0]}／agent {ended[1]} 支）"
+                 "→ 本腿不掛、自行退出、毋需 TaskStop")
+            return 0
         # ★重掛不重做冒煙（首掛 ARMED 已驗）；重掛當下已逾有效上限＝主線已判扇出型→預先承認
         #   （與 watch_loop 首輪同一比較 `>`；首掛永不承認——首掛的告警正是判形態的觸發點）。
         _raw, nkeys = journal_key_stats(read_journal(wf_dir))
@@ -515,6 +549,7 @@ class TestConstantsPinned(unittest.TestCase):
         self.assertEqual(DISCOVER_SLEEP, 10)
         self.assertEqual(TARGET_POLL_INTERVAL, 5)
         self.assertEqual(TARGET_POLL_TIMEOUT, 180)
+        self.assertEqual(REARM_END_SLACK, 5)
 
 
 class TestSlug(unittest.TestCase):
@@ -778,37 +813,76 @@ class TestRunawayCeilingDerivation(unittest.TestCase):
             out = buf.getvalue()
             self.assertEqual(out.count("看門狗 RUNAWAY"), 1)
             self.assertIn("背景模式", out)
-            self.assertIn("wf_t --bg --rearm", out)   # 告警當下即指明長尾腿重發形（帶本 run 之 runId）
+            self.assertIn("<冒煙token> wf_t --bg --rearm", out)   # 告警當下即指明補回形（與 CLAUDE.md §2 同形）
+            self.assertIn("timeout: 7200000", out)
             self.assertNotIn("看門狗續行監看", out)   # 非 bg 的收尾句不得出現
             self.assertEqual(len(sleeps), 1)          # 第 1 輪告警即退出
             self.assertEqual(rc, 0)
 
     def test_preacknowledged_runaway_stays_silent_and_keeps_watching(self):
         """mb128：runaway_acked=True（重掛當下已逾上限、主線已判扇出型）＝本生命週期不再告
-        RUNAWAY；★bg 形尤其不得因此退出（否則長尾腿重發後首輪即退、覆蓋歸零＝本修要消滅的形），
-        其餘出口照舊——STALL 仍有效。反面＝上一支（未承認之 bg 形首輪告警即退出）。"""
+        RUNAWAY；★bg 形尤其不得因此退出（否則長尾腿補回後首輪即退、覆蓋歸零＝本修要消滅的形），
+        其餘出口照舊——STALL 仍有效。兩形皆驗（Monitor 形同規則＝user 裁定；mb128 審查 L3-3）。
+        反面＝上一支（未承認之 bg 形首輪告警即退出）。"""
+        for bg in (True, False):
+            with tempfile.TemporaryDirectory() as sess:
+                wf = self._mk_wf(sess)   # 無持久 json → floor 25
+                with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
+                    fh.write("".join('{"key": "agent-%d"}\n' % i
+                                     for i in range(RUNAWAY_FLOOR + 1)))
+                now = 1_000_000.0
+                calls = {"n": 0}
+
+                def newest(_d):
+                    calls["n"] += 1
+                    return now - (STALL + 1 if calls["n"] >= 3 else 1)   # 前兩輪新鮮、第 3 輪 stall
+
+                sleeps = []
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    rc = watch_loop(wf, _sleep=lambda s: sleeps.append(s), _now=lambda: now,
+                                    _newest=newest, _max_rounds=5, bg=bg, runaway_acked=True)
+                out = buf.getvalue()
+                self.assertNotIn("RUNAWAY", out, msg=f"bg={bg}")
+                self.assertIn("看門狗 STALL", out, msg=f"bg={bg}")
+                self.assertEqual(len(sleeps), 3, msg=f"bg={bg}")   # 撐到第 3 輪 stall、未提前退出
+                self.assertEqual(rc, 0)
+
+    def test_preacknowledged_runaway_keeps_done_and_criterion_exits(self):
+        """mb128 審查 L3-3：承認後「其餘出口照舊」之另兩臂——①第 2 輪持久 json 落地→DONE 退出（承認不吞
+        DONE）②journal 非空卻抽不到 key→判準失效（承認不吞 fail-loud）。"""
+        now = 1_000_000.0
         with tempfile.TemporaryDirectory() as sess:
-            wf = self._mk_wf(sess)   # 無持久 json → floor 25
+            wf = self._mk_wf(sess)
             with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
-                fh.write("".join('{"key": "agent-%d"}\n' % i
-                                 for i in range(RUNAWAY_FLOOR + 1)))
-            now = 1_000_000.0
+                fh.write("".join('{"key": "agent-%d"}\n' % i for i in range(RUNAWAY_FLOOR + 1)))
             calls = {"n": 0}
 
-            def newest(_d):
+            def sleep_hook(_s):
                 calls["n"] += 1
-                return now - (STALL + 1 if calls["n"] >= 3 else 1)   # 前兩輪新鮮、第 3 輪 stall
-
-            sleeps = []
+                if calls["n"] == 2:
+                    os.makedirs(os.path.join(sess, "workflows"), exist_ok=True)
+                    with open(os.path.join(sess, "workflows", "wf_t.json"), "w",
+                              encoding="utf-8") as fh:
+                        fh.write(json.dumps({"status": "completed", "agentCount": 26}))
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
-                rc = watch_loop(wf, _sleep=lambda s: sleeps.append(s), _now=lambda: now,
-                                _newest=newest, _max_rounds=5, bg=True, runaway_acked=True)
+                rc = watch_loop(wf, _sleep=sleep_hook, _now=lambda: now,
+                                _newest=lambda _d: now - 1, _max_rounds=3, bg=True,
+                                runaway_acked=True)
             out = buf.getvalue()
+            self.assertIn("看門狗 DONE", out)
             self.assertNotIn("RUNAWAY", out)
-            self.assertIn("看門狗 STALL", out)
-            self.assertEqual(len(sleeps), 3)         # 撐到第 3 輪 stall、未因 runaway 提前退出
-            self.assertEqual(rc, 0)
+            self.assertEqual((rc, calls["n"]), (0, 2))
+        with tempfile.TemporaryDirectory() as sess:
+            wf = self._mk_wf(sess)
+            with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
+                fh.write('{"event": "x"}\n{"event": "y"}\n')
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                watch_loop(wf, _sleep=lambda s: None, _now=lambda: now,
+                           _newest=lambda _d: now - 1, _max_rounds=3, bg=True, runaway_acked=True)
+            self.assertIn("看門狗 判準失效", buf.getvalue())
 
     def test_ceiling_from_snapshot_fuse_and_path_layout(self):
         """②快照宣告 AGENT_FUSE=80 → 上限 160＝max(25, 2×80)、定案可快取；
@@ -1011,6 +1085,14 @@ class TestRunawayCeilingDerivation(unittest.TestCase):
 
 
 class TestMainWiring(unittest.TestCase):
+    def setUp(self):
+        """★目標模式一律單發探測：真 wait_for_target 於探針撲空時真 sleep 至 180s——探針被改壞時整支自測
+        掛數分鐘（mb128 審查 L3-7 實暴）；單發則 rc 1 快紅。輪詢語意本身另由 TestTargetResolution 釘。"""
+        p = unittest.mock.patch.object(sys.modules[__name__], "wait_for_target",
+                                       lambda probe, **_k: probe())
+        p.start()
+        self.addCleanup(p.stop)
+
     def test_target_mode_wires_probe_token_and_watch(self):
         """main 接線釘死（復核補強：token/target 參數對調、或目標模式整支死掉＝本案紅）：
         目標模式下 token 取 argv[1]、目標目錄真的成為監看對象、ARMED 帶目標 basename。"""
@@ -1097,6 +1179,8 @@ class TestMainWiring(unittest.TestCase):
 
             rc, out = run(["wf-watchdog.py", "tokX", wf, "--bg"])
             self.assertEqual((rc, seen.get("bg")), (0, True))
+            self.assertIn("看門狗 ARMED", out)            # 首掛＝ARMED＋冒煙（REARMED 子字串不得冒充）
+            self.assertIn("冒煙樁", out)
             self.assertIn("背景模式", out)
             _rc, out = run(["wf-watchdog.py", "tokX", wf])
             self.assertIs(seen.get("bg"), False)      # 預設不入背景模式
@@ -1104,7 +1188,7 @@ class TestMainWiring(unittest.TestCase):
 
     def test_bg_without_target_arms_and_bg_rearm_requires_target(self):
         """mb79 review 補臂（L1-5）＋mb128：①`--bg` 走自動發現路徑仍印 ARMED 且 bg=True
-        （雙掛實際用法＝兩腿皆不帶目標）②`--bg --rearm` 已解禁（長尾腿重發形；舊互斥理由「ARMED
+        （雙掛實際用法＝兩腿皆不帶目標）②`--bg --rearm` 已解禁（長尾腿補回形；舊互斥理由「ARMED
         被吞＝輸出檔全程空白」由 REARMED 行消解），但與 Monitor 形同受「重掛必帶第二參數」約束：
         缺目標＝rc 2、不做自動發現。"""
         with tempfile.TemporaryDirectory() as d:
@@ -1126,19 +1210,21 @@ class TestMainWiring(unittest.TestCase):
                 rc = main(["wf-watchdog.py", "tokX", "--bg"])
             out = buf.getvalue()
             self.assertEqual((rc, seen.get("bg"), seen.get("watched")), (0, True, wf))
-            self.assertIn("ARMED", out)
+            self.assertIn("看門狗 ARMED", out)            # ★精確字面：「ARMED」會被 REARMED 以子字串命中
+            self.assertNotIn("REARMED", out)
+            self.assertIn("冒煙樁", out)                  # 冒煙段在場＝背景腿唯一的冒煙紀錄
             self.assertIn("背景模式", out)
             rc, out = self._run_guarded(["wf-watchdog.py", "tokX", "--bg", "--rearm"])
             self.assertEqual(rc, 2)
             self.assertIn("--rearm 必帶第二參數", out)
 
     def test_bg_rearm_prints_rearmed_record_without_redoing_smoke(self):
-        """mb128：`<token> <runId> --bg --rearm`＝長尾腿重發形（因 RUNAWAY 退出且判扇出型、或
+        """mb128：`<token> <runId> --bg --rearm`＝長尾腿補回形（因 RUNAWAY 退出且判扇出型、或
         被背景時限停止）：①接線＝rc 0、bg=True、監看目標＝第二參數 ②印 REARMED 恰一行進輸出檔
         （背景腿的重掛紀錄）、不印 ARMED ③不重做冒煙——冒煙已於首掛 ARMED 驗過，smoke_text 被
         呼叫即紅。"""
-        with tempfile.TemporaryDirectory() as d:
-            wf = os.path.join(d, "wf_wire")
+        with tempfile.TemporaryDirectory() as sess:
+            wf = os.path.join(sess, "subagents", "workflows", "wf_wire")   # session 佈局：持久 json 路徑落暫存內
             os.makedirs(wf)
             seen = {}
             mod = sys.modules[__name__]
@@ -1165,15 +1251,26 @@ class TestMainWiring(unittest.TestCase):
         """mb128 預先承認：重掛當下不重複 agent key 已逾有效上限＝主線已判扇出型（正當超標）
         → watch_loop 收 runaway_acked=True；未逾＝False（照常武裝）。★等號側釘死（恰＝上限＝未逾，
         `>` 被改 `>=` 即紅）；★只限 --rearm——首掛即使已逾也不得預先承認（首掛的 RUNAWAY 告警正是
-        主線判形態的觸發點）；Monitor 形重掛兩態皆零輸出、--bg 形 REARMED 行如實記錄兩態。"""
+        主線判形態的觸發點）；Monitor 形重掛兩態皆零輸出、--bg 形 REARMED 行如實記錄兩態。
+        ★判準同源兩臂（mb128 審查 L1-2／L3-1／L3-4）：①夾具取真 journal 形（每支 agent 多行、raw≈2×key＋1）——
+        數行數而非數 key 即紅（13 key／27 行＞floor 仍須不承認）②持久 json 已落地（AGENT_FUSE 80→上限 160）——
+        改比 floor 即紅（30 key 須不承認）；REARMED 行印的上限＝實際比較值。"""
         mod = sys.modules[__name__]
 
-        def run(nkeys, tail):
-            with tempfile.TemporaryDirectory() as d:
-                wf = os.path.join(d, "wf_wire")          # 無持久 json → 有效上限＝floor
+        def run(nkeys, tail, fuse=None):
+            with tempfile.TemporaryDirectory() as sess:
+                wf = os.path.join(sess, "subagents", "workflows", "wf_wire")   # session 佈局
                 os.makedirs(wf)
                 with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
-                    fh.write("".join('{"key": "agent-%d"}\n' % i for i in range(nkeys)))
+                    fh.write('{"event": "start"}\n' + "".join(
+                        '{"key": "agent-%d"}\n{"key": "agent-%d", "result": {}}\n' % (i, i)
+                        for i in range(nkeys)))
+                if fuse is not None:   # json 已落地且早於目錄最新寫入＝resume 中之形（非「重掛前已結束」）
+                    pj = os.path.join(sess, "workflows", "wf_wire.json")
+                    os.makedirs(os.path.dirname(pj))
+                    with open(pj, "w", encoding="utf-8") as fh:
+                        fh.write(json.dumps({"script": "const AGENT_FUSE = %d;" % fuse}))
+                    os.utime(pj, (1000, 1000))
                 seen = {}
 
                 def fake_watch(_wf_dir, **kw):
@@ -1198,9 +1295,101 @@ class TestMainWiring(unittest.TestCase):
         self.assertIn(f"不重複 agent key {at}", out)
         self.assertIn("照常武裝", out)
         self.assertNotIn("預先承認", out)
+        rc, acked, out = run(13, ["--bg", "--rearm"])                # 27 行＞floor、13 key＜floor
+        self.assertEqual((rc, acked), (0, False))
+        self.assertIn("不重複 agent key 13", out)
+        rc, acked, out = run(30, ["--bg", "--rearm"], fuse=80)      # 上限 160：30 key 未逾
+        self.assertEqual((rc, acked), (0, False))
+        self.assertIn("runaway>160key", out)
+        self.assertEqual(run(160, ["--rearm"], fuse=80), (0, False, ""))
+        self.assertEqual(run(161, ["--rearm"], fuse=80), (0, True, ""))
         for tail in ([], ["--bg"]):                                  # 首掛：已逾也不承認
             rc, acked, _out = run(over, tail)
             self.assertEqual((rc, acked), (0, False))
+
+    def test_runid_form_rearm_resolves_and_wires(self):
+        """文件唯一補回形 `<冒煙token> <runId> --bg --rearm` 走 runId 探針分支（mb128 審查 L3-5）：解析到的
+        目錄＝監看目標、bg=True、印 REARMED；runId 解析不到＝rc 1 發射失敗（不得改走自動發現）。"""
+        with tempfile.TemporaryDirectory() as sess:
+            wf = os.path.join(sess, "subagents", "workflows", "wf_rid")
+            os.makedirs(wf)
+            seen = {}
+            mod = sys.modules[__name__]
+
+            def fake_watch(wf_dir, **kw):
+                seen["watched"] = wf_dir
+                seen["bg"] = kw.get("bg")
+                return 0
+
+            def run(runid):
+                buf = io.StringIO()
+                with unittest.mock.patch.object(mod, "watch_loop", fake_watch), \
+                        unittest.mock.patch.object(mod, "find_runid_dir",
+                                                   lambda _p, v: wf if v == "wf_rid" else None), \
+                        unittest.mock.patch.object(mod, "discover_latest_wf", lambda _p: wf), \
+                        contextlib.redirect_stdout(buf):
+                    rc = main(["wf-watchdog.py", "tokX", runid, "--bg", "--rearm"])
+                return rc, buf.getvalue()
+
+            rc, out = run("wf_rid")
+            self.assertEqual((rc, seen.get("watched"), seen.get("bg")), (0, wf, True))
+            self.assertIn("看門狗 REARMED → wf_rid", out)
+            seen.clear()
+            rc, out = run("wf_nope")
+            self.assertEqual((rc, seen.get("watched")), (1, None))
+            self.assertIn("發射失敗", out)
+
+    def test_rearm_on_already_ended_run_says_done_and_exits(self):
+        """mb128 審查 L1-1：重掛當下 run 已結束（持久 json 在、其 mtime ≥ 目錄最新寫入＝落地後再無寫入）→
+        印 DONE 一行、rc 0、不進監看迴圈；否則鎖到已完成的 run 約 13 分後誤報 STALL 並指示 resume。兩形皆然
+        （Monitor 形那一則＝完成通知）。★容差 REARM_END_SLACK：json 落地後 agent transcript 仍可有收尾 flush
+        （實測晚 0.19s）——json 不早於「最新寫入 − 容差」即算已結束，界上算、界外不算。反面：json 早於界
+        （resume 中之舊 json）＝照常重掛；首掛不做此判——resume 起手當下舊 json 亦滿足此式，首掛若判即誤報
+        結束、覆蓋歸零。"""
+        mod = sys.modules[__name__]
+
+        def run(tail, json_mtime):
+            with tempfile.TemporaryDirectory() as sess:
+                wf = os.path.join(sess, "subagents", "workflows", "wf_end")
+                os.makedirs(wf)
+                jp = os.path.join(wf, "journal.jsonl")
+                with open(jp, "w", encoding="utf-8") as fh:
+                    fh.write('{"key": "a"}\n')
+                pj = os.path.join(sess, "workflows", "wf_end.json")
+                os.makedirs(os.path.dirname(pj))
+                with open(pj, "w", encoding="utf-8") as fh:
+                    fh.write(json.dumps({"status": "completed", "agentCount": 7}))
+                os.utime(jp, (1000, 1000))
+                os.utime(pj, (json_mtime, json_mtime))
+                seen = {"watched": False}
+
+                def fake_watch(*_a, **_k):
+                    seen["watched"] = True
+                    return 0
+                buf = io.StringIO()
+                with unittest.mock.patch.object(mod, "watch_loop", fake_watch), \
+                        unittest.mock.patch.object(mod, "smoke_text", lambda *_a: "冒煙樁"), \
+                        contextlib.redirect_stdout(buf):
+                    rc = main(["wf-watchdog.py", "tokX", wf] + tail)
+                return rc, seen["watched"], buf.getvalue()
+
+        edge = 1000 - REARM_END_SLACK                           # 最新寫入（journal）mtime＝1000
+        for tail in (["--rearm"], ["--bg", "--rearm"]):
+            for json_mtime in (2000, 1000, 999.8, edge):        # 晚於／等於／收尾 flush 晚到／界上＝已結束
+                rc, watched, out = run(tail, json_mtime)
+                self.assertEqual((rc, watched), (0, False), msg=f"{tail} {json_mtime}")
+                self.assertIn("看門狗 DONE：wf_end", out)
+                self.assertIn("status=completed／agent 7 支", out)
+                self.assertNotIn("REARMED", out)
+                self.assertEqual(out.count("\n"), 1)
+            for json_mtime in (edge - 1, 500):                  # 界外之舊 json＝resume 中
+                rc, watched, out = run(tail, json_mtime)
+                self.assertEqual((rc, watched), (0, True), msg=f"{tail} {json_mtime}")
+                self.assertNotIn("看門狗 DONE", out)
+        rc, watched, out = run([], 2000)                        # 首掛不判
+        self.assertEqual((rc, watched), (0, True))
+        self.assertIn("看門狗 ARMED", out)
+        self.assertNotIn("看門狗 DONE", out)
 
     def test_armed_line_reports_effective_runaway_ceiling(self):
         """★rev5:B-069 射程限縮揭露釘死：ARMED 行印「當下實際生效值」而非公式——
