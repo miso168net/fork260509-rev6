@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00051 -->
+<!-- next: LL-00052 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -56,3 +56,4 @@
 | LL-00048 | RULES 拆列改了 RL-0051 的語意、號本身字面沒變，勘誤只掃了拆出的新字面——被拆走的子句仍有 28 處以舊號引用（maint-backlog-28-35-36-39-74-101-102-120 前置顆 959da9f 拆列、final holistic review 抓到；2026-09-29） | RL-0011 | none | [LL-00048-rules-split-changes-id-meaning-errata-missed-the-id.md](LESSONS/LL-00048-rules-split-changes-id-meaning-errata-missed-the-id.md) |
 | LL-00049 | spec 標「收刀面於簿記 commit 後驗」的 SC 子句沒有任何收刀程序步驟承接——005 刀收刀漏了 NOTES 下一步指向與淨流量分型兩處（spec-compliance-005 L7-3 抓到；2026-09-30） | RL-0084 | rules | [LL-00049-post-bookkeeping-sc-clauses-had-no-procedure-step.md](LESSONS/LL-00049-post-bookkeeping-sc-clauses-had-no-procedure-step.md) |
 | LL-00050 | 宿主背景任務開始套用預設時限後，看門狗長尾腿沒給 `timeout`、約 28.5 分鐘被停；CLAUDE.md 寫的 `--bg --rearm` 補回形又被工具以互斥拒收——run 逾 30 分鐘即失去長尾覆蓋（maint-backlog-128-129-130；2026-09-30） | RL-0061 | code | [LL-00050-wf-watchdog-long-tail-leg-killed-by-bash-background-default-timeout.md](LESSONS/LL-00050-wf-watchdog-long-tail-leg-killed-by-bash-background-default-timeout.md) |
+| LL-00051 | BASH_MAX_TIMEOUT_MS 放寬後子 agent 前景命令可逾 600 秒，看門狗 STALL 780 秒的推導前提失效——implementer 以一小時等待迴圈等背景 cargo 變異串，兩腿同時誤報 STALL 退出（maint-backlog-128-129-130 U2；2026-09-30） | RL-0017 | code | [LL-00051-wf-watchdog-stall-premise-broken-by-longer-subagent-bash-timeout.md](LESSONS/LL-00051-wf-watchdog-stall-premise-broken-by-longer-subagent-bash-timeout.md) |

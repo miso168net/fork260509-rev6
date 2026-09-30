@@ -39,7 +39,9 @@
 
 行為：ARMED 一行（夾帶冒煙：最早 agent transcript 前 SMOKE_SCAN_LINES 行內第一個含冒煙
   token 的行＝prompt 行之行號與 byte 數＋命中數；harness 會在 prompt 行之前置框架行、
-  只讀首行＝恆報 命中=0）→ 靜默迴圈（60s），stall／判準失效告警時輸出並退出；runaway
+  只讀首行＝恆報 命中=0）→ 靜默迴圈（60s），stall／判準失效告警時輸出並退出（★stall 之合法靜默例外：
+  未完成 agent 皆有未回工具呼叫、且在其自報 timeout＋PENDING_MARGIN 內＝不告——子 agent 前景命令可逾
+  600s 時之長等待；journal／transcript 讀不懂一律照 STALL 判，寧誤報不漏報）；runaway
   告警一次後★不退出、續行監看（rev5:B-069：run 還活著時退出＝看門狗自我卸除、stall
   覆蓋歸零）——★`--bg` 為此契約的具名例外：背景腿改告警即退出（見上）；★run 結束（持久
   json 於 ARMED 之後落地或更新）→ 印 DONE 一行並退出（首掛鎖到早已結束的 run 不觸 DONE、
@@ -61,6 +63,7 @@
 """
 
 import contextlib
+import datetime
 import io
 import json
 import os
@@ -72,7 +75,9 @@ import unittest
 import unittest.mock
 from glob import glob
 
-STALL = 780      # 秒；>最長合法 cargo（sub-agent Bash 單命令 600s 上限＋margin）
+STALL = 780      # 秒；無合法待回工具呼叫時之靜默上限（原推導＝sub-agent Bash 單命令 600s 上限＋margin）
+PENDING_MARGIN = 60              # 秒；未回工具呼叫之合法等待＝至其自報 timeout 截止再加此餘裕
+BASH_DEFAULT_TIMEOUT_MS = 120000 # Bash 工具未帶 timeout 時之預設（工具說明所載）
 RUNAWAY_FLOOR = 25   # 不重複 agent key 數保底（rev5:B-069：原 RUNAWAY 字面值、行為不退步）
 FUSE_MULTIPLIER = 2  # 有效上限＝max(RUNAWAY_FLOOR, FUSE_MULTIPLIER × script 宣告之 AGENT_FUSE)
 #   ★上限自「被監看 script 的 launch 快照」推導、絕不由呼叫端傳入（rev5:B-069；RL-0060：一切
@@ -373,6 +378,90 @@ def newest_mtime_under(root):
     return newest
 
 
+
+def _iso_epoch(ts):
+    """transcript 之 ISO 時戳（Z 結尾）→ epoch 秒；缺或壞形→None。"""
+    if not isinstance(ts, str):
+        return None
+    try:
+        return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def unfinished_agent_ids(journal_text):
+    """journal 全文 → 已 started 而無 result 之 agentId 集；抽不到任何 started 事件＝None（判準無從成立）。"""
+    started, finished = set(), set()
+    for line in journal_text.split("\n"):
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(e, dict) or not isinstance(e.get("agentId"), str):
+            continue
+        if e.get("type") == "started":
+            started.add(e["agentId"])
+        elif e.get("type") == "result":
+            finished.add(e["agentId"])
+    return (started - finished) if started else None
+
+
+def pending_tool_deadline(transcript_path):
+    """agent transcript → 其未回工具呼叫之截止（epoch 秒；同訊息並發多支取最晚）；無未回呼叫、任一未回呼叫推不出
+    截止（非 Bash 且無數值 timeout、背景呼叫、時戳壞形）或讀不了→None。"""
+    uses, answered = [], set()
+    try:
+        with open(transcript_path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                msg = e.get("message") if isinstance(e, dict) else None
+                content = msg.get("content") if isinstance(msg, dict) else None
+                if not isinstance(content, list):
+                    continue
+                for c in content:
+                    if not isinstance(c, dict):
+                        continue
+                    if c.get("type") == "tool_use":
+                        uses.append((c.get("id"), c.get("name"), c.get("input"), e.get("timestamp")))
+                    elif c.get("type") == "tool_result":
+                        answered.add(c.get("tool_use_id"))
+    except OSError:
+        return None
+    pending = [u for u in uses if u[0] not in answered]
+    if not pending:
+        return None
+    deadlines = []
+    for _id, name, inp, ts in pending:
+        start = _iso_epoch(ts)
+        if start is None or not isinstance(inp, dict) or inp.get("run_in_background"):
+            return None
+        timeout = inp.get("timeout")
+        if not isinstance(timeout, (int, float)):
+            if name != "Bash":
+                return None
+            timeout = BASH_DEFAULT_TIMEOUT_MS
+        deadlines.append(start + timeout / 1000)
+    return max(deadlines)
+
+
+def legit_silence(wf_dir, now):
+    """STALL 前之合法靜默判定：未完成 agent 皆有未回工具呼叫、且 now 未逾其截止＋PENDING_MARGIN → True；journal
+    抽不出未完成集、未完成集為空、任一 agent 無合法待回或讀不懂 → False（退回 STALL 判準：寧誤報不漏報）。
+    存在理由：BASH_MAX_TIMEOUT_MS 放寬後子 agent 前景命令可逾 600s——STALL 之原推導前提失效（mb128 實暴）。
+    代價（明認）：待回呼叫期間 agent 行程本身若已死，STALL 最多遲到該呼叫之 timeout＋PENDING_MARGIN。"""
+    ids = unfinished_agent_ids(read_journal(wf_dir))
+    if not ids:
+        return False
+    for aid in ids:
+        deadline = pending_tool_deadline(os.path.join(wf_dir, f"agent-{aid}.jsonl"))
+        if deadline is None or now > deadline + PENDING_MARGIN:
+            return False
+    return True
+
+
 def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_under,
                _max_rounds=None, bg=False, runaway_acked=False):
     """靜默迴圈：60s 一輪；判準失效／STALL 告警即輸出並退出；RUNAWAY 只告警一次且
@@ -445,6 +534,8 @@ def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_u
                      "→ 看門狗自行退出、毋需 TaskStop")
                 return 0
         if idle > STALL:
+            if legit_silence(wf_dir, now):   # 未完成 agent 皆在其工具自報 timeout 內等待＝合法靜默
+                continue
             _say(f"看門狗 STALL：{idle}s 無寫入 > {STALL}s（疑卡死/死迴圈）→ "
                  "/workflows 查→TaskStop→修 script→resumeFromRunId 續跑")
             return 0
@@ -550,6 +641,8 @@ class TestConstantsPinned(unittest.TestCase):
         self.assertEqual(TARGET_POLL_INTERVAL, 5)
         self.assertEqual(TARGET_POLL_TIMEOUT, 180)
         self.assertEqual(REARM_END_SLACK, 5)
+        self.assertEqual(PENDING_MARGIN, 60)
+        self.assertEqual(BASH_DEFAULT_TIMEOUT_MS, 120000)
 
 
 class TestSlug(unittest.TestCase):
@@ -746,6 +839,114 @@ class TestStallAndLoopVerdicts(unittest.TestCase):
     def test_unreadable_dir_reports_and_exits(self):
         out, _rc = self._run_one(None, newest_offset=None)
         self.assertIn("看門狗 目錄不可讀", out)
+
+
+class TestLegitSilence(unittest.TestCase):
+    """mb128（user 裁本批修）：STALL 認「未完成 agent 之未回工具呼叫、且在其自報 timeout＋PENDING_MARGIN 內」＝合法
+    靜默。BASH_MAX_TIMEOUT_MS 放寬後子 agent 前景命令可逾 600s（2026-09-30 實暴：implementer 以 timeout 3600000 之等待
+    迴圈等背景 cargo 變異串、14 分無寫入→兩腿誤報 STALL 退出）。讀不懂一律退回 STALL 判準（寧誤報不漏報）。"""
+    NOW = 1_000_000.0
+
+    @staticmethod
+    def _iso(epoch):
+        return datetime.datetime.fromtimestamp(epoch, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    def _run(self, agents, finished=(), journal=None, idle=STALL + 1):
+        """agents＝{agentId: 事件清單或 None（無 transcript 檔）}；事件＝("use", id, name, input, 幾秒前) ／
+        ("result", id) ／ ("raw", 一行)。finished＝已有 result 之 agentId。回（輸出, 輪數）。"""
+        with tempfile.TemporaryDirectory() as sess:
+            wf = os.path.join(sess, "subagents", "workflows", "wf_t")   # session 佈局：持久 json 落暫存內
+            os.makedirs(wf)
+            if journal is None:
+                rows = [{"type": "launched"}]
+                rows += [{"type": "started", "key": "k-" + a, "agentId": a} for a in agents]
+                rows += [{"type": "result", "key": "k-" + a, "agentId": a, "result": {}} for a in finished]
+                journal = "".join(json.dumps(r) + "\n" for r in rows)
+            with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
+                fh.write(journal)
+            for aid, events in agents.items():
+                if events is None:
+                    continue
+                lines = []
+                for ev in events:
+                    if ev[0] == "use":
+                        _k, tid, name, inp, ago = ev
+                        lines.append(json.dumps({"timestamp": self._iso(self.NOW - ago), "message": {"content": [
+                            {"type": "tool_use", "id": tid, "name": name, "input": inp}]}}))
+                    elif ev[0] == "result":
+                        lines.append(json.dumps({"timestamp": self._iso(self.NOW), "message": {"content": [
+                            {"type": "tool_result", "tool_use_id": ev[1], "content": "ok"}]}}))
+                    else:
+                        lines.append(ev[1])
+                with open(os.path.join(wf, f"agent-{aid}.jsonl"), "w", encoding="utf-8") as fh:
+                    fh.write("".join(ln + "\n" for ln in lines))
+            sleeps = []
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                watch_loop(wf, _sleep=lambda s: sleeps.append(s), _now=lambda: self.NOW,
+                           _newest=lambda _d: self.NOW - idle, _max_rounds=2)
+            return buf.getvalue(), len(sleeps)
+
+    LONG = {"command": "until grep -q done f; do sleep 10; done", "timeout": 3600000}
+
+    def test_pending_long_bash_within_timeout_is_legit_silence(self):
+        out, rounds = self._run({"A": [("use", "t1", "Bash", self.LONG, 900)]})
+        self.assertEqual((out, rounds), ("", 2))          # 兩輪皆靜默、未退出
+        out, rounds = self._run({"A": [("use", "t1", "Bash", self.LONG, 900),     # 並發兩支：等到較晚之截止
+                                       ("use", "t2", "Bash", {"command": "y"}, 900)]})
+        self.assertEqual((out, rounds), ("", 2))
+
+    def test_all_agents_finished_but_run_not_closed_is_stall(self):
+        """未完成集為空（agent 皆已回、run 卻未落 json＝編排本體卡住）→ 照 STALL 判、不得視為合法靜默。"""
+        out, _ = self._run({"A": [("use", "t1", "Bash", self.LONG, 900)]}, finished=("A",))
+        self.assertIn("看門狗 STALL", out)
+
+    def test_deadline_edge_legit_and_one_second_past_is_stall(self):
+        edge = 3600 + PENDING_MARGIN                        # 截止＋餘裕恰＝now：仍合法
+        self.assertEqual(self._run({"A": [("use", "t1", "Bash", self.LONG, edge)]}), ("", 2))
+        out, rounds = self._run({"A": [("use", "t1", "Bash", self.LONG, edge + 1)]})
+        self.assertIn("看門狗 STALL", out)
+        self.assertEqual(rounds, 1)
+
+    def test_unfinished_agent_without_pending_tool_is_stall(self):
+        out, _ = self._run({"A": [("use", "t1", "Bash", self.LONG, 900), ("result", "t1")]})
+        self.assertIn("看門狗 STALL", out)
+
+    def test_any_unfinished_agent_not_waiting_legitimately_is_stall(self):
+        out, _ = self._run({"A": [("use", "t1", "Bash", self.LONG, 900)],
+                            "B": [("use", "t2", "Read", {"file_path": "/x"}, 900), ("result", "t2")]})
+        self.assertIn("看門狗 STALL", out)
+
+    def test_finished_agents_are_excluded(self):
+        out, _ = self._run({"A": [("use", "t1", "Read", {"file_path": "/x"}, 900), ("result", "t1")],
+                            "B": [("use", "t2", "Bash", self.LONG, 900)]}, finished=("A",))
+        self.assertEqual(out, "")
+
+    def test_bash_default_timeout_applies_when_absent(self):
+        d = BASH_DEFAULT_TIMEOUT_MS // 1000
+        self.assertEqual(self._run({"A": [("use", "t1", "Bash", {"command": "x"}, d)]}), ("", 2))
+        out, _ = self._run({"A": [("use", "t1", "Bash", {"command": "x"}, d + PENDING_MARGIN + 1)]})
+        self.assertIn("看門狗 STALL", out)
+
+    def test_background_or_timeoutless_pending_calls_are_not_legit(self):
+        bg = dict(self.LONG, run_in_background=True)
+        for name, inp in (("Bash", bg), ("Read", {"file_path": "/x"}), ("Monitor", {"timeout_ms": 1800000})):
+            out, _ = self._run({"A": [("use", "t1", name, inp, 900)]})
+            self.assertIn("看門狗 STALL", out, msg=name)
+        out, _ = self._run({"A": [("use", "t1", "Bash", self.LONG, 900),          # 並發之一推不出截止
+                                  ("use", "t2", "Read", {"file_path": "/x"}, 900)]})
+        self.assertIn("看門狗 STALL", out)
+
+    def test_unreadable_inputs_fall_back_to_stall(self):
+        out, _ = self._run({"A": [("use", "t1", "Bash", self.LONG, 900)]},
+                           journal='{"key": "impl-1"}\n')                     # journal 無 started（舊形）
+        self.assertIn("看門狗 STALL", out)
+        out, _ = self._run({"A": None})                                        # 缺 transcript 檔
+        self.assertIn("看門狗 STALL", out)
+        bad = json.dumps({"timestamp": "not-a-time", "message": {"content": [
+            {"type": "tool_use", "id": "t1", "name": "Bash", "input": self.LONG}]}})
+        out, _ = self._run({"A": [("raw", bad)]})                               # 時戳壞形
+        self.assertIn("看門狗 STALL", out)
 
 
 class TestRunawayCeilingDerivation(unittest.TestCase):
