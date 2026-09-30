@@ -20,10 +20,16 @@
   ★冒煙 token 不可取字面 test（會被當自測子命令）。
   ★--bg＝Bash 背景任務模式：唯一差異＝RUNAWAY 由「告警不退出」改為「告警即退出」
     （背景任務只有退出才通知主線；其餘四個出口本就是告警即退出）。ARMED 行照印進輸出檔。
-  ★--rearm＝**例外**重發專用（雙掛形下 Monitor 到期不重掛；此旗標留給「長尾腿因 RUNAWAY
-    退出、主線判形態後補回覆蓋」這類重發）：不印 ARMED 行（冒煙已於首掛驗過、重掛再印＝
-    一則雜訊事件）；必帶第二參數（重掛必知 runId、不做自動發現）；發射失敗／參數錯誤訊息
-    照印。★與 --bg 互斥（--bg 腿的 ARMED 是其唯一冒煙記錄、被吞＝外觀同發射失敗）。
+    ★該 Bash 呼叫必明給 timeout: 7200000——不給＝吃背景預設 30 分鐘時限、到點被停＝長尾
+    覆蓋歸零（本腿自身無從察覺、只有 harness 的停止通知）。
+  ★--rearm＝**例外**重發專用（雙掛形下 Monitor 到期不重掛）：必帶第二參數（重掛必知 runId、
+    不做自動發現）；不重做冒煙（首掛 ARMED 已驗）；發射失敗／參數錯誤訊息照印。
+    - 預先承認：重掛當下不重複 agent key 已逾有效上限＝視為主線已判扇出型（正當超標）→
+      本 watch 生命週期不再告 RUNAWAY（--bg 形亦不因此退出）、只盯其餘四個出口；未逾＝
+      RUNAWAY 照常武裝。★首掛永不預先承認（首掛的告警正是主線判形態的觸發點）。
+    - `--bg --rearm`＝長尾腿重發形（因 RUNAWAY 退出且判扇出型、或被背景時限停止；同給
+      timeout）：印 REARMED 一行進輸出檔（重掛當下 key 數／上限／是否預先承認）。
+    - 不帶 --bg＝Monitor 形：零輸出（重掛再印＝一則雜訊事件）。
 
 行為：ARMED 一行（夾帶冒煙：最早 agent transcript 前 SMOKE_SCAN_LINES 行內第一個含冒煙
   token 的行＝prompt 行之行號與 byte 數＋命中數；harness 會在 prompt 行之前置框架行、
@@ -339,12 +345,15 @@ def newest_mtime_under(root):
 
 
 def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_under,
-               _max_rounds=None, bg=False):
+               _max_rounds=None, bg=False, runaway_acked=False):
     """靜默迴圈：60s 一輪；判準失效／STALL 告警即輸出並退出；RUNAWAY 只告警一次且
     ★不退出（rev5:B-069：run 還活著時 return＝看門狗自我卸除、stall 覆蓋歸零）。
     ★bg＝背景任務模式（BL-00079）：背景任務只有「退出」才通知主線，告警留在輸出檔等於沒人
     看見⇒此模式下 RUNAWAY 改為告警即退出、由主線判形態後決定 TaskStop 或重掛。其餘四個
     出口（目錄不可讀／判準失效／DONE／STALL）本來就是告警即退出、行為不變。
+    ★runaway_acked＝重掛之預先承認（main 於 --rearm 形、重掛當下不重複 key 已逾有效上限時
+    傳 True＝主線已判扇出型）：本生命週期的那一則 RUNAWAY 視同已叫過——不再告警、bg 形亦
+    不因此退出；其餘四個出口照舊。
     ★DONE 腿：持久 json 於 run 結束時才落地（resume 沿用原 runId＝結束時更新既有檔）⇒
     「迴圈起點之後 json 新出現或 mtime 前進」＝本 run 已結束→印一行並退出。鎖到**早已完成**
     的 run（json 在起點即存在且不再變）不觸 DONE、行為同舊（由 STALL 收）。次序＝RUNAWAY
@@ -362,7 +371,9 @@ def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_u
     # 後 key 續增僅發生於 resume，而 resume＝新 launch 必原子成對掛新 Monitor
     # （CLAUDE.md §2）＝新 watch 生命週期重新武裝可再叫；舊 watch 的後續覆蓋交給
     # stall 偵測與完成通知接手。
-    runaway_said = False
+    # ★重掛之預先承認＝同一取捨的延伸：主線已就「逾上限」判過形態才重掛，本生命週期不再叫；
+    # 代價同上（承認後 key 續增不再出聲），由 stall 偵測與完成通知接手。
+    runaway_said = runaway_acked
     persist_base = persist_json_mtime(wf_dir)   # DONE 腿基準：起點之 json mtime（無＝None）
     while _max_rounds is None or rounds < _max_rounds:
         rounds += 1
@@ -390,8 +401,10 @@ def watch_loop(wf_dir, _sleep=time.sleep, _now=time.time, _newest=newest_mtime_u
                  "——★先判形態：扇出型 workflow（review／多維度／pipeline 扇出）正當總量"
                  "本就可能超過門檻，屬預期、不要 TaskStop；編排型（單元 implementer＋"
                  "review 迴圈）超過才是防呆③保險絲疑失效→/workflows 查→TaskStop wf。"
-                 + ("背景模式：告警即退出（背景任務只有退出才通知主線）→ 主線判形態後"
-                    "決定 TaskStop wf 或重掛看門狗。" if bg else "看門狗續行監看。"))
+                 + ("背景模式：告警即退出（背景任務只有退出才通知主線）→ 主線判形態：扇出型→"
+                    f"同一支腳本帶 `{base} --bg --rearm` 重發長尾腿（Bash 明給 timeout: 7200000；"
+                    "重掛當下已逾上限＝預先承認、不再告 RUNAWAY）；編排型→TaskStop wf。"
+                    if bg else "看門狗續行監看。"))
             if bg:
                 return 0
             # ★非 bg 不 return（rev5:B-069）：stall 偵測繼續有效直到 run 真的結束
@@ -425,10 +438,6 @@ def main(argv):
     bg = "--bg" in flags
     token = args[0] if args else ""
     target = args[1] if len(args) > 1 else ""
-    if rearm and bg:
-        _say("看門狗 參數無法解析：--bg 與 --rearm 互斥——背景腿例行零重掛，"
-             "且 ARMED 行是該腿唯一的冒煙記錄（--rearm 會把它吞掉＝外觀同發射失敗）")
-        return 2
     if rearm and not target:
         _say("看門狗 參數無法解析：--rearm 必帶第二參數（wf 目錄或 runId）——重掛不做自動發現")
         return 2
@@ -467,13 +476,27 @@ def main(argv):
         runaway_txt = (f"runaway>{RUNAWAY_FLOOR}key（快照未落地之保底；json 於 run 結束後"
                        f"才落地→進行中恆此值、落地後次輪懶讀升 "
                        f"max({RUNAWAY_FLOOR},{FUSE_MULTIPLIER}×AGENT_FUSE)）")
-    if not rearm:   # 重掛＝冒煙已於首掛驗過、不再印（每 30 分鐘一則雜訊事件）
-        _say(f"看門狗 ARMED → {os.path.basename(wf_dir.rstrip('/'))}｜冒煙: "
+    base = os.path.basename(wf_dir.rstrip('/'))
+    acked = False
+    if rearm:
+        # ★重掛不重做冒煙（首掛 ARMED 已驗）；重掛當下已逾有效上限＝主線已判扇出型→預先承認
+        #   （與 watch_loop 首輪同一比較 `>`；首掛永不承認——首掛的告警正是判形態的觸發點）。
+        _raw, nkeys = journal_key_stats(read_journal(wf_dir))
+        acked = nkeys > derived
+        if bg:   # 背景腿的重掛紀錄（只進輸出檔）；Monitor 形零輸出（重掛再印＝一則雜訊事件）
+            _say(f"看門狗 REARMED → {base}｜不重做冒煙（首掛 ARMED 已驗）｜重掛當下不重複 agent "
+                 f"key {nkeys}／{runaway_txt}："
+                 + ("已逾上限＝視為主線已判扇出型、預先承認——本腿不再告 RUNAWAY，只盯 STALL"
+                    "／DONE／目錄不可讀／判準失效" if acked
+                    else "未逾上限、RUNAWAY 照常武裝（背景模式：告警即退出）")
+                 + f"（stall>{STALL}s；run 結束自動 DONE 退出）")
+    else:
+        _say(f"看門狗 ARMED → {base}｜冒煙: "
              f"{smoke_text(wf_dir, token)}（stall>{STALL}s／{runaway_txt}；"
              "run 結束自動 DONE 退出；"
              + ("背景模式：runaway 亦告警即退出；本行只進背景任務輸出檔、不推播）"
                 if bg else "Monitor 到期不重掛、長尾覆蓋由 --bg 背景腿承擔）"))
-    return watch_loop(wf_dir, bg=bg)
+    return watch_loop(wf_dir, bg=bg, runaway_acked=acked)
 
 
 # ---------------------------------------------------------------------------
@@ -755,8 +778,36 @@ class TestRunawayCeilingDerivation(unittest.TestCase):
             out = buf.getvalue()
             self.assertEqual(out.count("看門狗 RUNAWAY"), 1)
             self.assertIn("背景模式", out)
+            self.assertIn("wf_t --bg --rearm", out)   # 告警當下即指明長尾腿重發形（帶本 run 之 runId）
             self.assertNotIn("看門狗續行監看", out)   # 非 bg 的收尾句不得出現
             self.assertEqual(len(sleeps), 1)          # 第 1 輪告警即退出
+            self.assertEqual(rc, 0)
+
+    def test_preacknowledged_runaway_stays_silent_and_keeps_watching(self):
+        """mb128：runaway_acked=True（重掛當下已逾上限、主線已判扇出型）＝本生命週期不再告
+        RUNAWAY；★bg 形尤其不得因此退出（否則長尾腿重發後首輪即退、覆蓋歸零＝本修要消滅的形），
+        其餘出口照舊——STALL 仍有效。反面＝上一支（未承認之 bg 形首輪告警即退出）。"""
+        with tempfile.TemporaryDirectory() as sess:
+            wf = self._mk_wf(sess)   # 無持久 json → floor 25
+            with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
+                fh.write("".join('{"key": "agent-%d"}\n' % i
+                                 for i in range(RUNAWAY_FLOOR + 1)))
+            now = 1_000_000.0
+            calls = {"n": 0}
+
+            def newest(_d):
+                calls["n"] += 1
+                return now - (STALL + 1 if calls["n"] >= 3 else 1)   # 前兩輪新鮮、第 3 輪 stall
+
+            sleeps = []
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                rc = watch_loop(wf, _sleep=lambda s: sleeps.append(s), _now=lambda: now,
+                                _newest=newest, _max_rounds=5, bg=True, runaway_acked=True)
+            out = buf.getvalue()
+            self.assertNotIn("RUNAWAY", out)
+            self.assertIn("看門狗 STALL", out)
+            self.assertEqual(len(sleeps), 3)         # 撐到第 3 輪 stall、未因 runaway 提前退出
             self.assertEqual(rc, 0)
 
     def test_ceiling_from_snapshot_fuse_and_path_layout(self):
@@ -1003,12 +1054,26 @@ class TestMainWiring(unittest.TestCase):
                 rc = main(["wf-watchdog.py", "tokX", wf, "--rearm"])
             self.assertEqual((rc, seen.get("watched")), (0, wf))
             self.assertEqual(buf.getvalue(), "")           # 零輸出＝零事件
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                self.assertEqual(main(["wf-watchdog.py", "tokX", "--rearm"]), 2)
-                self.assertEqual(main(["wf-watchdog.py", "tokX", wf, "--bogus"]), 2)
-            self.assertIn("--rearm 必帶第二參數", buf.getvalue())
-            self.assertIn("未知旗標", buf.getvalue())
+            rc, out = self._run_guarded(["wf-watchdog.py", "tokX", "--rearm"])
+            self.assertEqual(rc, 2)
+            self.assertIn("--rearm 必帶第二參數", out)
+            rc, out = self._run_guarded(["wf-watchdog.py", "tokX", wf, "--bogus"])
+            self.assertEqual(rc, 2)
+            self.assertIn("未知旗標", out)
+
+    @staticmethod
+    def _run_guarded(argv):
+        """參數錯誤類呼叫一律在樁內跑：守衛被改壞時會走進自動發現＋真監看迴圈＝pre-commit 掛死；
+        樁內則 rc 0 快紅（mb128 變異實暴：拆掉「重掛必帶第二參數」後整支自測掛到 timeout）。"""
+        mod = sys.modules[__name__]
+        buf = io.StringIO()
+        with unittest.mock.patch.object(mod, "watch_loop", lambda *_a, **_k: 0), \
+                unittest.mock.patch.object(mod, "smoke_text", lambda *_a: "冒煙樁"), \
+                unittest.mock.patch.object(mod, "discover_latest_wf", lambda _p: "/nonexistent/wf_x"), \
+                unittest.mock.patch.object(mod, "DISCOVER_SLEEP", 0), \
+                contextlib.redirect_stdout(buf):
+            rc = main(argv)
+        return rc, buf.getvalue()
 
     def test_bg_flag_wires_through_and_armed_line_marks_mode(self):
         """--bg 接線：旗標可解析、傳進 watch_loop、ARMED 行標記背景模式（該行只進輸出檔）。"""
@@ -1037,10 +1102,11 @@ class TestMainWiring(unittest.TestCase):
             self.assertIs(seen.get("bg"), False)      # 預設不入背景模式
             self.assertNotIn("背景模式", out)
 
-    def test_bg_without_target_and_bg_rearm_mutex(self):
-        """mb79 review 補臂（L1-5／L1-2）：①`--bg` 走自動發現路徑仍印 ARMED 且 bg=True
-        （雙掛實際用法＝兩腿皆不帶目標）②`--bg` 與 `--rearm` 互斥＝rc 2——ARMED 是背景腿唯一的
-        冒煙記錄，被 --rearm 吞掉時輸出檔全程空白、外觀同發射失敗。"""
+    def test_bg_without_target_arms_and_bg_rearm_requires_target(self):
+        """mb79 review 補臂（L1-5）＋mb128：①`--bg` 走自動發現路徑仍印 ARMED 且 bg=True
+        （雙掛實際用法＝兩腿皆不帶目標）②`--bg --rearm` 已解禁（長尾腿重發形；舊互斥理由「ARMED
+        被吞＝輸出檔全程空白」由 REARMED 行消解），但與 Monitor 形同受「重掛必帶第二參數」約束：
+        缺目標＝rc 2、不做自動發現。"""
         with tempfile.TemporaryDirectory() as d:
             wf = os.path.join(d, "wf_auto")
             os.makedirs(wf)
@@ -1062,10 +1128,79 @@ class TestMainWiring(unittest.TestCase):
             self.assertEqual((rc, seen.get("bg"), seen.get("watched")), (0, True, wf))
             self.assertIn("ARMED", out)
             self.assertIn("背景模式", out)
+            rc, out = self._run_guarded(["wf-watchdog.py", "tokX", "--bg", "--rearm"])
+            self.assertEqual(rc, 2)
+            self.assertIn("--rearm 必帶第二參數", out)
+
+    def test_bg_rearm_prints_rearmed_record_without_redoing_smoke(self):
+        """mb128：`<token> <runId> --bg --rearm`＝長尾腿重發形（因 RUNAWAY 退出且判扇出型、或
+        被背景時限停止）：①接線＝rc 0、bg=True、監看目標＝第二參數 ②印 REARMED 恰一行進輸出檔
+        （背景腿的重掛紀錄）、不印 ARMED ③不重做冒煙——冒煙已於首掛 ARMED 驗過，smoke_text 被
+        呼叫即紅。"""
+        with tempfile.TemporaryDirectory() as d:
+            wf = os.path.join(d, "wf_wire")
+            os.makedirs(wf)
+            seen = {}
+            mod = sys.modules[__name__]
+
+            def fake_watch(wf_dir, **kw):
+                seen["watched"] = wf_dir
+                seen["bg"] = kw.get("bg")
+                return 0
+
+            def no_smoke(*_a):
+                raise AssertionError("重掛不得重做冒煙")
             buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                self.assertEqual(main(["wf-watchdog.py", "tokX", wf, "--bg", "--rearm"]), 2)
-            self.assertIn("互斥", buf.getvalue())
+            with unittest.mock.patch.object(mod, "watch_loop", fake_watch), \
+                    unittest.mock.patch.object(mod, "smoke_text", no_smoke), \
+                    contextlib.redirect_stdout(buf):
+                rc = main(["wf-watchdog.py", "tokX", wf, "--bg", "--rearm"])
+            out = buf.getvalue()
+            self.assertEqual((rc, seen.get("watched"), seen.get("bg")), (0, wf, True))
+            self.assertIn("看門狗 REARMED → wf_wire", out)
+            self.assertNotIn("看門狗 ARMED", out)
+            self.assertEqual(out.count("\n"), 1)          # 恰一行
+
+    def test_rearm_preacknowledges_runaway_only_when_already_over_ceiling(self):
+        """mb128 預先承認：重掛當下不重複 agent key 已逾有效上限＝主線已判扇出型（正當超標）
+        → watch_loop 收 runaway_acked=True；未逾＝False（照常武裝）。★等號側釘死（恰＝上限＝未逾，
+        `>` 被改 `>=` 即紅）；★只限 --rearm——首掛即使已逾也不得預先承認（首掛的 RUNAWAY 告警正是
+        主線判形態的觸發點）；Monitor 形重掛兩態皆零輸出、--bg 形 REARMED 行如實記錄兩態。"""
+        mod = sys.modules[__name__]
+
+        def run(nkeys, tail):
+            with tempfile.TemporaryDirectory() as d:
+                wf = os.path.join(d, "wf_wire")          # 無持久 json → 有效上限＝floor
+                os.makedirs(wf)
+                with open(os.path.join(wf, "journal.jsonl"), "w", encoding="utf-8") as fh:
+                    fh.write("".join('{"key": "agent-%d"}\n' % i for i in range(nkeys)))
+                seen = {}
+
+                def fake_watch(_wf_dir, **kw):
+                    seen["acked"] = kw.get("runaway_acked")
+                    return 0
+                buf = io.StringIO()
+                with unittest.mock.patch.object(mod, "watch_loop", fake_watch), \
+                        unittest.mock.patch.object(mod, "smoke_text", lambda *_a: "冒煙樁"), \
+                        contextlib.redirect_stdout(buf):
+                    rc = main(["wf-watchdog.py", "tokX", wf] + tail)
+                return rc, seen.get("acked"), buf.getvalue()
+
+        over, at = RUNAWAY_FLOOR + 1, RUNAWAY_FLOOR
+        self.assertEqual(run(over, ["--rearm"]), (0, True, ""))     # Monitor 形：零輸出
+        self.assertEqual(run(at, ["--rearm"]), (0, False, ""))
+        rc, acked, out = run(over, ["--bg", "--rearm"])
+        self.assertEqual((rc, acked), (0, True))
+        self.assertIn(f"不重複 agent key {over}", out)
+        self.assertIn("預先承認", out)
+        rc, acked, out = run(at, ["--bg", "--rearm"])
+        self.assertEqual((rc, acked), (0, False))
+        self.assertIn(f"不重複 agent key {at}", out)
+        self.assertIn("照常武裝", out)
+        self.assertNotIn("預先承認", out)
+        for tail in ([], ["--bg"]):                                  # 首掛：已逾也不承認
+            rc, acked, _out = run(over, tail)
+            self.assertEqual((rc, acked), (0, False))
 
     def test_armed_line_reports_effective_runaway_ceiling(self):
         """★rev5:B-069 射程限縮揭露釘死：ARMED 行印「當下實際生效值」而非公式——

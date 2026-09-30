@@ -19,8 +19,10 @@ def main() -> int:
             "additionalContext": (
                 "⚠️ Workflow 已發射——看門狗必須與 launch 同一回合原子成對、且為**雙掛**"
                 "（CLAUDE.md §2、rev4:L-112）：①Monitor（command: python3 tools/wf-watchdog.py"
-                " <冒煙token> [wf目錄|runId]；前 30 分鐘、到期不重掛）②Bash run_in_background"
-                "（同一支腳本帶 --bg；長尾、零重掛）。若本回合尚未掛：立即補掛、再做其他事。"
+                " <冒煙token> [wf目錄|runId]；timeout_ms: 1800000；前 30 分鐘、到期不重掛）"
+                "②Bash run_in_background（同一支腳本帶 --bg；★明給 timeout: 7200000——不給＝"
+                "30 分鐘即被停；長尾、例行零重掛；重發一律 <冒煙token> <runId> --bg --rearm）。"
+                "若本回合尚未掛：立即補掛、再做其他事。"
                 "完成通知一到→TaskStop 該 Monitor；長尾腿自行退出。"
             ),
         }
