@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-09-30 | misc | governance｜maint-backlog-128-129-130 | maint-backlog-128-129-130 收單（user 2026-09-30 開批、本批使用容器）：BL-00128 時區環境面守衛（schema-gate 時區判值＋來源、bootstrap compose 時區體檢）；BL-00129 005 刀規格對照輪文件五處；BL-00130 碼面保護缺口（①～④ rust 測試補臂＋同類殘列連坐兩案、⑤ wire-schema customRoutes 讀面）；另看門狗長尾腿 `--bg --rearm` 補回形與明給 timeout（LL-00050）、STALL 合法等待判定（LL-00051）。 | 704f743 | — | — |
 | 2026-09-30 | misc | governance｜maint-spec-compliance-005 | 005 刀附屬規格對照審查輪（spec-compliance-005）收單：零 blocker、零 wire 行為缺陷；findings 24 筆原始＝修 3／轉帳 16 筆歸併為 7 條／駁回 4／記載 1。user 裁修項（文件五處、碼面五筆）全部轉帳、之後併批收；島 H2 過渡窗交 006 brainstorm、§III 模板屬性標記併入下次 Amendment；收刀程序補簿記後驗一步（RL-0084）。 | 78d4700 | — | — |
 | 2026-09-30 | review | 005-role-menu-crud | findings 10（修 3／BL 7／ADR 0）；BL-00129、BL-00130、BL-00131、BL-00132、BL-00133、BL-00134、BL-00135 | — | — | — |
 | 2026-09-30 | misc | governance｜maint-tz-utc | maint-tz-utc（時區裁定施作）收單（user 2026-09-29 聲明＋2026-09-30 逐題裁定）：DB 伺服器時區以 compose 命令列固定 UTC、各服務 TZ=UTC、schema-gate 時區前置（ADR-00059）；憲法 1.6.0 時間點欄通則（ADR-00060）；wire 偏移恆 +00:00、管理頁原樣顯示 UTC（ADR-00061）；記時與帳本日期時區（ADR-00062、RL-0082／RL-0083）。 | a849365 | ADR-00059、ADR-00060、ADR-00061、ADR-00062 | — |
@@ -62,6 +63,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-09-30｜misc｜governance｜maint-backlog-128-129-130
+
+U1 accf6e5（run wf_1fcd9d76-40d、7 支；BL-00128＋BL-00130 ⑤）；看門狗補回形 e8c80d4＋對抗式審查收單 0d76508（run wf_48aafa88-53b；23 筆＝修 22／駁回 1）；U3 文件 2461268（BL-00129 五處＋U1 指針＋schema-gate 補救句）；STALL 合法等待 977c31b（user 裁本批內修）；U2 rust-api 481a43f＝pin 13080b6（run wf_2e3e7e21-ef9、9 支；首發 wf_cb640bb0-8ea 遇 WSL 當機零 result、改新 runId 重發）；U2b rust-api bd094c4＝pin 328d445（run wf_a12ad785-534、9 支；U2 升級項之同類殘列連坐兩案本批吸收）；final holistic review 收單 26c6570＝rust-api 8c8b5e1（run wf_493278d4-ff8、三 lens＋inline 兩鏡、9 支；9 筆＝修 6／駁回 3，逐項處置見該顆訊息）。backlog_add BL-00136（seed 錨測試對承接刀新寫端之殘列形敏感；U2b 殘餘邊界）。容器內全量 1122 passed／0 failed、走查基準前後全等。
 
 ### 2026-09-30｜misc｜governance｜maint-spec-compliance-005
 
