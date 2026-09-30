@@ -1,13 +1,13 @@
 # 006-authz-governance — 授權治理（三維授權＋結構性封死＋授權回收桶＋島 G 入憲）brainstorm（階段 0）
 
-- 日期：2026-10-01｜狀態：理解校正＋範圍與承載十一題（Q1～Q11）＋設計四節皆已過 user 核可（Mac 端 user 親決、一題一問、首選項皆為建議）；下一步＝**手動** `/speckit-specify`（本檔為其 input；不自動觸發——否則 before_specify hook 不跑、分支不建）。
+- 日期：2026-10-01｜狀態：理解校正＋範圍與承載十一題（Q1～Q11）＋設計四節皆已過 user 核可（Mac 端 user 親決、一題一問、首選項皆為建議）；定稿後另經 grilling 輪補題六題（Q12～Q17、兩批各三題、皆取建議；原排 clarify 之三題併入）；下一步＝**手動** `/speckit-specify`（本檔為其 input；不自動觸發——否則 before_specify hook 不跑、分支不建）。
 - 一句話：把角色頁三顆授權彈窗（選單維／按鈕維／端點維；第三顆為新檔）與授權回收桶頁自 demo 殼接成真——10 支端點（三維讀寫 6＋候選讀 2＋回收桶 2；ROUTES 39→49、GET 6／POST 4、全為 Policy 只授 R_SUPER、seed 皆 protected=TRUE）、零 migration、零 seed 變更；結構性封死（G6）、全量替換射程＝候選集、手動撤銷之選單／按鈕維不可復原；憲法一次 MINOR 1.6.0→1.7.0（島 G 入憲＋§III.2 新用途兩列＋BL-00135／BL-00132 併入＋島 H 連動）；ADR 九支。
-- 交付價值：超管首次能在 UI 上真的設定每個角色看得到哪些選單、能用哪些按鈕、能呼叫哪些 API，改完即時生效；撤掉的授權進回收桶可查、端點維可一鍵復原；受保護端點結構上授不出去。BACKLOG 開放 17 條中 5 條隨本刀收、3 條收窄，同批新記 2 條（本窗淨 −3）。
+- 交付價值：超管首次能在 UI 上真的設定每個角色看得到哪些選單、能用哪些按鈕、能呼叫哪些 API，改完 API 判定即時生效（被改角色之使用者，其選單與按鈕顯隱於下次載入頁面時更新；Q13）；撤掉的授權進回收桶可查、端點維可一鍵復原；受保護端點結構上授不出去。BACKLOG 開放 17 條中 5 條隨本刀收、3 條收窄，同批新記 2 條（本窗淨 −3）。
 
 > 輸入：`docs/ops/NOTES.md` 下一步（006 條，含 v7 體檢之必帶七條與反向確認兩條）、憲法 §I.7（島 H 序言之 G 位保留與凍結位句、H1／H2、承襲指針表 G／I 列）／§III.2（用途 (ii) 明文兩彈窗不入名單、表外宣告三項、生成檔紀律）／§IV／§V.2～§V.3、`docs/ops/BACKLOG.md` 開放 17 條與滯後卷 3 條、主線 BACKLOG 分類體檢工作檔（2026-09-30 v7、跨機交接版、gitignored、不入帳；其必帶項與題面為本檔 §2 底稿）、ADR-00014／ADR-00042～ADR-00047／ADR-00055～ADR-00058、`deploy/grafana-provisioning/alerting/rules.yml`（casbin-reload-anomaly）、rev6 碼面現況（pins base-web `2248b89`／rust-api `8c8b5e1`）、rev5 藍本 `rev5:006-authz-governance` 全套（brainstorm §0／§2／§10／§11、spec US1～US4、plan、research、data-model、contracts、tasks、quickstart）與其 as-built（rust-api 13 顆、base-web 7 顆；rev5 HEAD 另含 006 後之 `rev5:B-116`／`rev5:B-129` 等修正）。
 > 取證：唯讀探勘 workflow（六鏡＋逐鏡反駁＋完備性評審、13 支、opus[1m] xhigh；關鍵主張 112 條＝確認 104／推翻 8〔更正已併入本檔〕／不確定 0）＋主線逐項親驗（seed protected 分布、ROUTES 缺席、兩彈窗與基線逐位元相同、還原工具射程、原因值否定表、憲法原文）。
 
-## 0. 拍板紀錄（全數 user 拍板 2026-10-01、一題一問；首選項皆為建議）
+## 0. 拍板紀錄（全數 user 拍板 2026-10-01；Q1～Q11 一題一問、Q12～Q17 為 grilling 輪兩批各三題；首選項皆為建議）
 
 | 題 | 拍定 | 要點 |
 |---|---|---|
@@ -24,6 +24,12 @@
 | Q10 BL-00084 | **併 ADR-00046 續行為 by-design 款** | 每次阻擋恰一則 warn、不設節流＝004 刀 FR-024 直接推論；承載由 005 刀 spec Out of Scope「觀測 profile 首起」改為本刀續行（理由：ADR-00046 替代案 2 否決單款 ADR、本刀本須整顆續行） |
 | Q11 旁支孤兒義務 | **合併立 BL-00138** | 003 刀延至「前端 UI 刀」兩項（刀序表無此刀、帳本零承載）：①LangType 擴充與 zh-TW 語系註冊、`zh-tw.ts` 標型重構 ②自助頁手機驗證從零建頁；觸發＝007 brainstorm 起手前重評 |
 | 設計四節 | 全核可 | 節 1 方案與範圍／節 2 後端／節 3 前端／節 4 測試、工具、驗收（即 §3） |
+| Q12 並行編輯覆蓋 | **照 rev5：後送出者整份蓋過、記已知態** | 全量替換下兩處（同帳號兩分頁或兩裝置；`single_session_default`＝off 允許多會話）同開一角色之彈窗，後送出者把先送出者之變更靜默撤銷（端點維可自回收桶復原、選單／按鈕維只能重勾）；入 ADR⑥ 新款、翻案觸發＝007 使第二個帳號持有 R_SUPER 或實際發生誤蓋；零碼改（rev5 無處理；seed 持 R_SUPER 之帳號恰 1） |
+| Q13 生效時點 | **照 rev5：API 判定即時、選單與按鈕顯隱下次載入** | 寫入成功並完成判定面同步後 API 判定即生效；已登入者之側欄選單與按鈕碼於重新整理或重新登入時更新；不做即時推播（`rev5:006` FR-022 與其 Out of Scope 同形） |
+| Q14 超管自撤非受保護列 | **照 rev5：可撤、自救走回收桶** | 只鎖受保護授權列（R_SUPER 名下 19 列）；撤 R_SUPER 之 getRoleList 等非受保護端點列致角色頁失能時，經授權回收桶（其選單列與兩端點皆受保護）一鍵復原；選單／按鈕維被撤則於角色頁恢復後重勾；spec 列 edge case＋一支自救路徑測試 |
+| Q15 全撤 | **照 rev5：允許** | 合法角色鍵＋期望空集＝合法全撤、仍受撤銷拒約束；body 壞形或缺角色鍵先經角色不存在早拒、不演成全撤（`rev5:006` 邊界情境） |
+| Q16 復原撞現役 | **照 rev5：成功無作用、歸檔列仍消費移除** | 標的已在現役＝NoOp：回成功、不重複寫入、刪歸檔列、不觸發判定面同步；可復原旗標維持①～④四腿、不加「是否現役」腿（`rev5:006` FR-032） |
+| Q17 回收桶篩選 | **照 rev5：角色代碼＋維度兩篩** | 角色代碼文字等值（可查已刪角色）、維度下拉；不加原因值篩選（列表已顯原因欄；`rev5:006` FR-028） |
 
 **主線工程判斷**（CLAUDE.md §5 自拍、回報備查）：①方案 A 分層、先底座後消費（005 同形；B 按 US 垂直切片——共用底座首片即須完整、範圍欄實數多次變動，C 後端全先——前端單元過大、CDP 最晚，皆棄）②回收桶頁沿 rev5 8 欄、不加 method 欄——seed 端點維 50 相異路徑、同路徑多方法 0（逐列核）③選單維受保護四列不封（`rev5:006` §11-8）④seed-view-gate 照建（`rev5:006` §11-20；ADR-00055 決定 3 預告首例）⑤三彈窗就緒守／請求世代／換角色清狀態、首頁下拉接 roleHome、protected 讀端帶旗標、授予面 Applied 即觸發（含空 diff）皆照 rev5 HEAD ⑥觸發列以新 ADR 增列、不 supersede ADR-00043（其決定 7 字面「由該刀 ADR 增列」）⑦BL-00136 形①：授予經 facade INSERT 落 `created_by`＝操作者、兩案改錨 seed 政策列 ⑧還原工具與測試守衛擴至能補回被撤 seed 授權列（評審高嚴重度缺口；005 刀 U15 前例）。
 
@@ -48,6 +54,7 @@
 | grant INSERT 落 `created_by`＝操作者 | 沿用；rev6 另用作 BL-00136 形①改錨料源（rev5 未用於錨 seed） | facade；測試 |
 | ★翻案不帶回（RL-0065）：①facade 自開交易／取域鎖／寫稽核 ②`audit_operator` 缺席拒寫帶 degraded 欄、借他島 target ③deleteRole 免同步 ④測試守衛寫死 setval 值 ⑤msg 鍵以字面 `Cow::Borrowed` 構造 | rev6 形：①handler 持交易、`<op>_in_txn` 首句入域（005 刀 FR-043／R6）②005 刀工程判斷 11 ③ADR-00043 決定 7（刪除家族實際歸檔才同步）④RL-0031、005 刀工程判斷 10 ⑤字面只住 `msg_key` | 全刀 |
 | 已由 005 交付而消失之工作 | getAllPages、roleHome fetcher、common 收攏、wire 裁判補齊、`rev5:B-099`／`rev5:B-105` seam 等 | — |
+| rev5 已定之邊界語意：生效時點（`rev5:006` FR-022）、全撤合法（`rev5:006` 邊界情境）、復原撞現役＝NoOp 並消費歸檔列（`rev5:006` FR-032）、回收桶兩篩（`rev5:006` FR-028）；R_SUPER 名下非受保護列可撤（rev5 隱含）；並行編輯後送出者覆蓋（rev5 無處理） | 沿用（Q13～Q17）；並行覆蓋記已知態（Q12） | 各節；ADR⑥ |
 | rev5 無藍本之 rev6 新題 | BL-00134 雙窗（Q6 記窗）、BL-00136 殘列不連坐、BL-00131（Q9）、還原工具補 seed 列（工程判斷⑧）、下放窗已知態（Q3）、BL-00132 對賬腿（Q7） | 各節 |
 
 ## 2. BACKLOG 觸發項處置（動工前掃描、CLAUDE.md §2；17 開放＋3 滯後逐條對觸發欄；以 BACKLOG 現文為準）
@@ -69,16 +76,16 @@
 
 - **方案 A**：U0 修憲 → 後端底座（授權 facade、候選集、封死謂詞、原因值、觸發列）→ 三維端點 → 回收桶端點 → 前端三彈窗與抽屜 → 回收桶頁 → 工具與文件 → CDP → 收刀前承載體檢。
 - **範圍**：getRoleMenu／updateRoleMenu、getRoleButton／updateRoleButton、getRoleEndpoints／updateRoleEndpoints、getAllButtons、getAllEndpoints、getArchivedPolicies、restorePolicy（seed 政策列 32／33、52～57、70／71 既在且皆 protected=TRUE；選單列 72 `manage_policy-archive` 亦既在）。
-- **Out of Scope（逐條指承載）**：no-escalation 本體→007（BL-00048）；seed 68 updateUserSessionPolicy→007；system-settings／audit 兩頁→008（BL-00045）；使用者角色指派之殘列形→007（BL-00136 形②）；列表排序→ADR-00058 決定 3；008 設定頁之呈現→ADR-00057 後果；「前端 UI 刀」兩項→BL-00138。
+- **Out of Scope（逐條指承載）**：no-escalation 本體→007（BL-00048）；seed 68 updateUserSessionPolicy→007；system-settings／audit 兩頁→008（BL-00045）；使用者角色指派之殘列形→007（BL-00136 形②）；列表排序→ADR-00058 決定 3；008 設定頁之呈現→ADR-00057 後果；「前端 UI 刀」兩項→BL-00138；即時推播刷新已登入者之選單與按鈕顯隱→不做（本檔 §0 Q13）。
 - **憲法 Amendment（MINOR 1.6.0→1.7.0、一筆；條文字面於 U0 由 user 逐款親決）**：①島 G 入憲（G1～G6、G6 新立；停用雙護欄不轉正；G5 條文層級與島 G 標頭寫法於親決輪定）②§III.2 新用途兩列：(iii) 三顆授權彈窗接真（`menu-auth-modal.vue`／`button-auth-modal.vue`＋`role-operate-drawer.vue` 同檔雙用途＋locale／`app.d.ts`）、(iv) policy-archive 頁（`route:`／`page:` locale 塊、`app.d.ts` page 型節、路由產物四檔依產物檔紀律）；新檔（端點彈窗、回收桶頁本體、`rev6-authz.{ts,d.ts}`）不入表 ③BL-00135 變體句（§III 修改型；活書 08 §8.4 同批）④BL-00132 表外宣告 3（塊數入對賬射程）⑤島 H 連動：序言「島 G 入憲前凍結位」句改寫、H1 括號刪條件式預告並改寫為「回收桶復原之選單／按鈕維分支結構性不可達」、H2 記兩窗（Q6）、「七島」改八島、承襲指針 G 列補 rev6 入憲載體、README 憲法版本鏡像。H2「同步失敗保留上一份」方向句之落位（留 H2 或移 G1 互引）於親決輪定（ADR-00042 翻案觸發器要求複核）。
-- **ADR 待立九支**（feature branch 內、plan 期起草；proposed 期不宣告 supersedes、accepted 同顆補）：①島 G 入憲（Amendment；provenance `rev5:ADR 0053`；含停用雙護欄不轉正、觸發方向面入憲而矩陣留 ADR）②G6 結構性封死（`rev5:ADR 0054`）③回收桶復原五腿＋不可復原集 3→5（`rev5:ADR 0055`；附 ADR-00044 決定 4 之復核結論＝選單維仍無可復原 reason、`menu_id` 同實例欄續 won't-use）④全量替換射程＝候選集（`rev5:ADR 0056`）⑤判定面同步觸發列增列＋記窗（補述 ADR-00043 決定 9；聲明 ADR-00042 兩處同字面被取代；不 supersede ADR-00043）⑥ADR-00045 續行（款 1／3／4／7 之解除或改述＋新已知態：21 支可授出端點與 unlockLogin 窗、選單維受保護四列「看得到、點不動」）⑦ADR-00046 續行（款 3 操作稽核寫入者擴列 update／restore＋BL-00084 by-design 款；改指 12 檔 21 處、含兩子庫碼註與 base-web 頁面）⑧BL-00131 前端修（與 rev5 行為分岔登記）⑨seed-view-gate 碼面閘（RUNBOOK §12 標讀面型、ADR-00055 決定 3）。
+- **ADR 待立九支**（feature branch 內、plan 期起草；proposed 期不宣告 supersedes、accepted 同顆補）：①島 G 入憲（Amendment；provenance `rev5:ADR 0053`；含停用雙護欄不轉正、觸發方向面入憲而矩陣留 ADR）②G6 結構性封死（`rev5:ADR 0054`）③回收桶復原五腿＋不可復原集 3→5（`rev5:ADR 0055`；附 ADR-00044 決定 4 之復核結論＝選單維仍無可復原 reason、`menu_id` 同實例欄續 won't-use）④全量替換射程＝候選集（`rev5:ADR 0056`）⑤判定面同步觸發列增列＋記窗（補述 ADR-00043 決定 9；聲明 ADR-00042 兩處同字面被取代；不 supersede ADR-00043）⑥ADR-00045 續行（款 1／3／4／7 之解除或改述＋新已知態：21 支可授出端點與 unlockLogin 窗、選單維受保護四列「看得到、點不動」、並行編輯後送出者覆蓋（Q12）；另納 §3 §4 之 CDP 待觀察候選經實測者）⑦ADR-00046 續行（款 3 操作稽核寫入者擴列 update／restore＋BL-00084 by-design 款；改指 12 檔 21 處、含兩子庫碼註與 base-web 頁面）⑧BL-00131 前端修（與 rev5 行為分岔登記）⑨seed-view-gate 碼面閘（RUNBOOK §12 標讀面型、ADR-00055 決定 3）。
 
 ### §2 後端
 
 - **交易與鎖**：handler 持交易、`<op>_in_txn` 首句入域；鎖序沿 005 定案 advisory→歸檔表列→sys_role 列→sys_menu 列→casbin_rule。updateRoleMenu／updateRoleButton 入選單序列化域（島 H1 終態成員）再鎖角色列；updateRoleEndpoints 不入域、角色列 FOR UPDATE 序列化；restorePolicy 不入域（只剩端點維可復原）、先鎖歸檔列再鎖角色列。
-- **全量替換**：撤銷集＝（現況 ∩ 候選集）−期望；授予集＝期望 −現況；候選外現役列不撤、不授、不入現況回應。候選：選單維＝治理域選單（未刪含停用）、按鈕維＝治理域按鈕碼聯集（穩定序）、端點維＝ROUTES 中 Policy 全集（抽具名 `policy_endpoints()` 斷循環依賴）。
-- **保護判定**：撤銷側三維皆適用——撤銷集觸及 protected 列＝整批拒（`protectedRevoke`；零變更、零稽核、零同步）；授予側＝G6（端點維）——非 R_SUPER 標的之授予集觸及封死集＝整批拒（`protectedGrant`）；updateRoleEndpoints 先判撤銷、再判授予；restorePolicy 第③腿同謂詞。拒因為 2222＋純 key。
-- **歸檔與復原**：撤銷＝archive-move（原因 `menu_revoke`／`button_revoke`／`endpoint_revoke`；`role_id` 由函式內以 v0 反查）；不可復原集 3→5（否定表加兩值）；restorePolicy 五腿固定序、回插 casbin_rule（新 id）＋刪歸檔列＋稽核 `restore` 同交易；getArchivedPolicies 分頁（005 分頁通則）＋角色與維度兩篩選、每列帶 restorable（①～④）。
+- **全量替換**：撤銷集＝（現況 ∩ 候選集）−期望；授予集＝期望 −現況；候選外現役列不撤、不授、不入現況回應；期望空集＝合法全撤（仍受撤銷拒約束；Q15）。候選：選單維＝治理域選單（未刪含停用）、按鈕維＝治理域按鈕碼聯集（穩定序）、端點維＝ROUTES 中 Policy 全集（抽具名 `policy_endpoints()` 斷循環依賴）。
+- **保護判定**：撤銷側三維皆適用——撤銷集觸及 protected 列＝整批拒（`protectedRevoke`；零變更、零稽核、零同步）；R_SUPER 名下非受保護列可撤（Q14）；授予側＝G6（端點維）——非 R_SUPER 標的之授予集觸及封死集＝整批拒（`protectedGrant`）；updateRoleEndpoints 先判撤銷、再判授予；restorePolicy 第③腿同謂詞。拒因為 2222＋純 key。
+- **歸檔與復原**：撤銷＝archive-move（原因 `menu_revoke`／`button_revoke`／`endpoint_revoke`；`role_id` 由函式內以 v0 反查）；不可復原集 3→5（否定表加兩值）；restorePolicy 五腿固定序、回插 casbin_rule（新 id）＋刪歸檔列＋稽核 `restore` 同交易；標的已現役＝NoOp（回成功、不重複寫入、歸檔列仍消費移除；Q16）；getArchivedPolicies 分頁（005 分頁通則）＋角色代碼與維度兩篩選（不加原因值；Q17）、每列帶 restorable（①～④）。
 - **寫入形**：授予經 facade 直接 INSERT、落 `created_by`＝操作者；絕不走判定引擎管理 API（G1）、不走轉接器 `add_policy`（LL-00035：重複列回 Err 且吃序列）；操作稽核同交易、封閉五詞之 `update`（三維寫端）／`restore`。
 - **判定面同步**：移除面維持「實際歸檔 ≥1 列」；授予面三支 Applied 即觸發（含空 diff、刻意例外、重建冪等）；restorePolicy 僅 Applied；Rejected／NoOp／不可復原不觸發。兩窗記入條文（Q6）、既有 `casbin_reload_total` 計數與 casbin-reload-anomaly 告警照舊。
 - **其他**：新拒因 msg 鍵兩語同批、與 `MSG_KEYS` 跨端對賬；新命名空間補 wire-schema 錨；角色鍵名一律 `id`；`authz_entrypoint_lint` 之 `RELOAD_CALL_FILES` 擴列新寫端檔、`ENFORCER_WRITE_FILES` 維持空集；no-escalation 掛點不動。模組落點（工程判斷）：新 facade `sys_casbin_policy`（diff／候選集／封死謂詞）、擴 `sys_casbin_archive`（原因值／復原）、新 handler 兩組（三維授權、回收桶）。
@@ -94,9 +101,9 @@
 
 ### §4 測試、工具、驗收
 
-- **測試**（rust 容器內 serial；base-web pnpm 容器內、逾時放容器內＝LL-00038／LL-00039）：島 G 不變式逐條；島 H 既有全綠（入域寫端各配 NOT-granted 等待測）；觸發矩陣含空 diff 與不觸發三態；保護判定（三維撤銷拒、授予拒之 R_SUPER 豁免、復原腿③、鎖內現查）；候選集；原因值負向臂翻；restorable 同判準；殘列不連坐（BL-00136 形①：兩案改錨 `created_by IS NULL` 之 seed 政策列、測試件 `plant_live_policy` 同步、殘列演練納此形）；wire-schema、msg 鍵跨端閘、authz_entrypoint_lint、route-artifact-gate、fork-delta-lint（含新腿）全綠。
+- **測試**（rust 容器內 serial；base-web pnpm 容器內、逾時放容器內＝LL-00038／LL-00039）：島 G 不變式逐條；島 H 既有全綠（入域寫端各配 NOT-granted 等待測）；觸發矩陣含空 diff 與不觸發三態；保護判定（三維撤銷拒、授予拒之 R_SUPER 豁免、復原腿③、鎖內現查）；候選集；原因值負向臂翻；restorable 同判準；殘列不連坐（BL-00136 形①：兩案改錨 `created_by IS NULL` 之 seed 政策列、測試件 `plant_live_policy` 同步、殘列演練納此形）；超管自斷自救路徑（撤 R_SUPER 之非受保護端點列致角色頁失能→經回收桶復原→恢復；Q14）；wire-schema、msg 鍵跨端閘、authz_entrypoint_lint、route-artifact-gate、fork-delta-lint（含新腿）全綠。
 - **工具**：`tools/walkthrough-baseline.py` restore 擴至能回補被撤之 seed casbin 列並清除復原回插之新 id 列（現行射程＝只刪上界以上列、id≤上界之 seed 列被刪不在射程）、test_kit 守衛同理、RUNBOOK §9c 契約同批；fork-delta-lint 對賬腿；seed-view-gate。
-- **驗收**（啟動書 §0.3 B 世代 DoD）：觸及之島不變式全過；CDP 三方對照（22080 rev5 HEAD 對 32080，必要時加 22089；對照面＝三彈窗、抽屜第三鈕、首頁下拉、回收桶頁；CDP 一律 opus[1m] xhigh）、刻意分岔逐項登記（BL-00131 修法、deleteRole 觸發同步〔005 既有〕、實作期新發現者）；走查基準本機自取 snapshot、前後六步還原 diff rc 0。
+- **驗收**（啟動書 §0.3 B 世代 DoD）：觸及之島不變式全過；CDP 三方對照（22080 rev5 HEAD 對 32080，必要時加 22089；對照面＝三彈窗、抽屜第三鈕、首頁下拉、回收桶頁；CDP 一律 opus[1m] xhigh）、刻意分岔逐項登記（BL-00131 修法、deleteRole 觸發同步〔005 既有〕、實作期新發現者）；CDP 待觀察已知態候選兩款（grilling 輪主線揭出；已知態以實際操作觀察定稿＝`rev5:L-046`——U17 實測、U16 由 user 定案入 ADR⑥）：①只勾目錄不勾子項＝側欄出現點入空白之項、首頁兜底可能落在它 ②`role:*`／`menu:*`／`user:*` 按鈕碼今無前端 `hasAuth` 消費點＝授撤零可見效果；走查基準本機自取 snapshot、前後六步還原 diff rc 0。
 - **現在式假述掃除**（RL-0011、逐處判讀）：「只由移除面寫端觸發」類（外層 12 處／9 檔、rust-api 11 處／5 檔；講觸發集合者改、講移除面類別者留）；RUNBOOK §13 補授予面反向症狀（新授權未生效、仍回 5003）與排障錨；「限 R_SUPER」類（外層 4、rust-api 12；seed 事實者留、能力限定者改）；「七款」→「八款」；「授權治理島」措辭→島 I（`python3 tools/docsync errata` 枚舉）；ADR-00045／ADR-00046 續行之改指。
 - **單元草案**（約 19 支；tasks 定稿於 SDD）：U0 前置體檢＋Amendment 親決＋施工前提 ADR accepted → U1 骨架（ROUTES 39→49 空殼＋授權態矩陣＋routes 釘值）→ U2 測試基建（seed 授權列回補守衛、前移）→ U3 授權 facade → U4 不可復原集 3→5 → U5 讀端與候選讀 → U6 選單／按鈕維寫端（入域）→ U7 端點維寫端＋封死 → U8 回收桶兩端點 → U9 觸發矩陣＋lint 名冊＋同步計數 → U10 wire／msg 裁判面 → U11 fork-delta-lint 對賬腿 → U12 兩彈窗＋抽屜第三鈕＋BL-00131 → U13 端點彈窗 → U14 回收桶頁＋seed-view-gate → U15 走查還原工具擴面 → U16 文件、ADR 續行、假述掃除 → U17 CDP 三方對照 → U18 收刀前承載體檢＋範圍欄 PATCH 實數化。
 - **風險**：R1 seed 授權列被撤後回不來（U2／U15）；R2 判定面雙窗（記窗＋既有告警）；R3 21 支可授出端點之下放窗（已知態 ADR）；R4 BL-00108 第三份（seed-view-gate 用 python）；R5 CDP 基準為 rev5 HEAD 形（照 HEAD 實作＋分岔登記）；R6 errata 面廣（四形種子＋`docsync errata`）；R7 LL-00035（facade INSERT）；R8 BL-00049 條件依賴（維持現狀）。
@@ -107,10 +114,10 @@
 
 ## 5. 給 `/speckit-specify` 的輸入摘要
 
-- feature 名＝`006-authz-governance`；user 故事核心＝US1 超管以三顆彈窗設定角色之選單維／按鈕維／端點維授權、即時生效（全量替換＋候選集）／US2 受保護端點結構上授不出去、受保護列撤不掉（G6＋撤銷拒）／US3 撤銷進授權回收桶、端點維可一鍵復原、選單／按鈕維只可閱覽（五腿＋restorable）／US4 三顆彈窗與回收桶頁接真（就緒守、請求世代、換角色清狀態、抽屜第三鈕、BL-00131 修法）；10 支端點、零 migration、憲法 1.7.0、ADR 九支。
+- feature 名＝`006-authz-governance`；user 故事核心＝US1 超管以三顆彈窗設定角色之選單維／按鈕維／端點維授權、API 判定即時生效（全量替換＋候選集；選單與按鈕顯隱下次載入）／US2 受保護端點結構上授不出去、受保護列撤不掉（G6＋撤銷拒）／US3 撤銷進授權回收桶、端點維可一鍵復原、選單／按鈕維只可閱覽（五腿＋restorable）／US4 三顆彈窗與回收桶頁接真（就緒守、請求世代、換角色清狀態、抽屜第三鈕、BL-00131 修法）；10 支端點、零 migration、憲法 1.7.0、ADR 九支。
 - 直接輸入：本檔＋§2 處置表所列 BL 條目（收 5／收窄 3／反向確認 2／Out of Scope）＋`rev5:006-authz-governance` spec 之 US1～US4、FR、SC、Edge Cases（rev6 座標改寫：10 支與 ROUTES 39→49、getAllPages 已交付、不可復原集 3→5 與否定表負向臂翻、handler 持交易形、rev6 水位守衛形、seed 政策列號與 protected 帳以 rev6 seed 現數、CDP 基準 rev5 HEAD）。
-- FR 措辭要求：觸發矩陣寫成三類同一字面（移除面實際歸檔 ≥1／授予面 Applied 含空 diff／復原 Applied）；封死謂詞只寫謂詞不寫列數；撤銷拒與授予拒分列；候選集射程寫成三維同式 FR；雙窗寫成已知降級行為（含 API 授權面）；殘列不連坐 SC 含 BL-00136 形①；★spec 須含「★ 軌道逐處登記」表（憲法 §III.2 機制骨架）與「刻意分岔登記」表（CDP 對照用）。
-- clarify 候選（一題一問、rev5 as-built 為建議項）：①回收桶頁篩選條件是否加原因值 ②全撤（期望空集）是否允許、R_SUPER 標的之非受保護列可否撤 ③restorePolicy 對「同一政策已現役存在」之處置（冪等成功或拒）。
+- FR 措辭要求：觸發矩陣寫成三類同一字面（移除面實際歸檔 ≥1／授予面 Applied 含空 diff／復原 Applied）；封死謂詞只寫謂詞不寫列數；撤銷拒與授予拒分列；候選集射程寫成三維同式 FR；雙窗寫成已知降級行為（含 API 授權面）；生效語意寫成兩層時點（API 判定即時／選單與按鈕顯隱下次載入、不做推播；Q13）；殘列不連坐 SC 含 BL-00136 形①；★spec 須含「★ 軌道逐處登記」表（憲法 §III.2 機制骨架）與「刻意分岔登記」表（CDP 對照用）。
+- clarify 候選：原列三題（回收桶頁篩選是否加原因值、全撤與 R_SUPER 標的之非受保護列可否撤、restorePolicy 遇標的已現役之處置）已於 grilling 輪定案（§0 Q14～Q17）；clarify 照常掃描、無預列題（一題一問、rev5 as-built 為建議項之形不變）。
 - Out of Scope 逐條指承載（§3 §1 清單；ADR-00058 決定 3 之排序單題指該 ADR）。
 
 ## 6. 隨做隨記
@@ -123,3 +130,4 @@
 - TDD 發射前置：組裝形 workflow 模型家由 ADR-00056 固定（opus[1m]／xhigh）；手寫 workflow 每支 agent 明給同值；CDP 單元一律 opus[1m] xhigh。本機若缺他機工作區之單元範本，由 `tools/orchestration/EXAMPLE-*-unitdef.py` 經 `assemble.py` 起手；unitdef 烤 LL-00038／LL-00039。
 - 走查基準本機自取（首次真登入走查前 snapshot；契約 RUNBOOK §9c）；rev6 stack 走查前先 `docker compose ps` 實看、必要時重建；CDP 對照基準重取、不沿用 005 產出。
 - 活書：§3 所列各節（04／05／06／08／10／11／12、RUNBOOK §9c／§11.2／§12／§13）於 feature branch 內改成現在式；C4-L2 拓樸不變（零新容器）。
+- 活書 §12 名詞表（U16、feature branch；grilling 輪主線判準）：新條＝「授權撤銷」（三維寫端手動撤；與會話域「撤銷三型」同詞異物、不互用）、「連動歸檔」（刪角色／刪選單／按鈕碼絕版之歸檔）、「受保護授權列」（`casbin_rule.protected`；與 `sys_menu.protected` 不同義）、「封死集」（端點維謂詞導出之（路徑,方法）集）、「候選集」「全量替換」「不可復原集」；改寫＝reason gate 條（三值→六值、不可復原五值）、選單回收桶 vs 授權回收桶條（授權回收桶自本刀起在現行路由）、判定面同步條（觸發面增授予面 Applied 含空 diff 與復原 Applied）。
