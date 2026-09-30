@@ -266,7 +266,8 @@ def timezone_problem(value):
             "`-c timezone=UTC -c log_timezone=UTC`，再以 docker compose -f docker-compose.yml "
             "-f docker-compose.dev.yml up -d --wait postgres 重建該容器；一次性容器場景"
             "（--container）＝起容器時於映像名後附 `-c timezone=UTC`；命令列已帶仍不符＝查 "
-            "ALTER DATABASE／ALTER ROLE 之 timezone 設定")
+            "ALTER DATABASE／ALTER ROLE 之 timezone 設定，以及目標容器環境之 PGTZ／PGOPTIONS"
+            "（連線端覆蓋：psql 繼承容器環境變數，本判準先於來源判準、故先紅在此）")
 
 
 def timezone_source_problem(source):
@@ -2452,6 +2453,8 @@ class TestTimezonePrecheck(unittest.TestCase):
             self.assertIn("docker-compose.yml", msg)
             self.assertIn("-c timezone=UTC", msg)
             self.assertIn("-c log_timezone=UTC", msg)  # 只在 compose 命令列修法句出現
+            # 值判準先於來源判準：容器環境帶 PGTZ／PGOPTIONS 時先紅在此——補救須指到連線端覆蓋
+            self.assertIn("PGTZ／PGOPTIONS", msg)
 
     def test_cmd_check_non_utc_rc2_before_snapshot(self):
         calls, run, root_ctx = _check_fake(tz="Asia/Tokyo")
