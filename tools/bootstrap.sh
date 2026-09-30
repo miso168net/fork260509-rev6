@@ -184,7 +184,7 @@ check_pin() { # $1=目錄名
 check_pin "base-web"
 check_pin "rust-api"
 
-# ── 5. 隨遷工具自測（§4.5；治理 lint 隨 tools/docsync 落地後回填）＋ compose 三檔 render ──
+# ── 5. 隨遷工具自測（§4.5；治理 lint 隨 tools/docsync 落地後回填）＋ compose 三檔 render＋時區環境斷言 ──
 run_tool_test() { # $1=工具相對路徑；失敗才吐明細
   local out
   if ! out="$(python3 "$ROOT/$1" test 2>&1)"; then
@@ -224,6 +224,34 @@ if [ -f "$ROOT/deploy/secrets.dev.enc.yaml" ]; then
 else
   warn "Day-1 豁免：deploy/secrets.dev.enc.yaml 未產（rev6 產鑰前）——decrypt-secrets.py 自測跳過；解除謂詞＝該檔存在（產鑰→生成→加密後本節自動回填）"
 fi
+# compose 時區環境斷言之判定邏輯（ADR-00059 決定 2；體檢面、非閘——不入 GATES 名冊）：stdin＝`docker compose … config --format json`
+#   （environment 已正規化為映射）；argv＝標籤、須含 postgres 服務（1／0）。逐服務 TZ 須＝UTC；postgres 服務環境不得帶 PGTZ／PGOPTIONS 鍵
+#   （容器內 psql 繼承容器環境、連線端值即覆蓋伺服器時區——schema-gate 時區前置另以 pg_settings 之 source 判來源）；服務集為空＝紅（RL-0051）。
+#   違規逐條走 stderr＋rc 1、綠＝stdout 印服務數。★單引號字串：程式本體不得含單引號。
+TZ_ENV_PY='
+import json, sys
+label, need_pg = sys.argv[1], sys.argv[2] == "1"
+try:
+    services = json.load(sys.stdin).get("services") or {}
+except (ValueError, AttributeError) as ex:
+    sys.exit("[bootstrap] ✗ %s：render JSON 解析失敗（%s）" % (label, ex))
+bad = [] if services else ["服務集為空（掃描面空集合即紅）"]
+for name in sorted(services):
+    tz = (services[name].get("environment") or {}).get("TZ")
+    if tz != "UTC":
+        bad.append("服務 %s 之 TZ＝%r（須為 UTC）" % (name, tz))
+if need_pg and "postgres" not in services:
+    bad.append("缺 postgres 服務（PGTZ／PGOPTIONS 斷言對象不存在）")
+pg_env = (services.get("postgres") or {}).get("environment") or {}
+leak = [k for k in ("PGTZ", "PGOPTIONS") if k in pg_env]
+if leak:
+    bad.append("postgres 服務環境帶 %s（容器內 psql 繼承、以連線端值覆蓋伺服器時區）" % "／".join(leak))
+for b in bad:
+    print("[bootstrap] ✗ %s：%s" % (label, b), file=sys.stderr)
+if bad:
+    sys.exit(1)
+print(len(services))
+'
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
   docker compose -f "$ROOT/docker-compose.yml" -f "$ROOT/docker-compose.dev.yml" --profile obs --profile metrics --profile jobs config -q \
     || die "compose dev（含三 profile）render 失敗——見上方"
@@ -233,6 +261,33 @@ if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; 
   [ -z "$bad_ports" ] || die "compose host 埠非 3xxxx 世代（ADR-00001）：$(echo $bad_ports)"
   echo "$rendered" | grep -q 'rev5' && die "compose render 含 rev5 字面——與常駐 rev5 stack 撞名（ADR-00001 撞名連動）" || true
   ok "compose 三檔 render 綠（host 埠全 3xxxx、零 rev5 字面）"
+  # 時區環境斷言（判定邏輯＝上方 TZ_ENV_PY）：先餵合成反例——TZ_ENV_PY 每條判準各一支、各只違該條（解析失敗／服務集為空／缺 TZ／
+  #   TZ 錯值／缺 postgres／postgres 帶 PGTZ／帶 PGOPTIONS），須紅且 stderr 含該條之預期片段（只看 rc 會把判定邏輯崩潰之 traceback
+  #   誤算成紅）——任一判準被改弱或改成恆綠即 die；再餵兩組真 render（dev 三 profile 合併形須含 postgres 服務、example 形）須綠。
+  tz_negs=0
+  tz_neg_red() { # $1=須含 postgres 服務（1／0）；$2=stderr 預期片段；$3=合成 render JSON
+    local err
+    if err="$(printf '%s' "$3" | python3 -c "$TZ_ENV_PY" 合成反例 "$1" 2>&1 >/dev/null)"; then
+      die "compose 時區環境斷言失守：合成反例「${3}」未被攔——TZ_ENV_PY 判定邏輯壞、真 render 之綠不可信"
+    fi
+    case "$err" in
+      *"$2"*) tz_negs=$((tz_negs + 1)) ;;
+      *) die "compose 時區環境斷言失準：合成反例「${3}」雖紅、stderr 缺預期片段「${2}」（判定邏輯崩潰或判錯條）：${err}" ;;
+    esac
+  }
+  tz_neg_red 0 "render JSON 解析失敗" ''
+  tz_neg_red 0 "服務集為空" '{"services":{}}'
+  tz_neg_red 1 "服務 b 之 TZ＝None（須為 UTC）" '{"services":{"postgres":{"environment":{"TZ":"UTC"}},"b":{"environment":{}}}}'
+  tz_neg_red 1 "服務 postgres 之 TZ＝'Asia/Tokyo'（須為 UTC）" '{"services":{"postgres":{"environment":{"TZ":"Asia/Tokyo"}}}}'
+  tz_neg_red 1 "缺 postgres 服務" '{"services":{"a":{"environment":{"TZ":"UTC"}}}}'
+  tz_neg_red 1 "環境帶 PGTZ（" '{"services":{"postgres":{"environment":{"TZ":"UTC","PGTZ":"UTC"}}}}'
+  tz_neg_red 1 "環境帶 PGOPTIONS（" '{"services":{"postgres":{"environment":{"TZ":"UTC","PGOPTIONS":"-c timezone=UTC"}}}}'
+  tz_dev="$(docker compose -f "$ROOT/docker-compose.yml" -f "$ROOT/docker-compose.dev.yml" --profile obs --profile metrics --profile jobs config --format json 2>/dev/null \
+            | python3 -c "$TZ_ENV_PY" "compose dev（含三 profile）" 1)" \
+    || die "compose dev 時區環境斷言未過（見上方逐服務明細）——修法：該服務 environment 明設 TZ: UTC、postgres 服務環境移除 PGTZ／PGOPTIONS（ADR-00059 決定 2）"
+  tz_ex="$(docker compose -f "$ROOT/docker-compose.example.yml" config --format json 2>/dev/null | python3 -c "$TZ_ENV_PY" "compose example" 0)" \
+    || die "compose example 時區環境斷言未過（見上方逐服務明細）——修法：該服務 environment 明設 TZ=UTC（ADR-00059 決定 2）"
+  ok "compose 各服務 TZ=UTC、postgres 環境零 PGTZ／PGOPTIONS（dev ${tz_dev} 服務＋example ${tz_ex} 服務；合成反例 ${tz_negs} 支皆紅且命中預期條）"
 else
   warn "docker compose 不在機——compose render 檢查跳過"
 fi

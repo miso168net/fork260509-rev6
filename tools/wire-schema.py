@@ -195,13 +195,17 @@ AXIOS_OPTIONS_TS = "base-web/packages/axios/src/options.ts"
 AXIOS_PACKAGE_JSON = "base-web/packages/axios/package.json"
 QS_PINNED_VERSION = "6.15.1"
 
-# ADR-00044 決定 8 保留路由名對賬腿：rust `sys_menu::RESERVED_ROUTE_NAMES`＝routes.ts 之 `meta.constant: true` 路由名集
-# ∪ builtin.ts 之路由名集（新增 view 頁或 upstream rebase 動到內建常量路由／內建根路由之名集時由本腿攔下）。
+# ADR-00044 決定 8 保留路由名對賬腿：rust `sys_menu::RESERVED_ROUTE_NAMES`＝前端 `createStaticRoutes` 實際常量組成——index.ts 之
+# customRoutes 與 routes.ts 兩陣列中 `meta.constant: true` 之路由名集——∪ builtin.ts 之路由名集（新增 view 頁、customRoutes 增常量路由或
+# upstream rebase 動到內建常量路由／內建根路由之名集時由本腿攔下）。★index.ts 讀面限 customRoutes 陣列字面（同檔其餘碼不讀、
+# createStaticRoutes 之併列組成不在讀面）：陣列字面找不到＝解析失準即紅；陣列在而零常量路由屬正常（現況）。
 SYS_MENU_RS = "rust-api/server/src/model/facade/sys_menu.rs"
 ELEGANT_ROUTES_TS = "base-web/src/router/elegant/routes.ts"
+CUSTOM_ROUTES_TS = "base-web/src/router/routes/index.ts"
 BUILTIN_ROUTES_TS = "base-web/src/router/routes/builtin.ts"
 
-ANCHOR_FILES = (AXIOS_OPTIONS_TS, AXIOS_PACKAGE_JSON, SYS_MENU_RS, ELEGANT_ROUTES_TS, BUILTIN_ROUTES_TS)
+ANCHOR_FILES = (AXIOS_OPTIONS_TS, AXIOS_PACKAGE_JSON, SYS_MENU_RS, ELEGANT_ROUTES_TS, CUSTOM_ROUTES_TS,
+                BUILTIN_ROUTES_TS)
 
 
 QS_REMEDY = ("補救：前提改動須同批於 base-web 容器以新前提實跑、重取 rust-api/server/tests/wire_schema.rs 之各真串常數，"
@@ -371,28 +375,51 @@ def ts_route_names(text, rel):
     return names, constants, []
 
 
-def reserved_route_names_problems(sys_menu_rs, routes_ts, builtin_ts):
+_CUSTOM_ROUTES_DECL = re.compile(r"\bconst\s+customRoutes\b[^=;]*=\s*\[")
+
+
+def custom_routes_literal(index_ts):
+    """index.ts → (customRoutes 陣列字面〔去註解後、含首尾方括號〕, 違規清單)。宣告須恰一處、陣列方括號須配對
+    （字串字面內之括號不計）；任一不成＝解析失準、違規一條。"""
+    code = strip_ts_comments(index_ts)
+    decls = list(_CUSTOM_ROUTES_DECL.finditer(code))
+    if len(decls) != 1:
+        return "", [f"{CUSTOM_ROUTES_TS}：`const customRoutes … = [...]` 陣列字面須恰一處（實得 {len(decls)} 處；解析失準）"]
+    start = decls[0].end() - 1
+    depth = 0
+    for m in _TS_TOKEN.finditer(code, start):
+        if m.lastgroup == "punct":
+            depth += (m.group() in "[{(") - (m.group() in "]})")
+            if depth == 0:
+                return code[start:m.end()], []
+    return "", [f"{CUSTOM_ROUTES_TS}：customRoutes 陣列方括號不成對（解析失準）"]
+
+
+def reserved_route_names_problems(sys_menu_rs, routes_ts, custom_ts, builtin_ts):
     """ADR-00044 決定 8 保留路由名對賬腿判準（純函式）：回違規說明清單、空＝通過。
-    rust 成員集須恰等於 routes.ts 之常量路由名集 ∪ builtin.ts 之路由名集；任一側零成員＝解析面空、即紅。"""
+    rust 成員集須恰等於 routes.ts 與 index.ts customRoutes 之常量路由名集 ∪ builtin.ts 之路由名集；rust、routes.ts 常量路由、
+    builtin.ts 任一側零成員＝解析面空、即紅（customRoutes 零常量路由屬正常，其解析失準由陣列字面定位判）。"""
     rust, problems = rust_reserved_route_names(sys_menu_rs)
     _, constant_routes, p_routes = ts_route_names(routes_ts, ELEGANT_ROUTES_TS)
+    custom_literal, p_custom = custom_routes_literal(custom_ts)
+    _, custom_constants, p_custom_parse = ts_route_names(custom_literal, CUSTOM_ROUTES_TS)
     builtin_routes, _, p_builtin = ts_route_names(builtin_ts, BUILTIN_ROUTES_TS)
-    problems += p_routes + p_builtin
+    problems += p_routes + p_custom + p_custom_parse + p_builtin
     if problems:
         return problems
     for label, found in (("rust RESERVED_ROUTE_NAMES", rust), (f"{ELEGANT_ROUTES_TS} 常量路由", constant_routes),
                          (f"{BUILTIN_ROUTES_TS} 路由", builtin_routes)):
         if not found:
             problems.append(f"{label} 零成員＝解析面空（判準失準或檔形改變）")
-    frontend = constant_routes | builtin_routes
+    frontend = constant_routes | custom_constants | builtin_routes
     if not problems and rust != frontend:
-        problems.append(f"保留路由名集不一致：rust 多出 {sorted(rust - frontend)}、前端兩源多出 {sorted(frontend - rust)}"
+        problems.append(f"保留路由名集不一致：rust 多出 {sorted(rust - frontend)}、前端三源多出 {sorted(frontend - rust)}"
                         f"——{RESERVED_REMEDY}")
     return problems
 
 
 def anchor_problems(root=REPO_ROOT):
-    """讀 `root` 下兩腿五檔、跑兩支判準；檔缺席或讀不了＝違規一條（fail-loud、不當跳過）。"""
+    """讀 `root` 下兩腿六檔、跑兩支判準；檔缺席或讀不了＝違規一條（fail-loud、不當跳過）。"""
     texts = {}
     problems = []
     for rel in ANCHOR_FILES:
@@ -405,7 +432,7 @@ def anchor_problems(root=REPO_ROOT):
         return problems
     return (qs_premise_problems(texts[AXIOS_OPTIONS_TS], texts[AXIOS_PACKAGE_JSON])
             + reserved_route_names_problems(texts[SYS_MENU_RS], texts[ELEGANT_ROUTES_TS],
-                                            texts[BUILTIN_ROUTES_TS]))
+                                            texts[CUSTOM_ROUTES_TS], texts[BUILTIN_ROUTES_TS]))
 
 
 def run_anchor_legs(root=REPO_ROOT):
@@ -966,7 +993,7 @@ class TestCheckStagedGate(unittest.TestCase):
 
 
 def _real_anchor_texts():
-    """五支錨檔之真檔內容（副本字串的出發點；反例一律改副本、不改真檔）。"""
+    """六支錨檔之真檔內容（副本字串的出發點；反例一律改副本、不改真檔）。"""
     texts = {}
     for rel in ANCHOR_FILES:
         with open(os.path.join(REPO_ROOT, *rel.split("/")), encoding="utf-8") as fh:
@@ -991,12 +1018,14 @@ def _write_anchor_tree(root, texts):
 
 # 反例參數名 → 錨檔（TestAnchorLegs._problems 用）。
 ANCHOR_KEYS = {"options": AXIOS_OPTIONS_TS, "package": AXIOS_PACKAGE_JSON, "rust": SYS_MENU_RS,
-               "routes": ELEGANT_ROUTES_TS, "builtin": BUILTIN_ROUTES_TS}
+               "routes": ELEGANT_ROUTES_TS, "custom": CUSTOM_ROUTES_TS, "builtin": BUILTIN_ROUTES_TS}
 
 
 class TestAnchorLegs(unittest.TestCase):
     """兩腿判準紅綠（BL-00109 qs 前提；ADR-00044 決定 8 保留路由名）：以真檔副本為出發形、逐一植入反例——
-    改序列化器選項／拿掉或註解掉序列化器／改 qs 版本；rust 側與前端兩源各增刪一名、rust 側註解掉一名。"""
+    改序列化器選項／拿掉或註解掉序列化器／改 qs 版本；rust 側與前端 routes.ts、builtin.ts 各增刪一名、rust 側註解掉一名、
+    rust 側宣告多出一處；routes.ts 常量路由缺 `name` 紅；customRoutes 增一常量路由（rust 未跟紅、同批跟上綠）、增非常量路由綠、
+    陣列字面找不到／宣告多出一處／方括號不成對／常量路由缺 `name` 紅。"""
 
     def setUp(self):
         self.real = _real_anchor_texts()
@@ -1073,6 +1102,12 @@ class TestAnchorLegs(unittest.TestCase):
                           '    ["403", "404", "500", "iframe-page", "login", /* "root", */ "not-found"];'):
             self._assert_red("root", rust=_replace_once(self.real[SYS_MENU_RS], self.RUST_DECL, commented))
 
+    def test_rust_side_decl_duplicated_red(self):
+        """rust 側宣告多出一處（檔尾模組內另宣告同名常數、多一名）＝紅——「恰一處」之上界自證：不得靜默取第一處。"""
+        extra = ("\nmod legacy {\n    pub const RESERVED_ROUTE_NAMES: [&str; 8] =\n"
+                 '        ["403", "404", "500", "iframe-page", "login", "root", "not-found", "shadow"];\n}\n')
+        self._assert_red("宣告須恰一處（實得 2 處", rust=self.real[SYS_MENU_RS] + extra)
+
     def test_routes_constant_add_one_red(self):
         self._assert_red("about", routes=_replace_once(
             self.real[ELEGANT_ROUTES_TS], "      title: 'about',\n",
@@ -1082,6 +1117,79 @@ class TestAnchorLegs(unittest.TestCase):
         self._assert_red("login", routes=_replace_once(
             self.real[ELEGANT_ROUTES_TS], "      i18nKey: 'route.login',\n      constant: true,\n",
             "      i18nKey: 'route.login',\n"))
+
+    def test_routes_constant_nameless_red(self):
+        """routes.ts 增一條 `name` 非字串字面之常量路由（名集不變）＝解析失準即紅、不因集合相等放行。"""
+        decl = "export const generatedRoutes: GeneratedRoute[] = [\n"
+        self._assert_red(f"{ELEGANT_ROUTES_TS}：`meta.constant: true` 所屬物件缺 `name`", routes=_replace_once(
+            self.real[ELEGANT_ROUTES_TS], decl,
+            decl + _replace_once(self.CUSTOM_EXTRA, "name: 'extra-custom'", "name: EXTRA_NAME")))
+
+    CUSTOM_DECL = "const customRoutes: CustomRoute[] = [\n"
+    CUSTOM_EXTRA = ("  {\n    name: 'extra-custom',\n    path: '/extra-custom',\n"
+                    "    component: 'layout.blank$view.404',\n"
+                    "    meta: {\n      title: 'extra-custom',\n      constant: true\n    }\n  },\n")
+
+    def test_custom_routes_real_literal_parsed(self):
+        """讀面進入自證（真檔）：customRoutes 陣列字面止於其配對方括號（不溢到 createStaticRoutes）、解析得路由名、
+        現值零常量路由（潛伏面、綠）。"""
+        literal, problems = custom_routes_literal(self.real[CUSTOM_ROUTES_TS])
+        self.assertEqual(problems, [])
+        self.assertTrue(literal.startswith("[") and literal.endswith("]"), literal[:40])
+        self.assertNotIn("createStaticRoutes", literal)
+        names, constants, parse_problems = ts_route_names(literal, CUSTOM_ROUTES_TS)
+        self.assertEqual(parse_problems, [])
+        self.assertTrue({"exception", "exception_403", "document", "document_vue"} <= names, names)
+        self.assertEqual(constants, set())
+
+    def test_custom_routes_constant_add_one_red(self):
+        """customRoutes 新增一條 `meta.constant: true` 路由而 rust 常數未跟＝紅（createStaticRoutes 會把它併入常量路由）。"""
+        self._assert_red("extra-custom", custom=_replace_once(
+            self.real[CUSTOM_ROUTES_TS], self.CUSTOM_DECL, self.CUSTOM_DECL + self.CUSTOM_EXTRA))
+
+    def test_custom_routes_constant_add_with_rust_follow_green(self):
+        """對應綠案：同一植入、rust 常數同批跟上＝綠（判準是集合相等、非「customRoutes 一改即紅」）。"""
+        problems = self._problems(
+            custom=_replace_once(self.real[CUSTOM_ROUTES_TS], self.CUSTOM_DECL,
+                                 self.CUSTOM_DECL + self.CUSTOM_EXTRA),
+            rust=_replace_once(self.real[SYS_MENU_RS], self.RUST_DECL,
+                               'pub const RESERVED_ROUTE_NAMES: [&str; 8] =\n'
+                               '    ["403", "404", "500", "iframe-page", "login", "root", "not-found",'
+                               ' "extra-custom"];'))
+        self.assertEqual(problems, [])
+
+    def test_custom_routes_nonconstant_add_green(self):
+        """customRoutes 新增非常量路由＝綠（createStaticRoutes 將其歸 authRoutes、不入保留集）。"""
+        extra = self.CUSTOM_EXTRA.replace(",\n      constant: true\n", "\n")
+        self.assertNotIn("constant", extra)
+        self.assertEqual(self._problems(custom=_replace_once(
+            self.real[CUSTOM_ROUTES_TS], self.CUSTOM_DECL, self.CUSTOM_DECL + extra)), [])
+
+    def test_custom_routes_array_missing_red(self):
+        """customRoutes 陣列字面找不到（改名／改形）＝解析失準即紅、不當零常量放行。"""
+        self._assert_red("customRoutes", custom=_replace_once(
+            self.real[CUSTOM_ROUTES_TS], self.CUSTOM_DECL, "const extraRoutes: CustomRoute[] = [\n"))
+
+    def test_custom_routes_array_duplicated_red(self):
+        """customRoutes 宣告多出一處（檔尾函式內另宣告同名陣列、帶一條常量路由）＝解析失準即紅——
+        「恰一處」之上界自證：不得靜默取第一處字面、讓第二處之常量路由漏出對賬。"""
+        extra = ("\nexport function legacyRoutes() {\n  " + self.CUSTOM_DECL
+                 + _replace_once(self.CUSTOM_EXTRA, "name: 'extra-custom'", "name: 'shadow'")
+                 + "  ];\n  return customRoutes;\n}\n")
+        self._assert_red("陣列字面須恰一處（實得 2 處", custom=self.real[CUSTOM_ROUTES_TS] + extra)
+
+    def test_custom_routes_constant_nameless_red(self):
+        """customRoutes 常量路由之 `name` 非字串字面（解析不出名）＝解析失準即紅、不當零常量放行
+        （customRoutes 無零成員守衛、此違規即唯一防線）。"""
+        self._assert_red(f"{CUSTOM_ROUTES_TS}：`meta.constant: true` 所屬物件缺 `name`", custom=_replace_once(
+            self.real[CUSTOM_ROUTES_TS], self.CUSTOM_DECL,
+            self.CUSTOM_DECL + _replace_once(self.CUSTOM_EXTRA, "name: 'extra-custom'", "name: EXTRA_NAME")))
+
+    def test_custom_routes_array_unbalanced_red(self):
+        """customRoutes 陣列收尾 `];` 缺（方括號不成對）＝解析失準即紅、不當零常量放行。"""
+        self._assert_red("customRoutes 陣列方括號不成對", custom=_replace_once(
+            self.real[CUSTOM_ROUTES_TS], "  }\n];\n\n/** create routes when the auth route mode is static */",
+            "  }\n\n/** create routes when the auth route mode is static */"))
 
     def test_builtin_add_one_red(self):
         self._assert_red("extra-builtin", builtin=_replace_once(
@@ -1097,12 +1205,13 @@ class TestAnchorLegs(unittest.TestCase):
         self._assert_red("not-found", builtin=text)
 
     def test_missing_anchor_file_red_not_skip(self):
-        with tempfile.TemporaryDirectory() as root:
-            texts = dict(self.real)
-            del texts[BUILTIN_ROUTES_TS]
-            _write_anchor_tree(root, texts)
-            problems = anchor_problems(root)
-        self.assertTrue(any(BUILTIN_ROUTES_TS in p for p in problems), problems)
+        for missing in (BUILTIN_ROUTES_TS, CUSTOM_ROUTES_TS):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as root:
+                texts = dict(self.real)
+                del texts[missing]
+                _write_anchor_tree(root, texts)
+                problems = anchor_problems(root)
+                self.assertTrue(any(missing in p for p in problems), problems)
 
 
 
