@@ -40,8 +40,9 @@
 行為：ARMED 一行（夾帶冒煙：最早 agent transcript 前 SMOKE_SCAN_LINES 行內第一個含冒煙
   token 的行＝prompt 行之行號與 byte 數＋命中數；harness 會在 prompt 行之前置框架行、
   只讀首行＝恆報 命中=0）→ 靜默迴圈（60s），stall／判準失效告警時輸出並退出（★stall 之合法靜默例外：
-  未完成 agent 皆有未回工具呼叫、且在其自報 timeout＋PENDING_MARGIN 內＝不告——子 agent 前景命令可逾
-  600s 時之長等待；journal／transcript 讀不懂一律照 STALL 判，寧誤報不漏報）；runaway
+  未完成 agent〔按 key 對齊、resume 後被取代之舊 agentId 不計〕皆有末段未回工具呼叫、且在其自報
+  timeout＋PENDING_MARGIN 內＝不告——子 agent 前景命令可逾 600s 時之長等待；journal／transcript
+  讀不懂一律照 STALL 判，寧誤報不漏報）；runaway
   告警一次後★不退出、續行監看（rev5:B-069：run 還活著時退出＝看門狗自我卸除、stall
   覆蓋歸零）——★`--bg` 為此契約的具名例外：背景腿改告警即退出（見上）；★run 結束（持久
   json 於 ARMED 之後落地或更新）→ 印 DONE 一行並退出（首掛鎖到早已結束的 run 不觸 DONE、
@@ -390,8 +391,10 @@ def _iso_epoch(ts):
 
 
 def unfinished_agent_ids(journal_text):
-    """journal 全文 → 已 started 而無 result 之 agentId 集；抽不到任何 started 事件＝None（判準無從成立）。"""
-    started, finished = set(), set()
+    """journal 全文 → 未完成 agent 之 agentId 集：按 key 對齊、同 key 以最後一次 started 為準（resume 後被取代之舊
+    agentId 永無 result、不計），其後無 result 之 key 為未完成；列缺 key 者以 agentId 充 key。抽不到任何 started
+    事件＝None（判準無從成立）。"""
+    latest, done = {}, set()
     for line in journal_text.split("\n"):
         try:
             e = json.loads(line)
@@ -399,17 +402,21 @@ def unfinished_agent_ids(journal_text):
             continue
         if not isinstance(e, dict) or not isinstance(e.get("agentId"), str):
             continue
+        key = e["key"] if isinstance(e.get("key"), str) else e["agentId"]
         if e.get("type") == "started":
-            started.add(e["agentId"])
+            latest[key] = e["agentId"]
         elif e.get("type") == "result":
-            finished.add(e["agentId"])
-    return (started - finished) if started else None
+            done.add(key)
+    return {aid for key, aid in latest.items() if key not in done} if latest else None
 
 
 def pending_tool_deadline(transcript_path):
     """agent transcript → 其未回工具呼叫之截止（epoch 秒；同訊息並發多支取最晚）；無未回呼叫、任一未回呼叫推不出
-    截止（非 Bash 且無數值 timeout、背景呼叫、時戳壞形）或讀不了→None。"""
+    截止（非 Bash 且無數值 timeout、背景呼叫、時戳壞形）、未回呼叫不全在末段或讀不了→None。
+    末段＝最後一則 assistant 訊息之並發組：tool_use 帶 message.id 者 id 變即新段、不帶者其前出現過 tool_result
+    即新段（並發組之 tool_use 行連續、先於其 tool_result）；更早段之殘留未回＝協定異常或解析漂移＝讀不懂。"""
     uses, answered = [], set()
+    seg, seg_id, result_since = -1, None, False
     try:
         with open(transcript_path, encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -421,20 +428,25 @@ def pending_tool_deadline(transcript_path):
                 content = msg.get("content") if isinstance(msg, dict) else None
                 if not isinstance(content, list):
                     continue
+                mid = msg.get("id")
                 for c in content:
                     if not isinstance(c, dict):
                         continue
                     if c.get("type") == "tool_use":
-                        uses.append((c.get("id"), c.get("name"), c.get("input"), e.get("timestamp")))
+                        if seg < 0 or (mid is not None and mid != seg_id) or (mid is None and result_since):
+                            seg += 1
+                        seg_id, result_since = mid, False
+                        uses.append((c.get("id"), c.get("name"), c.get("input"), e.get("timestamp"), seg))
                     elif c.get("type") == "tool_result":
                         answered.add(c.get("tool_use_id"))
+                        result_since = True
     except OSError:
         return None
     pending = [u for u in uses if u[0] not in answered]
-    if not pending:
+    if not pending or any(u[4] != seg for u in pending):
         return None
     deadlines = []
-    for _id, name, inp, ts in pending:
+    for _id, name, inp, ts, _seg in pending:
         start = _iso_epoch(ts)
         if start is None or not isinstance(inp, dict) or inp.get("run_in_background"):
             return None
@@ -448,8 +460,9 @@ def pending_tool_deadline(transcript_path):
 
 
 def legit_silence(wf_dir, now):
-    """STALL 前之合法靜默判定：未完成 agent 皆有未回工具呼叫、且 now 未逾其截止＋PENDING_MARGIN → True；journal
-    抽不出未完成集、未完成集為空、任一 agent 無合法待回或讀不懂 → False（退回 STALL 判準：寧誤報不漏報）。
+    """STALL 前之合法靜默判定：未完成 agent（[unfinished_agent_ids]：按 key 對齊）皆有末段未回工具呼叫
+    （[pending_tool_deadline]）、且 now 未逾其截止＋PENDING_MARGIN → True；journal 抽不出未完成集、未完成集為空、
+    任一 agent 無合法待回或讀不懂 → False（退回 STALL 判準：寧誤報不漏報）。
     存在理由：BASH_MAX_TIMEOUT_MS 放寬後子 agent 前景命令可逾 600s——STALL 之原推導前提失效（mb128 實暴）。
     代價（明認）：待回呼叫期間 agent 行程本身若已死，STALL 最多遲到該呼叫之 timeout＋PENDING_MARGIN。"""
     ids = unfinished_agent_ids(read_journal(wf_dir))
@@ -947,6 +960,46 @@ class TestLegitSilence(unittest.TestCase):
             {"type": "tool_use", "id": "t1", "name": "Bash", "input": self.LONG}]}})
         out, _ = self._run({"A": [("raw", bad)]})                               # 時戳壞形
         self.assertIn("看門狗 STALL", out)
+
+    @staticmethod
+    def _journal(rows):
+        return "".join(json.dumps(r) + "\n" for r in [{"type": "launched"}] + rows)
+
+    def test_resumed_run_superseded_agent_id_is_not_unfinished(self):
+        """resume 後同 key 二度 started（舊 agentId 被殺、永無 result）：未完成集按 key 對齊、取最後一次 started——
+        舊 agentId 不得拖垮新 agent 之合法等待（否則 resumed run 內 STALL 誤報復現）。"""
+        j = self._journal([{"type": "started", "key": "k1", "agentId": "OLD"},
+                           {"type": "started", "key": "k1", "agentId": "NEW"}])
+        out, rounds = self._run({"OLD": [("use", "t0", "Read", {"file_path": "/x"}, 4000)],
+                                 "NEW": [("use", "t1", "Bash", self.LONG, 900)]}, journal=j)
+        self.assertEqual((out, rounds), ("", 2))
+
+    def test_resumed_run_all_keys_done_is_stall_despite_stale_pending(self):
+        """同 key 之新 agent 已回、run 卻未收＝未完成集為空 → STALL；舊 agentId transcript 殘留之未回長呼叫不得掩蓋。"""
+        j = self._journal([{"type": "started", "key": "k1", "agentId": "OLD"},
+                           {"type": "started", "key": "k1", "agentId": "NEW"},
+                           {"type": "result", "key": "k1", "agentId": "NEW", "result": {}}])
+        out, _ = self._run({"OLD": [("use", "t0", "Bash", self.LONG, 900)],
+                            "NEW": [("use", "t1", "Read", {"file_path": "/x"}, 900), ("result", "t1")]}, journal=j)
+        self.assertIn("看門狗 STALL", out)
+
+    def test_pending_call_from_an_earlier_turn_is_not_legit(self):
+        """未回呼叫須全在末段（最後一則 assistant 訊息之並發組）；更早段之殘留未回＝協定異常或解析漂移 → 讀不懂、照
+        STALL。分段：帶 message.id 者 id 變即新段；不帶者其前出現過 tool_result 即新段。"""
+        out, _ = self._run({"A": [("use", "t1", "Bash", self.LONG, 900),
+                                  ("use", "t2", "Read", {"file_path": "/x"}, 850), ("result", "t2"),
+                                  ("use", "t3", "Bash", self.LONG, 800)]})
+        self.assertIn("看門狗 STALL", out)
+
+        def use(mid, tid, name, inp, ago):
+            return ("raw", json.dumps({"timestamp": self._iso(self.NOW - ago), "message": {
+                "id": mid, "content": [{"type": "tool_use", "id": tid, "name": name, "input": inp}]}}))
+        out, _ = self._run({"A": [use("m1", "t1", "Bash", self.LONG, 900),
+                                  use("m2", "t2", "Read", {"file_path": "/x"}, 850), ("result", "t2")]})
+        self.assertIn("看門狗 STALL", out)
+        out, rounds = self._run({"A": [use("m1", "t1", "Bash", self.LONG, 900),     # 同 id 並發：t2 先回、t1 合法等待
+                                       use("m1", "t2", "Read", {"file_path": "/x"}, 900), ("result", "t2")]})
+        self.assertEqual((out, rounds), ("", 2))
 
 
 class TestRunawayCeilingDerivation(unittest.TestCase):
