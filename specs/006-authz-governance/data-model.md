@@ -108,11 +108,12 @@
 | outcome | 成立條件（取先序腿；§5） | 交易收場 | 回應 | 稽核 | 判定面同步 |
 |---|---|---|---|---|---|
 | 操作者缺席 | 請求上下文不可得 | 未開交易 | `5000` | 0 | 否 |
-| NotFound | 鎖角色列查無或已軟刪（含 body 缺席或壞形收斂之角色鍵 0） | rollback | `2222`＋`biz.role.notFound` | 0 | 否 |
+| NotFound | 鎖角色列查無或已軟刪（含 body 缺席或壞形〔含期望集鍵缺席或拼錯〕收斂之角色鍵 0） | rollback | `2222`＋`biz.role.notFound` | 0 | 否 |
 | Rejected{ProtectedRevoke} | 撤銷集含受保護授權列 | rollback | `2222`＋`biz.role.protectedRevoke`、`data` null | 0 | 否 |
 | Rejected{ProtectedGrant}（端點維限定） | 標的非 R_SUPER ∧ 新授集 ∩ 封死集 ≠ ∅ | rollback | `2222`＋`biz.role.protectedGrant`、`data` null | 0 | 否 |
 | Applied{revoked, granted, effective}（含空 diff） | 其餘 | commit（脫離請求之收場 task 內） | `0000`＋`{revoked, granted, effective}` | 恰 1 列 `update` | 是（不問 diff） |
 | 故障 | 資料庫錯誤（含按鈕碼清單壞形、撤銷之等集檢查不等、commit 失敗） | rollback | `5000` | 0 | 否 |
+| 收場 task 被取消 | 收場 task 自身被中止（請求 future 之丟棄不屬此態——收場已脫離請求生命週期） | commit 未必完成 | `5000`（`security.authz` error 一則） | 隨 commit 是否已落（0 或 1） | 未必完成 |
 
 恰兩態業務 outcome（Applied／Rejected；FR-015）、無 NoOp；拒因只供 wire 純 key，被擋項（`blocked`）只供 tracing 與測試斷言、永不上 wire。
 
@@ -125,6 +126,7 @@
 | NoOp | 五腿全過、七欄身分鍵已現役 | commit（只刪歸檔列） | `0000`、`data` null | 0 | 否 |
 | Applied | 五腿全過、身分鍵無現役列 | commit | `0000`、`data` null | 恰 1 列 `restore` | 是 |
 | 故障 | 資料庫錯誤 | rollback | `5000` | 0 | 否 |
+| 收場 task 被取消 | 同 §2.2 該列 | commit 未必完成 | `5000`（`security.authz` error 一則） | 隨 commit 是否已落（0 或 1） | 未必完成 |
 
 NoOp 與 Applied 對前端不可區分；NoOp 使回收桶少一列而稽核表無痕跡（spec Clarifications 2026-10-01 首題；已知態＝ADR-00068 款 12）。
 
@@ -172,7 +174,7 @@ NoOp 與 Applied 對前端不可區分；NoOp 使回收桶少一列而稽核表�
 
 ## §5 守門固定序（多重違規取先序腿；凍結入契約）
 
-**四支寫端共同前置**：操作者上下文（`handler/common.rs` 之 `operator_from_context`＋本域私有 `operator_from`；缺席＝`5000`、先於一切守門、不開交易、不帶降級欄）；body 於抽取器經 `common::json_or_default` 收斂（缺席或壞形＝預設形：角色鍵或識別 0、期望集空）；交易由 handler 外殼 begin、內層 `<op>_in_txn` 承守門序；拒腿與故障腿顯式 rollback 後回錯；commit 與其後之判定面同步交脫離請求生命週期之收場 task（取消安全；§6）。資料庫故障經本域 `db_failure` 收斂 `5000`。
+**四支寫端共同前置**：操作者上下文（`handler/common.rs` 之 `operator_from_context`＋本域私有 `operator_from`；缺席＝`5000`、先於一切守門、不開交易、不帶降級欄）；body 於抽取器經 `common::json_or_default` 收斂（缺席或壞形＝預設形：角色鍵或識別 0、期望集空；三維寫端之期望集鍵缺席或拼錯亦屬壞形）；交易由 handler 外殼 begin、內層 `<op>_in_txn` 承守門序；拒腿與故障腿顯式 rollback 後回錯；commit 與其後之判定面同步交脫離請求生命週期之收場 task（取消安全；§6）。資料庫故障經本域 `db_failure` 收斂 `5000`。
 
 **選單序列化域成員（終態）**：005 刀七支（addMenu／updateMenu／deleteMenu／batchDeleteMenu／restoreMenu／deleteRole／batchDeleteRole）＋本刀 updateRoleMenu／updateRoleButton。**不入域**：updateRoleEndpoints、restorePolicy（及 005 刀之 addRole／updateRole／updateRoleHome）。入域＝內層首句 `sys_casbin_archive::enter_menu_domain`（advisory key `MENU_DOMAIN_LOCK_KEY`＝ASCII `rev6menu`）；機器證＝兩支入域寫端各一支 NOT-granted 等待案（`sys_casbin_archive::menu_domain_waiter_count`、64 位 key 拆兩欄比對）、兩支不入域者各一支零等待案（FR-049）。
 
@@ -272,7 +274,7 @@ getAllButtons＝治理域按鈕碼聯集（`list_governed` 一次讀；壞形＝
 | 型名之家 | DTO 型名與逐欄形之家＝`contracts/wire-authz-governance.md`／`contracts/wire-policy-archive.md` 之「共用型」節；本節只定映射規則、不列型名 |
 | 構造 | 回應一律由 DTO 逐欄白名單構造、絕不序列化原始資料列；欄名 camelCase（FR-005） |
 | 角色鍵 | 一律 `id`（三支現況讀 `?id=`、三支寫端 body `id`；與既有首頁讀寫同式）；回收桶之 `roleCode` 為篩選文字、非識別鍵 |
-| 期望集 | 選單維＝選單 id 陣列、按鈕維＝按鈕碼陣列、端點維＝`{path, method}` 陣列；欄名沿 rev5 契約形（`menuIds`／`buttons`／`endpoints`）、定案與缺欄之收斂形住 contracts（rev5 as-built＝`#[serde(default)]` 收為空集） |
+| 期望集 | 選單維＝選單 id 陣列、按鈕維＝按鈕碼陣列、端點維＝`{path, method}` 陣列；欄名沿 rev5 契約形（`menuIds`／`buttons`／`endpoints`）、★期望集鍵必填：缺鍵或拼錯＝壞形、整包收斂為角色鍵 0 ⇒ notFound（rev5 as-built＝`#[serde(default)]` 收為空集＝全撤；本刀刻意分岔＝spec Clarifications 第七題）；收斂形之 wire 定案住 contracts |
 | id 型 | 角色 id、選單 id、歸檔列 id＝number、經 `serialize_i64_number_guarded`（2^53 fail-loud）；歸檔列 `roleId`＝number \| null、經 `serialize_opt_i64_number_guarded`；選單維生效集合之元素亦 MUST 過守衛——`Vec<i64>` 直出即觸 `tests/wire_i64_guard_lint.rs` 之 `nested_generic_i64_fields_are_out_of_scope` 絆線（rev5 以 newtype 承載元素守衛；形住 contracts） |
 | 受保護旗標 | 三支現況讀每項 `protected: boolean`＝該現役列之 `casbin_rule.protected`（後端單一真源；前端 MUST NOT 以 seed 靜態集判定）；候選讀端與寫端回應不帶 |
 | 端點鍵 | `{path, method}` 恰兩鍵、`method` 為大寫白名單字面；前端葉鍵合成與反查屬前端（FR-033） |

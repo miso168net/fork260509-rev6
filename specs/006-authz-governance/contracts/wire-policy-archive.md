@@ -1,7 +1,7 @@
 # Contract — 授權回收桶兩端點（getArchivedPolicies／restorePolicy）
 
-> 權威序依憲法 §I.3：base-web 實碼 ＞ 官方 docs ＞ mock。授權回收桶頁為本刀新增之獨立管理頁（seed 選單列 10 `manage_policy-archive`、component `view.manage_policy-archive`、頁級門＝其選單維受保護政策列 72〔R_SUPER〕）；契約以 `rev5:006` 之 `contracts/wire-policy-archive.md` 與其 as-built（`rev5:server/src/handler/policy_archive.rs`、`rev5:server/src/model/facade/sys_casbin_archive.rs` 之 `list`／`restore`、`rev5:src/typings/api/rev5-role-admin.d.ts` 之 `Api.PolicyArchive` 段）為藍本、依 rev6 拍板改寫（差異逐欄見文末「與 rev5 wire 逐欄比對」、理由住本刀 research「rev6 差異點」），由本檔凍結（spec 目錄＝定點快照；wire 活體權威＝碼＋`tests/contract.rs`＋wire-schema 快照）。
-> 信封、錯誤碼總則同 `wire-authz-governance.md` 檔頭（業務錯誤 HTTP 200、例外恰二 `4040`→404／`5003`→403；未登入 `8888`；寫端先取操作者上下文、缺席＝`5000`；資料庫錯＝`5000`；授權中介層不讀 body；判定面同步結果不影響回應）。兩條皆 `Protection::Policy`、路徑×動詞逐字對齊 001 刀凍結 seed 之政策列 70（getArchivedPolicies GET）／71（restorePolicy POST），皆只授 R_SUPER、`protected=TRUE`（兩列與頁級之選單維受保護政策列〔授權列 72〕皆受保護＝撤不掉、自救路徑恆可走；FR-032）。
+> 權威序依憲法 §I.3：base-web 實碼 ＞ 官方 docs ＞ mock。授權回收桶頁為本刀新增之獨立管理頁（seed 選單列 10 `manage_policy-archive`、component `view.manage_policy-archive`、頁級門＝其選單維受保護授權列 72〔R_SUPER〕）；契約以 `rev5:006` 之 `contracts/wire-policy-archive.md` 與其 as-built（`rev5:server/src/handler/policy_archive.rs`、`rev5:server/src/model/facade/sys_casbin_archive.rs` 之 `list`／`restore`、`rev5:src/typings/api/rev5-role-admin.d.ts` 之 `Api.PolicyArchive` 段）為藍本、依 rev6 拍板改寫（差異逐欄見文末「與 rev5 wire 逐欄比對」、理由住本刀 research「rev6 差異點」），由本檔凍結（spec 目錄＝定點快照；wire 活體權威＝碼＋`tests/contract.rs`＋wire-schema 快照）。
+> 信封、錯誤碼總則同 `wire-authz-governance.md` 檔頭（業務錯誤 HTTP 200、例外恰二 `4040`→404／`5003`→403；未登入 `8888`；寫端先取操作者上下文、缺席＝`5000`；資料庫錯＝`5000`；授權中介層不讀 body；判定面同步結果不影響回應）。兩條皆 `Protection::Policy`、路徑×動詞逐字對齊 001 刀凍結 seed 之政策列 70（getArchivedPolicies GET）／71（restorePolicy POST），皆只授 R_SUPER、`protected=TRUE`（兩列與頁級之選單維受保護授權列〔授權列 72〕皆受保護＝撤不掉、自救路徑恆可走；FR-032）。
 > 後端 handler 住新建 `rust-api/server/src/handler/policy_archive.rs`（新域：自有 target `security.policy_archive`、`BODY_FALLBACK_MSG`、`operator_from`、`db_failure`；`handler/mod.rs` 新增模組宣告）；鎖內重驗與寫入住擴充之 `rust-api/server/src/model/facade/sys_casbin_archive.rs`（ADR-00065 決定 3）。型別＝新建 `base-web/src/typings/api/rev6-authz.d.ts` 之 `Api.Authz`（與三維授權共用命名空間）；wrapper＝新建 `base-web/src/service/api/rev6-authz.ts`（十支 fetcher 中本檔兩支；不入 barrel、錯誤不加工）。
 
 ## 端點總表
@@ -71,7 +71,7 @@ Query `ArchivedPolicyListQuery`（全部可空）：
 - 零鎖、零交易、零稽核、零判定面同步（ADR-00067 決定 3）。
 - 錯誤集只有授權（`5003`／`8888`）與內部（`5000`；經本域 `db_failure`）兩腿、零業務錯誤腿（值域外之篩選一律沉默）。
 
-前端：回收桶頁表格 8 欄、`remote` 分頁、列鍵＝`id`；搜尋模組＝來源角色代碼（文字）×維度（下拉、可清空；重置即刷新）；表頭只一顆重新整理鈕（不掛 `TableHeaderOperation`＝rev5 形、CDP 對照結構同形）；`restorable=false` 之列渲染同文案停用鈕、不包二次確認；復原無按鈕碼 gating（門＝頁級選單維受保護政策列＋列級旗標）。
+前端：回收桶頁表格 8 欄、`remote` 分頁、列鍵＝`id`；搜尋模組＝來源角色代碼（文字）×維度（下拉、可清空；重置即刷新）；表頭只一顆重新整理鈕（不掛 `TableHeaderOperation`＝rev5 形、CDP 對照結構同形）；`restorable=false` 之列渲染同文案停用鈕、不包二次確認；復原無按鈕碼 gating（門＝頁級選單維受保護授權列＋列級旗標）。
 
 ## 2. `POST /systemManage/restorePolicy`（seed 71；不進選單域）
 
@@ -102,7 +102,7 @@ Req `RestorePolicyReq`：`{ id: number }`（歸檔列 id）。
 - 稽核（Applied 恰一列；同交易）：`AuditOperation::Restore`（字面 `restore`）、`entity_table`＝`"sys_role"`、`entity_id`＝標的角色 id、`before`＝無、`after`＝`{archive_id, dimension, target, act}`（`dimension`＝由 `v2` 推導之三值、`target`＝`v1`、`act`＝`v2`）；鍵名與值形定稿＝data-model §10「操作稽核列」。
 - 判定面同步（ADR-00067 決定 1／決定 4）：觸發門＝Applied；收場沿 005 刀取消安全形（commit 與其後同步交脫離請求生命週期之 task、回應前 await；NoOp 亦於 task 內 commit、不同步）⇒ 回應於同步結束後送出；收場 task 被取消＝`5000`（告警形同既有 `handler/role.rs` 之 `settle_domain_write` 取消分支、字面由 tasks 定）。Applied 之 API 判定於換上後即時生效；來源角色停用者至重新啟用前仍 `5003`（停用即斷權不經判定面；ADR-00068 款 16）。
 - **不另設 23505 收窄**（ADR-00065 決定 10）：同一 `v0` 之授權表 INSERT 寫者（三維寫端之授予、本端點）皆持該角色列鎖、NoOp 判定在鎖內 ⇒「NoOp 判定後、INSERT 前他交易 commit 同鍵」於生產路徑結構不可達；任何資料庫錯（含序列失步撞主鍵）一律經本域 `db_failure` 回 `5000`、根因落 log。
-- 自救路徑（Q14、FR-032）：R_SUPER 撤掉自身非受保護端點列（例 getRoleList）致角色頁失能時，本頁之選單維受保護政策列（授權列 72；側欄項＝選單列 10）與本檔兩支端點（授權列 70／71）皆受保護而撤不掉 ⇒ 經本端點復原該列即恢復；選單維與按鈕維被撤者於角色頁恢復後重勾。
+- 自救路徑（Q14、FR-032）：R_SUPER 撤掉自身非受保護端點列（例 getRoleList）致角色頁失能時，本頁之選單維受保護授權列（授權列 72；側欄項＝選單列 10）與本檔兩支端點（授權列 70／71）皆受保護而撤不掉 ⇒ 經本端點復原該列即恢復；選單維與按鈕維被撤者於角色頁恢復後重勾。
 
 body 缺席或壞形 ⇒ `id=0` ⇒ 第 0 步查無 ⇒ `2222 biz.policy.notRestorable`（FR-007；不為此新增錯誤碼）。
 200：`data: null`（Applied／NoOp）；`2222 biz.policy.notRestorable`；`5000`（上下文缺席、資料庫錯、收場被取消）。

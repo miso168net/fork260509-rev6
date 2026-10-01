@@ -248,7 +248,7 @@
 
 ## R17 as-built 改寫義務（RL-0011 四形種子）
 
-- **Decision**: 各單元收尾以 `python3 tools/docsync errata <詞>` 對下列種子枚舉（全 repo 含兩子庫 pin 樹）、逐處判讀「改／史述留／accepted 不動／生成物由 generate」、改完復掃；史料面（brainstorms、specs、reviews）與 accepted ADR body 不動；新值（「四十九」「四十六」「九域」「十二支」「八島」「三類」）改後應有命中、以同指令驗。現量（以行計）＝外層 HEAD `316faaf`、兩子庫 pin 樹；ADR-00063～ADR-00071 草稿未入版控、不在其內。
+- **Decision**: 各單元收尾以 `python3 tools/docsync errata <詞>` 對下列種子枚舉（全 repo 含兩子庫 pin 樹）、逐處判讀「改／史述留／accepted 不動／生成物由 generate」、改完復掃；史料面（brainstorms、specs、reviews）與 accepted ADR body 不動；新值（「四十九」「九域」「十二支」「八島」「三類」）改後應有命中、以同指令驗；★`MSG_KEYS` 鍵數不設新值——鍵數一律指向 `MSG_KEYS`／跨端閘輸出、文件與碼註不寫實數（accepted ADR-00039 決定 3；活書 08 §8.2 同句）。現量（以行計）＝外層 HEAD `316faaf`、兩子庫 pin 樹；ADR-00063～ADR-00071 草稿未入版控、不在其內。
 
 | 形 | 種子 | 現量 | 現在式面分布（摘） | 承載單元 |
 |---|---|---|---|---|
@@ -270,6 +270,9 @@
 | ③名冊與枚舉 | `現有兩組讀面與一組寫面`／`藍本出處＝rev5:server/src/model/facade/sys_role.rs` | 1／1 | `sys_role.rs` 模組 doc：首句與「各支分工」清單補兩支無鎖讀；藍本出處句之 rev5 取件清單補 `active_code_of`／`active_ids_by_codes`（同 doc 對 `find_active_by_code_for_update` 之「不帶」句仍真、不改） | U4 |
 | ③名冊與枚舉 | 活書逐島情境（06 §6.1／10 §10.2）與 frontmatter `rev5_blueprint` | 06 §6.1 島情境 4 則（島 A～D、E、F、H）、10 §10.2 7 則（島 A～F、H），皆無島 G（`grep -n '^### ' docs/arc42/06-runtime-view.md docs/arc42/10-quality-requirements.md`） | 06 §6.1 與 10 §10.2 各新增「授權治理——島 G」情境一則（逐島一則慣例）並補兩檔 frontmatter `rev5_blueprint` 鍵（rev5 活書 §6／§10 無同主題子節，註法同 06 選單域情境之「藍本改取」形）；藍本＝`rev5:docs/arc42/ARCHITECTURE.md` §8 授權慣例之三維授權治理段、§5 Building blocks 之 facade 段、§1 能力清單句與 `rev5:ADR 0053`～`rev5:ADR 0056`（依憲法 §I.5 重打字）；06 島 H 情境標題列「授權治理島 G 未入憲……凍結位＝ADR-00043／ADR-00044」句改指島 G 條文——該句不歸本列：隨 U0 P-a（ADR-00063 決定六；與上方 `凍結位`／`未入憲` 列同一處），P-a 取延至治理單元時才歸 U17；08 frontmatter「授權慣例」值與生成之 `docs/generated/reference/rev5-blueprint-map.md` 隨之變（其「島 G／I 承襲指針」狀態句屬上方 `島 G／I` 種子、隨 U0 P-a；生成物由 generate 重產、不手改） | U17 |
 | ③名冊與枚舉 | `恰五支`／`移除面寫端`／`只由移除面寫端觸發` | 12／34／3 | `auth/enforce.rs` 1＋編排範例 2／活書 04・05・06・08・10・11・12 各 1、RUNBOOK 2、`enforce.rs` 3、`menu.rs` 2、`role.rs` 2、`main.rs` 1、`state.rs` 1／`enforce.rs` 1（講移除面類別本身之句留；編排範例 2＝workspace 依賴之同字面、無關、留） | U7～U9（碼註與 RUNBOOK：各觸發列落地單元同批改至該 commit 實況＝R10）／U17（活書） |
+| ③名冊與枚舉 | `選單五寫端`／`選單樹五寫端`（入域成員列舉） | 4／4 | 活書 06 §6.1 島 H 情境①、RUNBOOK §11.1 首句／活書 12「選單序列化域」列、憲法 H1（U0 Amendment 承擔）——U7 起 updateRoleMenu／updateRoleButton 入域＝成漏列；005 刀 spec 與 ADR 為史料、留 | U7（RUNBOOK §11.1）／U17（活書 06／12） |
+| ③名冊與枚舉 | `零歸檔之寫端不觸發同步` | 2 | 活書 10 §10.2 島 H 情境「回應」列（泛稱「寫端」自授予面上線起含零歸檔亦觸發者＝成假述；改限移除面或改寫為三類；ADR-00067 後果點名）；另 1＝ADR-00067 草稿 | U17 |
+| ①名稱 | `決定 7 觸發矩陣` | 4 | `tests/authz_entrypoint_lint.rs` 之 `RELOAD_CALL_FILES` doc「擴列」句與 `reload_call_sites_match_roster` panic 訊息（改指 ADR-00043 決定 7＋ADR-00067 決定 1；ADR-00067 後果點名）；另 2＝ADR-00067 草稿 | U7 |
 | ③名冊與枚舉 | `島 A～F 與島 H`／`六支碼面閘`／`十二條件段` | 3／3／1 | 活書 06・10・12／`.githooks/pre-commit`、`tools/bootstrap.sh`／`test_hook_wiring.py` docstring | U17／U14 |
 | ③名冊與枚舉 | `只刪不補`／`刪上界以上列`／`例外恰一` | 4／10／7 | RUNBOOK 2、工具 2／活書 05 1、RUNBOOK 2、README 1、工具 4／`facade/mod.rs`、活書 05（仍真、復核） | U15／U4 |
 | ③名冊與枚舉 | `三支掃描`／`三支公開`／`兩件職責` | 3／2／1 | 皆 `sys_casbin_archive.rs`：模組 doc ⑤「三支掃描歸檔都回傳實際歸檔列數」、`insert_snapshot` doc「歸三支掃描歸檔 fn」、`move_to_archive` doc「三支掃描歸檔的共同本體」與「三支公開入口」、測試 doc「三支公開 fn 的掃描範圍」（撤銷入口 `archive_revoked_policies` 亦走 `move_to_archive`＝第四支；測試 doc 隨該案是否擴及撤銷 scope 判讀）／模組 doc 首段「本檔兩件職責」（本刀增回收桶讀端與復原）；同 doc 錯誤形段之 log target 列舉「（角色域 `security.role`、選單域 `security.menu`）」補回收桶域 `security.policy_archive`（定位＝`git -C rust-api grep -n 'security.menu' -- server/src/model/facade/sys_casbin_archive.rs`） | U5（三支掃描／三支公開）／U9（兩件職責、log target 列舉） |

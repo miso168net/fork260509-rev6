@@ -28,7 +28,7 @@
 | 11 | `src/typings/components.d.ts` | §III 生成檔紀律（不入用途名單） | 預期零變動（rev5 同形頁所用 naive 元件於本檔皆已登記）；有變只許 unplugin 重算之宣告行增刪、與引入該元件之檔同 commit | —— |
 | 12 | `src/locales/langs/zh-tw.ts` | I18N 錨點檔（rev6 自有、單行形） | `backend` 子樹補三鍵；檔頭單行標記不動 | `rev6-inline` 恰 1 行 |
 
-- 應有值判準（ADR-00063 決定二「預估依據」）：實數項取實數；預估項於其承載單元落地後取預估、之前計 0；新增型以全檔各項之和比對。**凡觸及 #1～#6 任一檔之單元**（含依 spec FR-004 落鍵之後端單元）出口逐檔斷言，不等即停手升級主線（user 定當刀 PATCH 或延至收刀前 PATCH）；用途分項以 `grep -c 'MANAGE-PAGE-WIRING(iii)'` 等形複核。
+- 應有值判準（ADR-00063 決定二「預估依據」）：實數項取實數；預估項於其承載單元落地後取預估、之前計 0；新增型以全檔各項之和比對。**凡觸及 #1～#6 任一檔之單元**（含依 spec FR-004 落鍵之後端單元）出口逐檔斷言，不等即停手升級主線（user 定當刀 PATCH 或延至收刀前 PATCH；★任一中途 PATCH Amendment——含本條之當刀 PATCH 與島 G／(iii) 列指針改動之 PATCH——MUST 同顆實數化已落地之預估項＝憲法表外宣告 1「延至下一次 Amendment 實數化」、1.5.1 前例）；用途分項以 `grep -cF` 逐用途計數（新增型 `MANAGE-PAGE-WIRING(<用途>)+ <刀名> START]`、修改型 `MANAGE-PAGE-WIRING(<用途>) <刀名>]`）複核、不由全檔總數倒推。
 - 收刀前承載體檢單元：(iii)(iv) 預估值以 §V.2 PATCH Amendment 實數化（ADR-00063 翻案觸發器之 PATCH 條；前例 ADR-00051）；實數化後 §2.1 對賬腿自動納入。
 
 ### 1.3 新增型新檔五支（不入表、檔頭一行標記）
@@ -48,6 +48,8 @@
 
 - `git -C base-web diff --name-only --diff-filter=M 2248b89..HEAD` ⊆ §1.2 之 12 檔 ∪ {upstream `example` 基線 `8be6f9ba` 不存在之檔}（後者＝fork-delta 意義之新增檔、spec FR-039「＋新增檔」；逐檔以 `git -C base-web cat-file -e 8be6f9ba:<路徑>` 判、rc 非 0＝屬之）——全集機器可判、不設人工指名之追加集。
 - `--diff-filter=A` 恰為 §1.3 五檔；`--diff-filter=DR` 為空。
+- ★(iii) 單元（U12／U13）出口另斷言路由外掛產物四檔零變動：`git -C base-web diff --name-only 2248b89..HEAD -- src/router/elegant src/typings/elegant-router.d.ts` 為空（1.7.0 (iii) 列紀律欄「產物四檔本用途零變動」之機器半邊；產物檔之變動只許出現於 (iv) 單元 U14 起）。
+- ★本節斷言一律排在 base-web 子庫 commit（六步序④）之後、外層 commit（⑥）之前跑——`A..HEAD` 形只見已 commit 之改動。
 - `git -C base-web diff 2248b89..HEAD -- src/views/manage/role/index.vue` 零輸出（角色頁主檔一行不動＝spec FR-033、(iii) 列紀律欄）。
 - 修改型標記只出現於授權三元組＝`tools/fork-delta-lint.py` 授權判定腿；(ii) 用途之修改型標記出現於兩彈窗＝紅（(ii) 列紀律欄改寫句之三元組判定）。
 
@@ -114,7 +116,7 @@
 
 | 對象 | 擴充（同單元） |
 |---|---|
-| `rust-api/server/tests/authz_entrypoint_lint.rs` | ①`RELOAD_CALL_FILES` 加 `handler/policy_archive.rs`（路徑字典序 `handler/menu.rs` < `handler/policy_archive.rs` < `handler/role.rs`；與 restorePolicy 之同步接線同一 commit＝ADR-00067 決定 5），doc 之觸發門句（「實際歸檔 ≥1 列」）於授予面落地單元即改（授予面之門＝Applied；`handler/role.rs` 已在冊）、復原類與本擴列同顆補齊（research R10） ②`DOMAIN_LOCK_CALL_FILES` 不變（入域兩支住已在冊之 `handler/role.rs`；restorePolicy 不入域——`handler/policy_archive.rs` 生產面一出現 `enter_menu_domain` 即紅）③`DOMAIN_WRITE_SIDE_FILES` 加 `model/facade/sys_casbin_policy.rs`、型長 `[&str; 7]`→`[&str; 8]`，`planting_lock_uses_turns_leg_five_red` 內 per-user 鎖植入之逐檔清單七檔→八檔、常數 doc「七檔」同改——★漏列不轉紅（該常數只是 `leg_per_user_lock_in_domain` 之過濾集）＝靜默缺口、tasks 明列 ④植入案期望紅集字面：`planting_reload_use_turns_leg_one_red_outside_exempt_faces` 之 `&["handler/ip_rule.rs", "handler/menu.rs", "handler/role.rs"]` 依新檔入掃描面之實況補 `handler/policy_archive.rs`；`planting_lock_uses_turns_leg_five_red` 之域鎖期望紅集不變（名冊未變）⑤`ENFORCER_WRITE_FILES` 維持空冊 |
+| `rust-api/server/tests/authz_entrypoint_lint.rs` | ①`RELOAD_CALL_FILES` 加 `handler/policy_archive.rs`（路徑字典序 `handler/menu.rs` < `handler/policy_archive.rs` < `handler/role.rs`；與 restorePolicy 之同步接線同一 commit＝ADR-00067 決定 5），doc 之觸發門句（「實際歸檔 ≥1 列」）於授予面落地單元即改（授予面之門＝Applied；`handler/role.rs` 已在冊）、復原類與本擴列同顆補齊（research R10） ②`DOMAIN_LOCK_CALL_FILES` 不變（入域兩支住已在冊之 `handler/role.rs`；restorePolicy 不入域——`handler/policy_archive.rs` 生產面一出現 `enter_menu_domain` 即紅）③`DOMAIN_WRITE_SIDE_FILES` 加 `model/facade/sys_casbin_policy.rs`、型長 `[&str; 7]`→`[&str; 8]`，`planting_lock_uses_turns_leg_five_red` 內 per-user 鎖植入之逐檔清單七檔→八檔、常數 doc「七檔」同改——★漏列不轉紅（該常數只是 `leg_per_user_lock_in_domain` 之過濾集）＝靜默缺口、tasks 明列 ④植入案期望紅集字面：`planting_reload_use_turns_leg_one_red_outside_exempt_faces` 之 `&["handler/ip_rule.rs", "handler/menu.rs", "handler/role.rs"]` 依新檔入掃描面之實況補 `handler/policy_archive.rs`；`planting_lock_uses_turns_leg_five_red` 之域鎖期望紅集不變（名冊未變）⑤`ENFORCER_WRITE_FILES` 維持空冊 ⑥（新腿；spec FR-022「恰兩處」之機器釘，於兩掛點皆落地之 U9 立）生產區 `protected_endpoint_set(` 呼叫點名冊恰 {`model/facade/sys_casbin_policy.rs`（`set_role_endpoints` 授予判定）、`model/facade/sys_casbin_archive.rs`（`restore` 第③腿＋`list` 旗標③半〔讀端、不計掛點＝ADR-00064 決定 2〕）}、生產區 `INSERT INTO casbin_rule` 字面之檔集恰 {`model/facade/sys_casbin_policy.rs`、`model/facade/sys_casbin_archive.rs`}（授予、復原回插兩類＝data-model §7 第 9 點）——集合恰等、多出即紅；測試模組與 `test_kit` 不在射程；植入變異自證（他檔生產區各植一處 → 紅 → 寫回） |
 | `handler/common.rs::each_domain_keeps_its_own_log_literals` | 逐域表加 `policy_archive.rs` 一列（target `security.policy_archive`、拒寫 `refused = "request_context_absent"`／`endpoint`／`uid` 與本域訊息、本域專屬 `BODY_FALLBACK_MSG`〔行首 `const BODY_FALLBACK_MSG: &str = "…"`、不得與既有各域同字〕）；`role.rs` 列不變（三維授權沿 `security.role` 與其既有 `BODY_FALLBACK_MSG`）；新檔須有行首 `fn operator_from(`、拒寫以 `AppError::Internal` 收尾、body 取用以 `common::json_or_default(` 限定路徑形呼叫——★漏列不轉紅（`include_str!` 寫死之元組表）＝靜默缺口、tasks 明列 |
 | `handler/ip_rule.rs::production_code_emits_no_degraded_field` | 射程檔集加 `policy_archive.rs`（錨＝行首 `fn operator_from(`）——★漏列不轉紅（同上、寫死之元組表）＝靜默缺口、tasks 明列 |
 | `handler/role.rs::domain_write_ends_enter_the_domain_first_and_roll_back_explicitly` | 生產區 `reload_enforcer` 出現處之期望（現＝匯入句＋收場件內一處）隨授予面收場件同單元改寫（ADR-00067 後果「碼面連動」）；新入域兩支之「內層首句＝`enter_menu_domain`」源碼釘同檔補 |
