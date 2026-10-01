@@ -9,7 +9,7 @@ rev5_blueprint:
 ## 技術選擇
 
 - **從上游重來的 fork 策略**：base-web 自 upstream `example` tip 衍生、fork 差異以軌道制治理（憲法 §III）；rust-api 全新寫、對前代 source 受控參照——讀允許、拷貝禁止、註解重寫、拍板已推翻者不帶回（憲法 §I.5）。
-- **base-web 為權威**：前端有的功能、後端必供對應端點（憲法 §I.1）；menu 權限以 casbin enforce（憲法 §I.2）——授權真相只在 DB（`casbin_rule`）、記憶體中的 casbin 判定面由其全量導出，移除面寫端 commit 後以全新重建後一步換上同步、失敗保留上一份（ADR-00043；憲法 §I.7 島 H2）。
+- **base-web 為權威**：前端有的功能、後端必供對應端點（憲法 §I.1）；menu 權限以 casbin enforce（憲法 §I.2）——授權真相只在 DB（`casbin_rule`）、記憶體中的 casbin 判定面由其全量導出，移除面寫端 commit 後以全新重建後一步換上同步、失敗保留上一份（ADR-00043；憲法 §I.7 島 G1）。
 - **wire 契約機器化**：前端 typings 為裁判、contract test＋coverage gate 守恆、13 碼矩陣凍結（憲法 §I.3；機制＝`tools/wire-schema.py` 快照裁判＋`contract.rs` 雙向覆蓋，002 已 as-built）。
 - **傘狀雙脊椎與縱切刀工作流**：傘狀 repo 管文件／spec／編排，兩子體各自成倉；兩段式 commit（worktree 內 commit→外層 pin bump）保證每個外層 commit 可重現；功能以縱切刀交付、走 SDD＋TDD（憲法 §I.4）。
 - **機器優先文件觀＋人審機器閘**：文件為機器與人共讀而設計，每個事實一個人寫的家、鏡像一律機器生成（`tools/docsync`）、契約 lint 在 commit 當下強制；AI 代理產物必經人審與機器閘（憲法 §I.8）。

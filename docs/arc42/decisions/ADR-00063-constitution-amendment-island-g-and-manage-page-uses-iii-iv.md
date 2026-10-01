@@ -2,7 +2,7 @@
 id: "ADR-00063"
 title: 憲法 Amendment 1.6.0→1.7.0——§I.7 島 G（casbin 授權治理、G1～G6、G6 結構性封死）入憲＋島 H 連動（序言、H1 終態成員括號、判定面同步失敗方向與兩窗之落位）＋§III.2 ★BASE-WEB-MANAGE-PAGE-WIRING 用途 (iii)(iv)＋§III 修改型之 Vue 模板屬性行變體＋表外宣告 3 範圍欄入機器對賬
 date: 2026-10-01
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-040（①～⑥）、FR-017／FR-019／FR-020／FR-021～FR-024、FR-029／FR-031、FR-035、FR-037～FR-039、FR-041①／FR-042、SC-012；brainstorm §0 Q2／Q3／Q5／Q6／Q7、主線工程判斷⑥、§3 §1 憲法 Amendment 段；島 G 條文以 rev5 憲法 v1.10.0 §I.7 島 G 字面為底（rev5:ADR 0053 款一；G6＝rev5:ADR 0054、復原重驗腿＝rev5:ADR 0055；G5 條文層級與島 G 標頭之前代親決＝rev5:ADR 0053 provenance 所載兩題 user 親決；rev5 凍結 SHA 7eab28a）；§III.2 (iii)(iv) 列形承 rev5:ADR 0053 款二，範圍欄預估值取 rev5 base-web 9833308 之 (iii)(iv) 標記實數（含 rev5:B-129 修正所帶之塊——其 commit 屬 rev5:007 刀、標記掛 `007-user-password-admin` 刀名；rev5:B-116 修正未增 (iii) 塊）並依本刀 plan 期裁定校正；轉正對象＝ADR-00044 決定 3（其後果段預告、不 supersede）；對偶與 H2 方向句之複核義務＝ADR-00042 翻案觸發器第一條；兩窗＝BL-00134（條文面；ADR 面＝ADR-00067）；§III 修改型變體句＝BL-00135（處置形＝LL-00045）；表外宣告 3＝BL-00132；範圍欄 PATCH 實數化前例＝ADR-00048／ADR-00051；§V.2 流程、§V.3 MINOR 判準；draft 於 plan 期落 feature branch、user 逐款親決於本刀 U0"
@@ -257,6 +257,8 @@ tags: [constitution, amendment, fork-delta, behavior-island, authz, authz-govern
 | H-b4 MAJOR 射程句 | 決定五 | 照提案字面（「八島」） | 改字 |
 | H-b5 承襲指針表 G 列尾註 | 決定五 | 照提案字面 | 改字 |
 | P-a 活書狀態句 | 決定六 | 同顆改 | 延至本刀治理單元 |
+
+- **親決紀錄**：user 親決 2026-10-02（006 刀 tasks T002 Amendment 顆）——同一親決輪先定 ADR-00064 決定 1／2、ADR-00065 決定 1／3、ADR-00067 決定 1／2／6 與 ADR-00070 決定 1／2（逐款一題一問、皆照文）；再依決定六親決題索引一題一問呈本 ADR 二十三題、皆採建議——H-a①、G-a①、G-b a、G-c1～G-c7 照提案字面、III-a①、III-b①、III-c①、III-d1／III-d2／III-e／III-f 照提案字面、H-b1～H-b5 照提案字面（H-b2 依 tasks T002 另呈「保留 vacuous 子句」寫法、user 取 spec FR-040⑤ 字面）、P-a 同顆改；零非建議項 ⇒ 決定節、差異附表與 Amendment log 草稿免改寫（翻案觸發器第一條不觸發），憲法落字逐字取自本 ADR 之提案字面。
 
 ## 後果
 
