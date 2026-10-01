@@ -2,7 +2,7 @@
 id: "ADR-00065"
 title: 授權回收桶復原——不可復原集 3→5（可復原恰 `endpoint_revoke`、零 migration）、鎖內固定序五腿（原因→同實例→封死→端點在路由表→停用不擋）、以歸檔來源角色 id 鎖角色列之等價改形、NoOp 消費歸檔列且零稽核、可復原旗標＝①～④ 同判準、回收桶只篩角色代碼與維度、不設 23505 收窄；ADR-00044 決定 4 復核結論＝選單維仍無可復原原因
 date: 2026-10-01
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-026～FR-032（US3 AS1～AS7、SC-006～SC-007、Edge Cases「授權回收桶」段）、FR-004（純 key）、FR-006（稽核同交易、操作者先於守門）、FR-007（body 壞形收斂）、FR-012（撤銷原因三值）、FR-017（復原 Applied 觸發同步）、FR-041③（ADR-00044 決定 4 之復核結論）、FR-050；spec Clarifications 2026-10-01 首題（復原 NoOp 照 rev5 零稽核）；brainstorm §0 Q2（手動撤銷之選單／按鈕維不可復原）／Q16（復原撞現役＝NoOp、旗標不加現役腿）／Q17（回收桶只篩角色代碼與維度）、§2 BL-00047 反向確認；plan 期主線工程判斷（以歸檔來源角色 id 鎖讀角色列之等價改形、不另設 23505 收窄、端點在路由表之判準取新建 `router::policy_endpoints()`、可復原旗標②半之代碼批次讀端＝新建 `sys_role::active_ids_by_codes`）；藍本＝rev5:ADR 0055（§1 復核結論 B／§2 reason gate 五值／§3 鎖內固定序五腿與三態／§4 腿與現役寫端守門對照／§5 restorable 逐腿同判準）與其 as-built rev5:server/src/model/facade/sys_casbin_archive.rs 之 `restore`／`restore_locked`／`list`、rev5:server/src/handler/policy_archive.rs 之 `restore_policy`／`get_archived_policies`——其以代碼鎖讀角色列之形改為以歸檔 role_id 鎖讀（決定 4）、其 23505 收窄為不可復原之形不帶（決定 10）、facade 自開交易之形不帶（handler 持交易）；被復核者＝ADR-00044 決定 4（授權歸檔表三自由度 won't-use 與翻案觸發條款）；封死判準＝ADR-00064 決定 1／決定 2；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -112,6 +112,8 @@ tags: [authz, casbin, governance, state-machine, behavior-island, authz-governan
     - 不入域一案（決定 3）：並發交易持選單序列化域 advisory 期間，restorePolicy 之交易本體直接完成並 commit、不等待——域鎖上零等待者（既有 `sys_casbin_archive::menu_domain_waiter_count`＝0）且完成時點早於持有者放鎖；加入入域即轉紅（005 刀 `handler/role.rs` 之 `add_role_passes_the_menu_domain_holder` 同形）。
     - 選單維與按鈕維之列恆不可復原一案：列表旗標 false、強呼 restorePolicy ⇒ `biz.policy.notRestorable`、歸檔列保留。
     - 決定 1 之不可復原集五值釘案（含負向臂翻）、決定 8 之「旗標＝權威」逐腿同判準四案、後果之自救路徑端到端一案同屬本款機器證、不重列。
+
+- **親決紀錄**：user 親決 2026-10-02（006 刀 tasks T003 施工前提顆）——決定 1／3 已於 T002 Amendment 顆之同一親決輪先定（照文；被島 G 條文指向之款）；本輪逐款一題一問呈決定 2、4～11、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

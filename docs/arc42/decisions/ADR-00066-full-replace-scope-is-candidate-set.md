@@ -2,7 +2,7 @@
 id: "ADR-00066"
 title: 三維授權全量替換之射程＝候選集——撤銷集＝（現況 ∩ 候選集）−期望、新授集＝（期望 ∩ 候選集）−現況、候選外現役列不撤不授不入生效集合；現況讀端只回候選內（讀端取態與 rev5:ADR 0056 分岔）
 date: 2026-10-01
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-041④、FR-009～FR-016（US1 AS3／AS4／AS5／AS6／AS7、SC-003、Edge Cases 之「授權寫端」段、刻意分岔登記表「三維現況讀端之回應集」列）；brainstorm §0 Q8（撤銷射程＝候選集、本刀預拍）／Q14（R_SUPER 名下非受保護列可撤、自救走授權回收桶）／Q15（期望空集＝合法全撤）；spec Clarifications 2026-10-01 第二題（plan 期 user 裁定：三維現況讀端只回「現況 ∩ 候選集」）；plan 期主線工程判斷（端點候選單一來源住路由註冊表、facade 以參數收候選與方法白名單；按鈕碼候選沿既有壞形回錯語意）；藍本＝rev5:ADR 0056（rev5 實作期升級、user 2026-08-23 親決；射程＝候選集之決定沿用，其「讀端維持現狀」半款不取）與其 as-built rev5:server/src/model/facade/sys_casbin_policy.rs（scope_live_to_candidates／plan_full_replace／apply_full_replace／governed_route_names_by_id／map_menu_ids／route_names_to_menu_ids）、rev5:server/src/router.rs 之 policy_route_defs（端點候選單一真源、rev5:B-123）、rev5:B-115（按鈕碼聯集穩定序）；背景量測＝rust-api/migration/src/m0002_baseline_seeds.rs 之 SEED_CASBIN_RULE 對 rust-api/server/src/router.rs 之 ROUTES（2026-10-01 逐列解析）；rev6 既有件＝sys_menu::list_governed／build_governed_tree／button_codes_of、sys_casbin_archive::archive_all_role_policies、router::HttpMethod、ADR-00044 決定 3（G3 角色刪除連動歸檔、G4 刪除守門、G5 lock-then-redecide）；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -59,9 +59,11 @@ tags: [authz, casbin, governance, state-machine, behavior-island, authz-governan
 4. **候選外現役列**：不撤、不授（期望集含其鍵者已於 orphan skip 略過）、不入寫端回應之生效集合；受保護撤銷拒只看候選內撤銷集；稽核列之撤銷與新授計數只含候選內。seed 中尚未上線之政策列原封保留、其路由註冊即自動成為候選。
 5. **現況讀端取態（spec Clarifications 2026-10-01 第二題）**：getRoleMenu／getRoleButton／getRoleEndpoints MUST 回「現況 ∩ 候選集」、每項帶受保護旗標（後端單一真源）。收窄 MUST 與寫端共用決定 2 之同一濾點件與決定 3 之同一候選取得件（選單維＝`sys_menu::list_governed` 同一次讀所得之候選集與映射表、按鈕維＝同一新建聯集讀端、端點維＝`router::policy_endpoints()`），MUST NOT 另寫第二份判準：端點維以 HTTP 方法白名單辨識現況之端點維列後收窄；按鈕維以聯集收窄；選單維先以治理域路由名收窄、再以同一次讀之映射表反向映射回介面選單 id（候選外路由名因先收窄而不反射）。讀端不取鎖。★本款與 `rev5:ADR 0056`「讀端維持現狀」（rev5 HEAD 按鈕維與端點維回全部現役列）**刻意分岔**：UI 零差（彈窗只畫候選、候選外列本就不撤不授）、wire 列數差（量測見背景：本刀後 R_SUPER 端點維讀端回候選內列、少於 rev5 形之全部現役列）；已登入 spec 刻意分岔登記表「三維現況讀端之回應集」列，CDP 對照排除此差。
 6. **生效集合（Applied 之 effective）**：＝orphan skip 後之期望集（期望集 ∩ 候選集、去重、保首見序），以各維介面識別呈現（選單 id／按鈕碼／（路徑,方法））。集合上恆等於寫後之「現況 ∩ 候選集」，即其後現況讀端所回（寫讀閉合；次序不保證相同）。三維寫端 outcome 恰兩態：Applied{撤銷集, 新授集, 生效集合}／Rejected{拒因}；空 diff 屬 Applied（Applied 含空 diff 即觸發判定面同步＝ADR-00067 決定 1／決定 2）。
-7. **期望空集＝合法全撤（Q15）**：合法角色鍵＋空期望集 ⇒ 候選內現役列全數撤銷歸檔（仍受決定 8 之受保護撤銷拒約束）。body 缺席或壞形 ⇒ 角色鍵收斂為不對應任何活性角色之預設值 ⇒ `biz.role.notFound` 早拒、零變更，MUST NOT 演成全撤（FR-007）。
+7. **期望空集＝合法全撤（Q15）**：合法角色鍵＋空期望集 ⇒ 候選內現役列全數撤銷歸檔（仍受決定 8 之受保護撤銷拒約束）。body 缺席或壞形 ⇒ 角色鍵收斂為不對應任何活性角色之預設值 ⇒ `biz.role.notFound` 早拒、零變更，MUST NOT 演成全撤（FR-007）。★期望集鍵必填：body 合法而期望集鍵缺席或鍵名拼錯＝壞形、同上處置；只有明確送空陣列才是合法全撤（spec Clarifications 2026-10-01 第七題；與 rev5 as-built「缺鍵＝空集＝全撤」刻意分岔、已入 spec 刻意分岔登記表）。
 8. **保護判定與先後序**：撤銷集觸及受保護授權列＝整批拒 `biz.role.protectedRevoke`（三維皆適用、任何寫入之前、零變更零稽核零同步）；端點維另判授予側封死（`biz.role.protectedGrant`；謂詞＝ADR-00064 決定 1、掛點＝ADR-00064 決定 2）。端點維固定序＝**先判撤銷、再判授予**（ADR-00064 決定 3）；標的為 R_SUPER 或新授集為空時不查封死集。R_SUPER 名下之非受保護列 MUST 可撤（Q14）；自救路徑＝授權回收桶復原端點維列（回收桶頁之選單維列 `manage_policy-archive` 與 getArchivedPolicies／restorePolicy 兩支端點列皆受保護、撤不掉）；選單維與按鈕維被撤者於角色頁恢復後重勾（兩維手動撤銷屬不可復原集＝ADR-00065 決定 1）。
 9. **射程語意之單一定義**：候選集＝寫端射程＝現況讀端射程＝候選讀端回應＝可操作集（唯一已知偏差：選單維之候選讀端不呈現環成員及其子孫＝決定 3 之已知邊界）。日後新增授權維度、或任一維候選集定義變更，MUST 同步本射程語意並複核本 ADR。
+
+- **親決紀錄**：user 親決 2026-10-02（006 刀 tasks T003 施工前提顆）——逐款一題一問呈決定 1～9、皆採建議：決定 1～6、8、9 照文定稿；決定 7 照文並補入「期望集鍵必填」句（spec Clarifications 2026-10-01 第七題之定稿承載）；零非建議項。
 
 ## 後果
 

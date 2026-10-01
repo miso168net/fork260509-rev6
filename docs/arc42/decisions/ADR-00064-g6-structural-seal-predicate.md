@@ -2,7 +2,7 @@
 id: "ADR-00064"
 title: 結構性封死（島 G6）——封死集＝「ptype='p' ∧ protected=TRUE ∧ v2 ∈ HTTP 方法白名單」之（路徑,方法）謂詞、不寫列數；授予側整批拒 `biz.role.protectedGrant`、R_SUPER 豁免；掛點恰兩處（端點維授權寫端、授權回收桶復原第③腿）；承重前提＝受保護旗標寫不進來；選單維受保護四列與非封死之政策端點不封、no-escalation 本體留 007 刀
 date: 2026-10-01
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-041②、FR-021～FR-025（US2 AS1～AS5、SC-004、Edge Cases「結構性封死與保護」段）、FR-004（純 key 一因一鍵）、FR-013（鎖內重驗含封死集）、FR-050（變異自證）；brainstorm §0 Q3（封死射程照 rev5：只封 protected=TRUE）／Q4（no-escalation 照 rev5：留 007 刀）、主線工程判斷③（選單維受保護四列不封）；plan 期主線工程判斷（HTTP 方法白名單＝新建 `router::endpoint_methods()`、由 `HttpMethod` 全變體導出；封死集查詢件＝新建 `sys_casbin_policy::protected_endpoint_set`；facade 以參數收候選與白名單）；藍本＝rev5:ADR 0054（§1 謂詞不寫列數／§2 掛點恰兩處／§3 固定序與拒因／§4 選單維射程外／§5 非 vacuous 與變異自證／§6 承重前提／§7 翻案觸發）與其 as-built rev5:server/src/model/facade/sys_casbin_policy.rs 之 `protected_endpoint_set`（掛點＝同檔 `apply_endpoints_locked` 之封死腿、rev5:server/src/model/facade/sys_casbin_archive.rs 之 `restore_locked` 第③腿；讀端消費＝同檔 `list` 之可復原旗標）；R_SUPER 豁免真案之探針形＝rev5:server/src/model/facade/sys_casbin_policy.rs 之 `protected_grant_lockout_exempts_super_role_self_grant_but_rejects_other_role`、復原第③腿之兩半（含 R_SUPER 對照臂）＝rev5:server/src/model/facade/sys_casbin_archive.rs 之 `restore_rejects_each_leg_without_consuming_and_list_flag_agrees`（其非 R_SUPER 半把封死成員植在標的自身名下之形不帶，見決定 8）；rev5 憲法 v1.10.0 島 G6 字面供對照（rev6 入憲字面由 ADR-00063 決定一於本刀 U0 親決）；承重前提之上游＝ADR-00044 決定 4（授權歸檔表三自由度 won't-use 與翻案觸發條款）；no-escalation 掛點＝ADR-00014 決定 5、對沖條目＝BL-00048；背景量測＝rust-api/migration/src/m0002_baseline_seeds.rs 之 SEED_CASBIN_RULE 對 rust-api/server/src/router.rs 之 ROUTES（2026-10-01 逐列解析）；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -92,6 +92,8 @@ tags: [authz, casbin, governance, security, behavior-island, authz-governance]
      - rollback 收尾（零 seed 變更）。
      - wire 案只驗 R_SUPER 以候選內現況原樣提交 ⇒ `0000`、撤銷 0、新授 0。
    - 不建靜態守恆（封死集＝常數字面之斷言）：執行期謂詞為唯一真源（替代案 2）。
+
+- **親決紀錄**：user 親決 2026-10-02（006 刀 tasks T003 施工前提顆）——決定 1／2 已於 T002 Amendment 顆之同一親決輪先定（照文；被島 G 條文指向之款）；本輪逐款一題一問呈決定 3～8、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

@@ -2,7 +2,7 @@
 id: "ADR-00067"
 title: 判定面同步觸發列增列——授予面三支 Applied 即觸發（含空 diff、刻意例外）與 restorePolicy Applied 觸發，與移除面「成功且實際歸檔 ≥1 列」三類並陳；已知降級窗改記兩窗（commit→換上之有界過渡窗＋重試耗盡窗）、補述 ADR-00043 決定 9、不 supersede ADR-00043
 date: 2026-10-01
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-041⑤、FR-017～FR-020、SC-006、Edge Cases 之「判定面同步與生效時點」段、刻意分岔登記表「已知降級窗之條文」列；brainstorm §0 Q6（BL-00134 記窗）／Q13（生效兩層時點）與主線工程判斷⑤（授予面 Applied 即觸發含空 diff 照 rev5 HEAD）／⑥（觸發列以新 ADR 增列、不 supersede ADR-00043）；BL-00134（spec-compliance-005 L4-1、user 2026-09-30 裁交本刀 brainstorm）；被補述面＝ADR-00043 決定 6／決定 7（末句預授「其觸發列由該刀 ADR 增列」）／決定 9，與 ADR-00042 決定三之 H2 引文與差異附表 H2 列之「唯一已知降級窗」字面；藍本＝rev5:ADR 0053 款四（grant 面 Applied 即觸發不問 diff＝刻意例外、回收桶 Applied 觸發之矩陣列與並陳理由）、rev5 v1.10.0 島 G1 條文、rev5:server/src/auth/enforce.rs 之 reload_enforcer doc 觸發矩陣；過渡窗之記載為 rev6 新增（前代只記耗盡窗）；rev6 既有件＝rust-api/server/src/auth/enforce.rs 之 reload_enforcer／RELOAD_SERIAL／RELOAD_MAX_ATTEMPTS／RELOAD_RETRY_BACKOFF_MS、rust-api/server/src/handler/role.rs 之 settle_domain_write（取消安全收場形）、rust-api/server/tests/authz_entrypoint_lint.rs 之 RELOAD_CALL_FILES／ENFORCER_WRITE_FILES、casbin_reload_total 與 deploy/grafana-provisioning/alerting/rules.yml 之告警規則 obs016-casbin-reload-anomaly；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -64,6 +64,8 @@ tags: [authz, casbin, enforcer, reload, known-state, authz-governance]
 8. **觀測與告警照舊**：`casbin_reload_total{outcome=ok|retry|exhausted}` 值集封閉恰三、開機預註冊不變；告警規則 `obs016-casbin-reload-anomaly`（title `casbin-reload-anomaly`；`retry`／`exhausted` 之 5 分鐘增量 > 0）之 uid、title 與判準不變（其錨註解之指針隨動見後果「碼面連動」）；計數不帶觸發來源維度。`ok` 之增量來源自本刀起為三類（授予面空 diff 亦 +1）。
 9. **RUNBOOK 同批**：§11.2 `ok` 判讀句改為三類觸發（字面同決定 1、指本 ADR 與 ADR-00043 決定 7），同句後半零增列舉「其餘寫端（新增、復原、角色停用、選單啟停等）」之泛稱「復原」改為「選單復原」（restorePolicy 之 Applied 自本刀起屬觸發者）；同句流程指針補島 G 情境一項不隨觸發列承載單元先補，改於治理單元新增活書 06 §6.1「授權治理——島 G」之同顆補入（免懸空指針）；§13「回應 403」分診補一項排障錨「剛授予或剛復原之端點仍回 `5003`」，依觀察時點分流：①觀察早於發起寫端收到回應（其他並行請求）＝過渡窗（決定 6①），稍後重送即通；②發起寫端已回成功後仍 `5003`＝不是過渡窗（決定 4：回應於同步結束後才送出），依序查——標的角色是否停用（停用不擋授權寫入、停用即斷權由授權讀端每請求濾角色狀態＝ADR-00065 決定 3 第⑤腿；復原形＝ADR-00068 款 16，三維授予同理）→（限授予）寫端回應之生效集合是否含該（路徑,方法）（不含＝所送之鍵不屬 getAllEndpoints 候選、已被 orphan skip 靜默略過＝ADR-00066 決定 2）→ 該鍵是否其後被撤（授權回收桶出現該角色該（路徑,方法）晚於該次寫端之 `endpoint_revoke` 歸檔列＝後送出之全量替換整份覆蓋＝ADR-00068 款 11；角色刪除受 in-use 守門所擋、持該角色者在場時不可達）→ §11.2 `exhausted` 增量（耗盡窗＝決定 6②）、處置沿「判定面同步耗盡」段；該段補授予面反向症狀（新授端點持續 `5003`）與撤銷殘留（新撤端點持續放行）兩項並列。授予面與復原之收場若另立取消告警字面，§13 之 log 引文同批補列。
 10. **BL-00134 處置**：以記窗收（其觸發欄選項二：於 Amendment 在 H2 改字記過渡窗＝ADR-00063 決定五承接字面、本 ADR 承接定義）；選項一（入域寫端等待在途同步以關窗）依替代案 1 否決。收刀 `backlog_done` 刪列。
+
+- **親決紀錄**：user 親決 2026-10-02（006 刀 tasks T003 施工前提顆）——決定 1／2／6 已於 T002 Amendment 顆之同一親決輪先定（照文；被島 G 條文指向之款）；本輪逐款一題一問呈決定 3／4／5／7／8／9／10、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 
