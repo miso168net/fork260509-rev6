@@ -260,7 +260,7 @@
 | ①名稱 | `ADR-00045`／`ADR-00046` | 38／46 | 現在式面依 ADR-00068 背景（5 檔）與 ADR-00069 背景（11 檔、含 rust-api 2 檔與 base-web ip-rule 頁） | U17 |
 | ①名稱 | ``限 `R_SUPER` ``／`限 R_SUPER`／`只授 R_SUPER` | 11／8／6 | 活書 06 2、12 1、RUNBOOK 1、`ip_rule.rs`／`menu.rs`／`role.rs` 各 1、`throttle` 2、`router.rs` 2＋裸詞形 `system_settings` 2、`router.rs` 2、`contract.rs` 2（seed 事實句留、能力限定句改） | U17（碼註同單元） |
 | ①名稱 | `policy-archive`／`授權回收桶`／`授權彈窗` | 39／50／39 | 活書 10 1、11 1、BACKLOG 1、`schema-definition.md` 1（三頁 view 缺席句）；活書 08 §8.4 引 ADR-00045 款 1 之句 | U14／U17 |
-| ①名稱 | `all_button_codes`／`未立 newtype` | 4／1 | `sys_menu.rs` 模組 doc 1（其餘 005 刀史料）／`tests/wire_i64_guard_lint.rs` 模組 doc 1 | U4／U7 |
+| ①名稱 | `all_button_codes`／`未立 newtype`／`零 tuple 形` | 4／1／1 | `sys_menu.rs` 模組 doc 1（其餘 005 刀史料）／`tests/wire_i64_guard_lint.rs` 模組 doc 1／同檔 `guarded_fields_are_seen_on_real_tree` fn doc 1（其 must 名單同批補 `MenuId` 一筆） | U4／U7／U7 |
 | ②未來式與「不帶」 | `授權治理刀` | 30 | 憲法 1、BACKLOG 2、`auth/enforce.rs` 1、`sys_casbin_archive.rs` 2 | U0／U5／U7（`enforce.rs` 觸發句；U9 補復原類）／U9／收刀（BACKLOG） |
 | ②未來式與「不帶」 | `候選集端點`／`授權回收桶讀端與復原不帶`／`授權治理島的本體由後刀填入` | 1／1／1 | `handler/role.rs` 檔頭／`sys_casbin_archive.rs` 模組 doc ④／`auth/enforce.rs` `no_escalation_check` doc | U6／U9／U10 |
 | ②未來式與「不帶」 | `三維授權與授權回收桶諸支不帶` | 1 | base-web `rev6-role-admin.ts` 檔頭出處句（仍真：指 rev5 該檔之諸支不帶入本檔；不補指向 `rev6-authz.ts` 之指針＝該檔零改、同 R2） | ——（零改） |
@@ -294,11 +294,11 @@
 | U1 骨架 | ROUTES 尾接十列（rev5 相對序）＋`ROUTES_COUNT` 49＋兩處釘值測同批（`router.rs`、`test_references.py`）；新建 `policy_endpoints()`／`endpoint_methods()`＋型別推導環之編譯面自證；兩組 handler 空殼（`role.rs` 八支、新建 `policy_archive.rs` 兩支）；`handler/mod.rs` 宣告、ASCII 序與「九域」；contract 49 case 佔位＋授權態矩陣（Policy 保護、`8888`） | 不觸 base-web |
 | U2 對賬腿 | `tools/fork-delta-lint.py` 範圍欄對賬腿＋變異自證 | MUST 早於首個觸及 base-web 既有檔之單元（U7） |
 | U3 測試基建 | 兩族守衛補回被撤 seed 授權列、植入件與 raw INSERT 落建立者、BL-00136 形①改錨、`ID_RANGES` 增列 | MUST 早於任一撤銷 seed 列之單元 |
-| U4 授權 facade | `sys_casbin_policy.rs`（現況讀、濾點件、規劃、授予 INSERT、`protected_endpoint_set`）、`sys_role` 兩讀件、聯集讀端、`facade/mod.rs` 十二支、`DOMAIN_WRITE_SIDE_FILES` 7→8、具型交易 doctest | 依 U3 |
+| U4 授權 facade | `sys_casbin_policy.rs` 之讀與候選半（型、現況讀、濾點件、聯集讀端、`protected_endpoint_set`）、`sys_role` 兩讀件、`facade/mod.rs` 十二支、`DOMAIN_WRITE_SIDE_FILES` 7→8（寫入半＝規劃、授予 INSERT、`set_role_*` 與具型交易 doctest 隨 U7／U8：其撤銷半依 U5 之撤銷入口、私有件無從掛 doctest；`Dimension::revoke_reason()` 亦隨 U7——其回傳之撤銷原因常數由 U5 立；tasks 期定） | 依 U3 |
 | U5 歸檔面 | 三撤銷原因、3→5、釘案翻臂、撤銷入口＋doctest、模組 doc ④改寫 | —— |
 | U6 讀端五支 | getRoleMenu／getRoleButton／getRoleEndpoints／getAllButtons／getAllEndpoints；`handler/role.rs` 檔頭「不帶」句改寫；零新拒因鍵 | 不觸 base-web |
-| U7 選單維與按鈕維寫端 | 入域、授予面收場件、稽核件、選單 id newtype（寫端回應 `effective` 首現處）＋`wire_i64_guard_lint.rs` 模組 doc 改寫、`protectedRevoke` 首發＋三檔 locale＋`app.d.ts`、reload 源碼釘改寫、觸發矩陣現在式（授予面類首現：R10 所列碼註諸處、`RELOAD_CALL_FILES` doc 之觸發門句、RUNBOOK §11.2 `ok` 判讀句改至本單元實況）、NOT-granted 機器證；名冊載入新列之變異自證（暫改 (iii) 列範圍欄任一反引號路徑之反引號內字面為不含 `/` 之非路徑 token→`tools/fork-delta-lint.py` rc 2→以存原文寫回；形＝`contracts/code-gates.md` §1.1）；出口預估斷言 | 首個觸及 base-web 既有檔之單元 |
-| U8 端點維寫端＋封死 | 不入域、`protectedGrant` 首發（三檔 locale＋`app.d.ts`）、R_SUPER 豁免探針、封死變異自證、觸發矩陣句補端點維授予（同 U7 諸處） | 出口逐檔斷言（含預估項之 en-us／zh-cn／`app.d.ts`；不等＝停手升級；R14.8） |
+| U7 選單維與按鈕維寫端 | `sys_casbin_policy.rs` 寫入半（`plan_full_replace`／`apply_full_replace`〔收撤銷原因參數〕／`set_role_menu`／`set_role_buttons`＋`Dimension::revoke_reason()`＋具型交易 doctest）、入域、授予面收場件、稽核件、選單 id newtype（寫端回應 `effective` 首現處）＋`wire_i64_guard_lint.rs` 模組 doc 與 `guarded_fields_are_seen_on_real_tree` 之 doc／must 名單改寫、`protectedRevoke` 首發＋三檔 locale＋`app.d.ts`、reload 源碼釘改寫、觸發矩陣現在式（授予面類首現：R10 所列碼註諸處、`RELOAD_CALL_FILES` doc 之觸發門句、RUNBOOK §11.2 `ok` 判讀句改至本單元實況）、NOT-granted 機器證；名冊載入新列之變異自證（暫改 (iii) 列範圍欄任一反引號路徑之反引號內字面為不含 `/` 之非路徑 token→`tools/fork-delta-lint.py` rc 2→以存原文寫回；形＝`contracts/code-gates.md` §1.1）；出口預估斷言 | 首個觸及 base-web 既有檔之單元 |
+| U8 端點維寫端＋封死 | `set_role_endpoints`＋具型交易 doctest、不入域、`protectedGrant` 首發（三檔 locale＋`app.d.ts`）、R_SUPER 豁免探針、封死變異自證、觸發矩陣句補端點維授予（同 U7 諸處） | 出口逐檔斷言（含預估項之 en-us／zh-cn／`app.d.ts`；不等＝停手升級；R14.8） |
 | U9 回收桶兩端點 | `handler/policy_archive.rs`、列表件與復原件＋doctest、`notRestorable` 首發（三檔 locale＋`app.d.ts`）、`RELOAD_CALL_FILES` 擴列與植入字面＋觸發矩陣句補復原類（三類齊；RUNBOOK §11.2 句後半「復原」改「選單復原」；同顆）、兩逐域名冊、五腿負向與旗標同判準四案、NoOp、不入域案 | 出口逐檔斷言（同 U8；R14.8） |
 | U10 觸發矩陣特性鎖定 | 特性鎖定測、取消安全、即時生效雙斷言、自救路徑端到端、`rules.yml` 錨註解（島指針依 H-a）、殘列演練；RUNBOOK §13「剛授予或剛復原之端點仍回 `5003`」分診（三類觸發齊後補；ADR-00067 決定 9；§11.2 `ok` 判讀句隨 U7～U9、§11.2 流程指針之島 G 情境一項＝U17） | —— |
 | U11 wire | `rev6-authz.{ts,d.ts}` 新檔、快照重抽、`wire_schema.rs` 擴 `Api.Authz` 與正反例 | 只建 base-web 新檔 |
