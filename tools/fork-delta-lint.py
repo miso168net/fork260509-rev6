@@ -45,8 +45,15 @@ rev4 舊面只掃 src/，`.env*` 與 build/ 的 fork-delta 全靠人工 review�
 依範圍／紀律欄收窄檔面（ADAPT 修改型限根層 `.env*`；WRAPPER／RUSTAPI-SOURCE-ISOLATION 於
 掃描面一律不可修改型）——rev4 舊判定只到軌道裸名，借一個在冊軌道名即可在無授權用途／檔上全綠。
 
+★範圍欄對賬腿（006 刀 U2；憲法 §III.2 表外宣告 3＝ADR-00063 決定四；`docs/ops/reference-src/code-gate-contracts.md` §4）：
+§III.2 表每列範圍欄之（…）注記（轄其前一段反引號路徑、展開沿 [`_expand_range_files`]）以數量段閉集解析
+（[`classify_range_note`]），與 base-web 工作樹實數對賬——修改型逐（軌道, 用途, 檔）計 `原行:` 行、新增型逐檔跨列加總
+圈界塊首；標「預估」或含「不預估」之項與「產物檔 N 支」注記不入對賬（跳過粒度＝修改型逐三元組、新增型逐檔）。
+不等＝rc 1 指名；注記未識別、零解析、零非跳過對賬項等解析失準＝rc 2。與既有掃描同次執行（無引數路徑）。
+
 每次執行**先跑 self-test**（合成缺原行/缺圈界樣本、證 lint 真能攔——防 vacuous 恆綠），無 `test` 時再跑實掃。
-退出碼：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗、源倉缺席或未在 example、self-test 敗）／64 用法錯。
+退出碼：0 綠／1 缺標記、缺原行、軌道外或範圍欄計數不等／2 結構斷言敗（名冊載入失敗、範圍欄注記解析失準、源倉缺席或未在
+example、self-test 敗）／64 用法錯。
 """
 import collections
 import contextlib
@@ -499,7 +506,9 @@ def find_unmarked_additions(base_content, ours_content):
     （跨行）註解＋純結構標點行（閉合 } 等＝區塊延續）後仍有實質新增碼卻無合法標記（限註解行、字串
     常值內子字串不算）→報首行。分工：修改型缺原行→find_missing；純新增（新 import/欄位）缺圈界→本函式。
     ★已知可接受殘留（rev5 兩輪對抗驗證後定）：①與修改型同塊（無 context 分隔）的額外未圈界新增歸該塊
-    原行標記涵蓋、不另報（修它會重引入 captcha 型替換誤報張力）；②字串常值內未閉合 /* 之後續行罕見被當
+    原行標記涵蓋、不另報（修它會重引入 captcha 型替換誤報張力）——此形即憲法 §III 修改型之 Vue 模板屬性行變體句
+    所明文者（ADR-00063 決定三：同一開標籤內之新增屬性與 `原行:` 所載被替換基線行同處一個變更塊〔其間無未改行〕即由
+    該標記涵蓋、不另立新增型圈界），判準不因該句而變；②字串常值內未閉合 /* 之後續行罕見被當
     註解（窄 FN；不做 string-parsing）；③（find_missing 面、005 刀 U13b 定）灌水路徑：find_missing 的我方存留
     次數只扣新增型圈界塊內行，下列新增行若與某基線行同字面（norm 後）照計——該基線行被刪改而無 `原行:` 時即被
     掩蓋、本函式亦不攔＝**機器守不及**：③a 單行形新增型標記所在 change-block 之各行（不只次行；整塊有標記即放行）；
@@ -589,6 +598,154 @@ def new_file_track_issue(rel, marker, s1):
         return None
     return (f"新檔標記自稱 §III.1 軌道 {name}、但檔不在其範圍欄新增面 {face}"
             f"（憲法 §III.1 範圍欄；軌道與檔路徑不符）")
+
+
+# ── 範圍欄對賬腿（006 刀 U2；憲法 §III.2 表外宣告 3＝ADR-00063 決定四；契約＝`docs/ops/reference-src/code-gate-contracts.md` §4）──
+# 注記 span 形同 [`_expand_range_files`] 與 route-artifact-gate 之 `RE_NOTE`：注記轄其前一段（自上一注記之後至本注記之前）。
+RANGE_NOTE = re.compile(r"（[^）]*）")
+# 數量段（注記內首個「；」或「：」之前）之閉集基形；可冠「預估」或「各預估」（＝預估形）。其餘形一律未識別＝rc 2。
+RANGE_QTY_FORMS = (
+    re.compile(r"(?P<each>各\s*)?(?P<mod>\d+)\s*處，\s*修改型"),
+    re.compile(r"(?P<mod>\d+)\s*處修改型\s*＋\s*(?P<add>\d+)\s*塊新增型"),
+    re.compile(r"(?P<each>各\s*)?(?P<add>\d+)\s*塊，\s*新增型"),
+)
+
+
+def classify_range_note(note):
+    """範圍欄注記原文（含外框全形括號）→ (類, 處數, 塊數, 逐檔)；未識別回 None。類＝"count"（實數、入對賬）／
+    "est"（數量段冠「預估」或「各預估」）／"noest"（注記任處含「不預估」）／"artifact"（數量段為「產物檔 N 支」＝
+    route-artifact-gate 射程）——後三者不入對賬。逐檔＝「各」：數量對所轄每檔各記一份。"""
+    body = note[1:-1]
+    if "不預估" in body:
+        return "noest", 0, 0, False
+    qty = re.split(r"[；：]", body, maxsplit=1)[0].strip()
+    if re.fullmatch(r"產物檔\s*\d+\s*支", qty):
+        return "artifact", 0, 0, False
+    kind, each = "count", False
+    for pre, pre_each in (("各預估", True), ("預估", False)):
+        if qty.startswith(pre):
+            kind, each, qty = "est", pre_each, qty[len(pre):].strip()
+            break
+    for form in RANGE_QTY_FORMS:
+        m = form.fullmatch(qty)
+        if m:
+            g = m.groupdict()
+            return kind, int(g.get("mod") or 0), int(g.get("add") or 0), each or bool(g.get("each"))
+    return None
+
+
+def _skip_of(kinds):
+    """一項（修改型三元組或新增型檔）所涉注記類集 → 跳過類：含產物檔＝"artifact"、含預估或不預估＝"est"、全為實數＝None。"""
+    if "artifact" in kinds:
+        return "artifact"
+    return "est" if kinds & {"est", "noest"} else None
+
+
+def _star_rows(path):
+    """憲法 §III.2 表各資料列 → [(軌道, 用途, 範圍欄原文)]。[`load_roster`] 只回展平後之檔集、取不到注記分群，故本腿再掃
+    一次原文；掃描錨與剝飾同之（前提＝其結構斷言已過），所得檔集再於 [`load_range_notes`] 與其回傳逐（軌道, 用途）全等對賬。"""
+    rows, section = [], None
+    with open(path, encoding="utf-8") as fh:
+        lines = fh.read().splitlines()
+    for line in lines:
+        if line.startswith("### III.2"):
+            section = 2
+        elif line.startswith(("## ", "### ")):
+            section = None
+        elif section == 2 and line.lstrip().startswith("|"):
+            cells = line.split("|")
+            m = re.match(r"\(([a-z]+)\)", cells[2].strip() if len(cells) > 2 else "")
+            if m:                                # 標題列與分隔列之用途欄無括號識別符、自然略過
+                rows.append((cells[1].strip().strip("*★ "), m.group(1), cells[3] if len(cells) > 3 else ""))
+    return rows
+
+
+def load_range_notes(path, s2):
+    """範圍欄對賬腿之解析半：憲法 §III.2 每列範圍欄之（…）注記 → (mod_plan, add_plan, 統計)。
+    mod_plan＝{(軌道, 用途, 檔): {"decl": 注記處數, "kinds": 注記類集}}（新增型-only 注記記 0 處）；
+    add_plan＝{檔: {"parts": [(列名, 注記塊數)…], "kinds": 注記類集}}（逐檔跨列加總、修改型-only 注記記 0 塊）。
+    跳過粒度＝表外宣告 3：修改型逐三元組、新增型逐檔（該檔任一項預估或不預估即整檔跳過）。
+    解析失準一律 die（rc 2、指名列與注記原文）：未識別注記／注記無所轄路徑／多檔共用一數而未寫「各」／零解析／
+    非跳過之對賬項為零／注記轄區之檔集與 load_roster 該（軌道, 用途）檔集不等（路徑缺注記、或兩解析漂移）。"""
+    mod_plan, add_plan, covered, n_notes = {}, {}, {}, 0
+    for name, purpose, cell in _star_rows(path):
+        row, prev = f"★{name}({purpose})", 0
+        for m in RANGE_NOTE.finditer(cell):
+            files, note, prev = _expand_range_files(cell[prev:m.start()]), m.group(0), m.end()
+            if not files:
+                die(f"§III.2 {row} 範圍欄注記「{note}」無所轄路徑（注記轄其前一段反引號路徑）——連寫兩注記或注記前無路徑")
+            c = classify_range_note(note)
+            if c is None:
+                die(f"§III.2 {row} 範圍欄注記未識別：「{note}」——數量段（首個「；」或「：」之前）須為閉集形之一："
+                    f"「N 處，修改型」／「各 N 處，修改型」／「N 處修改型＋M 塊新增型」／「N 塊，新增型」／「各 N 塊，新增型」"
+                    f"（可冠「預估」或「各預估」）、或注記含「不預估」、或「產物檔 N 支」（表外宣告 3 對賬腿；未識別不靜默跳過）")
+            kind, n_mod, n_add, each = c
+            if kind in ("count", "est") and len(files) > 1 and not each:
+                die(f"§III.2 {row} 範圍欄注記「{note}」轄 {len(files)} 檔卻未寫「各」——多檔共用一數無從逐檔對賬"
+                    f"（改「各 N …」或逐檔各附注記）")
+            n_notes += 1
+            for f in files:
+                e = mod_plan.setdefault((name, purpose, f), {"decl": 0, "kinds": set()})
+                e["decl"] += n_mod
+                e["kinds"].add(kind)
+                a = add_plan.setdefault(f, {"parts": [], "kinds": set()})
+                a["parts"].append((row, n_add))
+                a["kinds"].add(kind)
+            covered.setdefault((name, purpose), set()).update(files)
+    if not n_notes:
+        die("§III.2 範圍欄零解析——各列皆無可解析之（…）注記；對賬腿無受檢面＝空集合即紅（表外宣告 3）")
+    for key in sorted(set(covered) | {(n, p) for n, ps in s2.items() for p in ps}):
+        want, got = s2.get(key[0], {}).get(key[1], set()), covered.get(key, set())
+        if got != want:
+            die(f"§III.2 ★{key[0]}({key[1]}) 範圍欄路徑與注記轄區不合：未被任何注記所轄 {sorted(want - got)}／"
+                f"注記轄區有而名冊無 {sorted(got - want)}——每支路徑須以其後之（…）注記收束（注記轄其前一段）；"
+                f"後者非空＝本腿與 load_roster 兩解析漂移")
+    st = {"mod": 0, "mod_est": 0, "mod_art": 0, "add": 0, "add_est": 0, "add_art": 0}
+    suffix = {None: "", "est": "_est", "artifact": "_art"}
+    for leg, plan in (("mod", mod_plan), ("add", add_plan)):
+        for v in plan.values():
+            st[leg + suffix[_skip_of(v["kinds"])]] += 1
+    if st["mod"] + st["add"] == 0:
+        die(f"§III.2 範圍欄非跳過之對賬項為零（{n_notes} 個注記皆預估、不預估或產物檔）——對賬腿無受檢面＝空集合即紅")
+    return mod_plan, add_plan, st
+
+
+def reconcile_range_counts(plan, repo=BASEWEB):
+    """範圍欄對賬腿之計數半：讀 base-web 工作樹（repo 參數化＝self-test 以暫存目錄走同一條計數鏈）→ (不等清單, 統計)。
+    實數量法（表外宣告 1／3）：修改型＝逐（軌道, 用途, 檔）計同行含 `原行:`（[`MARKER`]）且 [`TRACK`] 抽得該軌道與用途之行；
+    新增型＝逐檔計圈界塊首行（合法標記行之 [`BLOCK_EDGE`] 為 START＝塊首認得形同 [`_outside_addition_blocks`]；不分軌道與
+    用途、用途後綴非必帶）。只讀未跳過項所涉之檔；檔不在工作樹＝實數 0、訊息註明。"""
+    mod_plan, add_plan, st = plan
+    need = ({k[2] for k, v in mod_plan.items() if not _skip_of(v["kinds"])}
+            | {f for f, v in add_plan.items() if not _skip_of(v["kinds"])})
+    mod_got, add_got, absent = collections.Counter(), collections.Counter(), set()
+    for rel in sorted(need):
+        try:
+            with open(os.path.join(repo, rel), encoding="utf-8") as fh:
+                lines = fh.read().splitlines()
+        except FileNotFoundError:
+            absent.add(rel)
+            continue
+        for line in lines:
+            t = TRACK.search(line)
+            if t and MARKER.search(line):
+                mod_got[(t.group(1), t.group(2), rel)] += 1
+            e = BLOCK_EDGE.search(line)
+            if e and e.group(1) == "START" and _block_has_marker([line]):
+                add_got[rel] += 1
+    drift = []
+    for (name, purpose, rel), v in sorted(mod_plan.items()):
+        got = mod_got[(name, purpose, rel)]
+        if not _skip_of(v["kinds"]) and got != v["decl"]:
+            drift.append(f"★{name}({purpose})｜{rel}｜修改型：注記 {v['decl']} 處 ≠ 實數 {got} 處"
+                         + ("（工作樹無此檔）" if rel in absent else ""))
+    for rel, v in sorted(add_plan.items()):
+        decl, got = sum(n for _row, n in v["parts"]), add_got[rel]
+        if not _skip_of(v["kinds"]) and got != decl:
+            parts = "＋".join(f"{row} {n}" for row, n in v["parts"])
+            drift.append(f"{rel}｜新增型：注記合計 {decl} 塊（{parts}）≠ 實數 {got} 塊"
+                         + ("（工作樹無此檔）" if rel in absent else ""))
+    return drift, st
 
 
 def _parse_args(args):
@@ -1161,6 +1318,132 @@ def self_test():
     finally:
         shutil.rmtree(rtmp, ignore_errors=True)
 
+    # ── 範圍欄對賬腿 RC1～RC15（006 刀 U2；憲法 §III.2 表外宣告 3＝ADR-00063 決定四）：合成憲法文本走**真**
+    #    load_roster→load_range_notes 解析鏈、合成 base-web 樹（暫存目錄、不讀真工作樹）走**真** reconcile_range_counts。
+    #    基準樣本 rc_rows×rc_tree 全符；各案只改一處（憲法注記或樹內標記）、斷言不等清單恰指名該項，或解析失準 rc 2 指名列與注記。
+    rc_rows = (
+        "| **★T-X** | (a) p | `src/a.ts`（2 處修改型＋1 塊新增型）／`src/m/{b,c}.ts`（各 1 處，修改型） | d |\n"
+        "| **★T-X** | (b) p | `src/a.ts`（1 處，修改型）／`src/l/{en,zh}.ts`（各 2 塊，新增型：`route:` 樹與 `page:` 樹） | d |\n"
+        "| **★T-Y** | (i) p | `src/a.ts`（1 塊，新增型；用途後綴非必帶） | d |\n"
+    )
+    rc_mod = "// [rev6-inline {} 006-authz-governance] 原行: {}\n"
+    rc_edge = "// [rev6-inline {}+ 006-authz-governance {}] 圈界\n"
+
+    def rc_blk(track, body):
+        return rc_edge.format(track, "START") + body + rc_edge.format(track, "END")
+
+    rc_tree = {
+        "src/a.ts": (rc_mod.format("T-X(a)", "a1();") + "b1();\n" + rc_mod.format("T-X(a)", "a2();") + "b2();\n"
+                     + rc_mod.format("T-X(b)", "a3();") + "b3();\n"
+                     + rc_blk("T-X(a)", "n1();\n") + rc_blk("T-Y", "n2();\n")   # T-Y 塊首不帶用途後綴、照計
+                     # 單行形新增型標記（不帶 START／END、無 `原行:`）：修改型處數與新增型塊數兩半皆不計
+                     + "// [rev6-inline T-X(a)+ 006-authz-governance] 單行新增型\n" + "s1();\n"),
+        "src/m/b.ts": rc_mod.format("T-X(a)", "x();") + "y();\n",
+        "src/m/c.ts": rc_mod.format("T-X(a)", "x();") + "y();\n",
+        "src/l/en.ts": rc_blk("T-X(b)", "  k: 1,\n") + rc_blk("T-X(b)", "  j: 2,\n"),
+        "src/l/zh.ts": rc_blk("T-X(b)", "  k: 1,\n") + rc_blk("T-X(b)", "  j: 2,\n"),
+    }
+    ctmp = tempfile.mkdtemp(prefix="fdlt-rangecount-")
+    try:
+        def rc_run(rows, patch=None):
+            p = os.path.join(ctmp, "c.md")
+            open(p, "w", encoding="utf-8").write(hdr + rows)
+            _s1c, s2c = load_roster(p)
+            plan = load_range_notes(p, s2c)
+            root = os.path.join(ctmp, "bw")
+            shutil.rmtree(root, ignore_errors=True)
+            for rel, content in {**rc_tree, **(patch or {})}.items():
+                os.makedirs(os.path.dirname(os.path.join(root, rel)), exist_ok=True)
+                open(os.path.join(root, rel), "w", encoding="utf-8").write(content)
+            return reconcile_range_counts(plan, root)
+
+        def rc_die(tag, rows, want):
+            err = io.StringIO()
+            try:
+                with contextlib.redirect_stderr(err):
+                    rc_run(rows)
+            except SystemExit as ex:
+                assert ex.code == 2 and all(w in err.getvalue() for w in want), \
+                    f"self-test {tag}：須 rc 2 且錯因含 {want}（實得 code={ex.code}／{err.getvalue()!r}）"
+                return
+            raise AssertionError(f"self-test {tag}：解析失準形未 die（{want}）——該守被移除即此恆綠形")
+
+        def rc_one(tag, drift, want):
+            assert len(drift) == 1 and all(w in drift[0] for w in want), \
+                f"self-test {tag}：不等清單須恰 1 項且指名 {want}（實得 {drift}）"
+
+        zero = {"mod": 0, "mod_est": 0, "mod_art": 0, "add": 0, "add_est": 0, "add_art": 0}
+        drift, st = rc_run(rc_rows)
+        assert drift == [] and st == {**zero, "mod": 7, "add": 5}, \
+            f"self-test RC1：全符須綠且對賬修改型三元組 7／新增型 5 檔、零跳過（實得 {drift}／{st}）"
+        rc_one("RC2：改一處數須紅並指名三元組", rc_run(rc_rows.replace("（2 處修改型", "（3 處修改型"))[0],
+               ("★T-X(a)", "src/a.ts", "修改型", "注記 3 處", "實數 2 處"))
+        rc_one("RC3：改一塊數須紅並指名檔與各列分項",
+               rc_run(rc_rows.replace("（1 塊，新增型；", "（2 塊，新增型；"))[0],
+               ("src/a.ts", "新增型", "注記合計 3 塊", "★T-X(a) 1", "★T-X(b) 0", "★T-Y(i) 2", "實數 2 塊"))
+        # RC4：預估項跳過——a.ts 之新增型含 (a) 列 1 塊實數仍因 (i) 列預估而整檔跳過；同檔修改型三元組照對。
+        est = rc_rows.replace("（1 塊，新增型；", "（預估 3 塊，新增型；")
+        drift, st = rc_run(est)
+        assert drift == [] and st == {**zero, "mod": 6, "mod_est": 1, "add": 4, "add_est": 1}, \
+            f"self-test RC4：預估項須跳過（新增型整檔、修改型逐三元組；實得 {drift}／{st}）"
+        rc_one("RC4：預估整檔跳過後同檔修改型仍須照對", rc_run(est.replace("（2 處修改型", "（3 處修改型"))[0],
+               ("★T-X(a)", "src/a.ts", "修改型", "注記 3 處"))
+        # RC4（預估修改型三元組）：(T-Y,i,a.ts) 注記「預估 2 處修改型＋3 塊新增型」而實數 0 處——注記數非零且≠實數仍須逐
+        #   三元組跳過（上兩形之預估三元組注記皆 0 處＝與實數相等、比不比都綠，釘不住此判準）。修改型比較處拿掉預估跳過
+        #   （預估三元組照比）即本案紅；此判準不依賴真憲法現存預估列、由本案獨立守。
+        drift, st = rc_run(rc_rows.replace("（1 塊，新增型；", "（預估 2 處修改型＋3 塊新增型；"))
+        assert drift == [] and st == {**zero, "mod": 6, "mod_est": 1, "add": 4, "add_est": 1}, \
+            f"self-test RC4：預估修改型三元組（注記 2 處≠實數 0 處）須跳過（實得 {drift}／{st}）"
+        drift, st = rc_run(rc_rows.replace("（各 2 塊，新增型", "（各預估 2 塊，新增型"))
+        assert drift == [] and st == {**zero, "mod": 5, "mod_est": 2, "add": 3, "add_est": 2}, \
+            f"self-test RC4：「各預估」形須逐檔跳過（實得 {drift}／{st}）"
+        drift, st = rc_run(rc_rows.replace("（各 1 處，修改型）", "（兩支，修改型＋新增型；處數與塊數不預估、實數以標記為準）"),
+                           {"src/m/c.ts": rc_mod.format("T-X(a)", "x();") * 3})
+        assert drift == [] and st == {**zero, "mod": 5, "mod_est": 2, "add": 3, "add_est": 2}, \
+            f"self-test RC5：不預估項須跳過（c.ts 實數 3 不得紅；實得 {drift}／{st}）"
+        # RC5（不預估項之檔另因他項入讀）：上形之 b.ts／c.ts 只屬不預估項＝不入讀、實數恆 0 而與注記 0 相等，比較處拿掉
+        #   不預估跳過仍綠。此形令 (T-X,b,a.ts) 不預估、a.ts 因同檔實數三元組照讀：修改型實數 1 處、新增型實數 3 塊（補一塊
+        #   T-X(b)）皆≠注記，修改型或新增型比較處拿掉不預估跳過即本案紅。
+        drift, st = rc_run(rc_rows.replace("（1 處，修改型）", "（處數與塊數不預估、實數以標記為準）"),
+                           {"src/a.ts": rc_tree["src/a.ts"] + rc_blk("T-X(b)", "n3();\n")})
+        assert drift == [] and st == {**zero, "mod": 6, "mod_est": 1, "add": 4, "add_est": 1}, \
+            f"self-test RC5：不預估三元組與檔於該檔照讀時仍須跳過（實得 {drift}／{st}）"
+        drift, st = rc_run(rc_rows.replace("（各 1 處，修改型） |", "（各 1 處，修改型）／`src/r/{x,y}.ts`（產物檔 2 支） |"))
+        assert drift == [] and st == {**zero, "mod": 7, "mod_art": 2, "add": 5, "add_art": 2}, \
+            f"self-test RC6：產物檔注記須跳過（route-artifact-gate 射程；實得 {drift}／{st}）"
+        rc_die("RC7", rc_rows.replace("（各 1 處，修改型）", "（約 1 處，修改型）"), ("★T-X(a)", "（約 1 處，修改型）", "未識別"))
+        rc_die("RC8", "| **★T-X** | (a) p | `src/a.ts` | d |\n", ("零解析",))
+        rc_die("RC8", "| **★T-X** | (a) p | `src/a.ts`（預估 1 處，修改型） | d |\n", ("非跳過之對賬項為零",))
+        rc_one("RC9：新增型-only 項出現修改型標記須紅",
+               rc_run(rc_rows, {"src/l/en.ts": rc_tree["src/l/en.ts"] + rc_mod.format("T-X(b)", "k: 0,") + "  k: 1,\n"})[0],
+               ("★T-X(b)", "src/l/en.ts", "注記 0 處", "實數 1 處"))
+        rc_one("RC10：「各」逐檔展開——只指名不等之那一檔",
+               rc_run(rc_rows, {"src/m/c.ts": rc_mod.format("T-X(a)", "x();") * 2 + "y();\n"})[0],
+               ("★T-X(a)", "src/m/c.ts", "注記 1 處", "實數 2 處"))
+        rc_die("RC11", rc_rows.replace("（各 1 處，修改型）", "（1 處，修改型）"), ("★T-X(a)", "（1 處，修改型）", "未寫「各」"))
+        rc_die("RC12", rc_rows.replace("（各 1 處，修改型） |", "（各 1 處，修改型）／`src/z.ts` |"), ("★T-X(a)", "src/z.ts"))
+        rc_die("RC13", rc_rows.replace("（各 1 處，修改型）", "（各 1 處，修改型）（1 塊，新增型）"),
+               ("★T-X(a)", "（1 塊，新增型）", "無所轄路徑"))
+        # RC14：新增型實數＝計 START 行（非 END、非邊界行折半）——基準樹每塊 START／END 成對、START 數恆等於 END 數，
+        #   RC1～RC13 分不出兩者；此二形令兩數相異：未閉合塊之 START 照計（en.ts 2 START／1 END）、孤 END 不計
+        #   （zh.ts 2 START／3 END），注記各 2 塊皆須綠。計數處改計 END 或兩種邊界行各折半即本案紅。
+        drift, _st = rc_run(rc_rows, {"src/l/en.ts": rc_blk("T-X(b)", "  k: 1,\n") + rc_edge.format("T-X(b)", "START")
+                                      + "  j: 2,\n"})
+        assert drift == [], f"self-test RC14：未閉合塊之 START 照計（實得 {drift}）"
+        drift, _st = rc_run(rc_rows, {"src/l/zh.ts": rc_tree["src/l/zh.ts"] + rc_edge.format("T-X(b)", "END")})
+        assert drift == [], f"self-test RC14：孤 END 不計（實得 {drift}）"
+        # RC15：注記所轄檔不在工作樹＝實數 0 照比、訊息註明（不得當缺檔不入對賬而靜默綠）——憲法路徑打錯字或上游改名時，
+        #   新增型-only 項之唯一守即此（名冊三元組判定只管修改型）。兩臂各一形：比較處對缺檔放行即該臂紅。
+        rc_one("RC15：修改型所轄檔不在工作樹須紅並註明",
+               rc_run(rc_rows.replace("`src/a.ts`（1 處，修改型）", "`src/q.ts`（1 處，修改型）"))[0],
+               ("★T-X(b)", "src/q.ts", "修改型", "注記 1 處", "實數 0 處", "工作樹無此檔"))
+        rc_one("RC15：新增型所轄檔不在工作樹須紅並註明",
+               rc_run(rc_rows.replace("（1 塊，新增型；用途後綴非必帶） |",
+                                      "（1 塊，新增型；用途後綴非必帶）／`src/n.ts`（1 塊，新增型） |"))[0],
+               ("src/n.ts", "新增型", "注記合計 1 塊", "★T-Y(i) 1", "實數 0 塊", "工作樹無此檔"))
+    finally:
+        shutil.rmtree(ctmp, ignore_errors=True)
+
     # ── CLI 引數解析（rev6 加 `test`／`--constitution`）：三形＋兩用法錯釘住。
     assert _parse_args([]) == (False, CONSTITUTION), "self-test CLI1：無引數＝全掃＋預設憲法"
     assert _parse_args(["test"]) == (True, CONSTITUTION), "self-test CLI2：`test`＝只跑 self-test"
@@ -1280,14 +1563,20 @@ def main(argv):
         print("[fork-delta-lint] ✓ self-test 過（修改型缺原行（逐值比次數＋圈界塊內行不計＋灌水殘留③記載型）／新增型缺圈界／新檔檔頭標記（含 `+` 尾綴定形）＋軌道×路徑"
               "（含真 scan 接線 fixture）／五形抽取＋token 換世代／"
               "分層授權判定／範圍欄展開器／掃描面 fixture／名冊載入守 RG1～RG24 含空 ★表哨兵句一正一反"
-              "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／template 形行尾 `-->`／修改型樓地板守／CLI 引數）")
+              "與 §III.1 範圍欄字面對賬二正三反（含純對調須綠）／template 形行尾 `-->`／修改型樓地板守／"
+              "範圍欄對賬腿 RC1～RC15（全符／處數與塊數不等指名／預估、不預估與產物檔跳過含整檔跳過粒度／"
+              "新增型-only 項之修改型標記／「各」逐檔／未識別注記、零解析等解析失準 rc 2／新增型計 START 行（未閉合塊照計、孤 END 不計）／"
+              "所轄檔不在工作樹＝實數 0 照比）／CLI 引數）")
         return 0
     # 含結構斷言（空名冊／★段零列須哨兵句／§III.1 恰 3／表外宣告 2 反例／升維非空／§III.1 範圍欄字面對賬＝die）
     s1, s2 = load_roster(constitution)
+    # 範圍欄對賬腿之解析半（表外宣告 3）：注記解析失準＝die，與名冊結構斷言同在掃描前 fail-loud。
+    range_plan = load_range_notes(constitution, s2)
     assert_baseline()
     tip = sh(["git", "rev-parse", "--short", BASELINE], BASEWEB).stdout.strip()
     errs, unmarked, rogue, checked_total, stats = scan(s1, s2)
-    if errs or unmarked or rogue:
+    drift, rst = reconcile_range_counts(range_plan)
+    if errs or unmarked or rogue or drift:
         if errs:
             print(f"[fork-delta-lint] ✗ {len(errs)} 條 example 上游 inline 行被刪改卻缺 `原行:` 標記"
                   f"（constitution §III 修改型；逐值比次數＝基線次數 > 我方存留＋記錄、"
@@ -1312,13 +1601,21 @@ def main(argv):
             print("  補法：修改型標記改用名冊內（軌道,用途）實名且只落授權檔，新用途／新軌道須先走"
                   " §V.2 Amendment 開立；新檔標記帶 `+` 尾綴、改用範圍欄涵蓋該路徑的軌道"
                   "（§III.1；純新增檔不觸 ★軌道＝rev5:ADR 0021 款 1）。")
+        if drift:
+            print(f"[fork-delta-lint] ✗ {len(drift)} 項憲法 §III.2 範圍欄注記與 base-web 標記實數不等"
+                  f"（表外宣告 3；修改型＝`原行:` 逐軌道×用途×檔、新增型＝圈界塊首 START 逐檔跨列加總）：")
+            for d in drift:
+                print(f"    {d}")
+            print("  補法：以標記實數為準改憲法範圍欄注記數（§V.2 Amendment 或 PATCH）、或補／刪 base-web 標記使實數合於注記。")
         return 1
     floor = floor_violation(checked_total)
     if floor:
         die(f"{floor}——掃描面 {stats['files']} 檔（base-web vs {BASELINE}@{tip}：src/ .ts/.vue＋build/ .ts＋根層 .env*）")
     print(f"[fork-delta-lint] ✓ base-web 修改型全帶原行（{checked_total} 處授權判定皆合："
           f"★軌道三元組＋§III.1 檔面收窄）、新增型全圈界"
-          f"（含我方新檔 {stats['new_checked']} 支：檔頭標記＋軌道×路徑皆合）"
+          f"（含我方新檔 {stats['new_checked']} 支：檔頭標記＋軌道×路徑皆合）、"
+          f"範圍欄計數皆合（憲法 §III.2 表外宣告 3：修改型三元組對賬 {rst['mod']}、跳過 {rst['mod_est']}＋{rst['mod_art']}；"
+          f"新增型逐檔對賬 {rst['add']}、跳過 {rst['add_est']}＋{rst['add_art']}；跳過＝預估或不預估＋產物檔）"
           f"（self-test 過；基線 {BASELINE}@{tip}）")
     return 0
 

@@ -44,13 +44,14 @@
 
 ## §4 `tools/fork-delta-lint.py` 行為契約
 
-> 凍結存證＝`specs/002-system-settings/contracts/code-gates.md` §1.3。
+> 凍結存證＝`specs/002-system-settings/contracts/code-gates.md` §1.3；範圍欄對賬腿＝`specs/006-authz-governance/contracts/code-gates.md` §2.1。
 
 - 掃描面：base-web `src/` 之 .ts／.vue＋`build/` 之 .ts＋根層 `.env*`；基線＝源倉 `fork260509-soybean-admin-base/` @ `example` tip（bootstrap 斷言在場）。
-- 兩腿：修改型缺「原行:」；新增型缺圈界標記。★兩腿之現況實數不在本檔釘值，以 `grep -rc '原行:' base-web/src base-web/build` 與 `grep -rhoE '\[rev6-inline [A-Z][A-Z0-9-]*(\([a-z]+\))?\+ [0-9]{3}-[a-z-]+( START| END)?\]' base-web/src base-web/build | wc -l` 現算（後者含圈界 START／END 兩端與單行形；塊數與單行形之分計量法住活書 §8.4）（002 刀進場當時修改型為零＝該腿彼時 vacuous，003／004 兩刀落地後已非）。授權判定＝憲法 §III.2 ★軌道（軌道×用途×檔案）三元組硬邊界＋§III.1 三軌道範圍收窄（ADAPT 修改型限根層 `.env*`；WRAPPER 掃描面內不可修改型）；新增檔標記所稱軌道與檔路徑不符＝紅。
+- 標記兩判定：修改型缺「原行:」；新增型缺圈界標記。★兩者之現況實數不在本檔釘值，以 `grep -rc '原行:' base-web/src base-web/build` 與 `grep -rhoE '\[rev6-inline [A-Z][A-Z0-9-]*(\([a-z]+\))?\+ [0-9]{3}-[a-z-]+( START| END)?\]' base-web/src base-web/build | wc -l` 現算（後者含圈界 START／END 兩端與單行形；塊數與單行形之分計量法住活書 §8.4）（002 刀進場當時修改型為零＝該判定彼時 vacuous，003／004 兩刀落地後已非）。授權判定＝憲法 §III.2 ★軌道（軌道×用途×檔案）三元組硬邊界＋§III.1 三軌道範圍收窄（ADAPT 修改型限根層 `.env*`；WRAPPER 掃描面內不可修改型）；新增檔標記所稱軌道與檔路徑不符＝紅。
+- 範圍欄對賬腿（憲法 §III.2 表外宣告 3；ADR-00063 決定四）：解析面＝§III.2 表每列範圍欄之（…）注記，注記轄其前一段反引號路徑（brace 展開與注記內 token 不入集沿名冊載入之同一支展開器、分群判準同 `tools/route-artifact-gate.py`）；數量段＝注記內第一個「；」或「：」之前，形為閉集——「N 處，修改型」／「各 N 處，修改型」／「N 處修改型＋M 塊新增型」／「N 塊，新增型」／「各 N 塊，新增型」，冠「預估」或「各預估」＝預估形；注記含「不預估」＝不預估形；「產物檔 N 支」＝產物檔形（`tools/route-artifact-gate.py` 之射程）。實數面＝同次讀 base-web 工作樹：修改型逐（軌道, 用途, 檔）計含 `原行:` 且標記軌道與用途相符之行，新增型逐檔計圈界塊首 START 行（不分軌道與用途）。判準＝修改型逐三元組相等、新增型逐檔跨列加總相等；預估、不預估與產物檔形不入對賬（跳過粒度＝修改型逐三元組、新增型逐檔——該檔任一項為預估或不預估即整檔跳過），不等＝rc 1 指名三元組或檔與各列分項；解析失準＝rc 2 指名列與注記原文（數量段未識別、注記無所轄路徑、多檔共用一數而未寫「各」、路徑未被注記所轄、零解析、非跳過之對賬項為零）。綠訊息附對賬項數與跳過項數（修改型、新增型分列；兩數皆以現算為準、本檔不釘值）。
 - ★標記字面（新增型檔頭一行、契約定形）：`<註解引導> [rev6-inline <軌道名>+ <刀名>] <一句話理由>`——token `rev6-inline`（CLAUDE.md §1）、`+` 尾綴＝新增型。★**註解引導依檔型而異**：`.ts` 與 `.vue` 的 script 區為 `//`、`.vue` 的 template 區為 `<!-- … -->`（工具吃五種標記形、不限單一註解形）。★**軌道名不限於憲法 §III.1 表首欄**：工具側判準＝`TRACK` 正則之 `[A-Z][A-Z0-9-]*`，§III.2 ★ 軌道與表外宣告 3 之頁進場標記（如 `MANAGE-IP-RULE-VIEW`）同樣合法，授權由三元組另判。刀名＝該檔進場刀之 `NNN-slug`。現況軌道名集與刀名集以 `grep -rhoE '\[rev6-inline [A-Z][A-Z0-9-]*(\([a-z]+\))?\+ [0-9]{3}-[a-z-]+( START| END)?\]' base-web/src base-web/build | sort | uniq -c` 現算（用途後綴與圈界形同計）。
 - ★結構斷言改形（brainstorm Q5）：名冊載入對 §III.2 ★段——零資料列時 MUST 命中哨兵句字面「（空表——尚無 ★ 軌道；首列隨首刀 Amendment 落入。）」、否則 ≥1 列；§III.1 恰 3 列與其餘斷言不變＋第⑥道（as-built 2026-09-05 U0 審查補）＝§III.1 三實名列範圍欄之反引號 token 集 ⇔ 工具常數 `S1_RANGE_LITERAL`（次序不計）、不符即 rc 2——Amendment 改範圍欄即紅、與 pre-commit 憲法觸發源連動；self-test 一正一反：合成憲法文本「零列＋哨兵句」＝綠、「零列＋無哨兵句」＝紅（守不消失）。日常一律用預設憲法路徑，`--constitution` 只供自身變異驗證。
-- rc：0 綠／1 缺標記、缺原行或軌道外／2 結構斷言敗（名冊載入失敗）；源倉缺席或未切在 `example`＝rc 2 fail-loud（`assert_baseline` die；bootstrap 已斷言在場、正常不觸——as-built 校正 2026-09-05 U0：原句「具名跳過」與碼相反，rev5 原檔同為 die、fail-loud 方向較安全）。
+- rc：0 綠／1 缺標記、缺原行、軌道外或範圍欄計數不等／2 結構斷言敗（名冊載入失敗、範圍欄注記解析失準）；源倉缺席或未切在 `example`＝rc 2 fail-loud（`assert_baseline` die；bootstrap 已斷言在場、正常不觸——as-built 校正 2026-09-05 U0：原句「具名跳過」與碼相反，rev5 原檔同為 die、fail-loud 方向較安全）。
 - pre-commit 觸發：staged 含 `base-web`、`tools/fork-delta-lint.py` 或 `.specify/memory/constitution.md`。
 
 ## §5 `tools/msg-key-gate.py` 跨端閘契約

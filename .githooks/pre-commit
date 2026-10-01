@@ -90,8 +90,9 @@ if echo "$staged" | grep -qxF -e 'base-web' -e 'rust-api'; then
   pc_run "wire-schema" python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate
 fi
 # fork-delta 標記閘（憲法 §III）：base-web gitlink 變動（pin bump）時機器比對 base-web vs 源倉 example 基線——修改型缺 `原行:`／
-# 新增型缺圈界／軌道授權外即擋 rc 1；工具本體 staged 時亦直跑一次（無引數＝self-test＋全掃）。★第三個觸發源＝憲法：`load_roster()`
-# 讀 §III.1／§III.2 兩表當授權名冊（含空 ★表哨兵句斷言），純 §V.2 Amendment commit 也當場紅、不等下一次 pin bump 才誤歸因。
+# 新增型缺圈界／軌道授權外／§III.2 範圍欄計數與標記實數不等（表外宣告 3）即擋 rc 1；工具本體 staged 時亦直跑一次（無引數＝self-test＋全掃）。
+# ★第三個觸發源＝憲法：`load_roster()` 讀 §III.1／§III.2 兩表當授權名冊（含空 ★表哨兵句斷言）、範圍欄對賬腿另讀 §III.2 範圍欄注記之處數與塊數，
+# 純 §V.2 Amendment commit（含改範圍欄注記數）也當場紅、不等下一次 pin bump 才誤歸因。
 # ★源倉缺席或未切在 example＝工具首步斷言 die rc 2（fail-loud）；本段不設跳過分支——bootstrap 已斷言源倉在場且在 example。
 if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/fork-delta-lint.py' -e '.specify/memory/constitution.md'; then
   pc_run "fork-delta" python3 "$HOOK_DIR/../tools/fork-delta-lint.py"
