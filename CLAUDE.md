@@ -61,7 +61,7 @@
 　★長尾腿補回（同一 run、仍在飛＝未收完成通知才補）一律 `<冒煙token> <runId> --bg --rearm`（同給 timeout；印 REARMED 行、不重做冒煙；重掛當下不重複 agent key 已逾上限＝預先承認、此後不再告 RUNAWAY；重掛當下 run 已結束＝印 DONE 即退）：因 RUNAWAY 退出＝主線先判形態——扇出型（正當超標）→補回、編排型→TaskStop wf；被背景時限停止（逾 2 小時的 run 每 2 小時一次、屬預期）→直接補回——停止通知附的「已用最長 timeout 勿重啟」不適用監看腿（監看非工作），照補並向 user 報停止；皆不動 Monitor 腿。新 launch（被擋重發、resume）兩腿一律首掛形（不帶 `--rearm`）、驗 ARMED 冒煙。
 　command＝`python3 tools/wf-watchdog.py <冒煙token> [wf目錄|runId] [--bg]`（★冒煙 token 不可取字面 `test`＝會被當自測子命令）
 　（缺目標＝自動發現最新 wf 目錄；帶目標＝輪詢待其出現後鎖定、resume 沿用原 runId、launch 被擋重發＝TaskStop 舊 Monitor 與長尾腿、改帶新 runId 重發；rev5:L-049）；
-　完成通知一到→TaskStop 該 Monitor（防誤觸 stall；rev5:L-051）；長尾腿由 DONE 腿自行退出、毋需 TaskStop。判死迴圈／卡死→TaskStop→修 script→以 resumeFromRunId 續跑。
+　完成通知一到→TaskStop 該 Monitor（防誤觸 stall；rev5:L-051）；長尾腿由 DONE 腿自行退出、毋需 TaskStop。判死迴圈／卡死→TaskStop→修 script→以 resumeFromRunId 續跑（★含 `pipeline()`／`parallel()` 平行鏈之 script 例外：resume 只省首波＝改手寫續跑 script、烤入 journal 已完成結果；LL-00052）。
 　★resume 只用於故障續跑、不是讓某支 agent 重跑的手段（rev5:L-027、RL-0010）；續跑冒煙改看最新 agent 檔（RL-0009）。
 　hook 兜底：PostToolUse(Workflow) 注入配對提醒、PreToolUse(Workflow) 擋缺 zh-TW／缺或錯 RULES-VERSION 之 script。
 主線例行只在單元邊界醒（看門狗告警除外）。★單元收尾**六步序、次序不可反**（RL-0006／RL-0011／RL-0022／RL-0072）：
