@@ -44,3 +44,13 @@
 | /systemManage/batchDeleteMenu | DELETE | Policy | batch-delete-menu | 否 |
 | /systemManage/getDeletedMenus | GET | Policy | get-deleted-menus | 否 |
 | /systemManage/restoreMenu | POST | Policy | restore-menu | 否 |
+| /systemManage/getRoleMenu | GET | Policy | get-role-menu | 否 |
+| /systemManage/updateRoleMenu | POST | Policy | update-role-menu | 否 |
+| /systemManage/getRoleButton | GET | Policy | get-role-button | 否 |
+| /systemManage/updateRoleButton | POST | Policy | update-role-button | 否 |
+| /systemManage/getRoleEndpoints | GET | Policy | get-role-endpoints | 否 |
+| /systemManage/updateRoleEndpoints | POST | Policy | update-role-endpoints | 否 |
+| /systemManage/getArchivedPolicies | GET | Policy | get-archived-policies | 否 |
+| /systemManage/restorePolicy | POST | Policy | restore-policy | 否 |
+| /systemManage/getAllButtons | GET | Policy | get-all-buttons | 否 |
+| /systemManage/getAllEndpoints | GET | Policy | get-all-endpoints | 否 |

@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00053 -->
+<!-- next: LL-00054 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -58,3 +58,4 @@
 | LL-00050 | 宿主背景任務開始套用預設時限後，看門狗長尾腿沒給 `timeout`、約 28.5 分鐘被停；CLAUDE.md 寫的 `--bg --rearm` 補回形又被工具以互斥拒收——run 逾 30 分鐘即失去長尾覆蓋（maint-backlog-128-129-130；2026-09-30） | RL-0061 | code | [LL-00050-wf-watchdog-long-tail-leg-killed-by-bash-background-default-timeout.md](LESSONS/LL-00050-wf-watchdog-long-tail-leg-killed-by-bash-background-default-timeout.md) |
 | LL-00051 | BASH_MAX_TIMEOUT_MS 放寬後子 agent 前景命令可逾 600 秒，看門狗 STALL 780 秒的推導前提失效——implementer 以一小時等待迴圈等背景 cargo 變異串，兩腿同時誤報 STALL 退出（maint-backlog-128-129-130 U2；2026-09-30） | RL-0017 | code | [LL-00051-wf-watchdog-stall-premise-broken-by-longer-subagent-bash-timeout.md](LESSONS/LL-00051-wf-watchdog-stall-premise-broken-by-longer-subagent-bash-timeout.md) |
 | LL-00052 | 平行鏈 workflow 以 resumeFromRunId 續跑只省得了首波——快取依呼叫序前綴比對，平行鏈第二波起的呼叫序與原跑不同，其後全數 live 重跑、不重複 agent key 逾看門狗 runaway 底線（006 刀 plan 期；2026-10-01） | RL-0010 | none | [LL-00052-parallel-chain-workflow-resume-caches-only-first-wave.md](LESSONS/LL-00052-parallel-chain-workflow-resume-caches-only-first-wave.md) |
+| LL-00053 | 審查員以「拆掉真庫清理守衛」做判準變異，變異本身就把殘留留在 dev 庫或 redis；而 agent 刪鍵與主線 `walkthrough-baseline.py restore` 都被 auto mode 權限分類器以「Modify Shared Resources」拒絕，殘留只能等 TTL 自然到期或交 user 處置（006 刀 U1；2026-10-02） | RL-0080 | none | [LL-00053-review-mutation-removing-real-db-cleanup-guard-leaves-residue-nobody-may-clear.md](LESSONS/LL-00053-review-mutation-removing-real-db-cleanup-guard-leaves-residue-nobody-may-clear.md) |
