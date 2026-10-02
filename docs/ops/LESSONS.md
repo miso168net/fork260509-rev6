@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00055 -->
+<!-- next: LL-00057 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -60,3 +60,5 @@
 | LL-00052 | 平行鏈 workflow 以 resumeFromRunId 續跑只省得了首波——快取依呼叫序前綴比對，平行鏈第二波起的呼叫序與原跑不同，其後全數 live 重跑、不重複 agent key 逾看門狗 runaway 底線（006 刀 plan 期；2026-10-01） | RL-0010 | none | [LL-00052-parallel-chain-workflow-resume-caches-only-first-wave.md](LESSONS/LL-00052-parallel-chain-workflow-resume-caches-only-first-wave.md) |
 | LL-00053 | 審查員以「拆掉真庫清理守衛」做判準變異，變異本身就把殘留留在 dev 庫或 redis；而 agent 刪鍵與主線 `walkthrough-baseline.py restore` 都被 auto mode 權限分類器以「Modify Shared Resources」拒絕，殘留只能等 TTL 自然到期或交 user 處置（006 刀 U1；2026-10-02） | RL-0080 | none | [LL-00053-review-mutation-removing-real-db-cleanup-guard-leaves-residue-nobody-may-clear.md](LESSONS/LL-00053-review-mutation-removing-real-db-cleanup-guard-leaves-residue-nobody-may-clear.md) |
 | LL-00054 | dev VM 的牆鐘每 30 秒被往回撥約 1.85 秒——同一行程內依序取兩次 `Utc::now()` 後者可早於前者、redis 以牆鐘換算之 TTL 可讀出大於設定值；以牆鐘兩點比序之測試斷言因此偶發紅（006 刀 U1、U5） | none：環境時鐘之量測事實與測試斷言寫法——守法句住本檔與受影響測試件之常數 doc，非流程規則 | code | [LL-00054-wsl2-wall-clock-steps-back-every-30s-breaks-two-point-clock-assertions.md](LESSONS/LL-00054-wsl2-wall-clock-steps-back-every-30s-breaks-two-point-clock-assertions.md) |
+| LL-00055 | 判準變異令交易體內的斷言轉紅——panic 留下持列鎖的交易中連線、帶界守衛 Drop 永等，cargo 無聲卡 50 分鐘後被逾時殺並留序列殘值（006 刀 U7） | none：機制同 LL-00037（交易體內 panic＝持鎖連線與帶界守衛 Drop 互等）；本則把守法自佔位擴及斷言與 expect／unwrap，寫進本檔與後續單元定義，不另立規則 | none | [LL-00055-assertion-panic-inside-open-db-transaction-hangs-guard-drop-during-mutation.md](LESSONS/LL-00055-assertion-panic-inside-open-db-transaction-hangs-guard-drop-during-mutation.md) |
+| LL-00056 | 容器內副本做判準變異、各發共用同一個 target 目錄——被換檔的 mtime 早於上一發建置時，cargo 靜默沿用上一發的執行檔，結果與變異無關（006 刀 U7） | none：同 LL-00032（cargo 以 mtime 判新舊之假綠）；本則把守法自 drvfs 擴及容器內副本，寫進本檔與後續單元定義，不另立規則 | none | [LL-00056-container-copy-mutation-reuses-previous-binary-on-old-mtime.md](LESSONS/LL-00056-container-copy-mutation-reuses-previous-binary-on-old-mtime.md) |

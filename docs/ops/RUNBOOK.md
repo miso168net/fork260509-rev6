@@ -101,7 +101,7 @@ migration 短號形制＝`m0001` 四碼（ADR-00008；承襲 rev5 migration 時 
 
 ### 11.1 選單序列化域鎖（`pg_locks` 觀測）
 
-選單五寫端與角色刪除家族於交易首句取同一把 xact 級 advisory lock（key＝`MENU_DOMAIN_LOCK_KEY`＝ASCII `rev6menu`；取得點、鎖序與常數之家＝活書 §6.1「選單域生命週期——島 H」①）：commit 或 rollback 即釋放、零逾時零重試，後到者在 PG 端排隊。查誰持有、誰在等（唯讀）：
+選單五寫端、角色刪除家族與選單維／按鈕維授權寫端（updateRoleMenu／updateRoleButton）於交易首句取同一把 xact 級 advisory lock（key＝`MENU_DOMAIN_LOCK_KEY`＝ASCII `rev6menu`；取得點、鎖序與常數之家＝活書 §6.1「選單域生命週期——島 H」①）：commit 或 rollback 即釋放、零逾時零重試，後到者在 PG 端排隊。查誰持有、誰在等（唯讀）：
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust -At -c "SELECT l.pid, l.granted, now() - a.xact_start AS xact_age FROM pg_locks l JOIN pg_stat_activity a USING (pid) WHERE l.locktype = 'advisory' AND l.classid = 1919252022 AND l.objid = 1835363957 AND l.objsubid = 1 ORDER BY l.granted DESC, a.xact_start;"
@@ -118,7 +118,7 @@ curl -s http://127.0.0.1:32079/metrics | grep '^casbin_reload_total'
 
 計數為行程內累計、重啟 rust-api 即歸零；開機預註冊三個 outcome 為 0（三行恆在、行序不固定）。判讀：
 
-- `ok`：一次同步成功換上。只有移除面寫端（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列才觸發、每請求至多一次；其餘寫端（新增、復原、角色停用、選單啟停等）零增是設計形（觸發矩陣＝ADR-00043 決定 7；流程＝活書 §6.1「選單域生命週期——島 H」⑤）。
+- `ok`：一次同步成功換上。觸發者兩類、每請求至多一次：移除面（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列；授予面（updateRoleMenu／updateRoleButton）Applied 即觸發、不問 diff（含空 diff：原樣提交期望集亦 +1）。其餘寫端（新增、復原、角色停用、選單啟停等）與授予面之整批拒、查無角色零增是設計形（觸發矩陣＝ADR-00043 決定 7＋ADR-00067 決定 1；流程＝活書 §6.1「選單域生命週期——島 H」⑤）。
 - `retry`：每次重建失敗（含末次）+1、各配一則 target `security.authz` 的 error log（帶 `attempt`／`max`／`cause`）；`retry` 增而 `exhausted` 未增＝該次同步的後續嘗試已成功換上（`ok` 同增）、已自癒。
 - `exhausted`：一次同步三次全敗 +1（同時 `retry` +3）＝現役判定面仍是上一份（耗盡窗）→ 處置＝§13。
 - 告警＝`casbin-reload-anomaly`（`deploy/grafana-provisioning/alerting/rules.yml`；判準＝`retry`／`exhausted` 之 5 分鐘增量 > 0、`ok` 不告警）。本計數是同步結果計數、不屬降級序列：不入 `*_degraded_total`、`throttle-degraded`／`ipgate-degraded` 兩支降級告警皆不涵蓋。
@@ -217,7 +217,7 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 判定面同步耗盡（§11.2 `casbin_reload_total{outcome="exhausted"}` 增、或 `casbin-reload-anomaly` 告警之 outcome＝exhausted）：寫端回應與 DB 皆已成功落地（不需重送），但現役判定面仍是上一份——本次已歸檔之授權仍在記憶體面生效，同路由名重建之選單、同代碼重建之角色可經殘留面繼承（耗盡窗＝ADR-00043 決定 9）。處置依序：
 
-1. 查失敗原因：`docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --no-log-prefix rust-api 2>&1 | grep '判定面同步'`——每次重建失敗一行（`fields.cause`＝根因、`attempt`／`max`＝第幾次），耗盡另一行；另一形＝`移除面寫端收場 task 被取消——commit 與判定面同步未必完成、回 5000`（`fields.endpoint`＝端點、`fields.cause`＝取消原因；只在 rust-api 行程關機時出現、本身不計入 §11.2 計數；該請求已回 5000，DB 是否已 commit 以 DB 現況為準，重啟後判定面自 DB 全量重建）；零命中印空、rc 1＝容器 log 範圍內（橫跨容器內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`）未發生同步失敗。
+1. 查失敗原因：`docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --no-log-prefix rust-api 2>&1 | grep '判定面同步'`——每次重建失敗一行（`fields.cause`＝根因、`attempt`／`max`＝第幾次），耗盡另一行；另兩形＝`移除面寫端收場 task 被取消——commit 與判定面同步未必完成、回 5000` 與 `授予面寫端收場 task 被取消——commit 與判定面同步未必完成、回 5000`（皆 `fields.endpoint`＝端點、`fields.cause`＝取消原因；只在 rust-api 行程關機時出現、本身不計入 §11.2 計數；該請求已回 5000，DB 是否已 commit 以 DB 現況為準，重啟後判定面自 DB 全量重建）；零命中印空、rc 1＝容器 log 範圍內（橫跨容器內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`）未發生同步失敗。
 2. 修 DB 連線：重建只讀 DB（模型字串內嵌），cause 指向 DB 連線或查詢面；先排除 postgres 面（`docker compose -f docker-compose.yml -f docker-compose.dev.yml ps postgres` 為 healthy、§9 DB 直連連得上）。★未修好就重啟＝boot 建不出判定面即不開服（boot 鏈 fail-loud）、整站停擺。
 3. 重啟 rust-api（命令＝§2 之 `--force-recreate` 重建形）：boot 自 DB 全量重建判定面、殘留隨之消失；不重啟則殘留持續至下次任一成功同步。
 4. 驗計數：§11.2 命令三行皆回 0（新行程預註冊）且 `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:32079/health` 回 200。
