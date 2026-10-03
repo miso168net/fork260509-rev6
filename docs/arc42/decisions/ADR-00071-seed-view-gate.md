@@ -2,7 +2,7 @@
 id: "ADR-00071"
 title: seed-view-gate 碼面閘——seed 選單 component 之 view 集 ⊆ base-web view 集、具名豁免恰兩列（system-settings／audit、附 BL-00045、到期即紅）、python 實作避開 BL-00108 第三份、讀面分型 (a)／(b)（ADR-00055 決定 3 之首例）
 date: 2026-10-01
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-041⑨、FR-043、US5 AS4 與其 Independent Test（刪一個 view 證必紅、具名豁免兩列照綠）、SC-011（seed-view-gate 綠且變異自證）、FR-054（收刀 DoD）、Edge Cases（自建選單不在其射程）；brainstorm §0 主線工程判斷④（seed-view-gate 照建）、§1 承襲盤點（seed-view-gate 順捎＝`rev5:006` §11-20）、§3 §3 前端節之 seed-view-gate 條（判準、具名豁免兩列附 BL-00045、接線四處）、§3 §4 工具節；BL-00045（豁免指針；本刀交付 policy-archive 頁後條文收窄為 008 刀兩頁）、BL-00108（rust 側 char 級解析工具組第三份之觸發）；ADR-00055 決定 3（新讀子庫工作樹之碼面閘進場同刀標讀面型，首例即本閘）、ADR-00019 決定 3／決定 4（hook 段零條件判斷；tracked 面缺席 rc 2、方向不類推）、ADR-00041 決定 2（跨刀活體契約收錄判準）；前代出處＝rev5 `tools/seed-view-gate.py` 之 `rev5:006` U7b 原始版（rev5 commit `9d709d4`；`rev5:B-088` 對賬閘、豁免指針 `rev5:B-008`、真檔暫改驗證依 `rev5:ADR 0024`）——不取 rev5 HEAD 版（`rev5:008` 刀已歸零豁免表、其自測斷言豁免表為空，與 FR-043 相衝）；draft 於 plan 期落 feature branch，accepted 時點依本刀 research 之 ADR 配號與親決時點表、上限見決定 6④"
@@ -59,6 +59,8 @@ tags: [code-gate, governance, base-web, roster, authz-governance]
    - 反（真檔暫改）：變異打在 **view 側**。施作前提＝施作期間路由外掛不重算：dev stack 之 base-web 服務跑 vite dev 且檔樹輪詢（`docker-compose.dev.yml` 之 `CHOKIDAR_USEPOLLING`），未停則外掛可能隨暫移與移回重算產物四檔——暫移時 imports.ts 隨之變而結構自證腿不紅；移回後 `routes.ts` 走增量合併、上游路由之自訂 meta（例 `manage_role` 之 `icon`／`order`／`roles`）未必復原、工作樹回不到基準 ⇒ 先停 base-web 服務。暫移一支 seed 所引之 view 目錄 → `check` rc 1 且指名該 `view.<鍵>` 與 seed 列 id（缺 view 腿），並報導出集≠imports.ts（結構腿）→ 以原檔寫回還原 → `git -C base-web status --porcelain` 回基準態（RL-0005、RL-0019）→ 再起 base-web 服務後以 `git -C base-web status --porcelain` 與 route-artifact-gate `check` 復核仍回基準。逐步命令形由本刀 contracts（code-gates）定。seed 側不作真檔暫改（例外② 鎖定檔），由合成案承擔。變異打在判準上、紅證以 rc 與指名字面為準（RL-0029）。
 8. **碼面閘不佔 GT 名額**：本閘屬碼面閘（RULES 名詞段）——不入 GATES.md、不計 GT-12 之治理閘預算；治理閘數維持 12。
 9. **跨刀活體契約**：本閘之行為契約（判準、豁免與到期語意、退出碼、讀面型）入 `docs/ops/reference-src/code-gate-contracts.md` 新節（ADR-00041 決定 2 收錄判準成立：豁免表隨 008 刀縮、契約隨刀前進）；RUNBOOK §12 該列之契約指針指該節；刀內施工面留本刀 contracts。
+
+- **親決紀錄**：user 親決 2026-10-04（006 刀 U14 派發前、tasks T071 之親決提前；AskUserQuestion 三輪逐款一題一問）——決定 1～9 皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

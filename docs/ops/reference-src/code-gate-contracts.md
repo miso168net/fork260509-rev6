@@ -78,3 +78,21 @@
 - 來源＝`rust-api/server/src/router.rs` 之 `ROUTES` const；解析窄假設＝data-model §4 機器契約（精確開頭、每欄一行、枚舉字面）；來源檔缺席或任一偏離＝raise（fail-loud、generate 非零、GT-01 連帶紅）——U1 落地後 router.rs 永不缺席、不設 Day-1 豁免。
 - 輸出＝`docs/generated/reference/routes.md`：生成標記檔頭＋「來源＝… ROUTES const（generate 重算；handler 閉包不入表）」＋表 `| path | method | protection | case_key | envelope 例外 |`（列序＝ROUTES 宣告序）。
 - 名冊：GENERATED_FILES 14→15；README `docs/generated/` 成員行加 `routes`（GT-09 成員對賬腿守）；`tests/test_references.py` 一正一反（合成四條 ROUTES 文本→表；缺精確開頭／未知枚舉→raise）。
+
+## §7 `tools/seed-view-gate.py` 行為契約
+
+> 凍結存證＝`specs/006-authz-governance/contracts/code-gates.md` §2.2；決定本體＝ADR-00071。
+
+- 子命令：`check`（預設）／`test`；多餘引數或未知子命令＝rc 64。`check` 不連帶跑自測（ADR-00071 決定 6②）。依賴＝Python 3 標準庫；零 docker、零網路、不呼叫 git。
+- 判準＝單向包含 seed 集 ⊆ views 集，另加結構自證一腿；兩腿互不遮蔽、紅項合併列出：
+  - seed 集＝`rust-api/migration/src/m0002_baseline_seeds.rs` 中行首 `const SEED_SYS_MENU: &str = r#"` 之後、至其後第一個 `"#` 為止之 raw 字串區間內全部 `view.<鍵>` 字面去重（帶佈局之 `layout.base$view.<鍵>` 形亦收）；區間外（他 seed 常數、doc 註解、收尾符同一行之後）不收。每鍵記 seed 檔行號與該行 sys_menu 列 id。
+  - views 集＝`base-web/src/views/**` 依 elegant-router 0.3.8 預設頁檔規則導出：頁檔＝`index.vue` 或 `[<識別字>].vue`；名為 `components` 之目錄整棵排除；頁檔至少一層上層目錄、各層目錄名合外掛之 ASCII 合法式；鍵＝各層目錄名去掉 `_` 起首之分組層後以 `_` 串接並轉小寫。前提＝`base-web/build/plugins/router.ts` 未覆寫頁檔規則（覆寫或外掛升版＝ADR-00071 翻案觸發器）。
+  - 結構自證：views 導出集 MUST 恰等 `base-web/src/router/elegant/imports.ts` 之 views 匯出塊鍵集（layouts 塊不收）；雙向差集分向指名——導出規則與外掛脫節、或頁目錄已動而產物未重算，皆在此現形。
+  - 方向單向：base-web 有而 seed 無（例 `login`、未上選單之頁）屬合法不對稱、不紅。射程限 seed 檔：`m0003` 起之 delta migration 所寫選單列與超管自建選單不在射程（後者之已知態＝ADR-00068 款 14）。
+- 具名豁免與到期語意：豁免表＝工具模組常數 `EXEMPT`（唯讀檢視；不得取自 args／env／讀檔），恰兩列＝`view.manage_system-settings`（seed 列 9）、`view.manage_audit`（seed 列 77），各附 BL-00045 指針與解除謂詞（該鍵之 view 出現於導出集＝到期）。豁免中之鍵缺 view 不紅、綠時逐列印出；**到期即紅**（頁已在而豁免未摘）、**幽靈亦紅**（豁免鍵已不在 seed 集）——表只會縮。「恰兩列且各含 BL-00045 與解除謂詞」與另三釘（呼叫點原封傳入、判定函式零外部取值形、呼叫端零就地改表）由自測機器守；增減列＝同批改自測斷言、於 diff 現形（拍板級）。豁免為本閘自持之到期語意、不入 docsync `DAY1_EXEMPTIONS`。
+- rc：0 綠／1 紅（缺 view 逐鍵指名 seed 檔:行與 sys_menu 列 id；豁免到期或幽靈；導出集≠`imports.ts`）／2 結構異常（seed 檔、`SEED_SYS_MENU` 塊〔含未收尾〕、views 目錄、`imports.ts` 或其 views 匯出塊任一缺席，或任一側掃得空集＝掃描面空集合即紅、RL-0051）／64 用法錯。tracked 面缺席一律 rc 2 fail-loud、不設具名跳過（ADR-00019 決定 4）。
+- 讀面型（ADR-00055 決定 3；進場同刀標型之首例）：base-web `src/views/**` 與 `src/router/elegant/imports.ts`＝(a) 閘面內、延後至下次 base-web pin bump 補抓；`rust-api/migration/src/m0002_baseline_seeds.rs`＝(b) 閘面外、無兜底——該檔程式內容依憲法 §I.5 例外② 鎖定（ADR-00009）、任何改動本身即須另立 ADR，故不擴閘面。
+- self-test（`test`）：暫存目錄合成 fixtures、一律實跑生產函式——缺 view 紅、豁免生效綠、豁免到期紅、幽靈豁免紅、導出≠`imports.ts` 兩向各自紅、讀面缺席與各側空集 rc 2、豁免表恆定四釘；案數以 `test` 輸出為準、本檔不釘值。
+- 實作＝python 行級掃描（seed 側 raw 字串塊＋正則、base-web 側檔樹走訪＋views 匯出塊行級正則）：不持 rust 側字元級源碼解析組、非 BL-00108 所稱第三份。
+
+★接線與名冊落點屬各刀施工面、不收進本檔（ADR-00041 決定 2）；現況真源＝RUNBOOK §12 碼面閘表與 `tools/docsync/tests/test_hook_wiring.py` 的 SEGMENTS。

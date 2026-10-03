@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=db50e28｜rust-api=57e2c50
+- pins：base-web=5ac2563｜rust-api=57e2c50
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -12,7 +12,7 @@
 - 版本：1.7.0
 
 ## 帳面統計
-- ADR：71（proposed 4、accepted 60、superseded 7）
+- ADR：71（proposed 3、accepted 61、superseded 7）
 - RULES：84 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 49/52、人 10/12）
 - BACKLOG 開放：19｜滯後：3
 - LESSONS：58 筆
