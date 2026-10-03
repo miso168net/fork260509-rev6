@@ -118,7 +118,7 @@ curl -s http://127.0.0.1:32079/metrics | grep '^casbin_reload_total'
 
 計數為行程內累計、重啟 rust-api 即歸零；開機預註冊三個 outcome 為 0（三行恆在、行序不固定）。判讀：
 
-- `ok`：一次同步成功換上。觸發者兩類、每請求至多一次：移除面（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列；授予面（updateRoleMenu／updateRoleButton）Applied 即觸發、不問 diff（含空 diff：原樣提交期望集亦 +1）。其餘寫端（新增、復原、角色停用、選單啟停等）與授予面之整批拒、查無角色零增是設計形（觸發矩陣＝ADR-00043 決定 7＋ADR-00067 決定 1；流程＝活書 §6.1「選單域生命週期——島 H」⑤）。
+- `ok`：一次同步成功換上。觸發者兩類、每請求至多一次：移除面（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列；授予面（updateRoleMenu／updateRoleButton／updateRoleEndpoints）Applied 即觸發、不問 diff（含空 diff：原樣提交期望集亦 +1）。其餘寫端（新增、復原、角色停用、選單啟停等）與授予面之整批拒（受保護撤銷拒、端點維之封死授予拒）、查無角色零增是設計形（觸發矩陣＝ADR-00043 決定 7＋ADR-00067 決定 1；流程＝活書 §6.1「選單域生命週期——島 H」⑤）。
 - `retry`：每次重建失敗（含末次）+1、各配一則 target `security.authz` 的 error log（帶 `attempt`／`max`／`cause`）；`retry` 增而 `exhausted` 未增＝該次同步的後續嘗試已成功換上（`ok` 同增）、已自癒。
 - `exhausted`：一次同步三次全敗 +1（同時 `retry` +3）＝現役判定面仍是上一份（耗盡窗）→ 處置＝§13。
 - 告警＝`casbin-reload-anomaly`（`deploy/grafana-provisioning/alerting/rules.yml`；判準＝`retry`／`exhausted` 之 5 分鐘增量 > 0、`ok` 不告警）。本計數是同步結果計數、不屬降級序列：不入 `*_degraded_total`、`throttle-degraded`／`ipgate-degraded` 兩支降級告警皆不涵蓋。
