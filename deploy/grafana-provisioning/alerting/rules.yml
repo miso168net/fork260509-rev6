@@ -308,7 +308,7 @@ groups:
                     params: []
                   type: query
 
-      # ══ ③c casbin-reload-anomaly：casbin_reload_total 異常 outcome（retry/exhausted）增長（島 H2；判定面同步＝ADR-00043）══
+      # ══ ③c casbin-reload-anomaly：casbin_reload_total 異常 outcome（retry/exhausted）增長（島 G1、H2 互引；判定面同步＝ADR-00043＋ADR-00067）══
       # 事件錨＝rust-api/server/src/auth/enforce.rs 之 casbin_reload_total 發射點（retry／exhausted 兩 outcome）；outcome=ok 不告警。
       - uid: obs016-casbin-reload-anomaly
         title: casbin-reload-anomaly
