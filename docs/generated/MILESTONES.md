@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-10-04 | feature_close | 006-authz-governance | 006 authz-governance 收單（rev6 第六刀）：島 G 授權治理入憲／三維授權寫端（選單維、按鈕維、端點維）全量替換＝射程限候選集＋結構性封死與受保護撤銷拒／撤銷必歸檔＋授權回收桶頁與復原／判定面同步觸發增列與兩窗／角色抽屜狀態欄／新碼面閘 seed-view-gate；零 migration；ROUTES 39→49、MSG_KEYS 43→46；憲法 1.6.0→1.7.1 | c1f072c | ADR-00063、ADR-00064、ADR-00065、ADR-00066、ADR-00067、ADR-00068、ADR-00069、ADR-00070、ADR-00071、ADR-00072 | §4、§5、§6、§8、§10、§11、§12 |
 | 2026-10-02 | misc | governance | 006 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00137／BL-00138 之誕生（兩條已於 006 刀 brainstorm 定稿顆 e9f5525 入 BACKLOG、事件帳尚無）；同顆 ADR-00064～ADR-00067 經 user 親決轉 accepted（ADR-00063 與憲法 1.7.0 已於前顆 27e8c70）。 | — | — | — |
 | 2026-09-30 | misc | governance｜maint-backlog-128-129-130 | maint-backlog-128-129-130 收單（user 2026-09-30 開批、本批使用容器）：BL-00128 時區環境面守衛（schema-gate 時區判值＋來源、bootstrap compose 時區體檢）；BL-00129 005 刀規格對照輪文件五處；BL-00130 碼面保護缺口（①～④ rust 測試補臂＋同類殘列連坐兩案、⑤ wire-schema customRoutes 讀面）；另看門狗長尾腿 `--bg --rearm` 補回形與明給 timeout（LL-00050）、STALL 合法等待判定（LL-00051）。 | 704f743 | — | — |
 | 2026-09-30 | misc | governance｜maint-spec-compliance-005 | 005 刀附屬規格對照審查輪（spec-compliance-005）收單：零 blocker、零 wire 行為缺陷；findings 24 筆原始＝修 3／轉帳 16 筆歸併為 7 條／駁回 4／記載 1。user 裁修項（文件五處、碼面五筆）全部轉帳、之後併批收；島 H2 過渡窗交 006 brainstorm、§III 模板屬性標記併入下次 Amendment；收刀程序補簿記後驗一步（RL-0084）。 | 78d4700 | — | — |
@@ -64,6 +65,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-04｜feature_close｜006-authz-governance
+
+執行單元 U0～U18；U16 CDP 三方對照與已知態觀察窗；T077 親決 40 題（ADR-00068 十九款、ADR-00069 八款）；T082 憲法 1.7.1 PATCH（ADR-00072）；T085 全量閘＋碼面閘九支、T086 反例演練、T087 quickstart 115 條；final holistic review 10 筆（修 5／駁回 5；處置見 701ebf6）；全量 1258 passed／2 ignored；precommit_chain 21.10s（d28bf1c）；LL-00052～LL-00061；RL-0085 與 CLAUDE.md §2 ② 補句＝收刀親決晉升（0c0b78f）；backlog_add 空＝BL-00137／BL-00138 已由本窗 2026-10-02 misc 事件帶入；條文改寫 3（BL-00045／BL-00048／BL-00136）與敘述改寫 1（BL-00133）已於刀內落帳
 
 ### 2026-10-02｜misc｜governance
 
