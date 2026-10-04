@@ -15,7 +15,7 @@
 - ADR：72（proposed 0、accepted 63、superseded 9）
 - RULES：84 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 49/52、人 10/12）
 - BACKLOG 開放：19｜滯後：3
-- LESSONS：60 筆
+- LESSONS：61 筆
 - events：113 筆（erratum 2、feature_close 5、misc 44、perf 54、review 8）
 - CLAUDE.md 行數：163（只報表、不擋）
 
@@ -23,7 +23,7 @@
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
 | 治理批對 feature 比 | 8.4 | ≤1 | 超標 |
-| LESSONS 重複率 | 0.08 | 0 | 超標 |
+| LESSONS 重複率 | 0.1 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | 14 | ≤0 | 超標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
 

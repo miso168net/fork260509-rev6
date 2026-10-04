@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00061 -->
+<!-- next: LL-00062 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -66,3 +66,4 @@
 | LL-00058 | 新增型圈界塊與修改型落在同一個 difflib 變更塊時，拔掉 START／END lint 照綠；以前代標記實數作預估，連帶把前代不承重的圈界算了進去（006 刀 U12） | none：判準住 tools/fork-delta-lint.py（find_unmarked_additions 已知可接受殘留①）與 006 刀單元出口之拔標記必紅斷言；守法寫進本檔與後續單元定義，不另立規則 | none | [LL-00058-new-type-fence-in-modified-change-block-not-load-bearing.md](LESSONS/LL-00058-new-type-fence-in-modified-change-block-not-load-bearing.md) |
 | LL-00059 | 已知態觀察窗之全量測試步只該帶指定型殘列：觀察 prompt 未令撤回他款寫入，端點授予與「撤 seed 列再重授成新 id」一併帶進全量，四支 seed 斷言測試轉紅（006 刀 U16） | none：判準住 006 刀 quickstart §11 之全量步（只帶「授 seed 角色於 seed 選單列之殘授權」）；守法寫進本檔與後續觀察窗 prompt，不另立規則 | none | [LL-00059-observation-window-full-test-must-carry-only-the-designated-residue.md](LESSONS/LL-00059-observation-window-full-test-must-carry-only-the-designated-residue.md) |
 | LL-00060 | ROUTES 只改次序也要同批改 docsync 釘值測：收尾②只跑 docsync check／lint、pre-commit 又只在 staged 含 tools/docsync/ 時才跑 docsync 自測，釘值測紅了一整個單元沒人察覺（006 刀 U16→U17） | none：連動關係已明文於 rust-api `server/src/router.rs` ROUTES doc 與 `tools/docsync/tests/test_references.py` 該測註解；缺的是收尾②沒跑 docsync test，守法寫進本檔與收尾鏈，不另立規則 | none | [LL-00060-routes-reorder-left-docsync-pinned-rows-red.md](LESSONS/LL-00060-routes-reorder-left-docsync-pinned-rows-red.md) |
+| LL-00061 | 變異演練以 `cp -p` 寫回原檔，連 mtime 也還原成舊值：dev 伺服器在變異寫入時已被 watchexec 重編，寫回後 cargo 判新鮮不重編，之後的 API 走查一直打在拆掉守門的二進位上（006 刀 U18） | none：同 LL-00032／LL-00056（cargo 以 mtime 判新舊之假綠）；本則補的是「寫回端」與 dev 伺服器（watchexec）之形，守法寫進本檔與演練腳本 | none | [LL-00061-drill-restore-with-cp-p-keeps-dev-server-on-mutated-binary.md](LESSONS/LL-00061-drill-restore-with-cp-p-keeps-dev-server-on-mutated-binary.md) |
