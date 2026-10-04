@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-10-05 | misc | governance｜maint-backlog-137-133 | maint-backlog-137-133 收單（user 2026-10-04 依 BACKLOG 體檢 v8 開批）：BL-00137 壓縮 hook 背景 task 目錄改探測候選暫存根；GT-03 增 BL 誕生／收單唯一性腳（ADR-00073）；BL-00133 之 C4-E2 指針半條（不刪列）；LESSONS LL-00062～LL-00066。 | 356a619 | ADR-00073 | — |
 | 2026-10-04 | feature_close | 006-authz-governance | 006 authz-governance 收單（rev6 第六刀）：島 G 授權治理入憲／三維授權寫端（選單維、按鈕維、端點維）全量替換＝射程限候選集＋結構性封死與受保護撤銷拒／撤銷必歸檔＋授權回收桶頁與復原／判定面同步觸發增列與兩窗／角色抽屜狀態欄／新碼面閘 seed-view-gate；零 migration；ROUTES 39→49、MSG_KEYS 43→46；憲法 1.6.0→1.7.1 | c1f072c | ADR-00063、ADR-00064、ADR-00065、ADR-00066、ADR-00067、ADR-00068、ADR-00069、ADR-00070、ADR-00071、ADR-00072 | §4、§5、§6、§8、§10、§11、§12 |
 | 2026-10-02 | misc | governance | 006 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00137／BL-00138 之誕生（兩條已於 006 刀 brainstorm 定稿顆 e9f5525 入 BACKLOG、事件帳尚無）；同顆 ADR-00064～ADR-00067 經 user 親決轉 accepted（ADR-00063 與憲法 1.7.0 已於前顆 27e8c70）。 | — | — | — |
 | 2026-09-30 | misc | governance｜maint-backlog-128-129-130 | maint-backlog-128-129-130 收單（user 2026-09-30 開批、本批使用容器）：BL-00128 時區環境面守衛（schema-gate 時區判值＋來源、bootstrap compose 時區體檢）；BL-00129 005 刀規格對照輪文件五處；BL-00130 碼面保護缺口（①～④ rust 測試補臂＋同類殘列連坐兩案、⑤ wire-schema customRoutes 讀面）；另看門狗長尾腿 `--bg --rearm` 補回形與明給 timeout（LL-00050）、STALL 合法等待判定（LL-00051）。 | 704f743 | — | — |
@@ -65,6 +66,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-05｜misc｜governance｜maint-backlog-137-133
+
+主體 7620bcf（原顆未推，經 FHR L2-1 指出 ADR-00073 三處失準、以 reset --soft 重落）；FHR run wf_50df1b5d-c71 收單 070fdf1（13 筆＝修 13／轉 BL 0／won't-fix 0；hook 由寫死 /tmp 改探測候選根）；BACKLOG 體檢 v8 run wf_091e8383-37e（11 支、反駁 17 條全確認）。user 2026-10-04 裁定：開批、C4-E2 指針搭便車、GT-03 補腳、FHR 用 Workflow、merge --no-ff 保留分支、簿記後全推。pre-commit 全鏈於原主體顆報 54s（警戒 45s；docsync 自測觸發；未以 RUNBOOK §12b 命令形包量，不記 precommit_chain）。
 
 ### 2026-10-04｜feature_close｜006-authz-governance
 
