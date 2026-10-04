@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-05 | misc | governance｜maint-readout-errata | maint-readout-errata 收單（user 2026-10-05 依 BACKLOG 體檢 v9 開批）：007 前讀出口與文件勘誤九項——NOTES 之 ADR-00044 指針節名（必要）與推送揮發字、README 憲法版本鏡像改指針、MILESTONES 增 BL（記／收）欄、活書 06／08 兩句、rust-api 前代歸因碼註；LESSONS LL-00069／LL-00070；新記 BL-00139。 | 0e4ad71 | — | 記 BL-00139 | — |
 | 2026-10-05 | review | 006-authz-governance | findings 11（修 11／BL 0／ADR 0） | — | — | — | — |
 | 2026-10-05 | misc | governance｜maint-backlog-137-133 | maint-backlog-137-133 收單（user 2026-10-04 依 BACKLOG 體檢 v8 開批）：BL-00137 壓縮 hook 背景 task 目錄改探測候選暫存根；GT-03 增 BL 誕生／收單唯一性腳（ADR-00073）；BL-00133 之 C4-E2 指針半條（不刪列）；LESSONS LL-00062～LL-00066。 | 356a619 | ADR-00073 | 收 BL-00137 | — |
 | 2026-10-04 | feature_close | 006-authz-governance | 006 authz-governance 收單（rev6 第六刀）：島 G 授權治理入憲／三維授權寫端（選單維、按鈕維、端點維）全量替換＝射程限候選集＋結構性封死與受保護撤銷拒／撤銷必歸檔＋授權回收桶頁與復原／判定面同步觸發增列與兩窗／角色抽屜狀態欄／新碼面閘 seed-view-gate；零 migration；ROUTES 39→49、MSG_KEYS 43→46；憲法 1.6.0→1.7.1 | c1f072c | ADR-00063、ADR-00064、ADR-00065、ADR-00066、ADR-00067、ADR-00068、ADR-00069、ADR-00070、ADR-00071、ADR-00072 | 收 BL-00084、BL-00131、BL-00132、BL-00134、BL-00135 | §4、§5、§6、§8、§10、§11、§12 |
@@ -67,6 +68,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-05｜misc｜governance｜maint-readout-errata
+
+主體 27c690e（原 32e8e14 經 FHR L2-4 指出勘誤段分類失準、未推即 amend 改寫訊息、tree 不變）＋rust-api f6d156c；FHR run wf_f872b609-263 收單 38d55d5（9 筆＝修 9／轉 BL 0／won't-fix 0；NOTES 義務改五項〔增 ADR-00068 決定 4①〕、LESSONS 兩檔據實、README STATE 枚舉補憲法版本、BL 欄號序釘）＋rust-api 6f74d20（補 f6d156c 未盡之 GeoIP 半邊／HLL 歸因與同族 main.rs xdb 段、server/Cargo.toml）；新記 BL-00139＝15325d1（Grafana rust-api 三空面板；勘誤以 HLL 復掃新揭）。BACKLOG 體檢 v9 run wf_b6e9e459-057（13 支；BL 16 條 007 前零可收；X 項 10＝修 9／no-action 1，X3＝006 規格對照報告擱置③之誤報）。user 2026-10-05 裁定：開批 A＋B 同批、三空面板記 BL（非建議項）、merge --no-ff 保留分支、簿記後全推。pre-commit 全鏈於主體與 FHR 收單兩顆報 52s／49s（警戒 45s；staged 含 tools/docsync 觸發自測；未以 RUNBOOK §12b 命令形包量、不記 precommit_chain）。WSL 重開後 rev6 stack 依 RUNBOOK §2 重起（preflight-secrets OK、health 200、對 006 收刀基準 diff rc 0）。
 
 ### 2026-10-05｜review｜006-authz-governance
 

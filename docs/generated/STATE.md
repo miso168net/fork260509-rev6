@@ -16,13 +16,13 @@
 - RULES：85 條／上限 92（implementer 44/48、review 16/18、fix 18/19、主線 50/52、人 10/12）
 - BACKLOG 開放：14｜滯後：3
 - LESSONS：70 筆
-- events：120 筆（erratum 2、feature_close 6、misc 45、perf 58、review 9）
+- events：121 筆（erratum 2、feature_close 6、misc 46、perf 58、review 9）
 - CLAUDE.md 行數：163（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
 | 指標 | 值 | 目標 | 狀態 |
 |---|---|---|---|
-| 治理批對 feature 比 | 7.17 | ≤1 | 超標 |
+| 治理批對 feature 比 | 7.33 | ≤1 | 超標 |
 | LESSONS 重複率 | 0.13 | 0 | 超標 |
 | BACKLOG 淨流量（rolling 3 刀） | -20 | ≤0 | 達標 |
 | 檢索性（最近獨立輪 doc-governance） | ≤3 跳 0.76／答對 1.0／找不到 0／答錯 0（否定對照答錯 0）；平均最短 hops 1.68 | 找不到＋答錯＝0；≤3 跳比例輪間不降 | 達標；輪間不降 —（需前輪值） |
@@ -40,6 +40,6 @@
 | docsync 行數 | 4170 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-10-05｜misc｜governance｜maint-readout-errata｜maint-readout-errata 收單（user 2026-10-05 依 BACKLOG 體檢 v9 開批）：007 前讀出口與文件勘誤九項——NO…
 - 2026-10-05｜perf｜close_bookkeeping｜close_bookkeeping 17.0 秒 rc=0
 - 2026-10-05｜review｜006-authz-governance｜findings 11（修 11／BL 0／ADR 0）
-- 2026-10-05｜perf｜close_bookkeeping｜close_bookkeeping 16.69 秒 rc=0
