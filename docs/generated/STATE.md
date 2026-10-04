@@ -16,7 +16,7 @@
 - RULES：85 條／上限 92（implementer 44/48、review 16/18、fix 18/19、主線 50/52、人 10/12）
 - BACKLOG 開放：14｜滯後：3
 - LESSONS：61 筆
-- events：115 筆（erratum 2、feature_close 6、misc 44、perf 55、review 8）
+- events：116 筆（erratum 2、feature_close 6、misc 44、perf 56、review 8）
 - CLAUDE.md 行數：163（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 4143 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-10-04｜perf｜close_bookkeeping｜close_bookkeeping 15.21 秒 rc=0
 - 2026-10-04｜feature_close｜006-authz-governance｜006 authz-governance 收單（rev6 第六刀）：島 G 授權治理入憲／三維授權寫端（選單維、按鈕維、端點維）全量替換＝射程限候選集＋結構性…
 - 2026-10-04｜perf｜precommit_chain｜precommit_chain 21.1 秒 rc=0
-- 2026-10-02｜misc｜governance｜006 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00137／BL-00138 之誕生（兩條已於 006 刀 brainstorm 定稿顆…
