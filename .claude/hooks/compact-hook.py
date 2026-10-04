@@ -21,7 +21,7 @@
 視窗＝`CLAUDE_CODE_AUTO_COMPACT_WINDOW`（純數字才認）→ `.claude/settings.local.json` → `.claude/settings.json` 之 `autoCompactWindow`；
 只用於提醒字面（實效另受模型視窗夾限、以 /context 為準）。恆 exit 0（exit 2 會擋下壓縮）：各段自帶 try、單段失敗只印一行錯誤；
 stdout 一律 utf-8（不可編碼字元以替代字元輸出）。
-手動試跑：echo '{"trigger":"manual","transcript_path":"<session>.jsonl","session_id":"<id>"}' | python3 .claude/hooks/compact-hook.py precompact
+手動試跑：echo '{"trigger":"manual","transcript_path":"<session>.jsonl","session_id":"<id>","scratchpad_dir":"<scratchpad>"}' | python3 .claude/hooks/compact-hook.py precompact
 """
 import fnmatch, glob, json, os, re, subprocess, sys, tempfile, time
 from concurrent.futures import ThreadPoolExecutor
@@ -222,7 +222,7 @@ def tasks_dir(data):
     tp, sid = data.get("transcript_path"), data.get("session_id")
     if not (tp and sid):
         return None
-    base = os.environ.get("CLAUDE_CODE_TMPDIR") or tempfile.gettempdir()
+    base = os.environ.get("CLAUDE_CODE_TMPDIR") or "/tmp"   # CC 暫存根恆在 /tmp（macOS＝/private/tmp），非平台 gettempdir（BL-00137）
     return Path(base) / f"claude-{os.getuid()}" / Path(tp).parent.name / sid / "tasks"
 
 

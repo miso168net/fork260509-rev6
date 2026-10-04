@@ -562,6 +562,33 @@ class TestGt03BlExistence(unittest.TestCase):
             self.assertGreater(events._bl_num(bid), top, f)
 
 
+class TestGt03BlUnique(unittest.TestCase):
+    """GT-03 之 BL 唯一性腿（ADR-00073）：同一 BL 號於全帳 backlog_add 至多一次、backlog_done 至多一次
+    ——metrics 按窗加總不去重，重記即多算；erratum 不可更正此二欄，故只能在 commit 前擋。"""
+
+    _ctx = TestGt03BlExistence._ctx
+    RV = TestGt03BlExistence.RV
+    _misc = staticmethod(TestGt03BlExistence._misc)
+
+    def _dups(self, lines):
+        return [f for f in events.gt_03(self._ctx(lines)) if f[0] == "ERROR" and "重複" in f[3]]
+
+    def test_once_each_is_green(self):
+        self.assertEqual(self._dups([self._misc(backlog_add=["BL-00001", "BL-00002"], backlog_done=["BL-00001"]),
+                                     self._misc(backlog_add=["BL-00003"], backlog_done=["BL-00002"]), self.RV]), [])
+
+    def test_birth_twice_is_red_across_events_and_within_one(self):
+        across = self._dups([self._misc(backlog_add=["BL-00001"]), self._misc(backlog_add=["BL-00001"]), self.RV])
+        self.assertTrue(len(across) == 1 and "BL-00001" in across[0][3] and "backlog_add" in across[0][3], across)
+        within = self._dups([self._misc(backlog_add=["BL-00002", "BL-00002"]), self.RV])
+        self.assertTrue(len(within) == 1 and "BL-00002" in within[0][3], within)
+
+    def test_done_twice_is_red(self):
+        fs = self._dups([self._misc(backlog_add=["BL-00001"], backlog_done=["BL-00001"]),
+                         self._misc(backlog_done=["BL-00001"]), self.RV])
+        self.assertTrue(len(fs) == 1 and "BL-00001" in fs[0][3] and "backlog_done" in fs[0][3], fs)
+
+
 class TestProbeHopsAndReportForm(unittest.TestCase):
     """000-r2 L1-05（probe.avg_min_hops 受 GT-02 形檢卻無渲染面）／L3-09（review.report 形檢過寬）／C3-4（RE_LID 死常數）。"""
 

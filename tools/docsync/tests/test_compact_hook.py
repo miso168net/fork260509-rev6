@@ -247,6 +247,13 @@ class TestTasksDir(unittest.TestCase):
             open(os.path.join(want, "bgfallback7.output"), "w").close()
             self.assertIn("bgfallback7", hook.bg_tasks(data))
 
+    def test_no_env_fallback_is_tmp_not_platform_tempdir(self):
+        # BL-00137：macOS 之 gettempdir()＝/var/folders/…/T，Claude Code 實用 /tmp（＝/private/tmp）之 claude-<uid>
+        data = {"transcript_path": "/x/proj-slug/sid.jsonl", "session_id": "sid"}
+        with mock.patch.dict(os.environ), mock.patch.object(hook.tempfile, "gettempdir", return_value="/var/folders/ab/cd/T"):
+            os.environ.pop("CLAUDE_CODE_TMPDIR", None)
+            self.assertEqual(hook.tasks_dir(data), hook.Path("/tmp") / f"claude-{os.getuid()}" / "proj-slug" / "sid" / "tasks")
+
 
 class TestMainOnlyAndExitCode(_Base):
     def test_agent_id_silences_all_modes(self):
