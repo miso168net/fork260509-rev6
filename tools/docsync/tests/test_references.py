@@ -241,16 +241,16 @@ class TestMilestonesBacklogColumn(unittest.TestCase):
 
     def test_add_and_done_render_with_verbs_and_dash_when_empty(self):
         base = {"type": "misc", "date": "2026-09-05", "category": "governance"}
-        evs = [{**base, "summary": "兩欄皆有", "backlog_add": ["BL-00138", "BL-00139"], "backlog_done": ["BL-00137"]},
+        evs = [{**base, "summary": "兩欄皆有", "backlog_add": ["BL-00139", "BL-00138"], "backlog_done": ["BL-00137"]},
                {**base, "summary": "只記", "backlog_add": ["BL-00140"]},
-               {**base, "summary": "只收", "backlog_add": [], "backlog_done": ["BL-00084", "BL-00131"]},
+               {**base, "summary": "只收", "backlog_add": [], "backlog_done": ["BL-00131", "BL-00084"]},
                {**base, "summary": "皆空", "backlog_add": [], "backlog_done": []},
                {"type": "review", "date": "2026-09-05", "scope": "sc", "report": "docs/reviews/20260905-x.md",
                 "findings": {"total": 1, "fixed": 0, "to_backlog": ["BL-00009"], "wontfix_adr": []}}]
         got = {self._col(r, 4): self._col(r, 7) for r in self._rows(evs)}
-        self.assertEqual(got["兩欄皆有"], "記 BL-00138、BL-00139；收 BL-00137")
+        self.assertEqual(got["兩欄皆有"], "記 BL-00139、BL-00138；收 BL-00137")   # 輸入刻意非字序：格內號序＝事件源原序
         self.assertEqual(got["只記"], "記 BL-00140")
-        self.assertEqual(got["只收"], "收 BL-00084、BL-00131")
+        self.assertEqual(got["只收"], "收 BL-00131、BL-00084")
         self.assertEqual(got["皆空"], "—")
         self.assertEqual(got["findings 1（修 0／BL 1／ADR 0）；BL-00009"], "—")
         self.assertEqual({self._col(r, 8) for r in self._rows(evs)}, {"—"})   # arch 欄仍在最末、未被擠位

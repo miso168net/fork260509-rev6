@@ -86,7 +86,7 @@ fork260509-rev6/
 1. `CLAUDE.md` §1（拓樸）→ §6（硬禁令）。
 2. `.specify/memory/constitution.md`（凍結權威；§IV 九題是 plan 的自查表）。
 3. `docs/ops/RULES.md`（規則層＋名詞段）與 `docs/generated/GATES.md`（哪些閘在守什麼）。
-4. `docs/generated/STATE.md`（現況帳：pins／現在波／帳面統計／治理指標／預算對賬）→ `docs/ops/NOTES.md`（下一步）。
+4. `docs/generated/STATE.md`（現況帳：pins／現在波／憲法版本／帳面統計／治理指標／預算對賬）→ `docs/ops/NOTES.md`（下一步）。
 5. 啟動書 `docs/brainstorms/000-doc-architecture.md`（設計依據；史料面）。
 
 ★動工前掃 `docs/ops/BACKLOG.md` 的觸發欄——指名「本刀會踩到」的條目要當輸入。

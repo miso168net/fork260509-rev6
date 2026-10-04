@@ -6,7 +6,7 @@ recurrence_of: "LL-00006"
 ---
 LL-00069｜改某一端點的案數時，勘誤種子用了帶前綴的長片語——「分頁四案」改成「五案」了，同一端點另一種寫法「app 面四案」卻漏掃（maint-readout-errata 補；2026-10-05）
 
-**徵狀**：spec-compliance-006 修單 rust-api `5f123a6` 替 get-archived-policies 補第⑤發，把模組 doc 兩處與案 doc 的「分頁四案」改成「五案」；commit 訊息記「errata 七組改動字面零命中」。同檔 `verify_get_archived_policies` 的 doc 仍寫「分頁參數收斂之 app 面四案」，直到 BACKLOG 體檢 v9 掃漏才抓到。
+**徵狀**：spec-compliance-006 修單 rust-api `5f123a6` 替 get-archived-policies 補第⑤發，把模組 doc 三處與案 doc 一處的「分頁四案」改成「五案」；外層 `37b0d9f` 的 commit 訊息記「errata 七組改動字面全 repo（含兩子庫 pin 樹）零命中」。同檔 `verify_get_archived_policies` 的 doc 仍寫「分頁參數收斂之 app 面四案」，直到 BACKLOG 體檢 v9 掃漏才抓到。
 
 **成因**：
 - 當時的勘誤種子是 `errata '分頁四案'` 與 grep「get-archived-policies 分頁四案」，都是「主詞＋數量詞」的長片語，不是舊數量詞本身。

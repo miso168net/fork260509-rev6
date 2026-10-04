@@ -15,7 +15,7 @@ LL-00070｜NOTES「下一步」的 ADR 指針照抄 agent 寫的體檢底稿、�
 - maint-backlog-137-133 把這組義務落進 NOTES 時，直接沿用底稿措辭，沒有打開 ADR-00044 看它的節構。
 - lint 不檢查散文指向的 ADR 節名，錯誤一路帶到 007 的直接輸入。
 
-**處置**：maint-readout-errata 把 NOTES 該句改為「ADR-00044 翻案觸發器前兩款」，`errata 'ADR-00044 後果'` 復掃零命中。
+**處置**：maint-readout-errata 把 NOTES 該句改為「ADR-00044 翻案觸發器前兩款」，`errata 'ADR-00044 後果'` 復掃：NOTES 與其餘現在式面零命中（只剩本檔與 LESSONS 索引之史述引用）。
 
 **晉升面**：none——CLAUDE.md §5 已要求一律 grep 或實跑取證；本坑記錄的是「搬運指針」這個常被當成照抄、不被當成新寫的時點。
 
