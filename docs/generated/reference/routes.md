@@ -33,17 +33,16 @@
 | /systemManage/updateRole | POST | Policy | update-role | 否 |
 | /systemManage/deleteRole | DELETE | Policy | delete-role | 否 |
 | /systemManage/batchDeleteRole | DELETE | Policy | batch-delete-role | 否 |
-| /systemManage/getRoleHome | GET | Policy | get-role-home | 否 |
-| /systemManage/updateRoleHome | POST | Policy | update-role-home | 否 |
 | /systemManage/getMenuList/v2 | GET | Policy | get-menu-list-v2 | 否 |
 | /systemManage/getMenuTree | GET | Policy | get-menu-tree | 否 |
-| /systemManage/getAllPages | GET | Policy | get-all-pages | 否 |
 | /systemManage/addMenu | POST | Policy | add-menu | 否 |
 | /systemManage/updateMenu | POST | Policy | update-menu | 否 |
 | /systemManage/deleteMenu | DELETE | Policy | delete-menu | 否 |
 | /systemManage/batchDeleteMenu | DELETE | Policy | batch-delete-menu | 否 |
 | /systemManage/getDeletedMenus | GET | Policy | get-deleted-menus | 否 |
 | /systemManage/restoreMenu | POST | Policy | restore-menu | 否 |
+| /systemManage/getRoleHome | GET | Policy | get-role-home | 否 |
+| /systemManage/updateRoleHome | POST | Policy | update-role-home | 否 |
 | /systemManage/getRoleMenu | GET | Policy | get-role-menu | 否 |
 | /systemManage/updateRoleMenu | POST | Policy | update-role-menu | 否 |
 | /systemManage/getRoleButton | GET | Policy | get-role-button | 否 |
@@ -52,5 +51,6 @@
 | /systemManage/updateRoleEndpoints | POST | Policy | update-role-endpoints | 否 |
 | /systemManage/getArchivedPolicies | GET | Policy | get-archived-policies | 否 |
 | /systemManage/restorePolicy | POST | Policy | restore-policy | 否 |
+| /systemManage/getAllPages | GET | Policy | get-all-pages | 否 |
 | /systemManage/getAllButtons | GET | Policy | get-all-buttons | 否 |
 | /systemManage/getAllEndpoints | GET | Policy | get-all-endpoints | 否 |
