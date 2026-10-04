@@ -13,7 +13,7 @@
 
 ## 帳面統計
 - ADR：72（proposed 0、accepted 63、superseded 9）
-- RULES：84 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 49/52、人 10/12）
+- RULES：85 條／上限 92（implementer 44/48、review 16/18、fix 18/19、主線 50/52、人 10/12）
 - BACKLOG 開放：19｜滯後：3
 - LESSONS：61 筆
 - events：114 筆（erratum 2、feature_close 5、misc 44、perf 55、review 8）
@@ -31,11 +31,11 @@
 | 項目 | 現值 | 上限 | 狀態 |
 |---|---|---|---|
 | 閘數 | 12 | 12 | 內 |
-| RULES 總 | 84 | 92 | 內 |
-| RULES implementer | 43 | 48 | 內 |
+| RULES 總 | 85 | 92 | 內 |
+| RULES implementer | 44 | 48 | 內 |
 | RULES review | 16 | 18 | 內 |
-| RULES fix | 17 | 19 | 內 |
-| RULES 主線 | 49 | 52 | 內 |
+| RULES fix | 18 | 19 | 內 |
+| RULES 主線 | 50 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
 | docsync 行數 | 4143 | 4000 | 超 |
 

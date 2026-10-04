@@ -66,7 +66,7 @@
 　hook 兜底：PostToolUse(Workflow) 注入配對提醒、PreToolUse(Workflow) 擋缺 zh-TW／缺或錯 RULES-VERSION 之 script。
 主線例行只在單元邊界醒（看門狗告警除外）。★單元收尾**六步序、次序不可反**（RL-0006／RL-0011／RL-0022／RL-0072）：
 　①復核 agent 回報（逐項自 grep 驗證、不採信；凡本單元改變的字面→`python3 tools/docsync errata <詞>` 跨檔假述枚舉、改完復掃）
-　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事）
+　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事；rust-api 動到 ROUTES〔增列、刪列或改序〕之單元另跑 `python3 -B tools/docsync test`＝LL-00060）
 　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
 　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`（後三件＝`docs/generated/` 之外的 GENERATED_FILES 成員；`_sk_rules.js` 於 RULES 改動時才變）
 　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」，rev5:L-022、RL-0008）。

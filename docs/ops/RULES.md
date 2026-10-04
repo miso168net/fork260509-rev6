@@ -1,4 +1,4 @@
-<!-- next: RL-0085 -->
+<!-- next: RL-0086 -->
 # RULES — 規則層
 
 權威鏈：constitution ＞ ADR accepted ＞ RULES ＞ arc42／c4／compliance／process ＞ generated（與 accepted ADR 衝突＝RULES 有誤、就地改 RULES，輕量軌）。
@@ -92,6 +92,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0082 | 主線在 tmp/ 手寫之時刻一律在寫入的同一指令以 `date` 取 OS 系統時間，不得估計或沿上一筆推算；工具產出之機器時間欄不在此限。 | 主線 | checklist | ADR-00062 |
 | RL-0083 | 受版控帳本之日期欄（events `date`、ADR `date`、滯後戳記）一律記 OS 系統時間之當地日期（UTC+8）；既有資料不回改。 | 主線 | checklist | ADR-00062 |
 | RL-0084 | 收刀 perf 第四步那顆 commit 內，逐欄核對 spec 標「收刀面於簿記 commit 後驗」之 SC 子句並把結果寫入該顆 commit 訊息；不符者引承載或轉 BL。 | 主線 | checklist | LL-00049 |
+| RL-0085 | 以 cargo 驗改碼結果或變異演練寫回之後：寫回不保 mtime（`cp` 不帶 `-p`、或寫回後 touch），並以 log 見 `Compiling` 或產物 mtime 晚於改檔時刻自證重編；只見 `Finished` 無 `Compiling`＝該次作廢重跑。 | implementer,fix,主線 | prompt | LL-00061 |
 
 ## 名詞
 

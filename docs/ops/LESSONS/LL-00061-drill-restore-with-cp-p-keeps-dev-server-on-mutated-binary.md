@@ -1,7 +1,7 @@
 ---
 id: "LL-00061"
-rule_id: "none：同 LL-00032／LL-00056（cargo 以 mtime 判新舊之假綠）；本則補的是「寫回端」與 dev 伺服器（watchexec）之形，守法寫進本檔與演練腳本"
-promotion_surface: none
+rule_id: "RL-0085"
+promotion_surface: rules
 recurrence_of: "LL-00056"
 ---
 LL-00061｜變異演練以 `cp -p` 寫回原檔，連 mtime 也還原成舊值：dev 伺服器在變異寫入時已被 watchexec 重編，寫回後 cargo 判新鮮不重編，之後的 API 走查一直打在拆掉守門的二進位上（006 刀 U18）
@@ -20,7 +20,7 @@ LL-00061｜變異演練以 `cp -p` 寫回原檔，連 mtime 也還原成舊值�
 - 驗證：T087 整支重跑，§3 封死授予得 `2222 biz.role.protectedGrant`、零同步，§5 連鎖各項皆符期望；首跑的錯授列已於該次 §10 restore 清回基準（diff rc 0）。
 - 演練腳本寫回改為不帶 `-p` 之 `cp`，並於寫回後 touch。
 
-**晉升面**：none——守法寫進本檔與演練腳本。這是同一機制的第三次（LL-00032、LL-00056、本則）；要不要晉升為規則，交收刀時裁定。
+**晉升面**：rules——同一機制第三次（LL-00032、LL-00056、本則），升格為 RL-0085（user 2026-10-04 收刀親決），烤進 implementer、fix 與主線。
 
 **再犯面與守法**：
 - ①演練寫回一律不保 mtime（`cp` 不帶 `-p`，或寫回後 `touch`），讓 cargo 看見寫回這一下。
