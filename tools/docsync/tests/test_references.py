@@ -459,7 +459,7 @@ class TestRoutes(unittest.TestCase):
 
     # 真 repo 釘值＝ROUTES 現行列集逐列全等（002 刀 U1 兩列＋U3 之 getSystemSettings 列＋U4 之 updateSystemSetting 列＋
     # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub＝003 刀 data-model §12 終態十六列＋004 刀 U7 五列＝IP 規則管理五端點＋004 刀 U10 一列＝解鎖端點＋005 刀 U1 十七列＝角色管理八端點＋選單管理九端點＋006 刀 U1 十列＝授權治理十端點〔三維授權讀寫六、授權回收桶二、候選讀端二〕；現行四十九列）。★釘值形刻意保留——逐列全等是各單元的
-    # 驗收面，不以「非空＋包含」弱化；日後加 route 時本測釘值須同批增列。
+    # 驗收面，不以「非空＋包含」弱化；日後增列、刪列或改序 route 時本測釘值須同批改。
     # ★紅而不自明的窗口：pre-commit 只在 staged 含 tools/docsync/ 時才跑 selftest-docsync（.githooks/pre-commit 同段），
     #   而 GT-01 漂移在 U3 跑過 generate 後即消——故本測不同批改＝一路綠燈到有人跑 docsync test／bootstrap 才浮出。
     def test_real_repo_pinned_rows(self):

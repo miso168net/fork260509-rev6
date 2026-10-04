@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00067 -->
+<!-- next: LL-00069 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -72,3 +72,5 @@
 | LL-00064 | 收刀簿記改 NOTES 只動本刀那一條，漏了前一刀的「已收刀」條：其中的現在式指針仍把已被本刀 supersede 的 ADR 當後續刀承接點（006 刀收刀簿記 2410cd4、2026-10-04） | none：RL-0084（收刀面 SC 子句於簿記 commit 後逐欄驗）已在，本例由主線擴大複掃面時抓到；本坑＝簿記顆改 NOTES 的範圍漏一條，守法寫於本檔 | none | [LL-00064-close-bookkeeping-notes-must-repoint-previous-closed-entry.md](LESSONS/LL-00064-close-bookkeeping-notes-must-repoint-previous-closed-entry.md) |
 | LL-00065 | 刪 BL 列前依 RL-0050 掃現在式引用，會命中憲法版本紀錄列裡的 BL 出處標籤：那是史述出處、照留，不算現在式引用（004～006 三刀同形、2026-10-04 記） | none：RL-0050「刪條目前先掃現在式引用」條文已在；本坑＝掃描命中後的判讀邊界，守法寫於本檔 | none | [LL-00065-constitution-version-row-bl-labels-are-provenance-not-present-tense.md](LESSONS/LL-00065-constitution-version-row-bl-labels-are-provenance-not-present-tense.md) |
 | LL-00066 | 刀內順手熱修某工具檔，沒回頭掃 BACKLOG 觸發欄：以「下一支動該檔」為觸發的條目到期了卻沒人接（BL-00137；006 刀 ec8c8ff、2026-10-03） | none：BACKLOG 檔頭「動 X」口徑已定義到期；本坑＝刀內順手改工具時沒人回掃觸發欄，守法寫於本檔 | none | [LL-00066-in-cut-tool-hotfix-misses-backlog-move-x-trigger.md](LESSONS/LL-00066-in-cut-tool-hotfix-misses-backlog-move-x-trigger.md) |
+| LL-00067 | 收刀簿記只照 RL-0084 核 spec 的簿記後驗 SC 子句；tasks 收刀清單與 contracts 指定寫入收單事件的註記沒有步驟承接——006 刀 feature_close notes 漏了淨流量值與 BL-00132 兌現射程註記（spec-compliance-006 抓到；2026-10-05） | RL-0084 | rules | [LL-00067-close-bookkeeping-misses-tasks-and-contract-mandated-notes.md](LESSONS/LL-00067-close-bookkeeping-misses-tasks-and-contract-mandated-notes.md) |
+| LL-00068 | 006 刀收刀 merge 帶入 `deploy/trust-model.dev.toml` 的變動後沒有重建 rust-api 容器：信任模型檔在容器內懸空約 6 小時、橫跨一支維護批，直到下一次容器內全量測試的對賬案轉紅才浮出（spec-compliance-006；2026-10-05） | none：LL-00033 守法（RUNBOOK §2 起手句）已明列 merge；本坑＝收刀 merge 這一步沒有對照該守法，補法寫於本檔 | none | [LL-00068-close-merge-rewrote-trust-model-without-container-rebuild.md](LESSONS/LL-00068-close-merge-rewrote-trust-model-without-container-rebuild.md) |
