@@ -75,3 +75,4 @@
 | ADR-00070 | accepted | 2026-10-01 | 角色抽屜編輯只在狀態異於開啟時回填值才帶狀態欄（BL-00131 前端修）——與 rev5 恆送之刻意分岔、改點在用途 (ii) 既有新增型圈界內免修憲、後端停用雙護欄口徑不動 | 006-authz-governance | — | — |
 | ADR-00071 | accepted | 2026-10-01 | seed-view-gate 碼面閘——seed 選單 component 之 view 集 ⊆ base-web view 集、具名豁免恰兩列（system-settings／audit、附 BL-00045、到期即紅）、python 實作避開 BL-00108 第三份、讀面分型 (a)／(b)（ADR-00055 決定 3 之首例） | 006-authz-governance | — | — |
 | ADR-00072 | accepted | 2026-10-04 | 憲法 Amendment 1.7.0→1.7.1——§III.2 ★BASE-WEB-MANAGE-PAGE-WIRING 用途 (iii)(iv) 範圍欄預估值實數化（兌現 ADR-00063 回填義務） | 006-authz-governance | — | — |
+| ADR-00073 | accepted | 2026-10-04 | GT-03 加 BL 唯一性腳——同一 BL 號全帳至多誕生一次、至多收一次（ERROR） | — | — | — |

@@ -247,6 +247,21 @@ class TestTasksDir(unittest.TestCase):
             open(os.path.join(want, "bgfallback7.output"), "w").close()
             self.assertIn("bgfallback7", hook.bg_tasks(data))
 
+    def test_no_env_probes_platform_root_then_tmp_fallback(self):
+        # BL-00137：CC 暫存根依環境而異（macOS 曾實測 /private/tmp、設 TMPDIR 者為 $TMPDIR）——取實存之候選根、皆無取首候選；
+        # TMPDIR／TMP／TEMP 釘成不存在值，使「直接讀環境變數」之變異在任何 runner 皆轉紅
+        on = lambda root: hook.Path(root) / f"claude-{os.getuid()}" / "proj-slug" / "sid" / "tasks"
+        data = {"transcript_path": "/x/proj-slug/sid.jsonl", "session_id": "sid"}
+        pinned = {"TMPDIR": "/nonexistent-tmpdir-7q", "TMP": "/nonexistent-tmp-7q", "TEMP": "/nonexistent-temp-7q"}
+        with tempfile.TemporaryDirectory() as plat, tempfile.TemporaryDirectory() as fb, mock.patch.dict(os.environ, pinned), \
+                mock.patch.object(hook.tempfile, "gettempdir", return_value=plat), mock.patch.object(hook, "TMP_FALLBACK", fb):
+            os.environ.pop("CLAUDE_CODE_TMPDIR", None)
+            self.assertEqual(hook.tasks_dir(data), on(plat))   # 皆不存在：取首候選（平台根）
+            os.makedirs(on(fb))
+            self.assertEqual(hook.tasks_dir(data), on(fb))     # 只末位根實存（macOS /private/tmp 形）
+            os.makedirs(on(plat))
+            self.assertEqual(hook.tasks_dir(data), on(plat))   # 兩者皆實存：依候選序
+
 
 class TestMainOnlyAndExitCode(_Base):
     def test_agent_id_silences_all_modes(self):

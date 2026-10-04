@@ -45,7 +45,7 @@ rad_ai_map:
 
 ### 隱私流
 
-稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族（★本節只寫語意、不抄欄名——欄名與欄型正典＝`docs/generated/reference/schema.md`，該表由 `python3 tools/docsync refresh` 照相後 generate 產、隨 delta 自動前進；本節逐族指向該表對應表節即可）：①**來源 IP**——四張皆帶（前三張與 `session_event` 的欄名不同源，一律以真表為準；全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另帶傳輸層對端位址、轉發鏈原文與 GeoIP 填值三欄③**帳號原文**——`sys_login_attempt` 帶登入嘗試輸入的帳號字面一欄④**實體快照**——`sys_operation_log` 帶實體變更前後兩欄（內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉。保留期：目前無——稽核表 append-only、無 retention 政策與清理排程（承 rev5 終態、rev5 留帳 `rev5:B-016`）；政策與權威釋義屬未入憲之**稽核域行為島**（憲法 §I.7 承襲指針表島 J；憲法 §I.6 變體 B 句之 retention 權威釋義亦歸該島），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）。
+稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族（★本節只寫語意、不抄欄名——欄名與欄型正典＝`docs/generated/reference/schema.md`，該表由 `python3 tools/docsync refresh` 照相後 generate 產、隨 delta 自動前進；本節逐族指向該表對應表節即可）：①**來源 IP**——四張皆帶（前三張與 `session_event` 的欄名不同源，一律以真表為準；全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另帶傳輸層對端位址、轉發鏈原文與 GeoIP 填值三欄③**帳號原文**——`sys_login_attempt` 帶登入嘗試輸入的帳號字面一欄④**實體快照**——`sys_operation_log` 帶實體變更前後兩欄（內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉。保留期：目前無——稽核表 append-only、無 retention 政策與清理排程（承 rev5 終態、rev5 留帳 `rev5:B-016`）；政策與權威釋義屬未入憲之**稽核域行為島**（憲法 §I.7 承襲指針表島 J；憲法 §I.6 變體 B 句之 retention 權威釋義亦歸該島），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）。授權歸檔表（`sys_casbin_policy_archive`；archetype D 治理表、不屬上述變體 B 四張）列帶授予與歸檔的操作者識別，保留期同樣目前無：歸檔列只在授權回收桶復原（NoOp 與 Applied）時被消費刪除（ADR-00065 決定 5／決定 6），保留期與清理政策、軟刪×授權歸檔之事後對賬的工作帳＝BL-00133。
 
 ### schema 登錄
 

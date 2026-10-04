@@ -562,6 +562,47 @@ class TestGt03BlExistence(unittest.TestCase):
             self.assertGreater(events._bl_num(bid), top, f)
 
 
+class TestGt03BlUnique(unittest.TestCase):
+    """GT-03 之 BL 唯一性腿（ADR-00073）：同一 BL 號於全帳 backlog_add 至多一次、backlog_done 至多一次
+    ——metrics 按窗加總不去重，重記即多算；erratum 不可更正此二欄，故只能在 commit 前擋。"""
+
+    _ctx = TestGt03BlExistence._ctx
+    RV = TestGt03BlExistence.RV
+    _misc = staticmethod(TestGt03BlExistence._misc)
+
+    def _dups(self, lines):
+        return [f for f in events.gt_03(self._ctx(lines)) if f[0] == "ERROR" and "重複" in f[3]]
+
+    def test_once_each_is_green(self):
+        self.assertEqual(self._dups([self._misc(backlog_add=["BL-00001", "BL-00002"], backlog_done=["BL-00001"]),
+                                     self._misc(backlog_add=["BL-00003"], backlog_done=["BL-00002"]), self.RV]), [])
+
+    def _one(self, fs, bid, field, at, first):
+        """恰一筆；重記處與首見處皆以行號指出，錯訊帶修法提示（ADR-00073 決定 1）。"""
+        self.assertEqual(len(fs), 1, fs)
+        _, gid, where, msg = fs[0]
+        self.assertEqual((gid, where), ("GT-03", f"docs/ops/events.jsonl:{at}"), fs)
+        for frag in (bid, field, f"首見 docs/ops/events.jsonl:{first}", "刪去新增列中的重記號"):
+            self.assertIn(frag, msg)
+
+    def test_birth_twice_is_red_across_events_and_within_one(self):
+        self._one(self._dups([self._misc(backlog_add=["BL-00001"]), self._misc(backlog_add=["BL-00001"]), self.RV]),
+                  "BL-00001", "backlog_add", at=2, first=1)
+        self._one(self._dups([self._misc(backlog_add=["BL-00003"]), self._misc(backlog_add=["BL-00002", "BL-00002"]), self.RV]),
+                  "BL-00002", "backlog_add", at=2, first=2)
+
+    def test_done_twice_is_red(self):
+        self._one(self._dups([self._misc(backlog_add=["BL-00001"], backlog_done=["BL-00001"]),
+                              self._misc(backlog_done=["BL-00001"]), self.RV]),
+                  "BL-00001", "backlog_done", at=2, first=1)
+
+    def test_non_ascii_digits_rejected_by_schema(self):
+        """全形等他文數字之號與 ASCII 號字串不同、號卻相同——schema 只收 ASCII 數字，此形在 GT-02 層即擋、不進唯一性比對。"""
+        self.assertIsNone(events.RE_BID.match("BL-００００１"))
+        fs = events.gt_03(self._ctx([self._misc(backlog_add=["BL-00001"]), self._misc(backlog_add=["BL-００００１"]), self.RV]))
+        self.assertTrue(any(f[0] == "ERROR" and "下游判讀中止" in f[3] for f in fs), fs)
+
+
 class TestProbeHopsAndReportForm(unittest.TestCase):
     """000-r2 L1-05（probe.avg_min_hops 受 GT-02 形檢卻無渲染面）／L3-09（review.report 形檢過寬）／C3-4（RE_LID 死常數）。"""
 

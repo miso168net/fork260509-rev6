@@ -1,7 +1,7 @@
-"""守 RL-0055：事件帳逐型 schema 與 SHA 實證；收刀與 review 事件完整性、BL 引用存在性。
+"""守 RL-0055：事件帳逐型 schema 與 SHA 實證；收刀與 review 事件完整性、BL 引用存在性與誕生／收單唯一性。
 
 events.py：parse_events（jsonl、行界只認 \\n）、EVENT_SCHEMAS（rev6 欄位：五碼 ID、feature_close.window、misc.category）、
-gt_02（schema／SHA 實證／pin 互證／window 序號）、gt_03（specs／ADR／report 存在＋BL 引用存在性）、metrics（§4.3 三指標＋ADR-00021 檢索性第四指標）。
+gt_02（schema／SHA 實證／pin 互證／window 序號）、gt_03（specs／ADR／report 存在＋BL 引用存在性＋BL 誕生／收單唯一性＝ADR-00073）、metrics（§4.3 三指標＋ADR-00021 檢索性第四指標）。
 """
 import json
 import os
@@ -15,7 +15,7 @@ RE_FEATURE = re.compile(r"^\d{3}-[a-z0-9][a-z0-9-]*$")
 RE_SHA = re.compile(r"^[0-9a-f]{40}$")
 RE_SECTION = re.compile(r"^§\d{1,2}$")
 RE_ADR = re.compile(r"^ADR-\d{5}$")
-RE_BID = re.compile(r"^BL-\d{5}$")
+RE_BID = re.compile(r"^BL-[0-9]{5}$")   # 只收 ASCII 數字：`\d` 會收全形等他文數字，同號異字串使唯一性腳漏報（ADR-00073）
 SUMMARY_CHAR_LIMIT = 300
 PIN_KEYS = (("web", "base-web"), ("api", "rust-api"))
 PERF_KINDS = ("close_bookkeeping", "precommit_chain")
@@ -519,16 +519,35 @@ def _bl_existence(ctx, evs):
     return out
 
 
+def _bl_unique(rows):
+    """ADR-00073：同一 BL 號於全帳 backlog_add 至多一次、backlog_done 至多一次。`metrics` 之 backlog_net 按窗加總、不去重，
+    重記即多算或多減；backlog_add／backlog_done 不在 ERRATUM_FIELDS、erratum 無從更正——只能在 commit 前擋（LL-00063）。
+    rows＝[(行號, 事件)]：首見處與重記處皆以行號指出（同日多筆 misc 無 feature 欄、日期與型不足以辨識）。"""
+    out = []
+    for field in ("backlog_add", "backlog_done"):
+        first = {}
+        for ln, e in rows:
+            where = f"{EVENTS}:{ln}"
+            for b in e.get(field) or []:
+                if b in first:
+                    out.append(finding(ERROR, "GT-03", where,
+                                       f"GT-03：{b} 於 {field} 重複出現（首見 {first[b]}）——淨流量按窗加總不去重、此欄 erratum 不可更正；"
+                                       "刪去新增列中的重記號（窗內已由 misc 誕生或收單者，feature_close 不得重記）"))
+                else:
+                    first[b] = where
+    return out
+
+
 def gt_03(ctx):
     """GATE:
       id=GT-03
       rule=RL-0055
       source=rev5:ADR 0075
-      drift=收刀與 review 事件完整性、BL 引用存在性、無效事件被續判
+      drift=收刀與 review 事件完整性、BL 引用存在性與誕生／收單唯一性、無效事件被續判
       face=docs/ops/events.jsonl；specs/*/spec.md；docs/arc42/decisions；docs/reviews；docs/ops/BACKLOG.md；docs/ops/BACKLOG-DEFERRED.md
       trigger=pre-commit
       rc=1
-      breaks-if-removed=收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現、無效事件觸發整片假在途
+      breaks-if-removed=收刀可指向不存在的 spec／ADR／報告、分流引用斷鏈、BL 號可憑空出現、BL 重記使淨流量永久偏差（多算或多減）、無效事件觸發整片假在途
     """
     out = []
     evs, perrs = parse_events(ctx.text(EVENTS))
@@ -542,6 +561,7 @@ def gt_03(ctx):
                         f"下游判讀中止：第 {lns} 列未過 schema{more}（逐筆原因見 GT-02）"
                         "——無效事件不入帳，對其續作在途／完整性判讀＝整片假報；先修該筆再看本閘")]
     out += _bl_existence(ctx, evs)
+    out += _bl_unique([(ln, e) for ln, e, _ in _parse_lines(ctx.text(EVENTS)) if e is not None])
     closes = [e for e in evs if e["type"] in ("feature_close", "review")]
     if not closes:
         out.append(finding(ERROR, "GT-03", EVENTS, "掃描面空集合：零 feature_close／review 事件——文件創世驗收 review 事件必須存在"))
