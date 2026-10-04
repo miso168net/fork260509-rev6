@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00059 -->
+<!-- next: LL-00060 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -64,3 +64,4 @@
 | LL-00056 | 容器內副本做判準變異、各發共用同一個 target 目錄——被換檔的 mtime 早於上一發建置時，cargo 靜默沿用上一發的執行檔，結果與變異無關（006 刀 U7） | none：同 LL-00032（cargo 以 mtime 判新舊之假綠）；本則把守法自 drvfs 擴及容器內副本，寫進本檔與後續單元定義，不另立規則 | none | [LL-00056-container-copy-mutation-reuses-previous-binary-on-old-mtime.md](LESSONS/LL-00056-container-copy-mutation-reuses-previous-binary-on-old-mtime.md) |
 | LL-00057 | 契約以單一 SQL 字面形定義「授權表寫入者」名冊，真寫者全為 ORM 形；主線接地句又把測試模組內的字面命中誤報為生產區（006 刀 U9） | none：RL-0002（字面枚舉）之同理推廣到一切出現點名冊；本則守法寫進本檔與後續單元定義，不另立規則 | none | [LL-00057-scan-leg-defined-by-sql-literal-misses-orm-writers.md](LESSONS/LL-00057-scan-leg-defined-by-sql-literal-misses-orm-writers.md) |
 | LL-00058 | 新增型圈界塊與修改型落在同一個 difflib 變更塊時，拔掉 START／END lint 照綠；以前代標記實數作預估，連帶把前代不承重的圈界算了進去（006 刀 U12） | none：判準住 tools/fork-delta-lint.py（find_unmarked_additions 已知可接受殘留①）與 006 刀單元出口之拔標記必紅斷言；守法寫進本檔與後續單元定義，不另立規則 | none | [LL-00058-new-type-fence-in-modified-change-block-not-load-bearing.md](LESSONS/LL-00058-new-type-fence-in-modified-change-block-not-load-bearing.md) |
+| LL-00059 | 已知態觀察窗之全量測試步只該帶指定型殘列：觀察 prompt 未令撤回他款寫入，端點授予與「撤 seed 列再重授成新 id」一併帶進全量，四支 seed 斷言測試轉紅（006 刀 U16） | none：判準住 006 刀 quickstart §11 之全量步（只帶「授 seed 角色於 seed 選單列之殘授權」）；守法寫進本檔與後續觀察窗 prompt，不另立規則 | none | [LL-00059-observation-window-full-test-must-carry-only-the-designated-residue.md](LESSONS/LL-00059-observation-window-full-test-must-carry-only-the-designated-residue.md) |
