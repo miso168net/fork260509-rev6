@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | arch |
 |---|---|---|---|---|---|---|
+| 2026-10-05 | review | 006-authz-governance | findings 11（修 11／BL 0／ADR 0） | — | — | — |
 | 2026-10-05 | misc | governance｜maint-backlog-137-133 | maint-backlog-137-133 收單（user 2026-10-04 依 BACKLOG 體檢 v8 開批）：BL-00137 壓縮 hook 背景 task 目錄改探測候選暫存根；GT-03 增 BL 誕生／收單唯一性腳（ADR-00073）；BL-00133 之 C4-E2 指針半條（不刪列）；LESSONS LL-00062～LL-00066。 | 356a619 | ADR-00073 | — |
 | 2026-10-04 | feature_close | 006-authz-governance | 006 authz-governance 收單（rev6 第六刀）：島 G 授權治理入憲／三維授權寫端（選單維、按鈕維、端點維）全量替換＝射程限候選集＋結構性封死與受保護撤銷拒／撤銷必歸檔＋授權回收桶頁與復原／判定面同步觸發增列與兩窗／角色抽屜狀態欄／新碼面閘 seed-view-gate；零 migration；ROUTES 39→49、MSG_KEYS 43→46；憲法 1.6.0→1.7.1 | c1f072c | ADR-00063、ADR-00064、ADR-00065、ADR-00066、ADR-00067、ADR-00068、ADR-00069、ADR-00070、ADR-00071、ADR-00072 | §4、§5、§6、§8、§10、§11、§12 |
 | 2026-10-02 | misc | governance | 006 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00137／BL-00138 之誕生（兩條已於 006 刀 brainstorm 定稿顆 e9f5525 入 BACKLOG、事件帳尚無）；同顆 ADR-00064～ADR-00067 經 user 親決轉 accepted（ADR-00063 與憲法 1.7.0 已於前顆 27e8c70）。 | — | — | — |
@@ -66,6 +67,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-05｜review｜006-authz-governance
+
+user 2026-10-05 發起之 006 刀附屬對照輪（RL-0073 ②；HEAD 46c46dc 基準、收刀點只歸因、specs 本文不改；user 指定以 superpowers:requesting-code-review 對照 spec，其要點烤入 CONTEXT）。兩支唯讀 Workflow：run A wf_deaaf04d-fbb（五鏡＋冷啟動探針、14 支、23.6 分）、run B wf_691ee8c2-fdb（五鏡、11 支、33.1 分），皆零錯零 null；run B 之 L8 經執行環境註記安全分類器逾時未審，主線核其工具呼叫全唯讀、三樹與 rev5 樹零改動。findings 12 筆（run A 6＋run B 5＋主線補報 M-1）：修 11／轉 BL 0／駁回 1（L5-1）；total 11 只計已處置者。零 blocker、零 wire 行為缺陷；收刀後唯一維護批 maint-backlog-137-133 對 006 面之改動全部找得到承載、兩子庫零變動。★user 五題裁定：兩支唯讀 Workflow、測試補案三筆本輪補、碼註與文件六筆本輪修、RL-0084 擴面、trust-model 懸空再犯只記 LESSONS。修單＝rust-api 5f123a6（三案補測皆變異自證＋三處碼註）＋外層分支顆 37b0d9f（RUNBOOK §13 兩處、活書 06／08、RL-0084、CLAUDE.md §2、LL-00067／LL-00068）；merge 4709a74；容器內全量 1259 passed／0 failed／2 ignored。★L7-1／M-1 補記（006 feature_close notes 屬不可更正欄、依 RUNBOOK §12c 於此說明）：①淨流量（tasks 收刀清單「notes 記淨流量值」）＝006 收刀時點 rolling-3 −20（004 窗 +1／005 窗 −11／006 窗 −10），本刀自身＝誕生 2（BL-00137／BL-00138）減收 5＝−3、與 spec 摘要預估相符；②BL-00132 兌現射程（006 刀 spec 契約 code-gates §8.2「收單事件註明此射程」）＝U18 fa5b804 訊息 T083 ⑨ 三點：對賬腿 U2 00a82b5 早於首個觸及 base-web 既有檔之 U7 e5242ba；1.7.1 PATCH 後修改型 24→33、新增型 14→20、跳過歸零；活書 08 §8.4 逐檔數以命令形現算、不另對賬、不另立衍生 BL。探針三題皆 found、答錯 0、找不到 0，Q1／Q2 找得到（最短 2 跳）、Q3 繞路（最短 3、有效 4）且漏答免重啟途徑（→P1-P1）；不填 probe 欄（理由同前四輪）。
 
 ### 2026-10-05｜misc｜governance｜maint-backlog-137-133
 
