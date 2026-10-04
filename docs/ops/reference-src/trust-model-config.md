@@ -32,7 +32,7 @@
 
 值不在本檔另抄：唯一一份＝交付檔 `deploy/trust-model.dev.toml`（只宣告 `internal_default`＝docker 預設橋接網段）。rust 測試 fixture `dev_trust_model()` 與它逐欄對賬（`rust-api/server/src/model/facade/test_kit.rs` 之 `tests` 子模組；dev 容器內經 `APP_TRUST_MODEL_PATH` 讀掛載檔，變數缺席即具名跳過）。
 
-只填此項、其餘留空 ⇒ 經反向代理端到端可達之來源信心恰三態：`fallback`／`proxy_clean`（由信任模型決定）與 `chain_rejected`（轉發鏈原始非空欄數逾 `MAX_XFF_TOKENS` 即成立、判準不依賴信任模型）；其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00046 款 2）。
+只填此項、其餘留空 ⇒ 經反向代理端到端可達之來源信心恰三態：`fallback`／`proxy_clean`（由信任模型決定）與 `chain_rejected`（轉發鏈原始非空欄數逾 `MAX_XFF_TOKENS` 即成立、判準不依賴信任模型）；其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00069 款 2）。
 
 ## prod 樣例（RUNBOOK §16 實文由此擴充；FR-066）
 

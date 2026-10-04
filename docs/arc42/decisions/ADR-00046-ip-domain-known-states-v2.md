@@ -2,9 +2,9 @@
 id: "ADR-00046"
 title: IP 域已知態集（續行 ADR-00040）——六款重述（款 2 改三態、款 3 寫入者集對齊 as-built、款 6 以讀型鍵集表驅動斷言兌現）＋新款：清單端點未知規則類型照原樣上 wire、前端退顯原字串
 date: 2026-09-23
-status: accepted
+status: superseded
 supersedes: ["ADR-00040"]
-superseded_by: []
+superseded_by: [ADR-00069]
 provenance: "005-role-menu-crud 之 spec FR-069（brainstorm Q4、G1、工程判斷 9／43）；被續行面＝ADR-00040 六款（其 body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例）；對沖條目＝BL-00125（款 2 實為三態：`chain_rejected` 不依賴信任模型、經 dev 反向代理送逾上界之轉發鏈即端到端可達）、BL-00105（款 6「逐型承擔」與 as-built 不符）、BL-00120（ADR-00040 零前代出處）、BL-00095（未知規則類型上 wire）；前代出處＝rev5:ADR 0042（rev5:004 已知態集：持久化不開／解鎖無 UI 按鈕／dev 可達二態／稽核覆蓋不對稱／裁判面不開嚴格模式——對應本檔款 5／1／2／3／6）＋rev5:ADR 0043（轉發鏈逾上界拒絕＝款 2 第三態之判準）；款 4 為 rev6 自有（003 刀 Q5、BL-00062）；draft 於 plan 期落 feature branch、各款於 as-built 後定稿、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00040 狀態）"
 tags: [ip-trust-anchor, known-state, wont-fix, by-design, role-menu-crud]
 ---

@@ -2,8 +2,8 @@
 id: "ADR-00069"
 title: IP 域已知態集（續行 ADR-00046）——款 1、2、4～7 續行（款 1 刀射程句座標改寫）、款 3 操作稽核寫入者集擴列三維授權寫端（update）與授權回收桶復原（restore）並以現行全集重述＋新款：IP 存取閘每次阻擋恰一則結構化 warn、不設節流（BL-00084 by-design）
 date: 2026-10-01
-status: proposed
-supersedes: []
+status: accepted
+supersedes: ["ADR-00046"]
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-041⑦、FR-006、FR-030、FR-046（BL-00084 收刀 `backlog_done`）、FR-047（「七款」→「八款」、「限 R_SUPER」類）、SC-014（本刀 ADR 全數 accepted＝收刀帳本結清之一）；brainstorm §0 Q10、§2 BACKLOG 處置（BL-00084 收）、§3 §1 ADR 待立⑦、§3 §4 現在式假述掃除；被續行面＝ADR-00046 七款（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例；ADR-00046 之於 ADR-00040 為同形前例）；新款承載原住 005 刀 spec Out of Scope（觀測面「觀測 profile 首起」），因 ADR-00046 替代案 2 已否決單款 ADR 且本刀本須整顆續行而改由本檔承載；新款判準出處＝004 刀 spec FR-024＋BL-00084＋`middleware::ip_gate_mw` fn doc 之阻擋告警代價段；前代出處＝rev5:ADR 0042（rev5:004 已知態集，經 ADR-00046 對應本檔款 1／2／3／5／6）、rev5:server/src/middleware/mod.rs 模組 doc（每次阻擋一則 warn、零節奏 gate 與其代價）、rev5:006 as-built 稽核覆蓋（三維寫端 Applied 含空 diff 一列、復原 NoOp 零稽核）；draft 於 plan 期落 feature branch、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00046 狀態）"
 tags: [ip-trust-anchor, authz-governance, known-state, wont-fix, by-design]

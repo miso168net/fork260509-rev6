@@ -1,9 +1,9 @@
 ---
 id: "ADR-00068"
-title: 角色與選單管理之已知態（續行 ADR-00045）——八款逐款處置（款 1 解除／款 2、6 收窄為 system-settings 與 audit 兩列／款 3、4、7 改述／款 5、8 續行）＋新款：21 支可授出端點之下放效果（含 unlockLogin 無帳號維守門）／選單維受保護四列看得到、封死功能點不動／並行編輯後送出者整份覆蓋／授權回收桶復原 NoOp 移除歸檔列而零稽核／首頁下拉選值即寫／可授予指向不存在 view 之自建選單／選單維與按鈕維之授權撤銷只剩閱覽／授權回收桶復原不擋停用角色（候選四款另列、未定案）
+title: 角色與選單管理之已知態（續行 ADR-00045）——八款逐款處置（款 1 解除／款 2、6 收窄為 system-settings 與 audit 兩列／款 3、4、7 改述／款 5、8 續行）＋新款：21 支可授出端點之下放效果（含 unlockLogin 無帳號維守門）／選單維受保護四列看得到、封死功能點不動／並行編輯後送出者整份覆蓋／授權回收桶復原 NoOp 移除歸檔列而零稽核／首頁下拉選值即寫／可授予指向不存在 view 之自建選單／選單維與按鈕維之授權撤銷只剩閱覽／授權回收桶復原不擋停用角色／只勾目錄之無子項死項與首頁兜底落 /403／三組按鈕碼授撤零可見效果／兩分頁下角色抽屜三欄舊值覆寫／UI 外對已停用之自身所屬角色送停用值照擋（款 17～20＝候選四款定案）
 date: 2026-10-01
-status: proposed
-supersedes: []
+status: accepted
+supersedes: ["ADR-00045"]
 superseded_by: []
 provenance: "006-authz-governance 之 spec FR-041⑥、FR-016、FR-023、FR-025、FR-028、FR-029⑤、FR-030、FR-033、FR-034、FR-036、FR-037、FR-044、SC-007、SC-010、SC-014（本刀 ADR 全數 accepted＝收刀帳本結清之一）、US1 AS11、US2 AS3／AS4、US3 AS3／AS5、US4 AS2、Edge Cases「授權寫端」「結構性封死與保護」「授權回收桶」「前端與已知態」「測試與走查基建」、Clarifications 2026-10-01 首題（復原 NoOp 零稽核）、第三題（首頁下拉選值即寫）與第五題（已知態觀察步驟得對 seed 角色寫入之具名例外）——後兩題＝plan 期 user 裁定；brainstorm §0 Q2／Q3／Q4／Q12／Q16、§0 主線工程判斷③（選單維受保護四列不封）、§3 §1 ADR 待立⑥、§3 §4 CDP 待觀察候選兩款；ADR-00070 決定 1／決定 4 與其後果之殘餘面（角色抽屜三欄舊值覆寫、UI 外送停用值照擋＝候選另兩款之出處）；被續行面＝ADR-00045 八款（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例；續行形同 ADR-00046 之於 ADR-00040、ADR-00047 之於 ADR-00015）；藍本＝rev5:ADR 0054 §4（選單維受保護列不入封死射程＝看得到點不動）、rev5:006 spec Edge Cases「本刀新造已知態」（可授予指向不存在 view 之自建選單）、rev5:006 research（復原 NoOp 與 Applied 對前端不可區分）；BL-00045（收窄為 008 刀兩頁）、BL-00048（unlockLogin 之帳號維守門屬 007 刀）；rev5:L-046／rev5:L-054（已知態須以實際操作觀察、連使用者實際會走的路徑一併記；只記最好驗的症狀＝煙測驗一條沒人走的路；無可觀察實例須附機器反證）；draft 於 plan 期落 feature branch、續行款沿 005 刀實測症狀、新款與改述款之症狀於本刀 CDP 走查實際觀察後定稿、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00045 狀態）"
 tags: [role-menu-crud, authz-governance, known-state, by-design]
@@ -19,7 +19,7 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 
 ## 決策驅動因子
 
-- 角色與選單域之已知態單一出處——含本刀他支 ADR 所生之同域殘餘面（ADR-00070 後果之兩項殘餘面入候選丙／候選丁、其殘餘①同型於款 11）；ADR-00045 已到期之款在同一顆翻案中結清、不留對沖註。
+- 角色與選單域之已知態單一出處——含本刀他支 ADR 所生之同域殘餘面（ADR-00070 後果之兩項殘餘面入款 19／款 20、其殘餘①同型於款 11）；ADR-00045 已到期之款在同一顆翻案中結清、不留對沖註。
 - 每款可到期（附可觀察之翻案觸發器）；CDP 排除清單（spec SC-010「已知態各款」）逐款可指。
 - 目標零新 BACKLOG：後續工作指向既有條目（BL-00045 收窄、BL-00048）。
 
@@ -37,7 +37,7 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 
 （草稿；續行款沿 ADR-00045 之 005 刀實測症狀，改述款與新款之「觀察路徑→症狀」於本刀 CDP 三方對照單元實際操作觀察後定稿；user 親決於治理單元。）
 
-1. **ADR-00045 八款逐款處置**：款號保留、不重用——「ADR-00045 款 N」一律對應本 ADR 款 N；款 1 解除後其號不再配；另增款 9～16。
+1. **ADR-00045 八款逐款處置**：款號保留、不重用——「ADR-00045 款 N」一律對應本 ADR 款 N；款 1 解除後其號不再配；另增款 9～20（款 17～20＝候選四款定案、見決定 3）。
 
 | ADR-00045 原款要旨 | 本 ADR | 本刀處置 | 理由與證據 |
 |---|---|---|---|
@@ -50,11 +50,12 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 | 款 7 getAllRoles 之既有 UI 消費者＝使用者頁新增抽屜；roleHome 兩端點零 UI 消費者 | 款 7 | **改述** | roleHome 半解除（選單權限彈窗首頁下拉接 getRoleHome／updateRoleHome；寫入時點見款 13）；getAllRoles 與使用者頁首載 4040 半屬 007 刀、續存 |
 | 款 8 治理清單分頁列凍結＋無 size 全取 | 款 8 | **續行** | 本刀不動選單治理清單 |
 | —— | 款 9～16 | **新增** | 本刀造出之刻意現況（見各款） |
+| —— | 款 17～20 | **新增** | 候選四款經 CDP 實測（丁＝既有整合測試釘案）與治理單元 user 親決定案（決定 3） |
 
 2. **現在式面改指**：現在式面引用 ADR-00045 之處改指本 ADR 同號款；引款 1 之句改寫為現況敘述（款 1 已解除、無對應款）、引款 2／款 6 之句收窄為 system-settings／audit 兩列；角色與選單已知態之計數句「八款」改為本 ADR 定稿之現行款數（accepted 時現算）——★同詞「八款」自本刀起另指 IP 域之 ADR-00069，兩域計數句一律帶 ADR 號；枚舉時 ADR 號與舊數量詞（「八款」「七款」）並掃、命中後以同句 ADR 號判定歸屬（RL-0011 四形）；ADR 檔與史料面不動（扣除面見下）。★史述逐處判讀：`docs/ops/NOTES.md` 之 005 收刀條（「本刀新增之已知態集中於 ADR-00045（角色與選單八款）…」，句中「本刀」＝005 刀、005 刀產出者正是 ADR-00045 八款）屬 005 收刀史述，不預先要求改指與改款數——保留原 ADR 號與款數，或於收刀改寫 NOTES 時整句重寫。現在式面之判定＝`python3 tools/docsync errata ADR-00045` 全 repo 命中扣除史料面（brainstorms、specs、reviews）、生成鏡像（`docs/generated/`）、事件源與 ADR 檔（`docs/arc42/decisions/`；accepted body 不可變，含本刀續行 ADR 草稿自身——ADR-00068 與 ADR-00069——其對被續行者之引用屬續行面本身）；兩子庫以 `git -C <子庫> grep -c ADR-00045` 並掃；處數以施工時同指令現算為準、改完復掃（plan 期量測值住背景、不作施工基準）；實際改指屬本刀治理單元。
-3. **候選四款**（候選甲～丁，列於各款之後；甲／乙出自 brainstorm §3 §4＝spec FR-053／SC-010 所稱「CDP 待觀察已知態候選兩款」〔spec Edge Cases「前端與已知態」之候選①／②〕、丙／丁出自 ADR-00070 後果之殘餘面）：本 ADR proposed 期**不定案**。觀察形分述——甲、乙、丙＝本刀 CDP 三方對照單元實測；丁＝CDP 不可達（理由見該候選）、以既有整合測試釘案為觀察記錄。四款一律由治理單元 user 逐款定案——觀察屬實且 user 採為已知態者依定案序自款 17 起接續配款號（附觀察路徑→症狀與翻案觸發器）；甲～丙實測未重現者、或任一款 user 不採者，自本 ADR 刪除後才 accepted（丁之症狀已由既有釘案成立、「未重現即刪」不適用；丙／丁定案同顆改寫 ADR-00070 決定 6 與後果之對應引用——採用者改為所配款號、不採者刪去該引用；與 ADR-00070 決定 6 同義）。
+3. **候選四款**（候選甲～丁，列於各款之後；甲／乙出自 brainstorm §3 §4＝spec FR-053／SC-010 所稱「CDP 待觀察已知態候選兩款」〔spec Edge Cases「前端與已知態」之候選①／②〕、丙／丁出自 ADR-00070 後果之殘餘面）：本 ADR proposed 期**不定案**。觀察形分述——甲、乙、丙＝本刀 CDP 三方對照單元實測；丁＝CDP 不可達（理由見該候選）、以既有整合測試釘案為觀察記錄。四款一律由治理單元 user 逐款定案——觀察屬實且 user 採為已知態者依定案序自款 17 起接續配款號（附觀察路徑→症狀與翻案觸發器）；甲～丙實測未重現者、或任一款 user 不採者，自本 ADR 刪除後才 accepted（丁之症狀已由既有釘案成立、「未重現即刪」不適用；丙／丁定案同顆改寫 ADR-00070 決定 6 與後果之對應引用——採用者改為所配款號、不採者刪去該引用；與 ADR-00070 決定 6 同義）。定案結果（006 刀治理單元；user 2026-10-04 逐款親決）：四款皆採——甲＝款 17、乙＝款 18、丙＝款 19、丁＝款 20；ADR-00070 決定 6 與後果之引用同顆改為款號。
 4. **觀察前提與觀察形**（spec Clarifications 2026-10-01 第五題；Edge Cases「測試與走查基建」）：
-   - **①seed 帳號＋seed 角色**：各款觀察路徑凡需「持角色 X 之帳號」者（款 3、款 4、款 9、款 10、款 14、款 16 與候選甲／乙），X 一律取 R_SUPER 以外之 seed 角色、帳號一律取 seed 帳號（Admin 持 R_ADMIN、User 持 R_USER_COMMON；例外只及此二角色、R_SUPER 名下之寫入不在例外內）——本刀無使用者角色指派寫端（屬 007 刀）、自建角色無帳號可持有。此即 spec Edge Cases「CDP 走查之寫入步驟一律對自建角色」之具名例外，只及於本 ADR 各款之 CDP 觀察步驟（整合測試不沿用、見③）；其餘觀察步驟之寫入（新增選單、撤授毋須帳號持有之角色等）仍一律對自建角色。
+   - **①seed 帳號＋seed 角色**：各款觀察路徑凡需「持角色 X 之帳號」者（款 3、款 4、款 9、款 10、款 14、款 16、款 17、款 18），X 一律取 R_SUPER 以外之 seed 角色、帳號一律取 seed 帳號（Admin 持 R_ADMIN、User 持 R_USER_COMMON；例外只及此二角色、R_SUPER 名下之寫入不在例外內）——本刀無使用者角色指派寫端（屬 007 刀）、自建角色無帳號可持有。此即 spec Edge Cases「CDP 走查之寫入步驟一律對自建角色」之具名例外，只及於本 ADR 各款之 CDP 觀察步驟（整合測試不沿用、見③）；其餘觀察步驟之寫入（新增選單、撤授毋須帳號持有之角色等）仍一律對自建角色。
    - **②前後套走查基準**：套①之觀察，觀察前以 `tools/walkthrough-baseline.py snapshot` 取基準；觀察後 `restore`（回補被撤之 seed 授權列、刪復原回插之新 id 列＝spec FR-044 擴面）＋重啟 rust-api，再以 `diff` rc 0 證回基準。★射程界：該工具之比對面與還原面＝計數（全部表列數、序列、redis 鍵數）＋角色／選單域四表 id 上界與指派鍵集＋本刀擴面之授權表快照；本刀走查還原工具擴面同批及於 seed 角色列之可變欄（工具射程＝取樣時 `id ≤` 上界之角色列、必含 seed 三列；基準檔另存其首頁 `role_home`、狀態、名稱、描述、備註與審計欄 `updated_at`／`updated_by`，`restore` 回寫基準值；`rev5:L-084`：改回值≠改回痕）⇒ 觀察步驟仍以不改 seed 角色列欄值為原則（寫端之觀察標的取自建列、見款 9）；不得不改者（款 16 之停用與重新啟用）由 `restore` 回寫原值與原審計欄；還原判準＝`diff` rc 0＋RUNBOOK §9c 第 4 步後段之 `python3 tools/schema-gate.py check`（gate2 逐列比對 seed、看得見欄值面）綠。
    - **③觀察形**：可經 UI 觀察者走 UI 路徑（CDP）；純後端面（無 UI 入口之端點、「直打端點」之放行或 `5003`、稽核列數、判定面同步計數）並以整合測試觀察——清理守衛下構造同一前提、斷言同一症狀（spec FR-051：測試不留 seed 列變更、稽核斷言取水位窗）。★本 ADR 各款之整合測試觀察法，角色標的一律取自建角色（不改 seed 角色列之欄值）、以測試件直種指派列使測試帳號持有（ADR-00044 決定 3 之直種形）——①之 seed 角色例外只及 CDP 觀察（其理由「自建角色無帳號可持有」只在 UI 路徑成立）、整合測試不沿用；他處以 seed 授權列為標的之測試（例：spec US2 Independent Test 對 R_ADMIN 提交端點維期望全集、FR-032 撤 R_SUPER 名下 getRoleList 再復原、SC-003 R_SUPER 之未上線 seed 端點列）不受本句約束，其還原由 spec FR-044 之回補守衛承擔。
 
@@ -80,7 +81,7 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 | `POST /systemManage/unlockLogin` | ★可解除任一帳號維或來源維之登入節流鎖定（含 R_SUPER 帳號） | ★無帳號維守門：no-escalation 本體屬 007 刀島 I（I7；BL-00048）、ADR-00014 決定 5 之掛點恆放行 | 無（API-only＝ADR-00069 款 1） |
 | `GET /systemManage/getRoleList` | 可讀角色清單（R_ADMIN 之 seed 已持） | —— | 選單列 `manage_role`（受保護四列之一、可授可見性＝款 10） |
 | `GET /systemManage/getAllRoles` | 可讀活性且啟用角色（R_ADMIN／R_USER_COMMON 之 seed 已持） | —— | 使用者頁新增抽屜（款 7） |
-| `POST /systemManage/addRole` | 可新增角色 | 新角色零授權、三維授權端點屬封死集、使用者指派寫端屬 007 刀 ⇒ 產物只是空角色 | `manage_role`；`role:*` 按鈕碼今無前端消費點（候選乙） |
+| `POST /systemManage/addRole` | 可新增角色 | 新角色零授權、三維授權端點屬封死集、使用者指派寫端屬 007 刀 ⇒ 產物只是空角色 | `manage_role`；`role:*` 按鈕碼今無前端消費點（款 18） |
 | `POST /systemManage/updateRole` | 可改任一角色（含 R_SUPER）之名稱與描述類欄；可停用其他角色（成員即時斷權） | 代碼不可變；停用雙護欄＝不得停用自己所屬角色、R_SUPER 恆禁停用（ADR-00044 決定 3） | `manage_role` |
 | `DELETE /systemManage/deleteRole` | 可刪無指派之自建角色，其全維授權以 `role_soft_delete` 連動歸檔（不可復原；角色刪除單向） | seeded／in-use／self-role 三層守門（ADR-00044 決定 3） | `manage_role` |
 | `DELETE /systemManage/batchDeleteRole` | 同上（批次） | 同上；任一違規整批拒 | `manage_role` |
@@ -89,7 +90,7 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 | `GET /systemManage/getMenuList/v2` | 可讀選單治理清單 | —— | 選單列 `manage_menu`（受保護四列之一） |
 | `GET /systemManage/getMenuTree` | 可讀治理域選單樹 | —— | 選單頁彈窗父選擇器；角色頁「菜單權限」彈窗之樹 |
 | `GET /systemManage/getAllPages` | 可讀頁面全集 | —— | 選單頁首載（新增／編輯彈窗之頁面下拉）；角色頁「菜單權限」彈窗首頁下拉 |
-| `POST /systemManage/addMenu` | 可新增選單 | 新選單零授權、選單維授予端點屬封死集 ⇒ 受讓者無從令其可見；保留路由名守門（ADR-00044 決定 8） | `manage_menu`；`menu:*` 按鈕碼今無前端消費點（候選乙） |
+| `POST /systemManage/addMenu` | 可新增選單 | 新選單零授權、選單維授予端點屬封死集 ⇒ 受讓者無從令其可見；保留路由名守門（ADR-00044 決定 8） | `manage_menu`；`menu:*` 按鈕碼今無前端消費點（款 18） |
 | `POST /systemManage/updateMenu` | 可改非受保護欄、停用非受保護選單（全體含 R_SUPER 之側欄不現）、改按鈕碼清單使獨有碼絕版（`menu_button_removed` 連動歸檔、不可復原） | 受保護選單拒停用與改父（ADR-00044 決定 5）；路由名與選單型別不可變 | `manage_menu` |
 | `DELETE /systemManage/deleteMenu` | 可軟刪非受保護選單，其選單維與獨有按鈕碼授權以 `menu_soft_delete` 連動歸檔（不可復原）；選單回收桶兩端點屬封死集＝刪得掉、復原不了 | 受保護選單拒刪；有子項拒刪 | `manage_menu` |
 | `DELETE /systemManage/batchDeleteMenu` | 同上（批次） | 同上；任一違規整批拒 | `manage_menu` |
@@ -105,19 +106,16 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 - **款 14 可授予指向不存在 view 之自建選單＝側欄可見而點擊零反應**（spec Edge Cases「前端與已知態」；`rev5:006` 同形已知態）：選單寫端不驗 component 指向之 view 是否存在於 base-web；seed 側由 seed-view-gate 管（ADR-00071 決定 1）、自建選單不在其射程。觀察路徑＝新增一個 component 指向 base-web 不存在之 view 的選單→「菜單權限」彈窗授予 seed 角色 X（前提＝決定 4）→持 X 之 seed 帳號重新整理⇒側欄現該項、點擊不跳轉（症狀形同款 2，以實測定稿）。
 - **款 15 選單維與按鈕維之授權撤銷在授權回收桶只剩閱覽**（brainstorm Q2；FR-028；US3 Independent Test；不可復原集＝ADR-00065 決定 1）：`menu_revoke`／`button_revoke` 屬不可復原集 ⇒ 其歸檔列可復原旗標恆 false、復原鈕呈停用態、不另造提示；後端強行呼叫回 `biz.policy.notRestorable`；恢復唯一路徑＝於彈窗重勾（新授一列、非回灌原列）。觀察路徑＝新建自建角色 X（毋須帳號持有＝不套決定 4①、屬其餘觀察步驟之寫入）→以「菜單權限」彈窗授 X 某選單並確認→再以同彈窗取消勾選該選單並確認（撤銷）→授權回收桶頁⇒該列之歸檔原因為 `menu_revoke`、復原鈕停用；以「按鈕權限」彈窗先授 X 某按鈕碼並確認、再撤之⇒原因 `button_revoke`、同形。
 - **款 16 授權回收桶復原不擋停用角色＝復原成功而持該角色者至重新啟用前仍 `5003`**（spec FR-029⑤、US3 AS5；固定序第⑤腿＝ADR-00065 決定 3；停用≠撤銷＝島 H4 精神）：來源角色停用而活性時第⑤腿不擋，可復原旗標依①～④ 同判準（⑤免算＝ADR-00065 決定 8）⇒ 回收桶顯可復原、復原為 Applied（授權表新 id 一列、`restore` 稽核一列、commit 後判定面同步一次）；停用即斷權出自授權讀端每請求濾角色狀態、不經判定面 ⇒ 復原回來之授權於角色重新啟用前不生效、重新啟用後下一請求即生效（啟用不觸發同步）。觀察前提＝決定 4（X 取 seed 角色 R_ADMIN、帳號取 Admin；E 取其 seed 已持之可授出端點，例 getRoleList；前後套走查基準；停用與重新啟用改動 seed 角色列之欄值＝決定 4② 之「不得不改者」：同一觀察內改回啟用；審計欄 `updated_at`／`updated_by` 由走查基準 `restore` 回寫〔決定 4②〕、還原判準含 `python3 tools/schema-gate.py check` 綠）。觀察路徑＝以「端點權限」彈窗撤 X 之 E→角色列表編輯 X、狀態改停用→授權回收桶頁⇒E 之歸檔列顯可復原；復原⇒成功 toast、該列自列表消失、X 名下現役授權列多 1；持 X 之帳號直打 E⇒仍 `5003`；再將 X 改回啟用→持 X 之帳號直打 E⇒放行（006 刀 U16 實測屬實：復原 Applied 時授權表新增一列、`restore` 稽核一列、同步 +1；停用與重新啟用皆不觸發同步；重新啟用後下一請求即放行）。整合測試觀察法（直打端點屬純後端面＝決定 4③；標的取自建角色 Y、不沿用 seed 角色例外）＝清理守衛下建 Y、直種測試帳號對 Y 之指派列、以 updateRoleEndpoints 授 Y 端點 E（取該帳號其餘角色皆不持有者）→撤 Y 之 E→停用 Y→以 restorePolicy 復原⇒成功且授權表新增一列；持 Y 之帳號之票呼叫 E⇒`5003`；啟用 Y 後同一呼叫⇒放行（停用與啟用皆落在 Y、seed 列零變更）。
-
-**候選四款（未定案；依決定 3 處置）**：
-
-- **候選甲（候選：本刀 CDP 三方對照單元實測後、治理單元由 user 定案）只勾目錄不勾子項**：選單維無父子連動（沿基線與 `rev5:006` HEAD 形；勾目錄不連帶勾子項）。觀察路徑＝「菜單權限」彈窗對 seed 角色 X（前提＝決定 4）只勾某目錄型選單、不勾其任何子項→確認→持 X 之 seed 帳號重新整理⇒側欄頂層現該目錄項、為普通項（無展開箭頭、無子項；getUserRoutes 之該項無 `children` 欄、前端載入時報 route 轉換錯）；點擊零反應（網址不變、零 API、零 toast，console 報 `No match for {"name":<該目錄路由名>}`＝形同款 2／款 14）、直打其路徑⇒全頁 404（006 刀 U16 實測；本條原寫「點入空白之項」、實測不符）。後半（首頁兜底是否落在它）之構造＝同一彈窗另取消 X 之 `home` 選單維授權（seed 授權列、非受保護；撤銷以 `menu_revoke` 歸檔、由走查還原回補＝決定 4②），使 X 之首頁不在可見樹——不改 X 之 `role_home`（決定 4②：不改 seed 角色列欄值）⇒讀端兜底落在該目錄項（`navigable_names` 以 `children` 缺席判葉、只授目錄時該目錄即無 `children`）：持 X 之帳號登入即落全頁 `/403`（無側欄），「返回首頁」只發 isRouteExist、仍停在 `/403`＝使用者卡住、須直打他頁離開；重授 `home` 後落點回 `/home`（006 刀 U16 實測；構造以排序使該目錄居先序之首——seed 目錄排序在管理頁諸葉之後、兜底不先落到它）。★此實測推翻 `rust-api/server/src/handler/route.rs` 之 `navigable_names`／`resolve_home` doc 兩句（「目錄一定帶 children」「登入即落 404 結構性不可達」）——候選甲定案時同顆處置（採為已知態＝改 doc 註明此例外；不採＝修兜底判葉或樹組裝）。
-- **候選乙（候選：本刀 CDP 三方對照單元實測後、治理單元由 user 定案）`role:*`／`menu:*`／`user:*` 按鈕碼授撤零可見效果**：base-web 之 `hasAuth` 消費點今只有 `B_CODE1`～`B_CODE3`（`src/views/function/toggle-auth/index.vue`）與 `ipRule:*`（`src/views/manage/ip-rule/index.vue`）。觀察路徑＝「按鈕權限」彈窗對 seed 角色 X（前提＝決定 4）授撤 `role:add` 等碼→持 X 之 seed 帳號重新登入⇒`getUserInfo` 之按鈕碼集合隨授撤增減，而角色頁、選單頁、使用者頁之表頭與列按鈕顯隱前後完全相同（006 刀 U16 實測：授 `role:*`／`menu:*`／`user:add`／`user:delete` 並撤 `user:edit`、再撤回六碼，兩輪皆不變；使用者頁列表因款 7 之 getUserList 查無而空、列級鈕觀察不到）。
-- **候選丙（候選：本刀 CDP 三方對照單元實測後、治理單元由 user 定案）兩分頁下角色編輯抽屜之名稱、描述、備註三欄舊值覆寫**：抽屜編輯既有角色送出 updateRole 時，三欄恆送開啟時表單值（`roleName`／`roleDesc`／`roleMemo`）；BL-00131 修法只收狀態欄一欄（ADR-00070 決定 1：狀態異於開啟時回填值才帶、三欄不在其射程）。觀察路徑＝Super 於兩分頁開同一自建角色之編輯抽屜→分頁乙改名稱並確定→分頁甲（未重開）只改描述並確定⇒名稱回到開啟時舊值（乙之改名被靜默撤回）、兩次各一列稽核 `update`、前端無衝突提示（甲只顯「更新成功」）；甲之 updateRole 請求 body 帶開啟時之 `roleName`（006 刀 U16 實測屬實）。翻案觸發（提案）：抽屜改為只送變動欄或開啟時重取、updateRole 引入樂觀鎖、或誤蓋實際發生（沿 ADR-00070 翻案觸發器）。
-- **候選丁（候選：本刀以既有整合測試釘案為觀察記錄〔CDP 不可達〕、治理單元由 user 定案）繞過 UI 對已停用之自身所屬角色送停用值照擋**：停用雙護欄之觸發口徑（請求 `status` 解析為停用即判、不比對現值；ADR-00044 決定 3）不動（ADR-00070 決定 4）⇒ UI 路徑經 ADR-00070 決定 1 已不帶未改之狀態欄，UI 外呼叫端對操作者所屬之已停用角色再送停用值仍回 `biz.role.cannotDisableSelfRole`。CDP 不可達：seed 帳號各持一角色、R_SUPER 恆禁停用、持已停用之唯一角色者即斷權而到不了護欄，且使用者角色指派寫端屬 007 刀 ⇒ 無帳號能同時屬已停用角色又持 updateRole；觀察形＝整合測試（決定 4③）：`handler/role.rs` 測試模組之 `disable_guards_refuse_self_role_before_super_and_count_disabled_memberships` 已釘「Super 掛著一支已停用之自建角色、再送停用＝`cannotDisableSelfRole`」。翻案觸發（提案）：停用雙護欄改為轉移觸發（另立 ADR）、或使用者角色指派寫端落地（007 刀）使此面生產可達。
+- **款 17 只勾目錄不勾子項＝側欄現無子項之死項、首頁兜底可落其上致登入即落 `/403`**（候選甲定案〔決定 3〕）：選單維無父子連動（沿基線與 `rev5:006` HEAD 形；勾目錄不連帶勾子項）。觀察路徑＝「菜單權限」彈窗對 seed 角色 X（前提＝決定 4）只勾某目錄型選單、不勾其任何子項→確認→持 X 之 seed 帳號重新整理⇒側欄頂層現該目錄項、為普通項（無展開箭頭、無子項；getUserRoutes 之該項無 `children` 欄、前端載入時報 route 轉換錯）；點擊零反應（網址不變、零 API、零 toast，console 報 `No match for {"name":<該目錄路由名>}`＝形同款 2／款 14）、直打其路徑⇒全頁 404（006 刀 U16 實測；本條原寫「點入空白之項」、實測不符）。後半（首頁兜底是否落在它）之構造＝同一彈窗另取消 X 之 `home` 選單維授權（seed 授權列、非受保護；撤銷以 `menu_revoke` 歸檔、由走查還原回補＝決定 4②），使 X 之首頁不在可見樹——不改 X 之 `role_home`（決定 4②：不改 seed 角色列欄值）⇒讀端兜底落在該目錄項（`navigable_names` 以 `children` 缺席判葉、只授目錄時該目錄即無 `children`）：持 X 之帳號登入即落全頁 `/403`（無側欄），「返回首頁」只發 isRouteExist、仍停在 `/403`＝使用者卡住、須直打他頁離開；重授 `home` 後落點回 `/home`（006 刀 U16 實測；構造以排序使該目錄居先序之首——seed 目錄排序在管理頁諸葉之後、兜底不先落到它）。★此實測推翻 `rust-api/server/src/handler/route.rs` 之 `navigable_names`／`resolve_home` doc 兩句（「目錄一定帶 children」「登入即落 404 結構性不可達」）——定案為本款之同顆改 doc 註明此例外（兜底判葉與樹組裝不改＝與 `rev5:006` HEAD 同形）。
+- **款 18 `role:*`／`menu:*`／`user:*` 按鈕碼授撤零可見效果**（候選乙定案〔決定 3〕）：base-web 之 `hasAuth` 消費點今只有 `B_CODE1`～`B_CODE3`（`src/views/function/toggle-auth/index.vue`）與 `ipRule:*`（`src/views/manage/ip-rule/index.vue`）。觀察路徑＝「按鈕權限」彈窗對 seed 角色 X（前提＝決定 4）授撤 `role:add` 等碼→持 X 之 seed 帳號重新登入⇒`getUserInfo` 之按鈕碼集合隨授撤增減，而角色頁、選單頁、使用者頁之表頭與列按鈕顯隱前後完全相同（006 刀 U16 實測：授 `role:*`／`menu:*`／`user:add`／`user:delete` 並撤 `user:edit`、再撤回六碼，兩輪皆不變；使用者頁列表因款 7 之 getUserList 查無而空、列級鈕觀察不到）。
+- **款 19 兩分頁下角色編輯抽屜之名稱、描述、備註三欄舊值覆寫**（候選丙定案〔決定 3〕；＝ADR-00070 後果殘餘②）：抽屜編輯既有角色送出 updateRole 時，三欄恆送開啟時表單值（`roleName`／`roleDesc`／`roleMemo`）；BL-00131 修法只收狀態欄一欄（ADR-00070 決定 1：狀態異於開啟時回填值才帶、三欄不在其射程）。觀察路徑＝Super 於兩分頁開同一自建角色之編輯抽屜→分頁乙改名稱並確定→分頁甲（未重開）只改描述並確定⇒名稱回到開啟時舊值（乙之改名被靜默撤回）、兩次各一列稽核 `update`、前端無衝突提示（甲只顯「更新成功」）；甲之 updateRole 請求 body 帶開啟時之 `roleName`（006 刀 U16 實測屬實）。
+- **款 20 繞過 UI 對已停用之自身所屬角色送停用值照擋**（候選丁定案〔決定 3〕；＝ADR-00070 後果殘餘③；觀察記錄＝既有整合測試釘案〔CDP 不可達〕）：停用雙護欄之觸發口徑（請求 `status` 解析為停用即判、不比對現值；ADR-00044 決定 3）不動（ADR-00070 決定 4）⇒ UI 路徑經 ADR-00070 決定 1 已不帶未改之狀態欄，UI 外呼叫端對操作者所屬之已停用角色再送停用值仍回 `biz.role.cannotDisableSelfRole`。CDP 不可達：seed 帳號各持一角色、R_SUPER 恆禁停用、持已停用之唯一角色者即斷權而到不了護欄，且使用者角色指派寫端屬 007 刀 ⇒ 無帳號能同時屬已停用角色又持 updateRole；觀察形＝整合測試（決定 4③）：`handler/role.rs` 測試模組之 `disable_guards_refuse_self_role_before_super_and_count_disabled_memberships` 已釘「Super 掛著一支已停用之自建角色、再送停用＝`cannotDisableSelfRole`」。
 
 ## 後果
 
 - ADR-00045 整顆轉 superseded：本 ADR accepted 那一顆同批補 `supersedes: [ADR-00045]`、把 ADR-00045 之 status 改為 superseded、`superseded_by` 由 `python3 tools/docsync generate` 回填（GT-04 對宣告者不看 status，故草稿期 supersedes 恆空）；讀 ADR-00045 須併讀本 ADR。
 - 審查輪與 CDP 對照遇上列各款，指向本 ADR 即結案；新發現之同類現象不自動適用、須個案判斷；CDP 走查期新發現之已知態併入本草稿後才 accepted。
-- ADR-00070 後果之殘餘面以本 ADR 為已知態承載（殘餘①同型於款 11、殘餘②③＝候選丙／候選丁）；候選丙／丁之定案結果（配款號或刪除）與 ADR-00070 決定 6 與後果之對應引用同顆一致（決定 3）。
+- ADR-00070 後果之殘餘面以本 ADR 為已知態承載（殘餘①同型於款 11、殘餘②③＝款 19／款 20）；ADR-00070 決定 6 與後果之對應引用與本 ADR accepted 同顆改為款號（決定 3）。
 - 款 2／款 6 之後續工作帳＝BL-00045（收刀時條文收窄為 008 刀之 system-settings／audit 兩頁）；款 9 之 unlockLogin 帳號維守門＝BL-00048（觸發收窄 007 刀）；其餘款之解除點＝各款翻案觸發器。
 - 現在式改指（決定 2）之同批面：活書 11 角色與選單已知態列之逐款摘要與款數、活書 06 島 H 前端項之款數句、活書 08 §8.4 用途 (ii) 引款 1 之句（兩顆授權彈窗已非零 diff）、活書 10 UI 一致性列之已知例外句（收窄為兩頁）；以決定 2 之指令現算、改完復掃。
 - 代價：多一顆 ADR；款號保留使款 1 成空號（對照表可查）。
@@ -137,4 +135,7 @@ tags: [role-menu-crud, authz-governance, known-state, by-design]
 - 款 14：選單寫端改為驗 component 指向之 view 存在、或出現自建死項之實際誤判回報。
 - 款 15：選單維或按鈕維出現可復原原因之需求（須先復核 ADR-00044 決定 4 之同實例欄與島 H2 破口）。
 - 款 16：角色停用語意改為撤銷（停用連動歸檔授權）、出現「復原須擋停用角色」之需求，或「復原成功而仍 `5003`」造成誤判被回報。
-- 候選甲～丁：定案為款時一併定觸發（提案：甲＝選單維引入父子連動或首頁兜底規則改動；乙＝角色、選單或使用者頁加入按鈕碼 gating；丙＝抽屜改為只送變動欄或開啟時重取、updateRole 引入樂觀鎖、或誤蓋實際發生；丁＝停用雙護欄改為轉移觸發、或使用者角色指派寫端落地使此面生產可達）。
+- 款 17：選單維引入父子連動、或首頁兜底規則改動。
+- 款 18：角色、選單或使用者頁加入按鈕碼 gating（使用者頁預期隨 007 刀進場）。
+- 款 19：抽屜改為只送變動欄或開啟時重取、updateRole 引入樂觀鎖、或誤蓋實際發生（沿 ADR-00070 翻案觸發器）。
+- 款 20：停用雙護欄改為轉移觸發（另立 ADR）、或使用者角色指派寫端落地（007 刀）使此面生產可達。

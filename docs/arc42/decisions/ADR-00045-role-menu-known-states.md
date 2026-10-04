@@ -2,9 +2,9 @@
 id: "ADR-00045"
 title: 角色與選單管理之已知態與 by-design——授權彈窗真樹假勾選／policy-archive 死項／新建與復原選單側欄不現／新按鈕碼無人持有／新建選單顯原始 i18n 鍵／治理清單三列路由裸鍵／getAllRoles 之既有 UI 消費者與 roleHome 零消費者／治理清單分頁列凍結與無 size 全取（各款「觀察路徑→症狀」、CDP 實際觀察後定稿）
 date: 2026-09-23
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00068]
 provenance: "005-role-menu-crud 之 spec FR-076④、Edge Cases「前端與已知態」、SC-011（brainstorm 既定不問 4／5／7、R1-Q4／R1-Q9、工程判斷 5／9／14）；藍本＝rev5:005 已知態三組與 rev5:ADR 0060（分頁列凍結；其殘餘一〔頂層 >100 列截斷＝rev5:B-131〕由 rev6 無 size 全取消解）；rev5:B-145（getAllRoles 只回活性且啟用 ⇒ 使用者頁看不到其持有之停用角色）；BL-00045（policy-archive 頁）；rev5:L-046／rev5:L-054（已知態須以實際操作觀察、只記最好驗的症狀＝煙測驗一條沒人走的路）；草稿於 plan 期落 feature branch、各款於 CDP 走查實際觀察後定稿、user 親決於治理單元"
 tags: [role-menu-crud, known-state, by-design]
 ---

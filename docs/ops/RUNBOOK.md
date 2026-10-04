@@ -54,7 +54,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。
 
-管理員解鎖登入節流（`POST /systemManage/unlockLogin`；API-only、限 `R_SUPER`；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥，無 UI 按鈕＝ADR-00046 款 1）。先以超管帳號登入取票，再擇一維度：
+管理員解鎖登入節流（`POST /systemManage/unlockLogin`；API-only；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後無帳號維守門＝ADR-00068 款 9〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥，無 UI 按鈕＝ADR-00069 款 1）。先以超管帳號登入取票，再擇一維度：
 
 ```bash
 BASE=http://127.0.0.1:32080/api
@@ -279,7 +279,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
    - ②的 `warnings` 含三類不算降級的告警（設定檔有不認得的鍵、訪客位址標頭名不合法〔§16.2〕、載入完成但零受信網段）；這三類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
    - ③看印出的數、不看 rc：`grep -c` 零命中時印 `0` 而 rc 為 1。③橫跨容器 log 內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`（如 `--since 24h`）。
    - 告警規則 `ipgate-degraded`（`deploy/grafana-provisioning/alerting/rules.yml`）也涵蓋載入降級，但啟動端事件每次啟動只發一次、紅一個評估窗即復歸——部署當下以②③④為準、不等告警。
-5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00046 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
+5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00069 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
 
 ### 16.2 CDN 邊緣網段：兩處各存一份、必須同步更新
 
@@ -312,6 +312,6 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | 項 | 去處 |
 |---|---|
 | 登入頁三顆快速登入鈕與表單預填密碼把 dev seed 帳密帶進前端——★轉 prod 前必須拆除 | 滯後卷 BL-00049（拍板＝ADR-00030） |
-| redis 持久化 | 維持不開（已知態＝ADR-00046 款 5） |
+| redis 持久化 | 維持不開（已知態＝ADR-00069 款 5） |
 | rust-api 行程數 | ★只准單一行程：casbin 判定面同步只換上本行程（ADR-00043 決定 9）；多行程或多實例部署前須先補跨行程同步通知（翻案觸發、風險見活書 §11.1） |
 | 機密輪替與 prod 值 | §7、§15 |
