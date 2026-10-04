@@ -73,7 +73,7 @@
 　★③必須早於⑤：STATE.md 帳面統計與 pins 由 generate 現讀，反序即產出舊值且無 diff 可察（rev5:L-018）。
 ★單元一支接一支連續跑完、**不停下來等 user 首肯**；唯三種情形停：①拍板級問題（判準＝RULES 名詞段「拍板級」）②到了需要 push/merge 的時點③觸及 §6 硬禁令。
 全單元完成 → final holistic review → finishing-a-development-branch（push/merge 需 user 同意）→ 收刀簿記三步（events append＋NOTES＋generate）→
-★第四步（不在簿記那顆內、易漏）：簿記 commit 落地後量其牆鐘、append 一筆 close_bookkeeping perf 事件（隨下一顆 commit 入帳；RL-0053）；同顆逐欄核 spec 標「收刀面於簿記 commit 後驗」之 SC 子句、結果寫入其 commit 訊息（RL-0084）。
+★第四步（不在簿記那顆內、易漏）：簿記 commit 落地後量其牆鐘、append 一筆 close_bookkeeping perf 事件（隨下一顆 commit 入帳；RL-0053）；同顆逐項核 spec 標「收刀面於簿記 commit 後驗」之 SC 子句、tasks 收刀清單各項與 contracts 指定寫入收單事件之註記，結果寫入其 commit 訊息（RL-0084）。
   ```
 
   ★wf-watchdog 的 runaway 判準＝數**不重複 agent key**（非 journal 行數）——勿以行數直覺判保險絲。
@@ -82,7 +82,7 @@
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
   程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。
 - **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES 改下一步 ③`python3 tools/docsync generate`＋`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`
-  → 一筆簿記 commit、lint 全綠放行。簿記一律排在 merge 之後。④簿記 commit 落地後量該顆牆鐘、append 一筆 `close_bookkeeping` perf 事件（隨下一顆 commit 入帳）；同顆逐欄核 spec 之簿記後驗 SC 子句（RL-0084）。
+  → 一筆簿記 commit、lint 全綠放行。簿記一律排在 merge 之後。④簿記 commit 落地後量該顆牆鐘、append 一筆 `close_bookkeeping` perf 事件（隨下一顆 commit 入帳）；同顆逐項核 spec 之簿記後驗 SC 子句、tasks 收刀清單與 contracts 指定之收單事件註記（RL-0084）。
 - **review 輪**：findings 一律三分流（修／轉 BL-NNNNN／won't-fix ADR）；承載處二分——不定期獨立輪落報告 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件；
   feature／維護批收刀之 final holistic review 不落報告不落事件、以收單 commit 訊息逐項列處置（RL-0073、承 rev5:ADR 0075）。
 
