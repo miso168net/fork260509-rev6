@@ -39,6 +39,7 @@ REPO = Path(__file__).resolve().parent.parent.parent
 RULES_MD = REPO / "tools" / "orchestration" / "compact-rules.md"
 LEDGER_GLOB, NOTES_GLOB = "*progress*.md", "*compact-prompt*.md"
 C_FRESH_SECS = 1800
+TMP_FALLBACK = "/tmp"   # 暫存根末位候選（測試可換樁）
 REMIND_FROM = env_int("COMPACT_REMIND_FROM", 600_000)
 REMIND_STEP = 50_000
 SCOPE = ("★本段僅適用於主線 session（與 user 對話、派發 workflow 的那一方）；若本對話是被派發任務的 workflow／subagent"
@@ -215,15 +216,20 @@ def workflow_runs(data, limit=4):
 
 
 def tasks_dir(data):
-    """背景 task 輸出目錄＝本 session 暫存目錄之 `tasks/`（輸入帶 scratchpad_dir 時為其同層；否則依 CC 暫存根推導）。"""
+    """背景 task 輸出目錄＝本 session 暫存目錄之 `tasks/`（輸入帶 scratchpad_dir 時為其同層；否則在候選暫存根中取實存者）。
+    候選序＝CLAUDE_CODE_TMPDIR → 平台暫存根（gettempdir；CC 未設前者時取 os.tmpdir＝TMPDIR／TMP／TEMP／/tmp）→ TMP_FALLBACK；
+    不寫死單一根：macOS 曾實測 CC 用 /tmp（＝/private/tmp）而 hook 之 gettempdir 為 /var/folders/…/T（BL-00137），設 TMPDIR 之環境則相反；
+    皆不存在時取首候選。"""
     sp = data.get("scratchpad_dir")
     if sp:
         return Path(sp).parent / "tasks"
     tp, sid = data.get("transcript_path"), data.get("session_id")
     if not (tp and sid):
         return None
-    base = os.environ.get("CLAUDE_CODE_TMPDIR") or "/tmp"   # CC 暫存根恆在 /tmp（macOS＝/private/tmp），非平台 gettempdir（BL-00137）
-    return Path(base) / f"claude-{os.getuid()}" / Path(tp).parent.name / sid / "tasks"
+    tail = Path(f"claude-{os.getuid()}") / Path(tp).parent.name / sid / "tasks"
+    roots = dict.fromkeys(r for r in (os.environ.get("CLAUDE_CODE_TMPDIR"), tempfile.gettempdir(), TMP_FALLBACK) if r)
+    cands = [Path(r) / tail for r in roots]
+    return next((c for c in cands if c.is_dir()), cands[0])
 
 
 def bg_tasks(data, hours=6):

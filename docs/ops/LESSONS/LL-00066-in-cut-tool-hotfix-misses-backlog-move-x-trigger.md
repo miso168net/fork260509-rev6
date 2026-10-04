@@ -17,6 +17,6 @@ LL-00066｜刀內順手熱修某工具檔，沒回頭掃 BACKLOG 觸發欄：以
 **晉升面**：none——目前只記守法；同形再犯即評估把「改動檔 × BACKLOG 觸發欄路徑」比對做成閘腿。
 
 **再犯面與守法**：
-- ①任何 commit 改到工具、hook 或測試設施的可執行碼時，先 `grep -n '<該檔路徑>' docs/ops/BACKLOG.md docs/ops/BACKLOG-DEFERRED.md`，看有沒有以它為 X 的觸發。
+- ①任何 commit 改到工具、hook 或測試設施的可執行碼時，先以檔名（basename）`grep -n -F '<檔名>' docs/ops/BACKLOG.md docs/ops/BACKLOG-DEFERRED.md`，子庫檔另以子庫相對路徑再掃一次；觸發欄可能只寫檔名或模組名，以完整路徑 grep 會漏命中。
 - ②命中且屬「動 X」型：同批處置（收掉，或在收單訊息寫明為何不收並改寫觸發），不留給下一次體檢。
 - ③刀收刀前的承載體檢，除 spec 列名的反向確認外，另以本刀改動檔清單對 BACKLOG 觸發欄掃一次。
