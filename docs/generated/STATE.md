@@ -16,7 +16,7 @@
 - RULES：84 條／上限 92（implementer 43/48、review 16/18、fix 17/19、主線 49/52、人 10/12）
 - BACKLOG 開放：19｜滯後：3
 - LESSONS：61 筆
-- events：113 筆（erratum 2、feature_close 5、misc 44、perf 54、review 8）
+- events：114 筆（erratum 2、feature_close 5、misc 44、perf 55、review 8）
 - CLAUDE.md 行數：163（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 4143 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-10-04｜perf｜precommit_chain｜precommit_chain 21.1 秒 rc=0
 - 2026-10-02｜misc｜governance｜006 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00137／BL-00138 之誕生（兩條已於 006 刀 brainstorm 定稿顆…
 - 2026-09-30｜perf｜close_bookkeeping｜close_bookkeeping 14.6 秒 rc=0
-- 2026-09-30｜misc｜governance｜maint-backlog-128-129-130｜maint-backlog-128-129-130 收單（user 2026-09-30 開批、本批使用容器）：BL-00128 時區環境面守衛（schema…
