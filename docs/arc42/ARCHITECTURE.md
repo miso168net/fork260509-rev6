@@ -10,7 +10,7 @@
 | §3 | [脈絡與範圍](03-context-and-scope.md) | 業務脈絡與技術脈絡；E1 AI 邊界劃定的系統層落點 | E1 | [P-E1-boundary.md](../process/P-E1-boundary.md) |
 | §4 | [解法策略](04-solution-strategy.md) | 技術選擇、頂層分解、品質目標達成法 | — | — |
 | §5 | [建構區塊視圖](05-building-block-view.md) | 建構區塊三層白盒；E2 模型登錄視圖的系統層落點 | E2 | [P-E2-agent-registry.md](../process/P-E2-agent-registry.md) |
-| §6 | [執行期視圖](06-runtime-view.md) | 執行期情境；E3 資料管線視圖的系統層落點 | E3 | [P-E3-doc-pipeline.md](../process/P-E3-doc-pipeline.md) |
+| §6 | [執行期視圖](06-runtime-view.md) | 執行期情境（依行為島分則）；E3 資料管線視圖的系統層落點 | E3 | [P-E3-doc-pipeline.md](../process/P-E3-doc-pipeline.md) |
 | §7 | [部署視圖](07-deployment-view.md) | 基礎設施兩層；容器拓樸＝C4-L2、埠＝reference/ports | — | — |
 | §8 | [橫切概念](08-crosscutting-concepts.md) | 資料／API／授權慣例、fork-delta 軌道；E4 負責任 AI 概念 | E4 | [P-E4-responsible-agent.md](../process/P-E4-responsible-agent.md) |
 | §9 | [架構決策](09-architecture-decisions.md) | 決策外置 decisions/ 與索引；E5 AI-ADR 形制與對映表 | E5 | — |
