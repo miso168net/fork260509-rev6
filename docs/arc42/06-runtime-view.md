@@ -1,6 +1,6 @@
 ---
 section: 6
-summary: 執行期情境；E3 資料管線視圖的系統層落點
+summary: 執行期情境（依行為島分則）；E3 資料管線視圖的系統層落點
 rad_ai: [E3]
 rad_ai_stage: 3
 rev5_blueprint:

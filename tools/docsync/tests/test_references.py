@@ -146,7 +146,7 @@ class TestMilestonesEventFieldRendering(unittest.TestCase):
               {"type": "review", "date": "2026-09-03", "scope": "sc", "report": "docs/reviews/20260903-x.md",
                "findings": {"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}}]
         out = references.gen_milestones(ev)
-        self.assertIn("| s | — | — | — |\n\n## 備註（notes）\n\n### 2026-09-03｜misc｜governance\n\n第一行\n第二行全文\n", out)
+        self.assertIn("| s | — | — | — | — |\n\n## 備註（notes）\n\n### 2026-09-03｜misc｜governance\n\n第一行\n第二行全文\n", out)
         self.assertEqual(out.count("\n### "), 1)
         self.assertNotIn("perf 備註不入", out)
         self.assertNotIn("｜review｜", out)
@@ -157,7 +157,7 @@ class TestMilestonesEventFieldRendering(unittest.TestCase):
         out = references.gen_milestones([{**base, "date": "2026-09-03", "summary": "a"},
                                          {**base, "date": "2026-09-03", "summary": "b"}])
         self.assertNotIn("備註", out)
-        self.assertTrue(out.endswith("| b | — | — | — |\n| 2026-09-03 | misc | governance | a | — | — | — |\n"))
+        self.assertTrue(out.endswith("| b | — | — | — | — |\n| 2026-09-03 | misc | governance | a | — | — | — | — |\n"))
         out2 = references.gen_milestones([{**base, "date": "2026-09-03", "summary": "a", "notes": "A 註"},
                                           {**base, "date": "2026-09-04", "summary": "b", "notes": "B 註", "workflow": "000-w1-x"},
                                           {**base, "date": "2026-09-03", "summary": "c", "notes": "C 註"}])
@@ -209,7 +209,7 @@ class TestMilestonesCellHygiene(unittest.TestCase):
         misc = {"type": "misc", "date": "2026-09-05", "summary": "掃 js|mjs|py 三型", "category": "governance", "backlog_add": []}
         row = self._rows([misc])[0]
         self.assertIn("js\\|mjs\\|py", row)
-        self.assertEqual(len(re.split(r"(?<!\\)\|", row)), 9)   # 前後空欄＋七欄（逸脫過的直槓不算欄界）
+        self.assertEqual(len(re.split(r"(?<!\\)\|", row)), 10)   # 前後空欄＋八欄（逸脫過的直槓不算欄界）
 
     def test_perf_table_cells_escaped_too(self):
         perf = {"type": "perf", "date": "2026-09-05", "kind": "close_bookkeeping", "wall_s": 1.0, "notes": "a|b"}
@@ -221,6 +221,57 @@ class TestMilestonesCellHygiene(unittest.TestCase):
         misc = {"type": "misc", "date": "2026-09-05", "summary": "s", "category": "governance", "backlog_add": [], "notes": "含 a|b 與\n換行"}
         out = references.gen_milestones([misc])
         self.assertIn("含 a|b 與\n換行", out)
+
+
+class TestMilestonesBacklogColumn(unittest.TestCase):
+    """maint-readout-errata X4：「BL（記／收）」欄＝misc／feature_close 之 backlog_add（記）與 backlog_done（收）的人讀出口
+    （NOTES 指路「backlog_done／backlog_add 查 MILESTONES」所指）；兩欄皆空與其餘型印「—」。review 之 to_backlog 不誕生 BL、只在 summary。"""
+
+    @staticmethod
+    def _rows(evs):
+        return [ln for ln in references.gen_milestones(evs).split("\n") if ln.startswith("| 20")]
+
+    @staticmethod
+    def _col(row, i):
+        return re.split(r"(?<!\\)\|", row)[i].strip()
+
+    def test_header_places_backlog_column_between_adrs_and_arch(self):
+        self.assertIn("| date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |\n|---|---|---|---|---|---|---|---|",
+                      references.gen_milestones([]))
+
+    def test_add_and_done_render_with_verbs_and_dash_when_empty(self):
+        base = {"type": "misc", "date": "2026-09-05", "category": "governance"}
+        evs = [{**base, "summary": "兩欄皆有", "backlog_add": ["BL-00138", "BL-00139"], "backlog_done": ["BL-00137"]},
+               {**base, "summary": "只記", "backlog_add": ["BL-00140"]},
+               {**base, "summary": "只收", "backlog_add": [], "backlog_done": ["BL-00084", "BL-00131"]},
+               {**base, "summary": "皆空", "backlog_add": [], "backlog_done": []},
+               {"type": "review", "date": "2026-09-05", "scope": "sc", "report": "docs/reviews/20260905-x.md",
+                "findings": {"total": 1, "fixed": 0, "to_backlog": ["BL-00009"], "wontfix_adr": []}}]
+        got = {self._col(r, 4): self._col(r, 7) for r in self._rows(evs)}
+        self.assertEqual(got["兩欄皆有"], "記 BL-00138、BL-00139；收 BL-00137")
+        self.assertEqual(got["只記"], "記 BL-00140")
+        self.assertEqual(got["只收"], "收 BL-00084、BL-00131")
+        self.assertEqual(got["皆空"], "—")
+        self.assertEqual(got["findings 1（修 0／BL 1／ADR 0）；BL-00009"], "—")
+        self.assertEqual({self._col(r, 8) for r in self._rows(evs)}, {"—"})   # arch 欄仍在最末、未被擠位
+
+    def test_feature_close_renders_both_fields(self):
+        fc = {"type": "feature_close", "date": "2026-09-05", "feature": "001-schema-baseline", "summary": "收刀", "merge": "a" * 40,
+              "pins": {"web": "b" * 40, "api": "c" * 40}, "adrs": ["ADR-00001"], "arch_impact": [], "window": 1,
+              "backlog_add": ["BL-00012"], "backlog_done": ["BL-00003", "BL-00004"]}
+        row = self._rows([fc])[0]
+        self.assertEqual(self._col(row, 7), "記 BL-00012；收 BL-00003、BL-00004")
+        self.assertEqual(self._col(row, 6), "ADR-00001")
+
+    def test_real_repo_every_born_or_closed_id_reaches_the_column(self):
+        events, errs = ev_mod.parse_events(common.Ctx(ROOT).text(EVENTS))
+        self.assertEqual(errs, [])
+        cells = [self._col(r, 7) for r in self._rows(events)]
+        for verb, key in (("記", "backlog_add"), ("收", "backlog_done")):   # 兩段逐號計（只比聯集時，漏渲「收」會被誕生列的同號掩過）
+            got = sorted(b for c in cells for part in c.split("；") if part.startswith(verb + " ") for b in re.findall(r"BL-\d{5}", part))
+            want = sorted(b for e in events if e.get("type") != "perf" for b in (e.get(key) or []))
+            self.assertGreaterEqual(len(want), 100, key)   # 非空下限：本欄建立時實帳記 137 號、收 121 號
+            self.assertEqual(got, want, key)
 
 
 class TestStateTruncationAndMetricStatus(unittest.TestCase):

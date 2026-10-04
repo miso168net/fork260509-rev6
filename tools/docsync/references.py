@@ -110,6 +110,13 @@ def _merge_cell(e):
     return "—"
 
 
+def _backlog_cell(e):
+    """BL 欄（maint-readout-errata X4）：backlog_add 印「記 …」、backlog_done 印「收 …」（兩欄只 misc／feature_close 帶），兩段以「；」接、
+    皆空印「—」——review 之 to_backlog 不誕生 BL（GT-03 誕生集只收 backlog_add），只在 summary 渲染。"""
+    parts = [f"{verb} {'、'.join(ids)}" for verb, ids in (("記", e.get("backlog_add") or []), ("收", e.get("backlog_done") or [])) if ids]
+    return "；".join(parts) or "—"
+
+
 def gen_reference_perf(events):
     lines = [GENERATED_HEADER, "# reference/perf — 收刀簿記與 pre-commit 效能資料點", "",
              "來源＝docs/ops/events.jsonl 的 perf 事件（generate 重算；kind＝close_bookkeeping／precommit_chain、量測法＝RUNBOOK §12b）。", "",
@@ -166,13 +173,13 @@ def _notes_appendix(ordered):
 
 def gen_milestones(events):
     lines = [GENERATED_HEADER, "# MILESTONES — 事件表（新在前）——perf 型另居 reference/perf.md", "",
-             "| date | type | 標的 | summary | merge | adrs | arch |", "|---|---|---|---|---|---|---|"]
+             "| date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |", "|---|---|---|---|---|---|---|---|"]
     rows = [e for e in events if e.get("type") != "perf"]
     ordered = [e for _, e in sorted(enumerate(rows), key=lambda t: (t[1]["date"], t[0]), reverse=True)]   # 同日依檔內序、新（後 append）在前
     for e in ordered:
         arch = "、".join(e["arch_impact"]) if isinstance(e.get("arch_impact"), list) else e.get("arch_impact", "—")
         cells = (e["date"], _type_cell(e), _target(e), _event_summary(e), _merge_cell(e),
-                 "、".join(e.get("adrs", []) or []) or "—", arch)
+                 "、".join(e.get("adrs", []) or []) or "—", _backlog_cell(e), arch)
         lines.append("| " + " | ".join(_cell(x) for x in cells) + " |")
     return "\n".join(lines + _notes_appendix(ordered)) + "\n"
 
