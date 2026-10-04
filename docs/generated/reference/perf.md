@@ -63,3 +63,4 @@
 | 2026-10-04 | close_bookkeeping | 15.21 | 0 | 2410cd4 | 006-authz-governance 收刀簿記顆（staged＝events.jsonl＋BACKLOG＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量 |
 | 2026-10-05 | close_bookkeeping | 16.69 | 0 | d2db48f | maint-backlog-137-133 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔MILESTONES／STATE／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
 | 2026-10-05 | close_bookkeeping | 17.0 | 0 | 56e1cdb | spec-compliance-006 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 兩檔〔MILESTONES／STATE〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
+| 2026-10-05 | close_bookkeeping | 16.25 | 0 | 4fe28e3 | maint-readout-errata 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 兩檔〔MILESTONES／STATE〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
