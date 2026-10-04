@@ -38,8 +38,15 @@ RE_ORCH_ROW = re.compile(r"^\| `([^`/|]+)` \|", re.M)
 SETTINGS = ".claude/settings.json"
 HOOKS_DIR = ".claude/hooks"
 ROSTER_PREFIXES = ("tools/", "deploy/", ".githooks/", ".claude/")
+# spec-kit 入口腳本 8 支（技能文面直呼；WSL drvfs 入庫時 core.fileMode=false 記成 100644 ⇒ Mac 直呼回 126＝腳本未執行）；
+#   被 source 之 common.sh／git-common.sh 不入冊；入冊防 spec-kit 升級或重 init 時權限靜默回退。
 EXEC_REQUIRED = (".githooks/pre-commit", ".githooks/pre-push", ".githooks-submodule/pre-commit", ".githooks-submodule/pre-push",
-                 "deploy/sops.sh", "deploy/generate-age-key.sh", "deploy/generate-dev-cert.sh", "tools/bootstrap.sh")
+                 "deploy/sops.sh", "deploy/generate-age-key.sh", "deploy/generate-dev-cert.sh", "tools/bootstrap.sh",
+                 ".specify/scripts/bash/check-prerequisites.sh", ".specify/scripts/bash/create-new-feature.sh",
+                 ".specify/scripts/bash/resolve-template.sh", ".specify/scripts/bash/setup-plan.sh",
+                 ".specify/scripts/bash/setup-tasks.sh", ".specify/extensions/git/scripts/bash/auto-commit.sh",
+                 ".specify/extensions/git/scripts/bash/create-new-feature-branch.sh",
+                 ".specify/extensions/git/scripts/bash/initialize-repo.sh")
 # 數量預算（ADR-00011 supersede ADR-00004）：閘數與 RULES per-scope 保留上限但**一律 WARN**（不隨波轉 ERROR、不擋 commit）；
 # BACKLOG 開放為觀測值、**不設上限**（壓低它只有「真做掉」或「不記」兩途，後者是治理面最不該給的誘因）。
 BUDGET_GATES = 12

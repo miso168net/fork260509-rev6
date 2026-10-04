@@ -14,3 +14,5 @@ LL-00039｜在 host 端用 `timeout` 包 `docker compose exec … cargo test`，
 **晉升面**：none——RL-0045 已規定 rust 測試一律容器內 serial；本坑是逾時的寫法，守法句寫進本檔與後續單元定義。
 
 **再犯面與守法**：要替容器內測試設逾時，一律把 `timeout` 放進容器內（`docker compose … exec -T rust-api timeout <秒> cargo test …`），逾時的訊號才會送到容器內的 cargo。每發變異跑完後，先掃一次容器 `/proc`，確認沒有殘存的 `deps/` 行程，再進下一發；出現過逾時，就先查 `pg_stat_activity` 的交易中閒置連線、再對走查基準跑 `diff`。
+- 同根之另一觸發形（006 刀 U1；2026-10-02）：主線以 TaskStop 停掉在飛 workflow，agent 經 `docker compose exec` 在容器內起的 cargo 照活（實測該審查員之 `cargo test --no-run` 續跑）。停 workflow 後先以容器 `/proc/*/cmdline` 列行程（rust-api 映像無 `ps`），只終止該 agent 起的那一串、絕不碰 PID 1 之 watchexec 與 `cargo run --bin server`，並刪其容器內 `/tmp` 副本與獨立 target（動輒數 GB）。
+- 上列處置之 restore 一步，自 006 刀起可能被 auto mode 權限分類器拒絕（見 LL-00053）：被拒即不繞行，殘留依 LL-00053 之守法處置。
