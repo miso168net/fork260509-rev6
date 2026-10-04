@@ -118,7 +118,7 @@ curl -s http://127.0.0.1:32079/metrics | grep '^casbin_reload_total'
 
 計數為行程內累計、重啟 rust-api 即歸零；開機預註冊三個 outcome 為 0（三行恆在、行序不固定）。判讀：
 
-- `ok`：一次同步成功換上。觸發者三類、每請求至多一次：移除面（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列；授予面（updateRoleMenu／updateRoleButton／updateRoleEndpoints）Applied 即觸發、不問 diff（含空 diff：原樣提交期望集亦 +1）；復原（restorePolicy）Applied。其餘寫端（新增、選單復原、角色停用、選單啟停等）與授予面之整批拒（受保護撤銷拒、端點維之封死授予拒）、查無角色、restorePolicy 之 NoOp 與 NotRestorable 零增是設計形（觸發矩陣＝ADR-00043 決定 7＋ADR-00067 決定 1；流程＝活書 §6.1「選單域生命週期——島 H」⑤）。
+- `ok`：一次同步成功換上。觸發者三類、每請求至多一次：移除面（刪選單、批刪選單、更新選單移除已絕版之按鈕碼、刪角色、批刪角色）成功且實際歸檔 ≥1 列；授予面（updateRoleMenu／updateRoleButton／updateRoleEndpoints）Applied 即觸發、不問 diff（含空 diff：原樣提交期望集亦 +1）；復原（restorePolicy）Applied。其餘寫端（新增、選單復原、角色停用、選單啟停等）與授予面之整批拒（受保護撤銷拒、端點維之封死授予拒）、查無角色、restorePolicy 之 NoOp 與 NotRestorable 零增是設計形（觸發矩陣＝ADR-00043 決定 7＋ADR-00067 決定 1；流程＝活書 §6.1「選單域生命週期——島 H」⑤〔移除面〕與「授權治理——島 G」⑤〔授予面與復原〕）。
 - `retry`：每次重建失敗（含末次）+1、各配一則 target `security.authz` 的 error log（帶 `attempt`／`max`／`cause`）；`retry` 增而 `exhausted` 未增＝該次同步的後續嘗試已成功換上（`ok` 同增）、已自癒。
 - `exhausted`：一次同步三次全敗 +1（同時 `retry` +3）＝現役判定面仍是上一份（耗盡窗）→ 處置＝§13。
 - 告警＝`casbin-reload-anomaly`（`deploy/grafana-provisioning/alerting/rules.yml`；判準＝`retry`／`exhausted` 之 5 分鐘增量 > 0、`ok` 不告警）。本計數是同步結果計數、不屬降級序列：不入 `*_degraded_total`、`throttle-degraded`／`ipgate-degraded` 兩支降級告警皆不涵蓋。
@@ -221,7 +221,7 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 排障錨「剛授予或剛復原之端點仍回 `5003`」依觀察時點分流（ADR-00067 決定 9）：①觀察早於發起寫端收到回應（他人並行之請求）＝過渡窗，稍後重送即通；②發起寫端已回成功後仍 `5003`＝不是過渡窗（回應於同步結束後才送出＝ADR-00067 決定 4），依序查——標的角色是否停用（角色管理頁狀態欄；停用不擋授權寫入與復原，停用即斷權出自授權讀端每請求濾角色狀態、重新啟用後下一請求即生效＝ADR-00065 決定 3 第⑤腿、ADR-00068 款 16，三維授予同理）→（限授予）寫端回應之 `effective` 是否含該（路徑, 方法）（不含＝所送之鍵不屬 getAllEndpoints 候選、已被 orphan skip 靜默略過＝ADR-00066 決定 2）→ 該鍵是否其後被撤（授權回收桶頁出現該角色該（路徑, 方法）且晚於該次寫端之 `endpoint_revoke` 歸檔列＝後送出之全量替換整份覆蓋＝ADR-00068 款 11；角色刪除受 in-use 守門所擋、持該角色者在場時不可達）→ §11.2 `exhausted` 增量（耗盡窗＝ADR-00067 決定 6②）、處置沿下段。
 
-判定面同步耗盡（§11.2 `casbin_reload_total{outcome="exhausted"}` 增、或 `casbin-reload-anomaly` 告警之 outcome＝exhausted）：寫端回應與 DB 皆已成功落地（不需重送），但現役判定面仍是上一份——撤銷殘留（本次已歸檔之授權仍在記憶體面生效：新撤之端點持續放行，同路由名重建之選單、同代碼重建之角色可經殘留面繼承）與授予面反向症狀（新授或剛復原之端點持續回 `5003`）並列（耗盡窗＝ADR-00043 決定 9；觸發面擴及授予面與復原、兩窗之定義＝ADR-00067 決定 6）。處置依序：
+判定面同步耗盡（§11.2 `casbin_reload_total{outcome="exhausted"}` 增、或 `casbin-reload-anomaly` 告警之 outcome＝exhausted）：寫端回應與 DB 皆已成功落地（不需重送），但現役判定面仍是上一份、本次已歸檔之授權仍在記憶體面生效——撤銷殘留（新撤之端點持續放行）、移除面之殘留繼承（同路由名重建之選單、同代碼重建之角色可經殘留面繼承）與授予面反向症狀（新授或剛復原之端點持續回 `5003`）並列（耗盡窗＝ADR-00043 決定 9；觸發面擴及授予面與復原、兩窗之定義＝ADR-00067 決定 6）。處置依序：
 
 1. 查失敗原因：`docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --no-log-prefix rust-api 2>&1 | grep '判定面同步'`——每次重建失敗一行（`fields.cause`＝根因、`attempt`／`max`＝第幾次），耗盡另一行；另三形＝`移除面寫端收場 task 被取消——commit 與判定面同步未必完成、回 5000`、`授予面寫端收場 task 被取消——commit 與判定面同步未必完成、回 5000` 與 `授權復原收場 task 被取消——commit 與判定面同步未必完成、回 5000`（皆 `fields.endpoint`＝端點、`fields.cause`＝取消原因；只在 rust-api 行程關機時出現、本身不計入 §11.2 計數；該請求已回 5000，DB 是否已 commit 以 DB 現況為準，重啟後判定面自 DB 全量重建）；零命中印空、rc 1＝容器 log 範圍內（橫跨容器內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`）未發生同步失敗。
 2. 修 DB 連線：重建只讀 DB（模型字串內嵌），cause 指向 DB 連線或查詢面；先排除 postgres 面（`docker compose -f docker-compose.yml -f docker-compose.dev.yml ps postgres` 為 healthy、§9 DB 直連連得上）。★未修好就重啟＝boot 建不出判定面即不開服（boot 鏈 fail-loud）、整站停擺。

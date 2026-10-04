@@ -20,7 +20,7 @@ rev5_blueprint:
 | 治理工具鏈超出預算 | docsync 邏輯行逼近上限、閘數增加 | STATE 預算對賬（D8）；GT-12 閘數 12 固定 |
 | Day-1 豁免到期未解 | 首條 LL 落地時忘記解除鍵 | GT-08 解除謂詞（檔存在即到期紅）；名冊＝`docs/generated/GATES.md` |
 | 起服務那一行退成不帶傳輸層對端的形，真實來源靜默退回請求端填得了的標頭 | 整理 `rust-api/server/src/main.rs` 啟動段時把 `into_make_service_with_connect_info` 換掉（照樣編譯、照樣 200、`oneshot` 測試照綠） | `rust-api/server/tests/serve_connect_info_lint.rs`；執行期訊號＝`ip_domain_degraded_total{source="request_context_absent"}`＋結構化 warn（告警規則＝`deploy/grafana-provisioning/alerting/rules.yml`） |
-| 多行程或多實例部署下授權殘留繼承 | 以多個 rust-api 行程或實例服務同一庫（水平擴展、藍綠並行）：移除面寫端只換上本行程之 casbin 判定面，其餘行程持舊政策集直到各自重啟 | 零機器守（部署約束）：判定面同步之前提＝單一 rust-api 行程（ADR-00043 決定 9、憲法 §I.7 島 G1）；部署前核對＝RUNBOOK §16.4；多行程部署即翻案觸發（補跨行程同步通知） |
+| 多行程或多實例部署下授權殘留繼承 | 以多個 rust-api 行程或實例服務同一庫（水平擴展、藍綠並行）：觸發矩陣內之寫端（移除面、授予面、復原三類）只換上本行程之 casbin 判定面，其餘行程持舊政策集直到各自重啟（撤銷殘留與授予面反向症狀並存、且不受有界過渡窗之界） | 零機器守（部署約束）：判定面同步之前提＝單一 rust-api 行程（ADR-00043 決定 9、憲法 §I.7 島 G1；兩窗之定義與其前提＝ADR-00067 決定 6）；部署前核對＝RUNBOOK §16.4；多行程部署即翻案觸發（補跨行程同步通知） |
 | CDN 邊緣網段表兩處各存一份而失同步 | 供應商公告變更後只改 `deploy/nginx/nginx.conf` 之 `geo $cf_edge`、或只改信任模型 `[[cdn]]` 其一 | 零機器守（文件約束）：同批更新程序與只改一邊的兩向表徵＝RUNBOOK §16；來源還原的正確性不倚賴它（位置錨須傳輸層背書＝憲法 §I.7 島 F 之 F6、已入碼） |
 
 ## ※11.2 技術債
