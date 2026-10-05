@@ -42,6 +42,7 @@ description: "Task list for 007-user-password-admin"
 - ★**絕不 push／merge**（本清單零 push／merge 任務；收尾整合走 finishing、需 user 當次同意）；絕不 `git submodule update`；絕不 `--no-verify`；子庫 git 一律 `git -C <子庫>`、不 `cd` 進子庫。
 - **兩段式 commit＋pin bump（六步序、次序不可反）**：①復核 report（逐項 grep；`python3 tools/docsync errata <詞>`〔多詞種子一律加引號；errata 只收單一位置參數〕對 research R22 種子＋本清單點名之附加種子枚舉、改完復掃）②load-bearing 自驗（容器內 rc＋`python3 tools/docsync lint`；動到 ROUTES 之單元另跑 `python3 -B tools/docsync test`＝LL-00060）③落帳（BACKLOG／LESSONS／tasks 勾選／ADR）④子庫 commit ⑤`git add <子庫>` → `python3 tools/docsync generate` → `git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js` ⑥一顆外層 commit；★生成物一律主線動作、**不入任何 agent 允許檔案清單**；commit 訊息含反引號一律 `git commit -F -`＋quoted heredoc（子庫 `-F` 檔路徑須絕對）。
 - ★**發射前置**：每單元定義 `<工作區>/007-uN.py`（工作區＝gitignored、不入版控）→ `python3 tools/orchestration/assemble.py <工作區>/007-uN.py <工作區>/007-uN.mjs`（三道自檢）；本機無他機單元範本時以入庫範例 `tools/orchestration/EXAMPLE-tdd-unitdef.py` 起手；編排全角色 `opus[1m]` xhigh（ADR-00056）；implementer／review／fix 各烤入 `python3 tools/docsync rules emit --scope <implementer|review|fix>` 塊（RULES-VERSION `c4a1c9749ae1`；RULES 改動時以現算值為準）；Workflow launch 與 `python3 tools/wf-watchdog.py <token>` 雙腿看門狗同回合原子成對、token 取 `u<N>-<slug>-<4hex>`（不可取 `test`）；TDD 單元 agent 總數保險絲 ≤20 支（同檔常數推導＋自我斷言）；fix 允許清單＝本表「允許檔案清單」欄＋review findings 指涉檔之聯集、次輪只縮不擴。
+- ★**子句層驗收**（文末「需求追溯」子句表）：各單元規格對照審查之 prompt 烤入本單元承載之子句列（錨 task 屬本單元者、含逐字錨）；審查逐子句指出實作之測試函式名或 DoD 命令實得，找不到即 blocker（不得以 task 已勾或全量綠代之）；單元收尾③把測試名填入子句表「測試名」欄。
 - **測試環境紀律**（data-model §10）：真表測試配清理守衛（使用者、角色指派、經手表、票、會話事件、操作稽核帶水位窗、redis 鍵）；★**測試 MUST NOT 留下對 seed 列之變更**——U2 起 `UserRowsGuard`／`SeedUserRestoreGuard`／`PwdCustodyRowsGuard`＋`UserRoleRowsGuard` 回補腿承接、同案並用時使用者列守衛先於指派守衛宣告；直植 `sys_user` 列取顯式大 id（≥ `SYNTHETIC_UID_FLOOR`、`9_300_000_` 家族未用值、現核）、addUser 端點案走 nextval；角色列與授權列造列沿 006 刀 `test_kit::ID_RANGES` 登記與 `plant_live_policy`；稽核斷言一律取 `OpLogRowsGuard` 水位窗、不寫絕對計數；真庫案持 `DB_SERIAL`；測試密碼明文一律執行期組字（`test_kit::seed_plain` 形；RL-0054）；寫端單元（U8～U13）收尾②加跑 `python3 tools/schema-gate.py check`。
 - ★**dev 庫寫入點**（LL-00053；逐步取 user 放行）只四處：U1 派發前（條件式：T001 序號斷言不符時）、U4 中段（restore→重起 stack 套 m0003→重拍基準）、U22（quickstart 走查寫入、殘列演練、告警活體實測與其前後 restore）、U23 Day-1 第 1 步前（條件式：dev 庫有殘列或 seed 帳號欄值殘值時 restore；research R15 第 7 款④）；pristine 庫（U4 實證、U23 Day-1 第 3 步）非 dev 庫。其餘單元之測試寫入受清理守衛、對自建帳號；走查與演練只經 API 對自建帳號產殘列、psql 只下 SELECT。
 - 書面產物與註解一律 zh-TW；受版控文件**不寫 gitignored 工作區之具名路徑**（RL-0077；工作區檔一律以佔位形 `<工作區>/…` 表之）、**不寫編排標籤**；跨檔引用不用行號。
@@ -68,9 +69,9 @@ description: "Task list for 007-user-password-admin"
 ★派發前主線復核 T001 之 dev 庫序號斷言仍成立（(163, true)、無 id 164）；不符＝停手升級。
 
 - [ ] T004 [P] `tools/schema-gate.py` seed_add 序號合成（GR9；ADR-00085 決定 7；`contracts/code-gates.md` §2.4 判準）：`apply_seed_entries` 之 seed_add 分支於資料列追加之後——`pk` 恰單欄 `c` 且 normalize 後文本有 `SELECT pg_catalog.setval('public.<表>_<c>_seq', N, B);` 行（`RE_SETVAL`）⇒ 期望已發最大值 M＝N（B 真）或 N−1（B 假）；`values[c]` 非整數＝`GateError`（rc 2）；`values[c]` > M ⇒ 該行改寫為 `(values[c], true)`、≤ M 不動；多欄 pk 或無對應 setval 行＝不推進；多筆依 entries 序逐筆推進（取大）；seed_update／seed_delete 不動序列；docstring 之 gate2 seed 合成句補序號推進與「seed_add migration 之收尾契約 MUST `setval(<序列>, GREATEST(<新 id>, last_value), true)`」；先紅後綠自測（research R13 決定 4）：`TestSeedSynthesis` 增案——`t_ok` 加 id 3＝(2,t)→(3,t)、加不高於已發最大值之 id＝不動、is_called 假之序列（如 seed 之 `sys_ip_rule_id_seq` (1, false)）加 id 1＝(1, true)、無序列行之表＝不動、多欄 pk 不推進、pk 值非整數 rc 2；`TestNegativeInjection` 增一案（`test_5_fake_delta_synth_real_fixtures` 形：對真凍結 fixtures 登記假 `seed_add` casbin_rule id 164、獨立構造注入後 dump；未登記紅、登記後綠）；變異自證＝暫拆推進段 → 首案與注入案轉紅 → 存原文寫回（RL-0019）；★同檔 ADR-00087 改寫（T003 分流至此）：audit 表清單守門之 finding 文字由「先補 data-model §1、再登記」改為「於 `archetype-map.json` 登記該表歸屬（新表另登 `add_table`；§1 為 001 基線＝ADR-00087）」、docstring 引 ADR-00012 為現行依據之兩處改指 ADR-00087（決定 5 續行之左源座標）；`len(tables) != 14` 斷言與其釘值案不動（基線恆真＝ADR-00087 決定 6 讀法）。**DoD：`python3 tools/schema-gate.py test` 綠；`python3 tools/schema-gate.py check`（dev 庫、真帳仍空）綠**
-- [ ] T005 [P] `tools/walkthrough-baseline.py` 檔形 v4（research R16 決定 1、6；`contracts/code-gates.md` §6.1）：`SCHEMA_VERSION` 3→4；新欄併入現行角色／選單域撈取之單句（同一快照）——`migrations`（`seaql_migrations.version` 依名排序、非空互異）、`id_bounds` 增 `sys_user`（`BOUNDED_TABLES` 四→五、序列 `sys_user_id_seq`）、`sys_user_rows`（`ROW_FACES` 新面「使用者列」；欄名冊 `SYS_USER_MUTABLE_COLUMNS`＝§6.1 所列十二欄與其欄型、`user_name`／建立兩欄／`session_id` 不在面內）；`validate_snapshot`／`_check_bound_faces` 驗新兩欄之形；`render_diff` 增「遷移帳」（逐版本兩向差、rc 1）與「使用者列」（同 id 逐欄）兩面；★`password` 欄只報「不等」、值以遮蔽字面呈現、不印雜湊原文（島 I5 三重不洩延伸至維運工具輸出）；v3／v2／v1 舊檔之 `diff`／`restore` rc 2、訊息明示「舊檔形不載遷移帳、無從判遷移差、請重新 snapshot」；`snapshot` 時現庫遷移帳≠repo migration 清單＝stderr 告警、rc 仍 0；先紅後綠自測（零 docker、subprocess 全樁）：v3 檔 rc 2 檔形訊息、password 欄 diff 遮蔽、新兩欄壞形 rc 2
-- [ ] T006 `tools/walkthrough-baseline.py` restore 寫面擴充＋遷移帳前置（research R16 決定 2、3；`contracts/code-gates.md` §6.2、§6.3）：同一交易、次序固定——①`system_settings` 比對（左源於 T007 改合成）②`RESTORE_TABLES` 五表→六表（增 `sys_pwd_custody` 全表清空、無序列＝不入 setval 名冊）＋`sys_user.session_id` 歸 NULL ③清理面序列 setval（五支、名冊不變）③b `sys_user_role` 鍵集差刪除 → 五表依名冊序刪 `id >` 上界（`sys_user` 居末＝指派先刪、不撞 RESTRICT）→ `casbin_rule` 回補 → ★`sys_user_role` 回補目標有而現況無之對（`ON CONFLICT DO NOTHING`、排在一切刪除之後）→ `sys_role` 可變欄回寫 → ★`sys_user` 可變欄回寫（`UPDATE sys_user SET <欄> = <值> WHERE id = <N> AND (<欄>) IS DISTINCT FROM (<值>)`；含 `password`、審計欄與軟刪兩欄＝改回值≠改回痕）→ 五支序列 setval（基準檔模式合計十支）④`RESTORE_REDIS_PREFIXES` 增 `cpwd`（`session`／`throttle`／`cpwd` 三前綴逐鍵指名 DEL）；安全帶＝清理面六表列數或三前綴鍵數非 0＝拒跑 rc 2、零寫入、五表套「上界高於序列位置」前置（涵蓋 `sys_user`）；★(a) 遷移帳前置：基準檔模式於任何寫入前單句現讀 `seaql_migrations`、與基準檔 `migrations` 不等＝rc 2、零寫入、訊息逐版本指名兩向差集並指示（走查前＝重拍；走查已發生而無同遷移狀態之基準＝改跑 `restore --seed`）；時點＝結構安全帶之後、`system_settings` 比對與門鈴、重啟句現讀之前；重啟句判準不變（`sys_user` 與指派回寫不需重啟 rust-api）；先紅後綠自測（`contracts/code-gates.md` §6.7）：①使用者域回基準（US6 場景 3：seed 指派 (2, 2) 被刪、新帳號列 id 4 與其指派、seed 帳號 2 之 `nick_name` 與 `password` 被改、經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字＝上列序、收尾 diff rc 0）①b 基準含自建帳號、現況該帳號被軟刪且指派被刪 → 軟刪兩欄寫回、指派回補、收尾 rc 0 ②遷移帳前置（US6 場景 4：v4 基準之 `migrations` 少於現況 → rc 2、零 docker 寫入呼叫、訊息含差集與重拍指示）⑥清理面登記照舊拒跑（含 `sys_pwd_custody`）⑨寫句逐字釘、`STUB_BOUNDED_IDS`、`SEED_RESTORE_TEXT` 之樁擴 `sys_user` 全欄 COPY 與 `sys_pwd_custody` 空 COPY——密碼欄樁值一律非 PHC 形之合成字面（RL-0054）；既有釘案翻轉並改 doc（「`sys_user` 多一列不碰、收尾照報」→刪列且 rc 0；「seed 指派對被刪不在回補射程＝rc 1」→回補且 rc 0；`RESTORE_TABLES` 釘值擴 `sys_pwd_custody`）；變異自證（存原文寫回、逐發單獨跑）：暫拆遷移帳前置呼叫 → ②紅；暫拔 `sys_user_role` 回補句 → ①紅；拆軟刪兩欄回寫、`sys_user` 出上界名冊、經手表出清理面、`cpwd` 出前綴名冊各令 rc 1 並歸因於對應面
-- [ ] T007 `tools/walkthrough-baseline.py` 演進登記合成＋seed 模式（research R16 決定 4、5；`contracts/code-gates.md` §6.4～§6.6；★依 T004）：合成＝執行期依路徑以 `importlib` 載入 `tools/schema-gate.py`、取 gate2 期望 seed 之同一合成鏈（`normalize_seed_dump` → `apply_seed_entries`，GR9 含於其內）施於凍結 `specs/001-schema-baseline/fixtures/seed.sql`、再以既有解析件（`seed_restore_target`、`seed_settings`）讀合成文字——不自持第二份合成碼；載入失敗或 `GateError`＝rc 2、原訊息照轉；餵入登記只取合成面之表（seed 模式＝`system_settings`∪角色／選單域五表∪`sys_user`；基準檔模式＝`system_settings`）、他表登記（含未內建之 `add_table`）不擋；seed 模式目標態與兩模式之 `system_settings` 比對左源一律取合成文字（`check_settings_against_seed` 判準不變：值≠合成值才 rc 2）；`check_seed_evolution` 之拒跑射程收窄為「（seed 模式）清理面六表」；★repo↔現庫遷移同步前置：合成面之表於演進帳有 `seed_*` 登記時才驗——repo 清單＝解析 `rust-api/migration/src/lib.rs` 之 `migrations()` 向量內 `Box::new(<模組>::Migration)` 依序之模組名並斷言各有 `mod <模組>;` 與同名 `.rs` 實檔（零命中或不一致＝rc 2）；≠現庫遷移帳＝rc 2、零寫入、指名未套用與 repo 外之遷移；seed 模式收尾比對擴及使用者域（`sys_user` 列數、上界、序列與使用者列可變欄、指派鍵集）；退出碼增刪依 §6.6；★仍拒跑之演進形恰兩種（R16 決定 5：清理面各表之 `seed_*` 登記；合成面表之 `add_column` 帶 default 或 NOT NULL＝與 gate2 同 rc 2）寫入工具 docstring；先紅後綠自測（`contracts/code-gates.md` §6.7）：③seed 模式合成（US6 場景 5：m0003 九筆形之合成登記〔data-model §9.2〕＋已套用＋殘列 → 目標態＝列 44 不在、列 164 在、列 58～63 受保護、`casbin_rule_id_seq`＝(164, true)、收尾 rc 0）④repo↔現庫不同步（US6 場景 6：repo 清單三支而現庫兩支、涉表有登記 → rc 2 指名未套用之遷移、零寫入）⑤`system_settings` 合成（US6 場景 7：增鍵、改值、刪鍵各一且已套用 → 兩模式各一發、值＝合成值者不報差且不拒跑）⑦合成語意對賬案（合成登記〔`sys_user`／`sys_role`／`sys_user_role` 三 kind 各一〕餵本工具與 `docsync.snapshot.seed_account_projection`、投影至 `USER_KEYS`／`ROLE_KEYS`／`BINDING_KEYS` 逐節全等）；邊界與真 repo 案（他表 `add_table` 不擋；lib.rs 解析結果＝`m[0-9]{4}_*.rs` 實檔主幹集且非空；真凍結 seed ⊕ 真演進帳之合成可解且各上界不高於其序列、不釘實值）；既有釘案翻轉（`system_settings` 與角色／選單域有登記即拒之兩案→合成形；「他表登記不擋」樣本改取合成面外之表）；變異自證：暫改合成為只讀凍結段 → ③⑤紅；暫拆 repo↔現庫前置 → ④紅；monkeypatch 拆共用鏈之序號推進 → 上界 164 高於目標序列 163 被前置拒跑 rc 2。**DoD：`python3 tools/walkthrough-baseline.py test` 綠；R22 種子「163 列」之自測判讀（凍結 163、合成目標上界 164）復核**
+- [ ] T005 [P] `tools/walkthrough-baseline.py` 檔形 v4（research R16 決定 1、6；`contracts/code-gates.md` §6.1）：`SCHEMA_VERSION` 3→4；新欄併入現行角色／選單域撈取之單句（同一快照）——`migrations`（`seaql_migrations.version` 依名排序、非空互異）、`id_bounds` 增 `sys_user`（`BOUNDED_TABLES` 四→五、序列 `sys_user_id_seq`）、`sys_user_rows`（`ROW_FACES` 新面「使用者列」；欄名冊 `SYS_USER_MUTABLE_COLUMNS`＝§6.1 所列十二欄與其欄型、`user_name`／建立兩欄／`session_id` 不在面內）；`validate_snapshot`／`_check_bound_faces` 驗新兩欄之形；`render_diff` 增「遷移帳」（逐版本兩向差、rc 1）與「使用者列」（同 id 逐欄）兩面；★`password` 欄只報「不等」、值以遮蔽字面呈現、不印雜湊原文（島 I5 三重不洩延伸至維運工具輸出）；v3／v2／v1 舊檔之 `diff`／`restore` rc 2、訊息明示「舊檔形不載遷移帳、無從判遷移差、請重新 snapshot」；`snapshot` 時現庫遷移帳≠repo migration 清單＝stderr 告警、rc 仍 0；先紅後綠自測（零 docker、subprocess 全樁）：v3 檔 rc 2 檔形訊息、password 欄 diff 遮蔽、新兩欄壞形 rc 2、v3 檔（006 刀終態檔形）之 `diff` 與 `restore` 各一發皆 rc 2、訊息含「重新 snapshot」、樁紀錄零 docker 呼叫（＝零寫入；形同既有 `test_v2_baseline_is_refused_rc2_naming_resnapshot_with_zero_docker_calls`）
+- [ ] T006 `tools/walkthrough-baseline.py` restore 寫面擴充＋遷移帳前置（research R16 決定 2、3；`contracts/code-gates.md` §6.2、§6.3）：同一交易、次序固定——①`system_settings` 比對（左源於 T007 改合成）②`RESTORE_TABLES` 五表→六表（增 `sys_pwd_custody` 全表清空、無序列＝不入 setval 名冊）＋`sys_user.session_id` 歸 NULL ③清理面序列 setval（五支、名冊不變）③b `sys_user_role` 鍵集差刪除 → 五表依名冊序刪 `id >` 上界（`sys_user` 居末＝指派先刪、不撞 RESTRICT）→ `casbin_rule` 回補 → ★`sys_user_role` 回補目標有而現況無之對（`ON CONFLICT DO NOTHING`、排在一切刪除之後）→ `sys_role` 可變欄回寫 → ★`sys_user` 可變欄回寫（`UPDATE sys_user SET <欄> = <值> WHERE id = <N> AND (<欄>) IS DISTINCT FROM (<值>)`；含 `password`、審計欄與軟刪兩欄＝改回值≠改回痕）→ 五支序列 setval（基準檔模式合計十支）④`RESTORE_REDIS_PREFIXES` 增 `cpwd`（`session`／`throttle`／`cpwd` 三前綴逐鍵指名 DEL）；安全帶＝清理面六表列數或三前綴鍵數非 0＝拒跑 rc 2、零寫入、五表套「上界高於序列位置」前置（涵蓋 `sys_user`）；★(a) 遷移帳前置：基準檔模式於任何寫入前單句現讀 `seaql_migrations`、與基準檔 `migrations` 不等＝rc 2、零寫入、訊息逐版本指名兩向差集並指示（走查前＝重拍；走查已發生而無同遷移狀態之基準＝改跑 `restore --seed`）；時點＝結構安全帶之後、`system_settings` 比對與門鈴、重啟句現讀之前；重啟句判準不變（`sys_user` 與指派回寫不需重啟 rust-api）；先紅後綠自測（`contracts/code-gates.md` §6.7）：①使用者域回基準（US6 場景 3：seed 指派 (2, 2) 被刪、新帳號列 id 4 與其指派、seed 帳號 2 之 `nick_name` 與 `password` 被改、經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字＝上列序、收尾 diff rc 0）①b 基準含自建帳號、現況該帳號被軟刪且指派被刪 → 軟刪兩欄寫回、指派回補、收尾 rc 0 ②遷移帳前置（US6 場景 4：v4 基準之 `migrations` 少於現況 → rc 2、零 docker 寫入呼叫、訊息含差集與重拍指示）⑥清理面登記照舊拒跑（含 `sys_pwd_custody`）⑨寫句逐字釘、`STUB_BOUNDED_IDS`、`SEED_RESTORE_TEXT` 之樁擴 `sys_user` 全欄 COPY 與 `sys_pwd_custody` 空 COPY——密碼欄樁值一律非 PHC 形之合成字面（RL-0054）；既有釘案翻轉並改 doc（「`sys_user` 多一列不碰、收尾照報」→刪列且 rc 0；「seed 指派對被刪不在回補射程＝rc 1」→回補且 rc 0；`RESTORE_TABLES` 釘值擴 `sys_pwd_custody`）；變異自證（存原文寫回、逐發單獨跑）：暫拆遷移帳前置呼叫 → ②紅；暫拔 `sys_user_role` 回補句 → ①紅；拆軟刪兩欄回寫、`sys_user` 出上界名冊、經手表出清理面、`cpwd` 出前綴名冊各令 rc 1 並歸因於對應面；自測②補反向一案：v4 基準之 `migrations` 多於現況（基準含 m0003 而現庫只 m0001／m0002＝基準有現庫無）→ rc 2、零 docker 寫入呼叫、訊息逐版本指名並含重拍指示
+- [ ] T007 `tools/walkthrough-baseline.py` 演進登記合成＋seed 模式（research R16 決定 4、5；`contracts/code-gates.md` §6.4～§6.6；★依 T004）：合成＝執行期依路徑以 `importlib` 載入 `tools/schema-gate.py`、取 gate2 期望 seed 之同一合成鏈（`normalize_seed_dump` → `apply_seed_entries`，GR9 含於其內）施於凍結 `specs/001-schema-baseline/fixtures/seed.sql`、再以既有解析件（`seed_restore_target`、`seed_settings`）讀合成文字——不自持第二份合成碼；載入失敗或 `GateError`＝rc 2、原訊息照轉；餵入登記只取合成面之表（seed 模式＝`system_settings`∪角色／選單域五表∪`sys_user`；基準檔模式＝`system_settings`）、他表登記（含未內建之 `add_table`）不擋；seed 模式目標態與兩模式之 `system_settings` 比對左源一律取合成文字（`check_settings_against_seed` 判準不變：值≠合成值才 rc 2）；`check_seed_evolution` 之拒跑射程收窄為「（seed 模式）清理面六表」；★repo↔現庫遷移同步前置：合成面之表於演進帳有 `seed_*` 登記時才驗——repo 清單＝解析 `rust-api/migration/src/lib.rs` 之 `migrations()` 向量內 `Box::new(<模組>::Migration)` 依序之模組名並斷言各有 `mod <模組>;` 與同名 `.rs` 實檔（零命中或不一致＝rc 2）；≠現庫遷移帳＝rc 2、零寫入、指名未套用與 repo 外之遷移；seed 模式收尾比對擴及使用者域（`sys_user` 列數、上界、序列與使用者列可變欄、指派鍵集）；退出碼增刪依 §6.6；★仍拒跑之演進形恰兩種（R16 決定 5：清理面各表之 `seed_*` 登記；合成面表之 `add_column` 帶 default 或 NOT NULL＝與 gate2 同 rc 2）寫入工具 docstring；先紅後綠自測（`contracts/code-gates.md` §6.7）：③seed 模式合成（US6 場景 5：m0003 九筆形之合成登記〔data-model §9.2〕＋已套用＋殘列 → 目標態＝列 44 不在、列 164 在、列 58～63 受保護、`casbin_rule_id_seq`＝(164, true)、收尾 rc 0）④repo↔現庫不同步（US6 場景 6：repo 清單三支而現庫兩支、涉表有登記 → rc 2 指名未套用之遷移、零寫入）④b 基準檔模式 repo↔現庫不同步（合成登記僅 `system_settings` 一筆 `seed_*`、基準檔 `migrations`＝現庫兩支、repo 清單三支 → `restore <基準檔>` rc 2、訊息指名未套用之遷移而非 `system_settings` 值差、零 docker 寫入呼叫）⑤`system_settings` 合成（US6 場景 7：增鍵、改值、刪鍵各一且已套用 → 兩模式各一發、值＝合成值者不報差且不拒跑）⑦合成語意對賬案（合成登記〔`sys_user`／`sys_role`／`sys_user_role` 三 kind 各一〕餵本工具與 `docsync.snapshot.seed_account_projection`、投影至 `USER_KEYS`／`ROLE_KEYS`／`BINDING_KEYS` 逐節全等）；邊界與真 repo 案（他表 `add_table` 不擋；lib.rs 解析結果＝`m[0-9]{4}_*.rs` 實檔主幹集且非空；真凍結 seed ⊕ 真演進帳之合成可解且各上界不高於其序列、不釘實值）；既有釘案翻轉（`system_settings` 與角色／選單域有登記即拒之兩案→合成形；「他表登記不擋」樣本改取合成面外之表）；變異自證：暫改合成為只讀凍結段 → ③⑤紅；暫拆 repo↔現庫前置 → ④紅（④b 同紅）；monkeypatch 拆共用鏈之序號推進 → 上界 164 高於目標序列 163 被前置拒跑 rc 2；自測④補反向一案：現庫遷移帳含 repo `migrations()` 清單外之版本（現庫三支而 repo 兩支）、涉表有登記 → rc 2、零寫入、訊息指名「現庫有 repo 無」之版本；自測增兩案：基準檔模式＋只有角色／選單域登記（合成射程外）＋repo 領先現庫 → 不驗、照常還原且收尾 rc 0（T023 ② 之前提）；合成面表登記 `add_column` 帶 default 一筆、NOT NULL 無 default 一筆（seed 模式取 `sys_role`、基準檔模式取 `system_settings`）→ 兩模式各 rc 2、訊息含 schema 閘 `GateError` 原文、零 docker 呼叫，同一登記餵 `tools/schema-gate.py` 之 `apply_seed_entries` 亦拋 `GateError`（兩工具同時拒跑；變異＝暫令走查工具吞 `GateError` → 本案紅）。**DoD：`python3 tools/walkthrough-baseline.py test` 綠；R22 種子「163 列」之自測判讀（凍結 163、合成目標上界 164）復核**
 - [ ] T008 U1 同批文件面（`contracts/code-gates.md` §2.4「同批文件面」、§6.8；research R16 決定 8；ADR-00087 決定 7）：`docs/ops/RUNBOOK.md` §9c（R16 決定 8 ①～⑩：v4 三新欄與 v3 rc 2、第 3 步左源＝凍結 ⊕ 演進合成、清理面「各表（本刀起含經手表）」與 `cpwd:`、`setval` 十支／六支、③b 使用者域次序、(a)(b) 兩條拒跑與補救、seed 模式合成目標、仍拒跑之演進形兩種、射程界改寫、具名排除兩形與「走查寫入一律對自建帳號」、m0003 進 dev 庫之時機隱性與「套用後即重拍」）、§10（seed_add 序號合成句；步 2「刪除性演進＝不入本檔」補括號釋義＝`drop_*`〔research R13 決定 2〕；「新業務表先補 §1 再登記 map」改 ADR-00087 決定 7 形）、§12 工具鏈速查表 schema-gate 與 walkthrough-baseline 兩列；`docs/ops/reference-src/schema-gates.md`（§2「seed 演進同樣合成後才比對」句補序號推進；§3 左源句與表清單守門句依 ADR-00087 決定 7）；`docs/ops/reference-src/schema-evolution-contract.md`（seed_add 之序號收尾契約與閘之推進判準句）；`docs/ops/reference-src/archetype-map.json` 之 `lineage`／`usage`（ADR-00087 決定 7；先 grep 確認無測試釘該字面、有則同批改）；`tools/docsync/snapshot.py` 缺表歸屬 `SnapshotError` 訊息與其 docstring 改 ADR-00087 決定 7 形；`README.md` 工具樹 schema-gate／walkthrough-baseline 兩行；`docs/arc42/05-building-block-view.md` 同語意句；★`docs/ops/reference-src/schema-definition.md` 檔頭與 §1 導言已於 T003 改寫、本任務只復核；RL-0011 種子復掃（「v3」「四欄」「四表」「五表」「九支 `setval`」「只刪不補」「指派對被刪」「未合成演進」「`sys_user` 列數不變但 diff 不報」「先補 data-model §1」「先補 schema-definition §1」「先補本節歸屬」「隨刀前進」；處數現算）。**DoD：`python3 tools/docsync lint` 零錯；`python3 -B tools/docsync test` 綠（`snapshot.py` 在 docsync 樹內）**
 - [ ] T009 ★主線 U1 收尾（唯讀、免放行）：`python3 tools/walkthrough-baseline.py snapshot <工作區>/walkthrough-007-pre-m0003-v4.json` rc 0（現庫遷移帳＝m0001／m0002＝repo 清單＝無告警）→ 同檔 `diff` rc 0；T001 之 v3 起手檔 `diff` → rc 2 檔形訊息（實證 v3 自此不可用）；兩數入 U1 commit 訊息；此 v4 基準供 U2～U4 期間使用、U4 套 m0003 後即被遷移帳前置拒用
 
@@ -109,7 +110,7 @@ description: "Task list for 007-user-password-admin"
 - [ ] T020 [US4] 選單刪碼守門（ADR-00086；spec FR-043；research R13 決定 6；data-model §3.10；先寫測試、先確認紅）：`rust-api/server/src/model/facade/sys_menu.rs` 新純函式 `removed_codes`（移除集＝`button_codes_of(before)` − `button_codes_of(after)`；改碼＝舊碼移除；`null`／`[]`＝全移除；取移除集、不問他選單是否仍持有；既有 `obsolete_codes` 改呼之）；`rust-api/server/src/model/facade/sys_casbin_policy.rs` 新讀件 `protected_button_codes(conn, &移除集)`（單一 SELECT：`ptype='p' ∧ v2='button' ∧ protected ∧ v1 ∈ 集`、不問 `v0`、空集不查庫；★MUST NOT 借 `protected_endpoint_set`＝腿⑥前半 `SEAL_QUERY_CALL_FILES`）；`rust-api/server/src/handler/menu.rs` 之 `update_menu_in_txn` 於 ⑨ 按鈕清單形制之後、⑩ 絕版碼歸檔之前插「⑨′」：`patch.buttons` 出現時取移除集與受保護交集、非空＝`2222 biz.menu.protectedButtonRemove`、外殼顯式 rollback（零變更、零歸檔、零稽核、零同步；不另取鎖＝已在選單序列化域）；`rust-api/server/src/error.rs`：`msg_key::BIZ_MENU_PROTECTED_BUTTON_REMOVE`（menu 組末、`BIZ_MENU_RESTORE_CONFLICT` 之後）＋`MSG_KEYS` 46→47 尾端追加＋`contracts/msg-keys.md` §4.3 之測試與 doc（`msg_keys_roster_is_pinned_and_unique` 釘值尾補、`biz_keys_are_in_roster` 補常數、`pub mod msg_key` doc 之 menu 構造點句補「007 刀 U4 一鍵」）；測試（自建列形，U4a 不依賴 m0003 已套用）：自建選單掛碼 C＋合成角色直植 `protected=TRUE` 之 C 列（`created_by` 非 NULL、v3～v5 `''`＝LL-00043）→ 移除與改碼兩形皆拒且零變更、自建選單非受保護碼照舊歸檔並同步（正向）、先序兩案（⑤ `protectedMenu` 與 ⑨ `buttonsInvalid` 先於本守門）、`removed_codes` 純函式表驅動、判準變異（拆守門 → 負向轉紅）；★真 seed 負向（`manage_role` 選單 id 4 移除 `role:edit`）依 m0003 已套用＝歸 T024
 - [ ] T021 [US4] `rust-api/server/tests/contract.rs` 名冊方向二發出案（`contracts/msg-keys.md` §5 首項）：`biz.menu.protectedButtonRemove` 併入既有 `menu_msgs_real_db`、沿用其 `RoleMenuDomainWriteGuard`——植自建選單（按鈕清單含帶段標記之碼）＋以直植形植一列該碼之受保護按鈕維授權列（v0＝帶段標記之角色代碼、`created_by` 非 NULL、v3～v5 `''`）→ 以移除該碼之按鈕清單打 updateMenu ⇒ `2222`＋本鍵；★不打 seed 受保護列；段末復核選單列與授權列不變、歸檔表與稽核表於守衛水位窗內零新列；同檔 `observed_msgs` doc「補三十七鍵」數量詞改為指向 `MSG_KEYS`、不再手抄鍵數（`contracts/msg-keys.md` §5 末；ADR-00039 決定 3）
 - [ ] T022 [P] [US4] base-web i18n 四處補 `biz.menu.protectedButtonRemove`（`contracts/msg-keys.md` §1.1 #1 譯文、§5 落點；★T002 硬閘後首個 base-web 既有檔 diff）：`base-web/src/locales/langs/{en-us,zh-cn}.ts` 之 `backend.biz.menu` 尾補（落既有 `BASE-WEB-I18N-WIRING(ii)+ 003-auth-session` 圈界塊內、不增塊、零 `原行:`）、`base-web/src/locales/langs/zh-tw.ts` 之 `backend` 子樹同位補（`backend: {` 獨佔一行之錨行不動）、`base-web/src/typings/app.d.ts` backend 型節 `biz.menu` 補 `protectedButtonRemove: string`（既有 `BASE-WEB-I18N-WIRING(iii)+ 003-auth-session` 塊內）。**DoD：`python3 tools/msg-key-gate.py check` 綠（與 T020 同顆外層 commit 雙 pin）；容器內 `pnpm typecheck` 綠；`python3 tools/fork-delta-lint.py` rc 0；出口斷言（`contracts/msg-keys.md` §6）＝`en-us`／`zh-cn` 之 ` START]` 數仍 10、`app.d.ts` 仍 8、三檔 `原行:` 零增、`zh-tw.ts` 之 `rev6-inline` 仍恰檔頭 1 行**
-- [ ] T023 [US6] ★主線 m0003 實證與 dev 庫套用（U4a 收齊後、U4b 派發前；research R13 決定 3 U4 內序、`contracts/code-gates.md` §2.4「真庫變異自證」、§6.8；★dev 庫寫入點、逐步取 user 放行＝LL-00053）：①**pristine 實證**（非 dev 庫；形依 RUNBOOK §10 Day-1 第 3 步）：建全新庫容器依序跑 m0001～m0003 → `pg_dump --data-only` 取列 164 與選單 78 之實文、核定 T019 之 E-008／E-009 字面（不符即改 T019）→ `python3 tools/schema-gate.py check --container <pristine 容器>` rc 0 → 暫拆 `tools/schema-gate.py` 之序號推進 → rc 1 指名 `casbin_rule_id_seq`（163 對 164）→ 存原文寫回 → rc 0；**fail-loud 實證**：另一全新庫於套 m0003 前預植 id 164 → migrate 非零退出、`seaql_migrations` 無 m0003 列、①～④ 零變更（框架單一交易前提之實證）；**down 往返**：pristine 庫 down m0003 → 授權列 163、序列 (163, true)、列 44 回原值、六列 FALSE、選單 78 回四碼 → 再 up 綠；pristine 容器用畢移除 ②**dev 庫套用**（逐步取 user 放行）：以 T009 之 v4 基準跑基準檔模式 `python3 tools/walkthrough-baseline.py restore <工作區>/walkthrough-007-pre-m0003-v4.json`（遷移帳相等＝前置放行；清界上殘列、免撞 id 164）→ psql SELECT 確認 `casbin_rule_id_seq`＝(163, true) 且無 id 164 → 重起 stack（一次性 migrate 服務套 m0003、rust-api 隨後載新判定面）→ `python3 tools/walkthrough-baseline.py diff <工作區>/walkthrough-007-pre-m0003-v4.json` 實證遷移帳前置 rc 2 → 即重拍本刀基準 `snapshot <工作區>/walkthrough-007-base-v4.json`（唯讀、免放行）→ `python3 tools/schema-gate.py check`（dev 庫）綠；③006 刀終態基準自此可清（`contracts/code-gates.md` §6.8）；三步結果入 U4 收尾 commit 訊息
+- [ ] T023 [US6] ★主線 m0003 實證與 dev 庫套用（U4a 收齊後、U4b 派發前；research R13 決定 3 U4 內序、`contracts/code-gates.md` §2.4「真庫變異自證」、§6.8；★dev 庫寫入點、逐步取 user 放行＝LL-00053）：①**pristine 實證**（非 dev 庫；形依 RUNBOOK §10 Day-1 第 3 步）：建全新庫容器依序跑 m0001～m0003 → `pg_dump --data-only` 取列 164 與選單 78 之實文、核定 T019 之 E-008／E-009 字面（不符即改 T019）→ `python3 tools/schema-gate.py check --container <pristine 容器>` rc 0 → 暫拆 `tools/schema-gate.py` 之序號推進 → rc 1 指名 `casbin_rule_id_seq`（163 對 164）→ 存原文寫回 → rc 0；**fail-loud 實證**：另一全新庫於套 m0003 前預植 id 164 → migrate 非零退出、`seaql_migrations` 無 m0003 列、①～④ 零變更（框架單一交易前提之實證）；**down 往返**：pristine 庫 down m0003 → 授權列 163、序列 (163, true)、列 44 回原值、六列 FALSE、選單 78 回四碼 → 再 up 綠；pristine 容器用畢移除 ②**dev 庫套用**（逐步取 user 放行）：以 T009 之 v4 基準跑基準檔模式 `python3 tools/walkthrough-baseline.py restore <工作區>/walkthrough-007-pre-m0003-v4.json`（遷移帳相等＝前置放行；清界上殘列、免撞 id 164）→ psql SELECT 確認 `casbin_rule_id_seq`＝(163, true) 且無 id 164 → 重起 stack（一次性 migrate 服務套 m0003、rust-api 隨後載新判定面）→ `python3 tools/walkthrough-baseline.py diff <工作區>/walkthrough-007-pre-m0003-v4.json` 實證遷移帳前置 rc 2 → 即重拍本刀基準 `snapshot <工作區>/walkthrough-007-base-v4.json`（唯讀、免放行）→ `python3 tools/schema-gate.py check`（dev 庫）綠；③006 刀終態基準自此可清（`contracts/code-gates.md` §6.8）；三步結果入 U4 收尾 commit 訊息；①pristine 實證另於套 m0003 後以 psql SELECT 斷言 `sys_operation_log` 列數＝0（該表屬 `tools/schema-gate.py` 之 `RUNTIME_APPEND_TABLES`、gate2 對其資料列無感＝m0003 不走操作稽核之唯一機器面；不符即紅）；序號已前進實證：另起一全新庫、套 m0003 前先 `SELECT setval('casbin_rule_id_seq', 170, true)`（不植列）→ migrate 綠 → 列 164 存在且為 R_SUPER｜ipRule:unlock｜button（id 顯式給定、非取 nextval）、`casbin_rule_id_seq` 仍為 (170, true)（只進不退）；前置斷言實證（每發各用一全新庫、單獨跑）：預先把列 58 改 protected=TRUE、預先刪列 44、預先把選單 78 之 `buttons` 改為非 m0002 舊串，三發皆 migrate 非零退出、錯誤訊息指名對應步（①／②／④）與期望、實得列數，`seaql_migrations` 無 m0003 列、①～④ 零變更；fail-loud 之庫刪去預植之列 164 後重跑 migrate＝綠、`seaql_migrations` 有 m0003 列、`python3 tools/schema-gate.py check --container <該容器>` rc 0（失敗後可安全重跑）
 - [ ] T024 [US4] seed 錨改對與真 seed 案（U4b；依 T023；spec FR-042、FR-044、FR-046；research R13 決定 5、決定 8；先依 m0003 已套用之 dev 庫確認舊錨紅）：`rust-api/server/src/model/facade/sys_casbin_policy.rs` 之 `seed_reads_and_the_seal_set_match_the_seed_facts`「按鈕維 seed 實數」斷言與 doc 句（20, 0）→（21, 6）（聯集因選單 78 增碼含列 164；58～63 受保護；T015 已改為現算者以現算形續綠）；`rust-api/server/tests/contract.rs` 之 `governance_reads_real_seed`「R_SUPER 按鈕維之 seed 列：20 項、受保護 0」→ 21 項、受保護 6，「seed 選單登記之碼恰 20 個」→ 21（斷言與 doc）；`rust-api/server/src/model/facade/test_kit.rs` 角色／選單域守衛自證段註「`casbin_rule_id_seq=(163,true)`」→ (164,true)（行為不變）；真 seed 案兩支——①`rust-api/server/src/handler/menu.rs` 測試模組：對 `manage_role`（選單 id 4）送移除 `role:edit` 與改碼 `role:edit` 兩形 ⇒ `biz.menu.protectedButtonRemove`、零變更（掛 006 刀角色／選單域守衛；拒腿零寫入）②`rust-api/server/tests/contract.rs`：Super 以 updateRoleButton 對 R_SUPER 送缺 `role:edit` 之期望集 ⇒ `2222 biz.role.protectedRevoke` 整批拒、零變更（ADR-00085 決定 8；SC-007）；不改面照 research R13 決定 5（`handler/auth/user_info.rs` 三帳號按鈕集案、`tests/wire_schema.rs` 之 `user:edit` 合成樣本、m0002 檔頭、schema-definition §8／§9、accepted ADR body）。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
 - [ ] T025 [P] [US4] U4b 文件與 doc 面（spec FR-046；research R13 決定 5、R22）：`rust-api/server/src/handler/system_settings.rs` 之 `us4_matrix_no_policy_roles_read_write_5003_no_disclosure` doc「該角色在 casbin seed 上持有使用者管理面的按鈕政策列」改述為持 `B_CODE2`／`B_CODE3`（斷言不變）；`docs/arc42/12-glossary.md`「受保護授權列」條之維度枚舉補按鈕維六列（m0003 起受保護 25＝端點 15／選單 4／按鈕 6，皆 R_SUPER）；research R22「受保護列數 19」雙向掃描（`受保護.{0,30}19` 以 python 掃、ugrep 長範圍不可用）：rust 現在式碼與測試、活書、RUNBOOK 零命中（m0002／schema-definition 屬 001 基線、ADR-00064 背景＝ADR-00085 註記、不改），本刀新寫一律 25
 
@@ -123,17 +124,17 @@ description: "Task list for 007-user-password-admin"
 
 ### U5 facade 底座（research R6 第 7 款、R7 第 7 款、R10 第 2／4 款、R11 第 2 款；data-model §1.1～§1.6、§2.2、§7、§8；FR-006／FR-011／FR-026）
 
-- [ ] T026 [P] [US1] `rust-api/server/src/model/facade/sys_user.rs` 擴充（先寫真 DB 案、先確認紅；案掛 `UserRowsGuard` 等使用者域守衛）：鎖讀 `find_active_by_id_for_update`（`deleted_at IS NULL`、不看 `status`）／`find_deleted_by_id_for_update`（`deleted_at IS NOT NULL`）——兩支只收 `&DatabaseTransaction`；`list_active`（收 `&UserListFilter`；四文字欄經 facade 共用件 `ilike_contains`、性別與狀態等值、六欄 AND、`id ASC`、分頁）／`list_deleted`（`deleted_at DESC, id DESC`）；寫入件 `insert`（收 `UserCreate`）／`update_fields`（收 `UserPatch`：可空欄 `Option<Option<_>>`、只帶異值欄）／`set_password`／`set_session_policy`（`updated_*` 成對、`now_ts()`）／`soft_delete`（`deleted_*` 成對、不動 `updated_*`）／`restore`（`deleted_*` 成對清空、不動 `updated_*`）——皆只收 `&DatabaseTransaction`、不自開交易、不寫稽核、不自取 advisory（`rev5:` facade 自取鎖與自落稽核＝不帶回）；預檢 `active_name_taken`（帳號名全等、大小寫敏感＝對齊 `sys_user_user_name_active_uniq`）／`active_email_taken`（`lower()` 比、只比現役）；23505 經既有 `violated_constraint` 只認 `sys_user_user_name_active_uniq`／`sys_user_user_email_active_uniq`（業務形為 facade 內部 enum、型名實作期定、形同 `RoleCreateError`；主鍵 23505 與其餘故障原樣回 `DbErr`）；★`advisory_lock_user` 簽章收窄為只收 `&DatabaseTransaction`（比照 `enter_menu_domain`）＋模組 doc `no_run` 正面孿生＋`compile_fail` doctest（以 `&sea_orm::DatabaseConnection` 呼叫 MUST 編不過）；既有 `advisory_lock_user_blocks_same_uid_and_lets_other_uid_through` 照綠、`handler/auth/login.rs` 呼叫形不變；research R22「`` rev5:007` 增量``」「不搬」種子之本檔現在式改寫、「零 migration」2 處＝003 刀不下 CHECK 之史因、復核留
+- [ ] T026 [P] [US1] `rust-api/server/src/model/facade/sys_user.rs` 擴充（先寫真 DB 案、先確認紅；案掛 `UserRowsGuard` 等使用者域守衛）：鎖讀 `find_active_by_id_for_update`（`deleted_at IS NULL`、不看 `status`）／`find_deleted_by_id_for_update`（`deleted_at IS NOT NULL`）——兩支只收 `&DatabaseTransaction`；`list_active`（收 `&UserListFilter`；四文字欄經 facade 共用件 `ilike_contains`、性別與狀態等值、六欄 AND、`id ASC`、分頁）／`list_deleted`（`deleted_at DESC, id DESC`）；寫入件 `insert`（收 `UserCreate`）／`update_fields`（收 `UserPatch`：可空欄 `Option<Option<_>>`、只帶異值欄）／`set_password`／`set_session_policy`（`updated_*` 成對、`now_ts()`）／`soft_delete`（`deleted_*` 成對、不動 `updated_*`）／`restore`（`deleted_*` 成對清空、不動 `updated_*`）——皆只收 `&DatabaseTransaction`、不自開交易、不寫稽核、不自取 advisory（`rev5:` facade 自取鎖與自落稽核＝不帶回）；預檢 `active_name_taken`（帳號名全等、大小寫敏感＝對齊 `sys_user_user_name_active_uniq`）／`active_email_taken`（`lower()` 比、只比現役）；23505 經既有 `violated_constraint` 只認 `sys_user_user_name_active_uniq`／`sys_user_user_email_active_uniq`（業務形為 facade 內部 enum、型名實作期定、形同 `RoleCreateError`；主鍵 23505 與其餘故障原樣回 `DbErr`）；★`advisory_lock_user` 簽章收窄為只收 `&DatabaseTransaction`（比照 `enter_menu_domain`）＋模組 doc `no_run` 正面孿生＋`compile_fail` doctest（以 `&sea_orm::DatabaseConnection` 呼叫 MUST 編不過）；既有 `advisory_lock_user_blocks_same_uid_and_lets_other_uid_through` 照綠、`handler/auth/login.rs` 呼叫形不變；research R22「`` rev5:007` 增量``」「不搬」種子之本檔現在式改寫、「零 migration」2 處＝003 刀不下 CHECK 之史因、復核留；真 DB 序案：`list_deleted` 植三筆已刪自建帳號（id 最大者 `deleted_at` 最早、另兩筆 `deleted_at` 相同）⇒ 回傳序＝`deleted_at` 降冪、同時戳者 id 降冪，並斷言此序異於 `ORDER BY id DESC`（證判別力）；測試補：`find_active_by_id_for_update`／`find_deleted_by_id_for_update` 各一案＝交易 A 取得後交易 B 對同列 `SELECT … FOR UPDATE NOWAIT` 得 55P03（列鎖確實取得）、A rollback 後 B 可取
 - [ ] T027 [P] [US1] `rust-api/server/src/model/facade/sys_user_role.rs` 擴充（data-model §1.2、§4；先寫測試）：讀件 `role_ids_all_of_user`（T：濾角色軟刪、**不濾 `status`**）、`role_ids_active_of_user`（A 料源：濾軟刪與 `status≠1`、回（id, 代碼））、`roles_by_user_ids`（清單回填 {id, 代碼, 名稱}；濾軟刪、含停用、角色 id 升冪；空輸入不查庫）；寫入件（只收具型交易）`replace_roles_of_user`（期望全集 N：差集 DELETE＋缺集 INSERT、回是否有變更；N 成員之活性由呼叫端之角色列鎖讀保證）、`delete_all_of_user`（回列數）；生產面零 `advisory_lock_user`、零 `enter_menu_domain`（腿⑤後半交集 ∅；data-model §5.2）；★零判定面重載（指派不在判定面：seed `g` 列 0、授權每請求 `roles_of_user` 現查）；既有 `roles_of_user`／`count_by_role`／`is_member` 不動
 - [ ] T028 [P] [US2] 撤票原語與會話事件詞彙（research R10 第 2～4 款；data-model §1.4、§1.5、§8）：`rust-api/server/src/model/facade/sys_token.rs` 私有底座 `revoke_sids_of_user(conn, uid, keep: Option<&str>)`＝既有 `revoke_others_of_user` 本體上提（每輪 SELECT「`created_by = uid` ∧ `status = 'active'` ∧〔keep 在場時 `rotation_chain ≠ keep`〕」之 sid → 空即收工 → 以逐條相同之過濾 UPDATE 為 `revoked` → 次輪重取快照；跨輪去重、保首見序；只轉 `active→revoked`、`rotated` 不動）＋新公開 `revoke_all_of_user(conn, uid)`（keep `None`）＋`revoke_others_of_user` 改為 keep `Some` 之包裝（行為零變化；既有 `revoke_others_of_user_keeps_kept_chain_rotated_rows_and_other_users` 照綠）；★禁單句 UPDATE；並發三序案（research R10 第 3 款：換發先鎖 T1 並 rotate 出 T2 後 commit／寫端先撤 T1／換發已先 commit——三序皆不漏）；`rust-api/server/src/model/facade/session_event.rs` 之 `vocabulary!` 擴 `EVENT_TYPES_ALL` 4→5（`EVENT_REVOKED`＝`revoked`）、`REASONS_ALL` 2→7（`REASON_USER_DISABLED`／`REASON_USER_DELETED`／`REASON_PASSWORD_RESET`／`REASON_PASSWORD_CHANGED`／`REASON_ADMIN_KICK`）＋值集案、欄寬案（最長 16 字元 ≤ `reason` varchar(64)）、字面釘值；本表 reason 與 `cache` 之失效名單 reason 分屬兩命名空間（互不 `use`）；research R22 種子：兩檔指單一會話被擠下之「踢除」碼註改「頂替」、「不搬」／「`` rev5:007` 增量``」改現在式
-- [ ] T029 [P] [US3] 新建 `rust-api/server/src/model/facade/sys_pwd_custody.rs`（research R11 第 2 款；data-model §1.3；先寫測試、掛 `PwdCustodyRowsGuard`）：`touch(txn, user_id, operator_id)`＝upsert（衝突鍵＝複合 PK `(user_id, created_by)`、改寫 `created_at`；時戳取 `facade::now_ts()`＝與冷卻判定同一時鐘、不吃 PG `now()`）、`last_set_at(conn, user_id, operator_id)`（無鎖讀；呼叫點皆在標的 advisory 內）；模組 doc（語意限縮＝設密冷卻料源、不做經手判定＝BL-00140；業務碼 MUST NOT 刪本表列）；`rust-api/server/src/model/facade/mod.rs` 宣告與檔頭「十二支對十二張表」→「十三支對十三張表」、成員 ASCII 升冪句補 `sys_pwd_custody`（`sys_operation_log` < `sys_pwd_custody` < `sys_role`）、錯誤形兩制之歸類句補新 facade（research R22「十二支」「十二張表」種子）；`docs/arc42/05-building-block-view.md` facade 名冊同句同批
+- [ ] T029 [P] [US3] 新建 `rust-api/server/src/model/facade/sys_pwd_custody.rs`（research R11 第 2 款；data-model §1.3；先寫測試、掛 `PwdCustodyRowsGuard`）：`touch(txn, user_id, operator_id)`＝upsert（衝突鍵＝複合 PK `(user_id, created_by)`、改寫 `created_at`；時戳取 `facade::now_ts()`＝與冷卻判定同一時鐘、不吃 PG `now()`）、`last_set_at(conn, user_id, operator_id)`（無鎖讀；呼叫點皆在標的 advisory 內）；模組 doc（語意限縮＝設密冷卻料源、不做經手判定＝BL-00140；業務碼 MUST NOT 刪本表列）；`rust-api/server/src/model/facade/mod.rs` 宣告與檔頭「十二支對十二張表」→「十三支對十三張表」、成員 ASCII 升冪句補 `sys_pwd_custody`（`sys_operation_log` < `sys_pwd_custody` < `sys_role`）、錯誤形兩制之歸類句補新 facade（research R22「十二支」「十二張表」種子）；`docs/arc42/05-building-block-view.md` facade 名冊同句同批；測試：`touch` 同對兩次（其間推進可量時間）後該對恰一列且 `created_at`＝第二次 `now_ts()`（容 LL-00054 回撥餘裕）、同 `user_id` 異 `created_by` 之列逐欄不動；變異：`DO UPDATE` 改 `DO NOTHING` 即紅
 - [ ] T030 [P] [US1] 稽核詞彙 5→8（data-model §7；research R22「五詞」種子）：`rust-api/server/src/model/audit.rs` 之 `AuditOperation` 增 `Kick`（`kick`）、`ResetPassword`（`reset_password`）、`ChangePassword`（`change_password`）＋`EXPECTED_LITERALS` 型長 5→8 尾端追加＋模組 doc「恰五個動作」「這五個字面」改八；`rust-api/server/src/model/facade/sys_operation_log.rs` 模組 doc 之寫入者列舉補使用者域寫端八支與 changePassword（`entity_table`＝`sys_user`、交易內 `write_in_txn`）及 unlockLogin 帳號維改交易內寫
 
 **Checkpoint（U5）**: facade 件與 doctest 正反在場（`compile_fail` 紅案確認編不過）、撤票迴圈三序不漏、詞彙擴面；`tests/authz_entrypoint_lint.rs` 腿⑤後半綠（facade 新件零 `advisory_lock_user`）；rust-api commit → 外層 pin bump＋活書 05 同顆＋generate
 
 ### U6 政策與明細通道（research R11 決定 1、2、4、5、6；data-model §1.9、§2.3、§2.5；`contracts/wire-user-center.md` §3.3、§3.6；`contracts/msg-keys.md` §4.5、§5；`contracts/code-gates.md` §2.3、§7.1、§7.4；FR-004／FR-032～FR-035／FR-051（後端半）；★早於 U8）
 
-- [ ] T031 [US3] `rust-api/server/src/model/password.rs` 政策單點、雜湊與冷卻件（research R11 決定 1、2、5；data-model §2.3、§2.5；先寫測試、先確認紅）：`PasswordPolicy` 七欄（`min_length`／`max_length`：`usize`；五布林）＋`Default`＝m0002 seed 值（8／64／五旗標 off）；`load_policy(conn)`＝一次 `system_settings::find_all` 篩七鍵逐鍵解析（number 二鍵以 `validation::range_of` 驗 registry 界、enum 五鍵只認 `on`／`off`；缺列、不可解析、越界或值域外＝該鍵退 seed 預設＋warn 一則〔target `security.password`、欄 `setting_key`；不計數〕；查庫 `Err` 上拋 `5000`、不吞；每次消費現讀不快取）；`validate_against_policy(pw, user_name, &policy) -> Vec<&'static str>`（違規碼八枚 `VIOLATION_*` 依 `minLength`→`maxLength`→`maxBytes`→`requireDigit`→`requireLowercase`→`requireUppercase`→`requireSpecial`→`forbidUsername` 一次收集全部；字元數 `chars().count()`、位元組 `len()`；`MAX_BYTES` 直引 `crate::throttle::LOGIN_PASSWORD_MAX_BYTES` 並改述該常數 doc 為兩面共用之唯一字面；special＝任一非 ASCII 英數字元；`forbid_username` 不分大小寫相等、子串不算；min＞max 時自然全拒、不另設碼）；★政策壞值出口（ADR-00079 決定 5）：`validate_against_policy` 判出 `min_length > max_length` 之腿恰一處呼 `rust-api/server/src/obs.rs` 新出口 `obs::password_policy_invalid()`（計數族 `password_policy_invalid_total` 無 label、`pre_register_metrics` 預註冊 0、檔頭宣告面補列）＋同腿 warn 一則（target `security.password`、欄 `min_length`／`max_length`、零密碼零帳號名）；getPasswordPolicy 只經 `load_policy`＝不計；`obs.rs` 測試：預註冊顯式 0、每呼一次恰 +1、`password_policy_invalid_outlet_is_called_from_exactly_one_production_site`（形同 `ipgate_blocked_outlet_is_called_from_exactly_one_production_site`；變異自證）；雜湊 `hash(plain)`（argon2 0.6：`getrandom::fill` 取 16 bytes 裸 salt、`Argon2::default().hash_password_with_salt(…)`、`to_string()` 即 PHC；參數同 seed PHC 與 `dummy_phc`；失敗＝`5000`、錯誤路徑不攜內容）、`NewPassword::prepare(plain)`（唯一構造、明文＋PHC 成對、刻意零 `Debug`；`*_in_txn` 與 facade 只收 `NewPassword`）；`cooldown_remaining_secs(conn, target_id, operator_id) -> Result<Option<u64>, AppError>`（秒數讀 `password_change_min_interval`〔registry [0, 86400]；壞值退 60＋warn〕；0＝停用早退不查經手表；料源 `sys_pwd_custody::last_set_at`；查無列放行；`Δ`＜冷卻才拒、剩餘＝`min(max(I − ⌊Δ⌋, 1), I)`；時鐘回撥仍屬未滿、上限 I；斷言容忍牆鐘回撥＝LL-00054）；登入路徑零政策之源碼掃描案（`handler/auth/login.rs` 生產面 `load_policy(`／`validate_against_policy(` 零命中、三形聯集＝RL-0026、變異自證）；碼註連動（research R22「恰兩支」「不產 hash」種子）：本檔模組 doc「本刀恰兩支公開面」「不落 `hash()`…三支一併不帶」「自證案恰 5 支」「rev5 出處…只取三支形」改實數與現在式、`rust-api/Cargo.toml` argon2 列「本刀不產 hash」與 `rust-api/server/Cargo.toml` argon2 與 getrandom 消費者句改現在式（★不動依賴版本＝零新依賴；Cargo.lock 零 diff）；本 task 之件皆回領域型（`Vec<&str>`／`Option<u64>`）、不構造 `AppError` 拒因＝免名冊雙向閘方向二於 U6～U7 轉紅
+- [ ] T031 [US3] `rust-api/server/src/model/password.rs` 政策單點、雜湊與冷卻件（research R11 決定 1、2、5；data-model §2.3、§2.5；先寫測試、先確認紅）：`PasswordPolicy` 七欄（`min_length`／`max_length`：`usize`；五布林）＋`Default`＝m0002 seed 值（8／64／五旗標 off）；`load_policy(conn)`＝一次 `system_settings::find_all` 篩七鍵逐鍵解析（number 二鍵以 `validation::range_of` 驗 registry 界、enum 五鍵只認 `on`／`off`；缺列、不可解析、越界或值域外＝該鍵退 seed 預設＋warn 一則〔target `security.password`、欄 `setting_key`；不計數〕；查庫 `Err` 上拋 `5000`、不吞；每次消費現讀不快取）；`validate_against_policy(pw, user_name, &policy) -> Vec<&'static str>`（違規碼八枚 `VIOLATION_*` 依 `minLength`→`maxLength`→`maxBytes`→`requireDigit`→`requireLowercase`→`requireUppercase`→`requireSpecial`→`forbidUsername` 一次收集全部；字元數 `chars().count()`、位元組 `len()`；`MAX_BYTES` 直引 `crate::throttle::LOGIN_PASSWORD_MAX_BYTES` 並改述該常數 doc 為兩面共用之唯一字面；special＝任一非 ASCII 英數字元；`forbid_username` 不分大小寫相等、子串不算；min＞max 時自然全拒、不另設碼）；★政策壞值出口（ADR-00079 決定 5）：`validate_against_policy` 判出 `min_length > max_length` 之腿恰一處呼 `rust-api/server/src/obs.rs` 新出口 `obs::password_policy_invalid()`（計數族 `password_policy_invalid_total` 無 label、`pre_register_metrics` 預註冊 0、檔頭宣告面補列）＋同腿 warn 一則（target `security.password`、欄 `min_length`／`max_length`、零密碼零帳號名）；getPasswordPolicy 只經 `load_policy`＝不計；`obs.rs` 測試：預註冊顯式 0、每呼一次恰 +1、`password_policy_invalid_outlet_is_called_from_exactly_one_production_site`（形同 `ipgate_blocked_outlet_is_called_from_exactly_one_production_site`；變異自證）；雜湊 `hash(plain)`（argon2 0.6：`getrandom::fill` 取 16 bytes 裸 salt、`Argon2::default().hash_password_with_salt(…)`、`to_string()` 即 PHC；參數同 seed PHC 與 `dummy_phc`；失敗＝`5000`、錯誤路徑不攜內容）、`NewPassword::prepare(plain)`（唯一構造、明文＋PHC 成對、刻意零 `Debug`；`*_in_txn` 與 facade 只收 `NewPassword`）；`cooldown_remaining_secs(conn, target_id, operator_id) -> Result<Option<u64>, AppError>`（秒數讀 `password_change_min_interval`〔registry [0, 86400]；壞值退 60＋warn〕；0＝停用早退不查經手表；料源 `sys_pwd_custody::last_set_at`；查無列放行；`Δ`＜冷卻才拒、剩餘＝`min(max(I − ⌊Δ⌋, 1), I)`；時鐘回撥仍屬未滿、上限 I；斷言容忍牆鐘回撥＝LL-00054）；登入路徑零政策之源碼掃描案（`handler/auth/login.rs` 生產面 `load_policy(`／`validate_against_policy(` 零命中、三形聯集＝RL-0026、變異自證）；碼註連動（research R22「恰兩支」「不產 hash」種子）：本檔模組 doc「本刀恰兩支公開面」「不落 `hash()`…三支一併不帶」「自證案恰 5 支」「rev5 出處…只取三支形」改實數與現在式、`rust-api/Cargo.toml` argon2 列「本刀不產 hash」與 `rust-api/server/Cargo.toml` argon2 與 getrandom 消費者句改現在式（★不動依賴版本＝零新依賴；Cargo.lock 零 diff）；本 task 之件皆回領域型（`Vec<&str>`／`Option<u64>`）、不構造 `AppError` 拒因＝免名冊雙向閘方向二於 U6～U7 轉紅；測試補：`load_policy` 每次現讀不快取（同一連線連呼兩次、其間以設定列守衛把 `password_min_length` 改 12＝第二次即回 12、守衛還原 8）；剩餘秒數換算抽為不讀牆鐘之純函式（入參＝冷卻秒數 I 與已過時間 Δ）、表驅動 I＝60：Δ＝30.0→30、Δ＝30.9→30（下取整）、Δ＝59.9→1、Δ＝−2.0（回撥）→60、Δ＝60.0→放行，把 ⌊Δ⌋ 改為 ⌈Δ⌉ 或四捨五入即紅（RL-0080）；`NewPassword` 零 `Debug` 之 `compile_fail` doctest（`format!("{:?}", np)` 不可編譯、誤加 derive 即紅）；測試補：`MAX_BYTES == crate::throttle::LOGIN_PASSWORD_MAX_BYTES` 釘值案＋`model/password.rs` 生產區零 `512` 數字字面之源碼掃描（改為字面 512 即紅）；政策矛盾（`min_length` 20／`max_length` 10）下長度 5、15、25 之密碼 `validate_against_policy` 皆回非空、每呼一次 `password_policy_invalid_total` 恰 +1（暫拔矛盾腿之 `obs::password_policy_invalid()` 呼叫即紅），且以 `test_kit::capture` 包之＝恰一則 target `security.password` warn、欄含 `min_length`／`max_length`、輸出不含密碼樣本與帳號名字面；DoD 補（research R22「不產 hash」之 server 側同義句逐處核）：`grep -c '不產 hash' rust-api/Cargo.toml`＝0，`rust-api/server/Cargo.toml` 之 argon2 段與 getrandom 段消費者句各列 `hash`（python 取兩段註解行核、實得入 commit 訊息）；測試補：位元組邊界——`max_length` 調至 ≥200 時，恰 512 bytes（`密`×170＋2 個 ASCII）不含 `maxBytes`、513 bytes（`密`×171）含 `maxBytes`（字元數未逾 `max_length` 亦照判位元組）；照提示重試必過性質案：I∈{1, 60, 86400}、Δ 取 [0, I) 內含非整數樣本，逐一斷言剩餘 r 滿足 Δ + r ≥ I（依提示秒數後重試必放行）且 Δ + r − 1 < I（不多報）
 - [ ] T032 [US3] 錯誤明細通道（ADR-00076；research R11 決定 4；`contracts/wire-user-center.md` §3.3、§3.6；先寫釘案、先確認紅）：`rust-api/server/src/error.rs` 增 `AppError::BizData(Cow<'static, str>, serde_json::Value)`（`2222`、`key()`＝`.0`、HTTP 200；13 碼矩陣與可發碼集九碼不變）＋`AppError::key()` 增 `BizData(key, _) => key.as_ref()` 臂＋`issuable_witness` 窮舉 match 補 `BizData(_, _) => "2222"`＋另立「變體樣本表」（現十變體各一樣本、逐變體斷言 `code()`／`key()`／`http()`；U10 補 `ModalLogoutByAdmin` 成十一）＋「`BizData` 與 `Biz` 碼與 HTTP 同、key 取 `.0`」案；`rust-api/server/src/envelope.rs` 增 `Res::from_err_with_data`（`pub(crate)`、`impl Res<serde_json::Value>`、碼與 msg 仍取三映射）；分派點恰一處＝`impl IntoResponse for AppError` 之 `BizData(_, data)` 臂、其餘臂照走 `Res::from_err`（★`from_err` 對任何變體〔含 `BizData`〕仍出 `data: null`）；釘案：`BizData` 經 `from_err` 仍 `data:null`、經 `IntoResponse` 之本體逐位元＝`{"data":{"violations":["minLength"]},"code":"2222","msg":"biz.user.passwordPolicy"}`＋HTTP 200（`#[cfg(test)]` 構造；★生產區零 `BizData` 構造點、零新鍵）、`error_envelope_data_null_not_omitted` 改逐變體表驅動（`BizData` 之 `data`＝明細物件、其餘 `data` 恆 null 不省略、欄序 data→code→msg）、序列化失敗回退 `5000` 釘案不變、`no_wire_literal_lives_in_envelope_production_code` 三正面錨仍涵蓋整個生產區（RL-0051）；現在式改寫（`contracts/msg-keys.md` §6、`contracts/wire-user-center.md` §3.6／§3.7 種子「data 恆 null」「data:null」「變體集恰九」「屬後刀域、不帶」）：`error.rs` 檔頭「變體集恰九」→恰十（U10 定稿十一）、「BizData／ModalLogoutByAdmin 屬後刀域、不帶」之 BizData 半改現在式、`AppError` doc「data-model §11 九列」與測試對照表 doc 改現數、`IntoResponse` doc 改述（`BizData` 經 `from_err_with_data`）；`envelope.rs` 模組 doc、`Res` doc、`from_err` doc 與測試 doc 之「錯誤時 data 必為 null」「唯一錯誤入口」「只能由此產生」類改述為「data 恆在場不省略、其值除 `BizData` 外恆 null」；碼註以 002 契約 §3 第 3 條為錯誤 data 規則依據者逐處改指或補指 ADR-00076（ADR-00076 決定 5 六處；處數以 `git -C rust-api grep -n '§3 第 3 條'` 現算；002 原檔不改＝ADR-00041 決定 3）；`each_issuable_code_builds_error_envelope` doc 補述矩陣樣本皆純 key 變體、`BizData` 之 data 形歸 envelope 表驅動案；`rust-api/server/src/lib.rs` 之「九變體」類句改現數（research R22）
 - [ ] T033 [P] [US3] 既有 `LoginReq` 遮蔽（ADR-00074 I5、research R11 決定 6；`contracts/wire-user-admin.md`「`AddReq`／`UpdateReq` 欄表」末段）：`rust-api/server/src/handler/auth/login.rs` 之 `LoginReq` 改手寫 `Debug`、密碼欄印 `<redacted>`（恆印遮蔽字面、不印長度片段）、其餘欄照印；一案（密碼欄樣本互異、`{:?}` 不含任一樣本、遮蔽字面次數＝密碼欄數）；新三支請求 DTO（`AddReq`／`ResetPasswordReq`／`ChangePasswordReq`）之遮蔽隨其單元（U8／U10／U12）
 - [ ] T034 [P] [US3] 外層 `tools/msg-key-gate.py` 斷言 2 擴認（`contracts/msg-keys.md` §5、`contracts/code-gates.md` §2.3；ADR-00076 決定 7）：認 `AppError::BizData(`／`Self::BizData(`／裸 `BizData(` 三形（首引數 MUST 為 `Cow::Borrowed(字面|msg_key::NAME)` 且鍵 ∈ `MSG_KEYS`；計入構造點總數；`BizData(_, _) =>`／`BizData(..) =>` 等樣式不計＝`rev5:L-064` 前例）；閘內常數 `BIZ_DATA_KEYS`（射程二鍵→明細型名 `PasswordPolicyDetail`／`PwdSetTooFrequentDetail`；出處 ADR-00076）；射程守分階段四句（①構造點之鍵 ⊆ `BIZ_DATA_KEYS`②已入 `MSG_KEYS` 之射程鍵生產區恰一處構造點③未入 `MSG_KEYS` 之射程鍵構造點數 0④射程鍵以 `AppError::Biz(` 純 key 形構造＝紅）＋佔位符對賬（已入名冊之射程鍵：解析 `rust-api/server/src/handler/user.rs` 內該名 struct 定義之欄名、依 `rename_all` 換算序列化名〔查無該 struct＝rc 2〕＝三檔 locale 該鍵譯文之 `{…}` 佔位符集；非攜參鍵譯文佔位符集為空）——②③⑤隨兩鍵分批入名冊逐鍵生效（U6 生產區零構造點即綠）；自測正反案（RL-0080；`contracts/msg-keys.md` §5 所列十一案）；工具檔頭斷言 2 說明＋`docs/ops/reference-src/code-gate-contracts.md` §5 斷言 2 列同批改。**DoD：`python3 tools/msg-key-gate.py test` 綠、`check` 綠**
@@ -144,8 +145,8 @@ description: "Task list for 007-user-password-admin"
 ### U7 包含規則與讀端（research R9、R6 第 1／6 款；data-model §4、§6；`contracts/wire-user-admin.md` 端點 1、2 與「共用型」；ADR-00075；FR-005／FR-007／FR-008（後端半）／FR-020～FR-023；★依 U5）
 
 - [ ] T036 [US4] 新建 `rust-api/server/src/auth/no_escalation.rs`（research R9 決定 1；data-model §4；純函式、零 IO、零 `entity::`；先寫表驅動測試）：`ActorScope { All, Roles(BTreeSet<i64>) }`、`actor_scope_of(現役角色（id, 代碼）清單)`（任一代碼＝`sys_role::SUPER_ROLE_CODE` 即 `All`；比對單位＝角色 id）、`assert_no_escalation(&scope, &t, &n) -> Result<(), AppError>`（`All` 恆過；否則 T⊆A ∧ N⊆A，違者 `AppError::PermissionDenied`＝`5003 system.forbidden`、零 payload、不洩差集）；全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆、空集諸形、同級互管）；`rust-api/server/src/auth/mod.rs` 宣告之、doc「模組恰兩支＋一型」改現數（`Identity` 增 `sid` 屬 U12）
-- [ ] T037 [US4] `rust-api/server/src/handler/user.rs` 之 `guard_no_escalation`（`pub(super)`；research R9 決定 2、6；data-model §4；依 T036）：`guard_no_escalation(txn, operator_uid, target: Option<i64>, next: Option<&BTreeSet<i64>>, endpoint)`＝鎖內讀 A（`sys_user_role::role_ids_active_of_user`）→ `All` 即回（不讀 T）→ 讀 T（`target` None＝∅；`role_ids_all_of_user`）→ N＝`next` 或 T → 判定 → 違者 warn 一則（target `security.user`、欄恰 `actor`／`target`〔`?` 呈〕／`endpoint`、角色差集不進日誌亦不上 wire）後回 `5003`；查庫故障一律 `5000`、不吞成空集；表驅動真 DB 案（A＝全集短路不讀 T、T／N 各形、停用角色計入 T、DB 故障 `5000`）；`rust-api/server/src/handler/mod.rs` 檔頭「跨 handler 共用件恰一支＝`common`」改述為「跨 handler 共用件＝`common`（各域共同核心）＋`user` 域對外之 `pub(super)` 件（消費者＝`throttle`、`user_center`；清單隨落地單元續寫至五件）」（research R6 第 1 款、R22；T013 延至此）；★BL-00048 兌現連動面（research R9 決定 9 ①②、R22「本體刀」種子）：`rust-api/server/src/auth/enforce.rs` 模組註「no-escalation 本體…屬後刀域、不帶」之本體半與 `no_escalation_check` 條目「本體刀接手只填函式體」、doc「本體刀接手時簽章與呼叫端都不必動」、`enforce_role_path_method` 內掛點呼叫點碼註「本刀恆 Ok；本體刀接手後 deny 走同一出口」、掛點拒絕計數測試 doc「本體刀接手後看不見真實拒絕量」、同檔測試 doc「本體刀前空殼」改現在式射程分工說明（掛點續恆放行＝路徑級上限位；本體住 `auth/no_escalation.rs`、handler 鎖內呼叫；`REASON_ADMIN_KICK` 第三向與 `Identity.sid` 第三欄之句留 U10／U12）；`no_escalation_check` 簽章、函式體與唯一呼叫點不動
-- [ ] T038 [US1] getUserList／getDeletedUsers 接真（`contracts/wire-user-admin.md` 端點 1、2、`UserRecord` 十四欄表、「兩支 query 型」；data-model §6；FR-005／FR-007／FR-020；依 T037；先寫契約案、先確認紅）：`rust-api/server/src/handler/user.rs` 替換兩支空殼（刪其 `佔位：U7～U12 替換` 碼註）——DTO `UserRecord`（恰 14 欄、宣告序＝wire 欄序、`id` 掛 `serialize_i64_number_guarded`；`userGender` 讀向 `Some(v)`→十進位字串、NULL→`null`〔私有件、不套 `db_status_to_wire`〕；`status` 經 `common::db_status_to_wire`；`roles`＝`UserRole { id, roleCode, roleName }` 陣列〔口徑＝T：只濾角色軟刪、不濾狀態；角色 id 升冪；整頁一次 `roles_by_user_ids`、空頁不查；回收桶列恆 `[]`〕；`createdAt`／`updatedAt` RFC3339 偏移恆 `+00:00`〔ADR-00061〕；`createdBy`／`updatedBy`＝帳號名〔整頁 id 去重後一次 `sys_user::find_names_by_ids`、不濾軟刪、查無→null〕；不上 wire：`password`、`session_id`、`deleted_at`／`deleted_by`）、`UserListQuery`／`DeletedUserListQuery`（字串承接全部篩選欄、分頁兩欄 `Option<u64>`；抽取器 `Rejection = Infallible`、壞形整串收斂預設；`envelope::page_params`、MUST NOT 用 `page_or_all`）；篩選＝四文字欄不分大小寫子字串（`ilike_contains`、空字串＝不篩、★手機與信箱自本刀起真篩選）、`userGender`／`status` trim 後恰 `'1'`／`'2'` 等值（`common::wire_two_value_to_db`）、六欄 AND、不收排序參數；回收桶只收分頁兩欄；讀端零鎖零交易零稽核；`rust-api/server/tests/contract.rs`：兩支各補分頁五案（缺席→(1,10)／`current` 逾界→空頁且回填 10^7／`?size=0&current=0`→(1,1)／查詢串壞形→預設／`?size=1000`→(1,100)；`total` 與 id 序列以獨立 SQL 現算）、六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使用者域守衛）、持停用角色之帳號列帶該角色 {id, 代碼, 名稱}（FR-020）、seed 下 id 1 列形逐欄（含 `roles` 與 `createdBy: null`）、多帶一欄與 `password` 類鍵不出現之反例；授權態矩陣兩支收緊（getUserList：Super／Admin `0000`、User `5003`；getDeletedUsers：Super `0000`、Admin／User `5003`）。**DoD：容器內全量 serial 綠**
+- [ ] T037 [US4] `rust-api/server/src/handler/user.rs` 之 `guard_no_escalation`（`pub(super)`；research R9 決定 2、6；data-model §4；依 T036）：`guard_no_escalation(txn, operator_uid, target: Option<i64>, next: Option<&BTreeSet<i64>>, endpoint)`＝鎖內讀 A（`sys_user_role::role_ids_active_of_user`）→ `All` 即回（不讀 T）→ 讀 T（`target` None＝∅；`role_ids_all_of_user`）→ N＝`next` 或 T → 判定 → 違者 warn 一則（target `security.user`、欄恰 `actor`／`target`〔`?` 呈〕／`endpoint`、角色差集不進日誌亦不上 wire）後回 `5003`；查庫故障一律 `5000`、不吞成空集；表驅動真 DB 案（A＝全集短路不讀 T、T／N 各形、停用角色計入 T、DB 故障 `5000`）；`rust-api/server/src/handler/mod.rs` 檔頭「跨 handler 共用件恰一支＝`common`」改述為「跨 handler 共用件＝`common`（各域共同核心）＋`user` 域對外之 `pub(super)` 件（消費者＝`throttle`、`user_center`；清單隨落地單元續寫至五件）」（research R6 第 1 款、R22；T013 延至此）；★BL-00048 兌現連動面（research R9 決定 9 ①②、R22「本體刀」種子）：`rust-api/server/src/auth/enforce.rs` 模組註「no-escalation 本體…屬後刀域、不帶」之本體半與 `no_escalation_check` 條目「本體刀接手只填函式體」、doc「本體刀接手時簽章與呼叫端都不必動」、`enforce_role_path_method` 內掛點呼叫點碼註「本刀恆 Ok；本體刀接手後 deny 走同一出口」、掛點拒絕計數測試 doc「本體刀接手後看不見真實拒絕量」、同檔測試 doc「本體刀前空殼」改現在式射程分工說明（掛點續恆放行＝路徑級上限位；本體住 `auth/no_escalation.rs`、handler 鎖內呼叫；`REASON_ADMIN_KICK` 第三向與 `Identity.sid` 第三欄之句留 U10／U12）；`no_escalation_check` 簽章、函式體與唯一呼叫點不動；測試補：以 `test_kit::capture` 包違者呼叫＝恰一則 target `security.user` warn、欄恰 `actor`／`target`／`endpoint`、輸出不含任一角色 id 差集字面，A＝全集與通過腿零 warn；區域 recorder（`metrics::with_local_recorder`）下跑一次拒判、render 文字零序列（不新增觀測序列）
+- [ ] T038 [US1] getUserList／getDeletedUsers 接真（`contracts/wire-user-admin.md` 端點 1、2、`UserRecord` 十四欄表、「兩支 query 型」；data-model §6；FR-005／FR-007／FR-020；依 T037；先寫契約案、先確認紅）：`rust-api/server/src/handler/user.rs` 替換兩支空殼（刪其 `佔位：U7～U12 替換` 碼註）——DTO `UserRecord`（恰 14 欄、宣告序＝wire 欄序、`id` 掛 `serialize_i64_number_guarded`；`userGender` 讀向 `Some(v)`→十進位字串、NULL→`null`〔私有件、不套 `db_status_to_wire`〕；`status` 經 `common::db_status_to_wire`；`roles`＝`UserRole { id, roleCode, roleName }` 陣列〔口徑＝T：只濾角色軟刪、不濾狀態；角色 id 升冪；整頁一次 `roles_by_user_ids`、空頁不查；回收桶列恆 `[]`〕；`createdAt`／`updatedAt` RFC3339 偏移恆 `+00:00`〔ADR-00061〕；`createdBy`／`updatedBy`＝帳號名〔整頁 id 去重後一次 `sys_user::find_names_by_ids`、不濾軟刪、查無→null〕；不上 wire：`password`、`session_id`、`deleted_at`／`deleted_by`）、`UserListQuery`／`DeletedUserListQuery`（字串承接全部篩選欄、分頁兩欄 `Option<u64>`；抽取器 `Rejection = Infallible`、壞形整串收斂預設；`envelope::page_params`、MUST NOT 用 `page_or_all`）；篩選＝四文字欄不分大小寫子字串（`ilike_contains`、空字串＝不篩、★手機與信箱自本刀起真篩選）、`userGender`／`status` trim 後恰 `'1'`／`'2'` 等值（`common::wire_two_value_to_db`）、六欄 AND、不收排序參數；回收桶只收分頁兩欄；讀端零鎖零交易零稽核；`rust-api/server/tests/contract.rs`：兩支各補分頁五案（缺席→(1,10)／`current` 逾界→空頁且回填 10^7／`?size=0&current=0`→(1,1)／查詢串壞形→預設／`?size=1000`→(1,100)；`total` 與 id 序列以獨立 SQL 現算）、六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使用者域守衛）、持停用角色之帳號列帶該角色 {id, 代碼, 名稱}（FR-020）、seed 下 id 1 列形逐欄（含 `roles` 與 `createdBy: null`）、多帶一欄與 `password` 類鍵不出現之反例；授權態矩陣兩支收緊（getUserList：Super／Admin `0000`、User `5003`；getDeletedUsers：Super `0000`、Admin／User `5003`）；測試補：自建帳號 X 經 Super addUser、再由持權之自建操作者 O 經 updateUser 改暱稱後，getUserList 該列 `createdBy`＝`Super`、`updatedBy`＝O 之帳號名，O 軟刪後重讀仍回其帳號名（不濾軟刪）；getUserList 與 getDeletedUsers 各帶 `sort=userName&order=desc&orderBy=id` 查詢參數，回應 `records` 之 id 序與不帶時逐位相同（伺服端固定序、排序參數一律忽略）；`git -C rust-api grep -l -e user_memo -e userMemo -- server/src` 之檔集只落 `model/facade/sys_user.rs`、`model/facade/test_kit.rs` 與使用者域 handler，`find_names_by_ids` 等跨域引用件與他域 handler 零命中（實得檔集入 commit 訊息）；狀態讀向二值收斂：以 SQL 直植自建帳號列 `status` 為 0 與 3 各一 → getUserList（軟刪後 getDeletedUsers 同）該列 `status`＝`'2'`、存 1 之列＝`'1'`。**DoD：容器內全量 serial 綠**
 
 **Checkpoint（U7）**: 包含規則純函式全分支、包裝在場（尚無寫端消費）、`enforce.rs` 預告句改現在式（BL-00048 對沖面）、兩支清單讀端接真與分頁五案×2；rust-api commit → 外層 pin bump＋generate
 
@@ -164,13 +165,13 @@ description: "Task list for 007-user-password-admin"
 
 ### 共用件與名冊（先落）
 
-- [ ] T041 [US1] `rust-api/server/src/handler/user.rs` 共用件與本域字面（research R6 第 1、2、4、5 款；R10 第 4 款；R11 決定 4；data-model §7、§8；先寫測試）：私有 `operator_from`（拒寫訊息＝「使用者寫端取不到操作者來源 → 拒寫 5000（不以佔位位址補稽核列）」、`tracing::error!(target: "security.user", refused = "request_context_absent", endpoint, uid, …)`、MUST NOT 帶 degraded 欄）、`BODY_FALLBACK_MSG`（行首 `const BODY_FALLBACK_MSG: &str = "使用者寫端 body 取用失敗——收斂成空請求交守門判";`）、私有 `db_failure(endpoint, step)`（落 `security.user` 之 error 後翻 `5000`）；`pub(super)` 三件：`revoke_sessions_in_txn(txn, target_uid, keep_sid: Option<&str>, reason, operator) -> Result<Vec<String>, AppError>`（keep 缺席呼 `sys_token::revoke_all_of_user`、給定呼 `revoke_others_of_user`；逐 sid 落 `session_event`〔`revoked`／reason／`created_by`＝操作者／`source_ip`＝`real_ip()` 字面〕；撤 0 張＝0 列事件）、`finish_user_write(state, txn, revoked_sids, reason, endpoint)`（commit 失敗＝`5000`、零名單 → sid 空或快取缺席即返 → 交易外 `jwt::ttl_from_settings(&state.db)`〔失敗＝warn `target: "security.session"`、`degraded = "ttl_read"`、整段跳過〕→ 逐 sid `cache::denylist_set(sid, reason, refresh_secs)`〔寫失敗＝warn `degraded = "denylist_write"`、續下一枚〕；零授權重載、無 reload 參數）、`password_policy_err(violations: Vec<&'static str>) -> AppError`＋同檔具型明細 `PasswordPolicyDetail { violations }`（`#[derive(Serialize)]`＋`#[serde(rename_all = "camelCase")]`；具型構造後 `serde_json::to_value` 入 `AppError::BizData(Cow::Borrowed(msg_key::BIZ_USER_PASSWORD_POLICY), …)`；★生產區 `BizData` 構造點自此恰一處）；常數 `SEED_USER_IDS: [i64; 3] = [1, 2, 3]`、`SUPER_USER_ID: i64 = 1`（只供守門②）＋讀庫釘值案（與 seed 三列一致；形同 `sys_role.rs` 之 `seeded_role_constants_match_the_seed_rows`）；整列快照件（data-model §7：15 欄＋`roleIds` 升冪、camelCase、白名單逐欄手構；★機器釘＝正向逐鍵、負向 `password`／`sessionId` 兩鍵不存在、`$argon2` 字面不出現）；名冊同批（★漏列不轉紅、逐條明列）：`rust-api/server/src/handler/common.rs` 之 `each_domain_keeps_its_own_log_literals` 加 `user.rs` 列（target `security.user`、`refused = "request_context_absent"`／`endpoint`／`uid` 與本域訊息、本域 `BODY_FALLBACK_MSG` 不與既有各域同字、行首 `fn operator_from(`、拒寫以 `AppError::Internal` 收尾、body 以 `common::json_or_default(` 限定路徑形）＋對各域拒寫事件（`refusal_event` 切出之文本）加不含 `degraded` 之負向斷言（一正一反自證＝RL-0080）；`rust-api/server/src/handler/ip_rule.rs` 之 `production_code_emits_no_degraded_field` 不加 `user.rs`、其 doc「射程另含其後進場之寫端域 handler」句補排除判準（`user.rs` 生產區合法承載 `finish_user_write` 之會話面降級腿）；`docs/ops/RUNBOOK.md` 有 tracing target 列舉處補 `security.user`（`contracts/code-gates.md` §7.4）
+- [ ] T041 [US1] `rust-api/server/src/handler/user.rs` 共用件與本域字面（research R6 第 1、2、4、5 款；R10 第 4 款；R11 決定 4；data-model §7、§8；先寫測試）：私有 `operator_from`（拒寫訊息＝「使用者寫端取不到操作者來源 → 拒寫 5000（不以佔位位址補稽核列）」、`tracing::error!(target: "security.user", refused = "request_context_absent", endpoint, uid, …)`、MUST NOT 帶 degraded 欄）、`BODY_FALLBACK_MSG`（行首 `const BODY_FALLBACK_MSG: &str = "使用者寫端 body 取用失敗——收斂成空請求交守門判";`）、私有 `db_failure(endpoint, step)`（落 `security.user` 之 error 後翻 `5000`）；`pub(super)` 三件：`revoke_sessions_in_txn(txn, target_uid, keep_sid: Option<&str>, reason, operator) -> Result<Vec<String>, AppError>`（keep 缺席呼 `sys_token::revoke_all_of_user`、給定呼 `revoke_others_of_user`；逐 sid 落 `session_event`〔`revoked`／reason／`created_by`＝操作者／`source_ip`＝`real_ip()` 字面〕；撤 0 張＝0 列事件）、`finish_user_write(state, txn, revoked_sids, reason, endpoint)`（commit 失敗＝`5000`、零名單 → sid 空或快取缺席即返 → 交易外 `jwt::ttl_from_settings(&state.db)`〔失敗＝warn `target: "security.session"`、`degraded = "ttl_read"`、整段跳過〕→ 逐 sid `cache::denylist_set(sid, reason, refresh_secs)`〔寫失敗＝warn `degraded = "denylist_write"`、續下一枚〕；零授權重載、無 reload 參數）、`password_policy_err(violations: Vec<&'static str>) -> AppError`＋同檔具型明細 `PasswordPolicyDetail { violations }`（`#[derive(Serialize)]`＋`#[serde(rename_all = "camelCase")]`；具型構造後 `serde_json::to_value` 入 `AppError::BizData(Cow::Borrowed(msg_key::BIZ_USER_PASSWORD_POLICY), …)`；★生產區 `BizData` 構造點自此恰一處）；常數 `SEED_USER_IDS: [i64; 3] = [1, 2, 3]`、`SUPER_USER_ID: i64 = 1`（只供守門②）＋讀庫釘值案（與 seed 三列一致；形同 `sys_role.rs` 之 `seeded_role_constants_match_the_seed_rows`）；整列快照件（data-model §7：15 欄＋`roleIds` 升冪、camelCase、白名單逐欄手構；★機器釘＝正向逐鍵、負向 `password`／`sessionId` 兩鍵不存在、`$argon2` 字面不出現）；名冊同批（★漏列不轉紅、逐條明列）：`rust-api/server/src/handler/common.rs` 之 `each_domain_keeps_its_own_log_literals` 加 `user.rs` 列（target `security.user`、`refused = "request_context_absent"`／`endpoint`／`uid` 與本域訊息、本域 `BODY_FALLBACK_MSG` 不與既有各域同字、行首 `fn operator_from(`、拒寫以 `AppError::Internal` 收尾、body 以 `common::json_or_default(` 限定路徑形）＋對各域拒寫事件（`refusal_event` 切出之文本）加不含 `degraded` 之負向斷言（一正一反自證＝RL-0080）；`rust-api/server/src/handler/ip_rule.rs` 之 `production_code_emits_no_degraded_field` 不加 `user.rs`、其 doc「射程另含其後進場之寫端域 handler」句補排除判準（`user.rs` 生產區合法承載 `finish_user_write` 之會話面降級腿）；`docs/ops/RUNBOOK.md` 有 tracing target 列舉處補 `security.user`（`contracts/code-gates.md` §7.4）；測試：`finish_user_write` 三形——名單寫入失敗＝仍回成功、warn `degraded = "denylist_write"`、其餘 sid 照寫（形同 `handler/auth/login.rs` 之 `login_kicked_denylist_write_failure_warns_degraded_and_revocation_still_lands`）、快取缺席＝成功且零名單寫入、sid 空＝零名單寫入；源碼次序釘：`finish_user_write` 函式體內 `.commit()` 早於首個 `denylist_set(`（移前即紅；RL-0080）；測試補：交易內呼 `revoke_sessions_in_txn(…, None, …)` 後該交易 rollback ⇒ 標的票全數仍 `active`、零 `revoked` 會話事件（撤票與業務寫入同交易進退）；`finish_user_write` 之 TTL 讀取失敗腿＝warn `degraded = "ttl_read"`、名單整段跳過、回應不變
 
 ### Tests 與實作（先寫測試、先確認紅；逐格負向＋空格理由＝spec FR-010、SC-003）
 
-- [ ] T042 [US1] addUser 接真（data-model §3.1；`contracts/wire-user-admin.md` 端點 3 與 `AddReq` 欄表；research R8 第 2 款表；spec FR-012；依 T041）：替換空殼；`AddReq`（`#[derive(Default, Deserialize)]`＋`#[serde(default, rename_all = "camelCase")]`、必填欄以 `Option` 承載；★不 derive `Debug`、手寫遮蔽密碼欄〔恆印 `<redacted>`〕＋一案）；外殼 `begin` → `NewPassword::prepare(password)`（首個鎖之前）→ 內層 `add_user_in_txn`（★零 `advisory_lock_user`＝①無既有標的、同名並發由現役唯一索引兜底）→ `roleIds` 非空時 N 去重升序 `sys_role::find_active_by_id_for_update` 鎖讀（停用照鎖）→ ④ `guard_no_escalation(target=None, next=N)`（N 含不存在或已軟刪 id 時 N＝T＝∅、`roleNotFound` 於 ⑤-d 原位發）→ ⑤-a 帳號名形制 `^[A-Za-z0-9_-]{1,64}$`（上界引 `throttle::LOGIN_USER_NAME_MAX`、零正規化）→ ⑤-b `active_name_taken` → ⑤-c 信箱空字串歸 NULL、非 NULL 者簡式格式（無空白與控制字元、恰一 `@`、兩側非空、≤254 chars、不 trim）→ `active_email_taken` → ⑤-d 角色存在 → ⑤-e `load_policy` → `validate_against_policy`（非空＝`password_policy_err`）→ ⑤-f 冷卻結構恆過（不呼 `cooldown_remaining_secs`）→ 寫：狀態收斂（缺席或值域外＝1）、性別收斂（值域外＝NULL）、四可空文字欄空字串＝NULL（`blank_to_none`）→ `sys_user::insert`（23505 依索引名 → `userNameExists`／`userEmailExists`）→ `replace_roles_of_user(新 id, N)` → `sys_pwd_custody::touch(新 id, 操作者)` → 稽核 `add`（`payload_after`＝整列快照、`roleIds`＝N）→ commit；回 `0000`＋`data: null`；測試：①②③ 空格釘（內層零 `advisory_lock_user` 之源碼釘）、⑤ 各腿負向（含 23505 兜底兩索引）、零角色合法、性別與狀態收斂、空字串＝NULL、兩帳號同送空信箱不撞活性唯一索引（R5 #2）、稽核快照不含密碼、經手表一列；★`password::hash(`／`NewPassword::prepare(` 生產呼叫點之源碼掃描案（住 `rust-api/server/src/model/password.rs` 測試模組：只在 handler 之 `begin()` 與內層首句之間、`*_in_txn` 與 facade 零命中；三形聯集；本單元名冊＝`handler/user.rs`、U12 擴 `handler/user_center.rs`；變異自證）
-- [ ] T043 [US1] updateUser 接真（data-model §3.2；`contracts/wire-user-admin.md` 端點 4、`UpdateReq` 欄表、寫端共同語意 10；research R8 第 2～6、11 款；spec FR-013、FR-017、FR-020、FR-026；依 T042）：替換空殼；`UpdateReq`（三態欄掛 `common::tristate`、`status`／`roleIds` 非三態）；內層首句 `advisory_lock_user(id)` → ① 鎖現役列〔`notFound`；body 缺席之 id 0 亦於此〕→ `roleIds` 出現時 T＝`role_ids_all_of_user`、T∪N 去重升序鎖讀 → ② `id = SUPER_USER_ID`：狀態出現且為停用〔`superCannotDisable`〕、`roleIds` 出現且不含 R_SUPER 現役 id（`sys_role::active_ids_by_codes` 以 `SUPER_ROLE_CODE` 現讀、查無＝fail-closed）〔`seededProtected`〕→ ③ `id = 操作者` 且狀態或 `roleIds` 出現（值不比對）〔`cannotEditSelfRoleOrStatus`〕→ ④ `guard_no_escalation(Some(id), N 或 T)` → ⑤-0 除 `id` 外全欄經值域收斂後缺席＝no-op（rollback、`0000`、零寫零稽核、`updated_*` 不動；`userName` 出現〔含 null〕不屬缺席）→ ⑤-a `userName` 出現〔`userNameImmutable`〕→ ⑤-b 信箱格式 → ⑤-c 信箱 `lower` 異於現值時現役唯一（排除自身）→ ⑤-d 角色存在 → ⑤-e 值 diff（空字串＝NULL、性別值域外＝缺席、角色集以集合比）全同＝no-op → 寫：`update_fields`（只異值欄＋`updated_*`；僅角色集異值亦 bump；23505 → `userEmailExists`）→ 角色集異值時 `replace_roles_of_user` → 本請求寫入狀態且新值≠1 時 `revoke_sessions_in_txn(…, None, REASON_USER_DISABLED, …)` → 稽核 `update`（before／after 整列快照）→ `finish_user_write`（名單 `revoked`；無撤票之成功＝外殼直 commit）；測試：①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、`updated_*` 不動、零撤票）、空字串清空、停用撤票＋事件 `user_disabled`＋名單 `revoked`、停用者下一次請求 `8888`、回復啟用零撤票（SC-005）、角色集差集硬刪＋新增、持停用角色之帳號可編（FR-020）、Super 恆禁停用與恆禁解除 R_SUPER、本人可改非角色欄；★併發案（research R7 第 3 款；ADR-00044 觸發器②之 U8 複核＝G4 in-use／self-role 兩腿轉生產可達）：指派寫端先鎖角色 X ⇒ deleteRole 等其 commit 後計數見新列＝`biz.role.inUse`；deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝`biz.user.roleNotFound`；★零 reload 反向確認（`tests/authz_entrypoint_lint.rs` 之 `planting_reload_use_turns_leg_one_red_outside_exempt_faces` 補植 `handler/user.rs`、`handler/user_center.rs` 生產面各一發必紅；行為面以 `casbin_reload_total` 區域 recorder 斷言零增量）；★spec SC-008 末句正向整合案（T011 延至此）：經 updateUser 改 seed 帳號（如 id 3）之指派與欄值後，`SeedUserRestoreGuard`＋`UserRoleRowsGuard` 按原值回補
-- [ ] T044 [US1] 契約與包含規則消費點（addUser／updateUser；`contracts/wire-user-admin.md`「授權態矩陣」、`contracts/msg-keys.md` §5；spec FR-025、FR-061；依 T043）：`rust-api/server/tests/contract.rs` 新段 `user_msgs_real_db`（Super 票、經 `app_with_peer` 帶對端；arm `UserWriteGuard`／`SeedUserWriteGuard`／`UserRoleWriteGuard`／`PwdCustodyWriteGuard`；植自建帳號〔名與信箱帶段標記〕）十一鍵各一發（觸發形逐鍵依 `contracts/msg-keys.md` §5 user 段；`passwordPolicy` 斷言 data 恰 `{"violations":["minLength"]}`）、段末復核零寫入；包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之標的 `5003`；addUser 之 N 含 R_SUPER 一案；以資料列授權、測後清理）＋停用角色計入 T 一案（FR-025）＋A＝全集正向；拆 `guard_no_escalation` 呼叫即轉紅之變異（RL-0080）；`role_and_menu_write_refusals_add_no_context_absent_leg_real_seed` 之寫端清單擴 addUser／updateUser（案名與「二十三支」改寫於 U14 收口＝research R22）；授權態矩陣收緊：Super 空 body addUser＝`2222 biz.user.userNameInvalid`、updateUser＝`2222 biz.user.notFound`（皆零變更）；寫端源碼次序釘（形同 `handler/role.rs` 之 `domain_write_ends_enter_the_domain_first_and_roll_back_explicitly`：外殼 begin 後第一呼叫即內層、內層首句取 advisory〔addUser 內層零 `advisory_lock_user`〕、失敗腿顯式 rollback；案名實作期定；U9／U10 擴列）。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
+- [ ] T042 [US1] addUser 接真（data-model §3.1；`contracts/wire-user-admin.md` 端點 3 與 `AddReq` 欄表；research R8 第 2 款表；spec FR-012；依 T041）：替換空殼；`AddReq`（`#[derive(Default, Deserialize)]`＋`#[serde(default, rename_all = "camelCase")]`、必填欄以 `Option` 承載；★不 derive `Debug`、手寫遮蔽密碼欄〔恆印 `<redacted>`〕＋一案）；外殼 `begin` → `NewPassword::prepare(password)`（首個鎖之前）→ 內層 `add_user_in_txn`（★零 `advisory_lock_user`＝①無既有標的、同名並發由現役唯一索引兜底）→ `roleIds` 非空時 N 去重升序 `sys_role::find_active_by_id_for_update` 鎖讀（停用照鎖）→ ④ `guard_no_escalation(target=None, next=N)`（N 含不存在或已軟刪 id 時 N＝T＝∅、`roleNotFound` 於 ⑤-d 原位發）→ ⑤-a 帳號名形制 `^[A-Za-z0-9_-]{1,64}$`（上界引 `throttle::LOGIN_USER_NAME_MAX`、零正規化）→ ⑤-b `active_name_taken` → ⑤-c 信箱空字串歸 NULL、非 NULL 者簡式格式（無空白與控制字元、恰一 `@`、兩側非空、≤254 chars、不 trim）→ `active_email_taken` → ⑤-d 角色存在 → ⑤-e `load_policy` → `validate_against_policy`（非空＝`password_policy_err`）→ ⑤-f 冷卻結構恆過（不呼 `cooldown_remaining_secs`）→ 寫：狀態收斂（缺席或值域外＝1）、性別收斂（值域外＝NULL）、四可空文字欄空字串＝NULL（`blank_to_none`）→ `sys_user::insert`（23505 依索引名 → `userNameExists`／`userEmailExists`）→ `replace_roles_of_user(新 id, N)` → `sys_pwd_custody::touch(新 id, 操作者)` → 稽核 `add`（`payload_after`＝整列快照、`roleIds`＝N）→ commit；回 `0000`＋`data: null`；測試：①②③ 空格釘（內層零 `advisory_lock_user` 之源碼釘）、⑤ 各腿負向（含 23505 兜底兩索引）、零角色合法、性別與狀態收斂、空字串＝NULL、兩帳號同送空信箱不撞活性唯一索引（R5 #2）、稽核快照不含密碼、經手表一列；★`password::hash(`／`NewPassword::prepare(` 生產呼叫點之源碼掃描案（住 `rust-api/server/src/model/password.rs` 測試模組：只在 handler 之 `begin()` 與內層首句之間、`*_in_txn` 與 facade 零命中；三形聯集；本單元名冊＝`handler/user.rs`、U12 擴 `handler/user_center.rs`；變異自證）、成功回應本體逐位元＝`{"data":null,"code":"0000","msg":"common.success"}`（不含密碼明文樣本與 `$argon2`）、`test_kit::capture` 包住政策拒與 23505 兩腿＝輸出不含密碼樣本字面與 `$argon2`、政策即時生效案（設定列守衛將 `password_min_length` 改 12 後以 11 字密碼送 addUser＝`2222 biz.user.passwordPolicy`、`violations` 含 `minLength`；守衛還原）；測試補：②③ 不適用之釘＝Super 以 `roleIds` 含 R_SUPER 現役 id、帳號名取 seed 帳號名之大小寫異形（如 `sUPER`）新增＝`0000`（無既有標的＝無 seed 保護與本人規則、只受 ⑤ 現役唯一〔大小寫敏感〕約束）；手機不守格式與長度＝`userPhone` 送 100 字元含非數字字元之字串＝`0000` 且原樣落庫（不截斷）；測試補：四可空文字欄空字串逐欄＝addUser 送 `nickName`／`userPhone`／`userEmail`／`userMemo` 皆空字串 ⇒ `0000`、新列四欄皆 NULL、稽核 `add` 之 `payload_after` 四欄皆 null；`roleIds` 含已軟刪之自建角色 id（該角色先經 deleteRole）⇒ `2222 biz.user.roleNotFound`、帳號列／指派／經手表／稽核零新增；帳號名形制表驅動——合法：恰 64 字元、含 `_` 與 `-`、單字元，拒（`userNameInvalid`、零寫入）：65 字元、空字串、含空白、前後帶空白（不 trim）、含 `.`／`@`、含非 ASCII 字母（如 `使用者`、`é`）；指派併發兩序：deleteRole 先鎖自建角色 X 未 commit 時 addUser（`roleIds`＝[X]）等鎖、deleteRole commit 後 addUser 鎖內重評＝`2222 biz.user.roleNotFound`、零新增，反序（addUser 先鎖 X）則 deleteRole 等其 commit 後得 `biz.role.inUse`
+- [ ] T043 [US1] updateUser 接真（data-model §3.2；`contracts/wire-user-admin.md` 端點 4、`UpdateReq` 欄表、寫端共同語意 10；research R8 第 2～6、11 款；spec FR-013、FR-017、FR-020、FR-026；依 T042）：替換空殼；`UpdateReq`（三態欄掛 `common::tristate`、`status`／`roleIds` 非三態）；內層首句 `advisory_lock_user(id)` → ① 鎖現役列〔`notFound`；body 缺席之 id 0 亦於此〕→ `roleIds` 出現時 T＝`role_ids_all_of_user`、T∪N 去重升序鎖讀 → ② `id = SUPER_USER_ID`：狀態出現且為停用〔`superCannotDisable`〕、`roleIds` 出現且不含 R_SUPER 現役 id（`sys_role::active_ids_by_codes` 以 `SUPER_ROLE_CODE` 現讀、查無＝fail-closed）〔`seededProtected`〕→ ③ `id = 操作者` 且狀態或 `roleIds` 出現（值不比對）〔`cannotEditSelfRoleOrStatus`〕→ ④ `guard_no_escalation(Some(id), N 或 T)` → ⑤-0 除 `id` 外全欄經值域收斂後缺席＝no-op（rollback、`0000`、零寫零稽核、`updated_*` 不動；`userName` 出現〔含 null〕不屬缺席）→ ⑤-a `userName` 出現〔`userNameImmutable`〕→ ⑤-b 信箱格式 → ⑤-c 信箱 `lower` 異於現值時現役唯一（排除自身）→ ⑤-d 角色存在 → ⑤-e 值 diff（空字串＝NULL、性別值域外＝缺席、角色集以集合比）全同＝no-op → 寫：`update_fields`（只異值欄＋`updated_*`；僅角色集異值亦 bump；23505 → `userEmailExists`）→ 角色集異值時 `replace_roles_of_user` → 本請求寫入狀態且新值≠1 時 `revoke_sessions_in_txn(…, None, REASON_USER_DISABLED, …)` → 稽核 `update`（before／after 整列快照）→ `finish_user_write`（名單 `revoked`；無撤票之成功＝外殼直 commit）；測試：①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、`updated_*` 不動、零撤票）、空字串清空、停用撤票＋事件 `user_disabled`＋名單 `revoked`、停用者下一次請求 `8888`、回復啟用零撤票（SC-005）、角色集差集硬刪＋新增、持停用角色之帳號可編（FR-020）、Super 恆禁停用與恆禁解除 R_SUPER、本人可改非角色欄；★併發案（research R7 第 3 款；ADR-00044 觸發器②之 U8 複核＝G4 in-use／self-role 兩腿轉生產可達）：指派寫端先鎖角色 X ⇒ deleteRole 等其 commit 後計數見新列＝`biz.role.inUse`；deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝`biz.user.roleNotFound`；★零 reload 反向確認（`tests/authz_entrypoint_lint.rs` 之 `planting_reload_use_turns_leg_one_red_outside_exempt_faces` 補植 `handler/user.rs`、`handler/user_center.rs` 生產面各一發必紅；行為面以 `casbin_reload_total` 區域 recorder 斷言零增量）；★spec SC-008 末句正向整合案（T011 延至此）：經 updateUser 改 seed 帳號（如 id 3）之指派與欄值後，`SeedUserRestoreGuard`＋`UserRoleRowsGuard` 按原值回補、角色欄缺席＝`sys_user_role` 逐列不動且零撤票、`roleIds: []`＝全撤且稽核 `update` 之 after.roleIds＝[]（SC-003 四形之缺席與空陣列兩形）、`userName` 三形各一發（異值、與現值相同、`null`）皆 `2222 biz.user.userNameImmutable` 且零寫入零稽核、`updated_*` 不動（同值與 null 形不得落 ⑤-0／⑤-e 回 `0000`）、空字串清空逐欄各一發（`nickName`／`userEmail`／`userPhone`／`userMemo` 各送 `""` ⇒ `0000`、該欄 IS NULL；`userEmail` 空字串不觸 `userEmailInvalid`）、持停用自建角色之帳號送 `roleIds`＝[該停用角色, 原啟用角色, 新角色] ⇒ `0000` 且指派列恰此三者（停用角色不拒、不略過；US1 AS4 後端半）、只改暱稱＝窗內稽核恰一列 `update`（before／after 快照僅 `nickName` 相異）；測試補：多重違規取先序五案（形同 `handler/menu.rs` 之 `update_menu_gates_run_in_the_fixed_order_and_refusals_write_nothing`；皆零變更）——Super 以本人 id 1 送 `status` 停用值＝`superCannotDisable`（②先於③）、資料列授權之非超管操作者 P 對 id 1 送 `status` 停用值＝`superCannotDisable`（②先於④）、P 以本人 id 送含 R_SUPER 之 `roleIds`＝`cannotEditSelfRoleOrStatus`（③先於④）、P 對持 R_SUPER 之自建帳號送 `userName`＝`5003`（④先於⑤-a）、Super 對已刪自建帳號送 `userName`＝`notFound`（①先於⑤）；①～⑤ 各格負向案（含 ④ `5003`）逐案斷言標的 `sys_user` 列逐欄、`sys_user_role` 指派集、`sys_pwd_custody` 列與 active 票數皆同拒前、`OpLogRowsGuard` 水位窗零新列（拒＝整筆 rollback、零變更、零稽核）；部分更新只送 `nickName` 時其餘可空文字欄、`userGender`、`status`、`session_policy` 與指派列逐欄不動（比對送前快照）；⑤-e 值域歸一 no-op 兩形——對暱稱、手機、信箱、記事現值皆 NULL 之自建帳號送此四欄空字串（其餘欄缺席）、對持 {X,Y} 之自建帳號送 `roleIds` [Y,X,X] ⇒ 皆 `0000`、零寫入、水位窗零新列、`updated_*` 不動；僅改角色集之成功案窗內恰一列 `update`、`payload_before`／`payload_after` 之 `roleIds` 分別為舊、新集合（升冪）且 `updated_*` 已 bump；停用撤票後被撤 sid 之失效名單鍵 TTL 介於（換發票壽命秒數 − 5）與換發票壽命秒數之間（存活＝換發票全壽命、非 access 秒數）；併發補案：兩交易分對不同自建帳號同時 updateUser、`roleIds` 分別為 [X,Y] 與 [Y,X]（X<Y）⇒ 兩者皆於逾時內 commit、零 40P01（角色列去重升序取鎖）；★self-role 腿生產可達（ADR-00044 觸發器②後半）：Super 經 updateUser 端點將自建角色 X（無其他成員）指派予持 deleteRole／updateRole 授權之自建操作者 O → O 之票 deleteRole X＝`2222 biz.role.cannotDeleteSelfRole`（成員僅 O 本人＝不落 in-use）、updateRole 將 X 停用＝`2222 biz.role.cannotDisableSelfRole`，皆零變更零稽核；測試補：updateUser `status` 值域三形——`"3"`、`null`、`""` 各一＝缺席（全缺席 ⇒ ⑤-0 no-op：`0000`、零寫入、零稽核、`updated_*` 不動、零撤票），操作者本人送 `{"status":"9","nickName":<新值>}` ⇒ 不觸 `cannotEditSelfRoleOrStatus`（值域收斂後才算出現）、暱稱照改、狀態不動，`" 2 "` 經 trim 後＝停用（撤票）；停用撤票案另斷言該帳號 `sys_user_role` 鍵集停用前後相等（只有軟刪才硬刪指派）
+- [ ] T044 [US1] 契約與包含規則消費點（addUser／updateUser；`contracts/wire-user-admin.md`「授權態矩陣」、`contracts/msg-keys.md` §5；spec FR-025、FR-061；依 T043）：`rust-api/server/tests/contract.rs` 新段 `user_msgs_real_db`（Super 票、經 `app_with_peer` 帶對端；arm `UserWriteGuard`／`SeedUserWriteGuard`／`UserRoleWriteGuard`／`PwdCustodyWriteGuard`；植自建帳號〔名與信箱帶段標記〕）十一鍵各一發（觸發形逐鍵依 `contracts/msg-keys.md` §5 user 段；`passwordPolicy` 斷言 data 恰 `{"violations":["minLength"]}`）、段末復核零寫入；包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之標的 `5003`；addUser 之 N 含 R_SUPER 一案；以資料列授權、測後清理）＋停用角色計入 T 一案（FR-025）＋A＝全集正向；拆 `guard_no_escalation` 呼叫即轉紅之變異（RL-0080）；`role_and_menu_write_refusals_add_no_context_absent_leg_real_seed` 之寫端清單擴 addUser／updateUser（案名與「二十三支」改寫於 U14 收口＝research R22）；授權態矩陣收緊：Super 空 body addUser＝`2222 biz.user.userNameInvalid`、updateUser＝`2222 biz.user.notFound`（皆零變更）；寫端源碼次序釘（形同 `handler/role.rs` 之 `domain_write_ends_enter_the_domain_first_and_roll_back_explicitly`：外殼 begin 後第一呼叫即內層、內層首句取 advisory〔addUser 內層零 `advisory_lock_user`〕、失敗腿顯式 rollback；案名實作期定；U9／U10 擴列）；稽核落列失敗＝整筆不生效（`handler/user.rs` 測試模組、形同 `handler/role.rs` 之 `audit_failure_voids_the_whole_write_and_a_resend_succeeds`、以 `test_kit::occupy_next_audit_id` 使下一次稽核落列恰敗一次）：addUser 一發、updateUser 只改 `nickName` 一發、帶 `roleIds` 異值集一發、停用持兩有效會話之標的一發 ⇒ 皆 `5000`、業務列逐欄不動（含 `updated_*`）、指派列不動、兩票仍 active、窗內零 `session_event` 零稽核、失效名單零新鍵、經手表零新列；同一請求重送即 `0000`（證紅因是稽核）；寫端源碼次序釘另錨 `guard_no_escalation(`：於內層位在 ① 鎖讀之後、首個寫入件（`sys_user::insert`／`update_fields`／`soft_delete`／`restore`／`set_password`／`set_session_policy`／`revoke_sessions_in_txn`）之前，移至寫入件之後即紅（RL-0080；T049、T057 擴列同形）；包含規則各負向案（含 T049、T057 擴列之消費點）拒後一律斷言零變更與零稽核：標的 `sys_user` 列逐欄不變（含 `updated_*`）、`sys_user_role` 指派集不變、`session_event` 與 `sys_operation_log` 水位窗零新列、失效名單零新鍵（addUser 另斷 `sys_user` 與經手表皆無新列）；同級互管正向（spec US4 AS4、FR-021）：以資料列使自建帳號甲、乙同持同一自建角色 R（R 授 updateUser），甲之票打 updateUser `{id:乙, status:'2'}` ⇒ `0000`、乙 `status`＝2、乙之票下一請求 `8888`、窗內恰一列 `update` 且 `created_by`＝甲 uid（≠1、≠乙；形同 `handler/menu.rs` 之 `write_endpoints_stamp_the_requesting_operator_uid_on_rows_archives_and_audits`）、測後清理；`user_msgs_real_db` 段末復核另以 `OpLogRowsGuard` 水位窗斷言 `sys_operation_log` 零新列（拒腿零稽核；T049、T057 擴列同形）；寫端源碼次序釘另釘跨類鎖序：updateUser 內層函式體中 `sys_user::find_active_by_id_for_update(` 首現早於首個 `sys_role::` 之 `_for_update(` 呼叫、後者早於 `replace_roles_of_user(`（去空白比對；對調兩鎖讀即紅＝RL-0080；T049 之 deleteUser／batchDeleteUser 以 `delete_all_of_user(` 同形擴列）；寫端源碼次序釘另斷言 advisory 之 key 引數＝標的 id：各單筆內層首句之 `advisory_lock_user(` 第二引數為該內層之標的 id 參數、batchDeleteUser 內層首段對去重升序 ids 逐一取鎖且先於任何列鎖，任一支 key 改為操作者 id 即紅（U9／U10 擴列同形）；逐域 no-op 口徑對照腿（ADR-00080 決定 3、決定 8）：Super 對自建角色 updateRole 送 `roleName` 現值 ⇒ `0000`、該列 `xmin` 換新且稽核 `update` 恰一列（角色域續 ADR-00047 決定 3＝同值照寫照稽核），同案對自建帳號 updateUser 送 `nickName` 現值 ⇒ `0000`、`xmin` 不變、零稽核；壞 body 四式（`malformed_bodies` 經 `extract_body`：缺 Content-Type、空 body、壞 JSON、欄型別不符）收斂成預設形（`AddReq` 全欄缺席、`UpdateReq` `id` 0 且全欄缺席），真 seed app 面一發 `updateUser {"id":<自建現役>,"nickName":"x","roleIds":["a"]}` ⇒ `2222 biz.user.notFound`、該列與指派零變更（整包收斂、不作部分採用；T049、T057 對其請求型同形補）；停用角色計入 T 一案之前置另斷言：經 updateRole 停用該角色後其 `sys_user_role` 列數不變（停用不硬刪指派）。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
 
 **Checkpoint（U8）**: 新增與編輯上線、`MSG_KEYS` 58、生產 `BizData` 構造點恰一（`passwordPolicy`）——**MVP 後端面**（UI 於 U17）；兩子庫 commit → 外層一顆雙 pin bump（msg-key-gate 兩側同批）＋RUNBOOK 同顆＋generate
 
@@ -184,9 +185,9 @@ description: "Task list for 007-user-password-admin"
 
 - [ ] T045 [US1] `rust-api/server/src/error.rs` 一鍵 `BIZ_USER_CANNOT_DELETE_SELF`（`contracts/msg-keys.md` §1.1 #13）＋`MSG_KEYS` 58→59＋§4.3 測試與 doc（批次句「007 刀 U9 之 user 一鍵」）
 - [ ] T046 [P] [US1] base-web i18n 四處補 `biz.user.cannotDeleteSelf`（`base-web/src/locales/langs/{en-us,zh-cn,zh-tw}.ts`＋`base-web/src/typings/app.d.ts`；同 T040 落點與出口斷言；零佔位符）
-- [ ] T047 [US1] deleteUser／batchDeleteUser 接真（data-model §3.3、§3.4；`contracts/wire-user-admin.md` 端點 5、6；research R7 第 2 款、R8 第 7 款；spec FR-014、FR-016、FR-026；先寫測試）：替換兩支空殼；`UserIdReq`（`{id}`；收斂標籤 `deleteUser|restoreUser|kickUser`）、`UserBatchDeleteReq`（`{ids}`）；deleteUser＝advisory(id) → ① 鎖現役列〔`notFound`〕→ ② `id ∈ SEED_USER_IDS`〔`seededProtected`〕→ ③ `id = 操作者`〔`cannotDeleteSelf`〕→ ④ `guard_no_escalation(Some(id), N＝∅)` → ⑤ 空格 → 寫：T 升序鎖角色列（只為與 deleteRole 計數排成單列；查無＝略過）→ `soft_delete`（成對、保留 `status`）→ `delete_all_of_user` → `revoke_sessions_in_txn(…, None, REASON_USER_DELETED, …)` → 稽核 `delete`（before 整列快照、after 軟刪欄已寫且 `roleIds`＝`[]`）→ `finish_user_write`（名單 `revoked`）；batchDeleteUser＝`ids` 去重後空＝`0000`、零 `begin` → ids 升序**先取完全部** advisory → 再依序鎖全部現役列（任一查無〔`notFound`〕）→ ② 任一 seed → ③ 操作者 ∈ ids → ④ A 讀一次、逐筆 Tᵢ⊆A → 寫：整批 ∪Tᵢ 升序**一次**鎖角色列 → 逐人執行 deleteUser 寫序（逐人一列稽核）→ commit → 全部被撤 sid 一次寫名單；★位次「逐步全批」（同一步全批判完才進下一步、拒因與 id 排列無關、整批拒不指筆；R5 #47）；★`rev5:` 逐 id 交錯取鎖形不帶回（與單筆 updateUser 成 ABBA）；測試：各格負向、⑤ 空格（持指派與多會話之自建帳號照刪成功）、整批 rollback（任一違規＝全批零變更）、多重違規取先序相位、已刪標的對 deleteUser 與 updateUser 皆 `notFound`（FR-016）、撤票＋`user_deleted`＋名單、刪除後 deleteRole 可刪該角色（軟刪同交易硬刪指派＝in-use 保守口徑結構等同現役口徑；ADR-00044 觸發器①之答案）
-- [ ] T048 [US1] restoreUser 接真（data-model §3.5；`contracts/wire-user-admin.md` 端點 7；research R8 第 8 款；spec FR-015；依 T047）：advisory(id) → ① `find_deleted_by_id_for_update`（查無或為現役列〔`notFound`〕）→ ②③ 結構不可達 → ④ `guard_no_escalation(Some(id), N＝∅)`（T 生產恆 ∅、恆過仍掛）→ ⑤-a 同帳號名現役列〔`userNameExists`〕→ ⑤-b 信箱非 NULL 且同信箱（`lower()`）現役列〔`userEmailExists`〕→ 寫：`sys_user::restore`（成對清、`status` 保留、`updated_*` 不動；23505 收窄同二鍵）→ 稽核 `restore` → commit；零回灌、零撤票；測試：撞名與撞信箱兩腿、零回灌（復原後 `roles` 為空）、狀態保留、②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得 `5003`）、④ 負向以合成「已刪列仍掛指派」態釘
-- [ ] T049 [US1] 契約（U9 三支；`contracts/msg-keys.md` §5、`contracts/wire-user-admin.md`「授權態矩陣」；依 T048）：`user_msgs_real_db` 補 `cannotDeleteSelf`（以資料列指派 R_SUPER 予自建帳號、以其票 deleteUser 自身 id）；包含規則三支各兩負一正（restoreUser 以合成態釘）；拒寫案清單擴三支；源碼次序釘擴三支；授權態矩陣收緊（Super 空 body：deleteUser／restoreUser＝`notFound`、batchDeleteUser＝`0000` 提前成功，皆零變更）。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
+- [ ] T047 [US1] deleteUser／batchDeleteUser 接真（data-model §3.3、§3.4；`contracts/wire-user-admin.md` 端點 5、6；research R7 第 2 款、R8 第 7 款；spec FR-014、FR-016、FR-026；先寫測試）：替換兩支空殼；`UserIdReq`（`{id}`；收斂標籤 `deleteUser|restoreUser|kickUser`）、`UserBatchDeleteReq`（`{ids}`）；deleteUser＝advisory(id) → ① 鎖現役列〔`notFound`〕→ ② `id ∈ SEED_USER_IDS`〔`seededProtected`〕→ ③ `id = 操作者`〔`cannotDeleteSelf`〕→ ④ `guard_no_escalation(Some(id), N＝∅)` → ⑤ 空格 → 寫：T 升序鎖角色列（只為與 deleteRole 計數排成單列；查無＝略過）→ `soft_delete`（成對、保留 `status`）→ `delete_all_of_user` → `revoke_sessions_in_txn(…, None, REASON_USER_DELETED, …)` → 稽核 `delete`（before 整列快照、after 軟刪欄已寫且 `roleIds`＝`[]`）→ `finish_user_write`（名單 `revoked`）；batchDeleteUser＝`ids` 去重後空＝`0000`、零 `begin` → ids 升序**先取完全部** advisory → 再依序鎖全部現役列（任一查無〔`notFound`〕）→ ② 任一 seed → ③ 操作者 ∈ ids → ④ A 讀一次、逐筆 Tᵢ⊆A → 寫：整批 ∪Tᵢ 升序**一次**鎖角色列 → 逐人執行 deleteUser 寫序（逐人一列稽核）→ commit → 全部被撤 sid 一次寫名單；★位次「逐步全批」（同一步全批判完才進下一步、拒因與 id 排列無關、整批拒不指筆；R5 #47）；★`rev5:` 逐 id 交錯取鎖形不帶回（與單筆 updateUser 成 ABBA）；測試：各格負向、⑤ 空格（持指派與多會話之自建帳號照刪成功）、整批 rollback（任一違規＝全批零變更）、多重違規取先序相位、已刪標的對 deleteUser 與 updateUser 皆 `notFound`（FR-016）、撤票＋`user_deleted`＋名單、刪除後 deleteRole 可刪該角色（軟刪同交易硬刪指派＝in-use 保守口徑結構等同現役口徑；ADR-00044 觸發器①之答案）、被刪者兩會話以既有存取權杖下一次請求皆 `8888`（`auth.session.reLogin`）、單筆 `delete` 稽核恰一列（before 整列快照、after 軟刪欄已寫且 `roleIds`＝`[]`）、批刪 n 人窗內恰 n 列 `delete`；測試補：② 以 seed id 1／2／3 表驅動各發一次 deleteUser（Super 票；id 1 亦先撞②而非③）＝`2222 biz.user.seededProtected`、零變更，batchDeleteUser `{ids:[<自建帳號>, 3]}`＝同鍵且該自建帳號仍為現役；batchDeleteUser 之 ids 含一已軟刪自建帳號 id＝`2222 biz.user.notFound`、整批零變更（該列 `deleted_at`／`deleted_by` 不被覆寫、零 `delete` 稽核）；不指筆＝批刪 `[3, 999999999]` 與其反序兩形皆得 `2222 biz.user.notFound`（①全數鎖讀先於②）、`data` null、整批零變更；各格負向案逐案斷言零變更與水位窗零稽核（同 T043 形）；批刪兩名各持指派與兩會話之自建帳號成功＝兩人皆成對軟刪、指派零列、active 票零、`revoked`／`user_deleted` 事件四列、名單四枚 sid 值 `revoked`、兩人下一次請求皆 `8888`、`delete` 稽核恰兩列（`entity_id` 逐人）；併發：同發 batchDeleteUser `[b,a]`、`[a,b]`（a<b、皆可刪之自建帳號、共持角色 X、Y）與 updateUser(c)（`roleIds` [Y,X]）及 deleteRole(X)，皆於逾時內完成、零 40P01；源碼次序釘擴 batchDeleteUser 三段單調（ids 去重升序 advisory 全取 → 使用者列全鎖 → ∪Tᵢ 一次升序鎖角色列：角色列鎖讀恰一處、位於逐 id 使用者列鎖迴圈之後）與同交易（deleteUser／batchDeleteUser 內層之 `soft_delete`、`delete_all_of_user`、`revoke_sessions_in_txn` 與稽核寫入皆以同一 `txn` 引數呼叫、內層函式體零 `state.db` 字面；植入一處即紅＝RL-0080）；同標的兩寫端併發：交易 A 經 deleteUser 內層持 advisory(id) 未 commit 時，另一交易之 updateUser 對同 id 等鎖，A commit 後該 updateUser 鎖內重讀得 `2222 biz.user.notFound`、零寫入零稽核（lock-then-redecide、不信 pre-read）
+- [ ] T048 [US1] restoreUser 接真（data-model §3.5；`contracts/wire-user-admin.md` 端點 7；research R8 第 8 款；spec FR-015；依 T047）：advisory(id) → ① `find_deleted_by_id_for_update`（查無或為現役列〔`notFound`〕）→ ②③ 結構不可達 → ④ `guard_no_escalation(Some(id), N＝∅)`（T 生產恆 ∅、恆過仍掛）→ ⑤-a 同帳號名現役列〔`userNameExists`〕→ ⑤-b 信箱非 NULL 且同信箱（`lower()`）現役列〔`userEmailExists`〕→ 寫：`sys_user::restore`（成對清、`status` 保留、`updated_*` 不動；23505 收窄同二鍵）→ 稽核 `restore` → commit；零回灌、零撤票；測試：撞名與撞信箱兩腿、零回灌（復原後 `roles` 為空）、狀態保留、②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得 `5003`）、④ 負向以合成「已刪列仍掛指派」態釘、稽核 `restore` 恰一列（after 之 `deletedAt` 為 null）；測試補：對現役自建帳號 id 打 restoreUser＝`2222 biz.user.notFound`、零變更（`deleted_*`、`updated_*` 不動、水位窗零新列；只認已刪列之釘）；各格負向案逐案斷言零變更與水位窗零稽核（同 T043 形）
+- [ ] T049 [US1] 契約（U9 三支；`contracts/msg-keys.md` §5、`contracts/wire-user-admin.md`「授權態矩陣」；依 T048）：`user_msgs_real_db` 補 `cannotDeleteSelf`（以資料列指派 R_SUPER 予自建帳號、以其票 deleteUser 自身 id）；包含規則三支各兩負一正（restoreUser 以合成態釘）；拒寫案清單擴三支；源碼次序釘擴三支；授權態矩陣收緊（Super 空 body：deleteUser／restoreUser＝`notFound`、batchDeleteUser＝`0000` 提前成功，皆零變更）；稽核落列失敗＝整筆不生效（同 T044 形）：對持指派與兩有效會話之自建帳號 deleteUser 與 batchDeleteUser 各一發、對已刪自建帳號 restoreUser 一發 ⇒ 皆 `5000`、`deleted_at`／`deleted_by` 不動、指派列逐列不動、兩票仍 active、窗內零 `session_event` 零稽核、失效名單零新鍵；同一請求重送即 `0000`；同級互管正向：甲、乙同持同一自建角色 R（R 授 deleteUser／batchDeleteUser），甲之票打 deleteUser `{id:乙}` ⇒ `0000`、乙已軟刪、窗內恰一列 `delete` 且 `created_by`＝甲 uid；另一同級帳號乙2 以 batchDeleteUser `{ids:[乙2]}` 同形一發；包含規則三支之兩負一正明定：①對持 R_SUPER 之標的（以資料列指派 R_SUPER 予自建標的；restoreUser 以合成「已刪列仍掛 R_SUPER 指派」態）②標的持操作者未持之自建角色（restoreUser 同以合成態）⇒ 皆 `5003`、零變更零稽核零撤票；一正＝Super（只持 R_SUPER）對持其未持之自建角色之標的成功（A＝全集非 vacuous）；停用角色計入 T 一案＝標的持操作者未持之停用自建角色（以資料列指派後停用該角色）⇒ `5003`、零變更。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
 
 **Checkpoint（U9）**: 刪除、批刪、復原上線、`MSG_KEYS` 59；兩子庫 commit → 外層一顆雙 pin bump＋generate
 
@@ -199,13 +200,13 @@ description: "Task list for 007-user-password-admin"
 **Independent Test**: alice 兩瀏覽器登入 → Super 踢除 ⇒ 兩邊下一次請求 `7777`＋管理員踢除專屬提示、alice 重登成功；Super 重設 alice 密碼 ⇒ 舊會話 `8888`、新密登入成功；30 秒內再重設＝`pwdSetTooFrequent`＋剩餘秒數（quickstart §5、§6；US2 場景 1、3、4，US3 場景 5）。
 
 - [ ] T050 [US2] 五鍵與 `ModalLogoutByAdmin`（`contracts/msg-keys.md` §1.1 #14～#18、§4.3、§4.5；`contracts/wire-user-center.md` §3.3、§3.6；ADR-00076）：`rust-api/server/src/error.rs` 增 `BIZ_USER_CANNOT_KICK_SELF`／`BIZ_USER_CANNOT_RESET_SELF_PASSWORD`／`BIZ_USER_SESSION_POLICY_INVALID`／`BIZ_USER_PWD_SET_TOO_FREQUENT`（user 組依表序）與 `AUTH_SESSION_KICKED_BY_ADMIN`（緊接 `AUTH_SESSION_KICKED`）＋`MSG_KEYS` 59→64＋`AppError::ModalLogoutByAdmin`（`7777`、固定鍵 `auth.session.kickedByAdmin`、HTTP 200；變體 10→11）＋`AppError::key()` 增其臂＋`issuable_witness` 補 `ModalLogoutByAdmin => "7777"`＋變體樣本表補成十一＋`fixed_variant_keys_are_in_roster`「八個固定 key 變體」→九個＋`msg_key` doc 固定鍵「八支」→九支＋「`ModalLogoutByAdmin` 與 `ModalLogout` 同碼異鍵」案＋`rust-api/server/src/envelope.rs` 釘案（`ModalLogoutByAdmin` 經 `IntoResponse`＝`{"data":null,"code":"7777","msg":"auth.session.kickedByAdmin"}`、HTTP 200）；現在式定稿（research R22「變體集恰九」「九變體」種子）：`error.rs` 檔頭「恰十一」與「BizData／ModalLogoutByAdmin 屬後刀域、不帶」句全刪改現在式、`lib.rs` 改十一；`rust-api/server/src/handler/user.rs` 增 `pub(super) fn pwd_set_too_frequent_err(remaining_seconds: u64) -> AppError`＋具型 `PwdSetTooFrequentDetail { remaining_seconds }`（`rename_all = "camelCase"`；生產 `BizData` 構造點自此恰兩處）
-- [ ] T051 [P] [US2] base-web i18n 四處補五鍵（`base-web/src/locales/langs/{en-us,zh-cn,zh-tw}.ts`＋`base-web/src/typings/app.d.ts`；同 T040 落點；`auth.session.kickedByAdmin` 接在 `kicked` 之後；★`biz.user.pwdSetTooFrequent` 三語佔位符恰 `{remainingSeconds}`、`auth.session.kickedByAdmin` 之 zh-tw 值 MUST 含「管理員」〔U16 zh-tw-lint 會話用語腿之前提〕）。**DoD：同 T040**
+- [ ] T051 [P] [US2] base-web i18n 四處補五鍵（`base-web/src/locales/langs/{en-us,zh-cn,zh-tw}.ts`＋`base-web/src/typings/app.d.ts`；同 T040 落點；`auth.session.kickedByAdmin` 接在 `kicked` 之後；★`biz.user.pwdSetTooFrequent` 三語佔位符恰 `{remainingSeconds}`、`auth.session.kickedByAdmin` 之 zh-tw 值 MUST 含「管理員」〔U16 zh-tw-lint 會話用語腿之前提〕）。**DoD：同 T040；zh-cn／en-us 之 `backend.auth.session.kicked` 值與 `fb4dac2` 逐字相同（python 以 `kicked: '…'` 取值比對兩版、兩語皆等；不等即紅＝頂替文案 `auth.session.kicked` 兩語不變）**
 - [ ] T052 [P] [US2] 授權判定三向分派與失效名單第三 reason（research R10 第 4、6 款；data-model §2.2、§8；spec FR-027；依 T050 之 `ModalLogoutByAdmin`、可與 T053～T055 分派）：`rust-api/server/src/cache/mod.rs` 增 `REASON_ADMIN_KICK`＝`admin_kick`（與 `session_event` 同字面常數分屬兩命名空間、不互 `use`）＋reason 二值互異案擴三值＋檔頭「兩枚 denylist reason」→三枚、「`REASON_ADMIN_KICK`…不帶」句之該半改現在式（`cpwd:` 前綴半留 U12）、「三常數」句改寫（research R22「兩 reason」「三常數」種子）；`rust-api/server/src/auth/enforce.rs` 之 `enforce_mw` 失效名單第 1 級改三向：`kicked`→`ModalLogout`、`admin_kick`→`ModalLogoutByAdmin`、其餘（`revoked`、未知字面、空字串）→`Logout`（保守側）；redis 答不出照退 PG 判（降級同碼 `8888`）；模組註「`REASON_ADMIN_KICK` 第三向…屬後刀域、不帶」改現在式（`Identity.sid` 半留 U12）；三向各臂一案（含未知字面落 `8888`）
-- [ ] T053 [US2] kickUser 接真（data-model §3.6；`contracts/wire-user-admin.md` 端點 8；research R8 第 2 款表、R10 第 5 款；spec FR-027；依 T050、T052）：`KickRes { revoked: usize }`（計數、不入 2^53 守衛面）；advisory(id) → ① 鎖現役列（停用照鎖）〔`notFound`〕→ ② 空格 → ③ `id = 操作者`〔`cannotKickSelf`〕→ ④ `guard_no_escalation(Some(id), N＝T)` → ⑤ 空格 → 寫：`revoke_sessions_in_txn(…, None, REASON_ADMIN_KICK, …)`（不動 `sys_user` 任何欄）→ 稽核 `kick`（`{id, userName}`）→ `finish_user_write`（名單 `admin_kick`）；回 `0000`＋`{revoked: n}`；測試：被踢者兩會話下一次請求皆 `7777`＋`auth.session.kickedByAdmin`、重登成功、已輪替列不動、零 active 亦成功並落稽核（⑤ 空格）、② 空格（第二個持 R_SUPER 之自建帳號踢 Super 成功）、已刪標的 `notFound`、本人拒
-- [ ] T054 [US3] resetUserPassword 接真（data-model §3.7、§2.3；`contracts/wire-user-admin.md` 端點 9；research R11 決定 2；spec FR-035；依 T050）：`ResetPasswordReq { id, password }`（不 derive `Debug`、手寫遮蔽＋一案）；外殼 `begin` → `NewPassword::prepare` → advisory(id) → ① 鎖現役列 → ② 空格（seed 帳號可重設）→ ③ `id = 操作者`〔`cannotResetSelfPassword`〕→ ④ `guard_no_escalation(Some(id), N＝T)` → ⑤-a 政策（帳號名＝鎖內列；`password_policy_err`）→ ⑤-b `cooldown_remaining_secs(標的, 操作者)`（`Some(n)`＝`pwd_set_too_frequent_err(n)`）→ 寫：`set_password`（PHC＋`updated_*`）→ `sys_pwd_custody::touch(標的, 操作者)` → `revoke_sessions_in_txn(…, None, REASON_PASSWORD_RESET, …)` → 稽核 `reset_password`（`{id, userName}`）→ `finish_user_write`（名單 `revoked`）；回 `data: null`（永不回傳密碼）；測試：政策 BizData data 形、冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`、容忍牆鐘回撥＝LL-00054；不同操作者互不影響；冷卻 0＝停用）、② 空格（Super 重設 seed Admin 成功、測後 `SeedUserRestoreGuard` 還原）、★addUser 冷卻格空格釘（addUser 後同操作者於冷卻內 resetUserPassword 該帳號得 `pwdSetTooFrequent`＝初始密碼計入）、舊會話 `8888`、新密登入成功、已輪替列不動、已刪 `notFound`、本人拒；源碼掃描案名冊之呼叫點涵蓋本支
-- [ ] T055 [US1] updateUserSessionPolicy 接真（data-model §3.8；`contracts/wire-user-admin.md` 端點 10；research R8 第 10 款；spec FR-018；依 T050）：`UpdateSessionPolicyReq { id, session_policy: Option<String> }`；advisory(id) → ① 鎖現役列〔`notFound`；body 缺席之 id 0〕→ ②③ 空格（本人可改）→ ④ `guard_no_escalation(Some(id), N＝T)`（端點屬封死集、生產恆過、仍掛）→ ⑤-a 必填三值收斂（缺席、null、空字串或 `SessionPolicy::parse` 值域外〔大小寫敏感、不 trim〕＝`sessionPolicyInvalid`）→ ⑤-b 同現值＝no-op（值 diff；本端點無全缺席早退）→ 寫：`set_session_policy`（＋`updated_*`）→ 稽核 `update` → commit；零撤票（`single` 下次登入生效）；測試：三值收斂各形、同值 no-op、本人改本人成功、④ 負向以測內資料列授權繞過封死集而釘、已刪 `notFound`、改 `single` 不即時踢
-- [ ] T056 [P] [US2] 登入第⑤步併發案與碼註（research R7 第 4 款「login」列、R22；`rust-api/server/src/handler/auth/login.rs`）：併發案＝同帳號之停用、刪除、重設與登入交錯——登入首動作 advisory(uid) ⇒ 與寫端排成單列、第⑤步鎖內三前提看得見已 commit 之停用（`1000`）、反序則撤票迴圈撈得到登入剛插之票；本檔指單一會話被擠下之「踢除」碼註 3 處改「頂替」（research R22「踢除」種子）
-- [ ] T057 [US2] 契約（U10 三支與三向分派；`contracts/msg-keys.md` §5；依 T053～T055）：`user_msgs_real_db` 補 `cannotKickSelf`（kickUser `{id:1}`）、`cannotResetSelfPassword`（resetUserPassword `{id:1}`）、`sessionPolicyInvalid`（自建帳號、值域外字面）、`pwdSetTooFrequent`（以 `PwdCustodyWriteGuard` 登記並植〔自建帳號, Super〕經手列〔時戳＝當下〕後 resetUserPassword 一次＝首發即拒、零業務寫入；data `1 ≤ remainingSeconds ≤ 60`）；`observed_msgs_real_db` 於既有被踢腿旁增 `auth.session.kickedByAdmin` 一發（失效名單先種 `REASON_ADMIN_KICK`、同 sid 真票再打 Authed 端點 ⇒ `7777`＋本鍵；鍵自 sid 產生處即交 `CacheKeysGuard`、案末顯式 drop 後就地斷言零殘）；`biz.role.protectedGrant` 之本刀發出點（`contracts/msg-keys.md` §1.4；spec US4 AS6 前半）：Super 票打 updateRoleEndpoints、對 R_ADMIN 以其現況＋updateUserSessionPolicy 之（路徑, 方法）＝seed 政策列 68 提交 ⇒ `2222`＋本鍵、`data` null、R_ADMIN 名下授權列逐欄不動（零變更；形同既有「R_ADMIN 現況＋封死集成員」提交案）；包含規則三支各兩負一正；拒寫案清單與源碼次序釘擴三支；授權態矩陣收緊（Super 空 body：三支皆 `notFound`、零變更）。**DoD：容器內全量 serial 綠；`python3 tools/msg-key-gate.py check` 綠（`pwdSetTooFrequent` 之構造點恰一與佔位符對賬生效）；`python3 tools/schema-gate.py check` 綠**
+- [ ] T053 [US2] kickUser 接真（data-model §3.6；`contracts/wire-user-admin.md` 端點 8；research R8 第 2 款表、R10 第 5 款；spec FR-027；依 T050、T052）：`KickRes { revoked: usize }`（計數、不入 2^53 守衛面）；advisory(id) → ① 鎖現役列（停用照鎖）〔`notFound`〕→ ② 空格 → ③ `id = 操作者`〔`cannotKickSelf`〕→ ④ `guard_no_escalation(Some(id), N＝T)` → ⑤ 空格 → 寫：`revoke_sessions_in_txn(…, None, REASON_ADMIN_KICK, …)`（不動 `sys_user` 任何欄）→ 稽核 `kick`（`{id, userName}`）→ `finish_user_write`（名單 `admin_kick`）；回 `0000`＋`{revoked: n}`；測試：被踢者兩會話下一次請求皆 `7777`＋`auth.session.kickedByAdmin`、重登成功、已輪替列不動、零 active 亦成功並落稽核（⑤ 空格）、② 空格（第二個持 R_SUPER 之自建帳號踢 Super 成功）、已刪標的 `notFound`、本人拒、停用中標的帶殘留會話（自建帳號 `status=2`、直植兩張 active 票）踢除 ⇒ `0000`＋`{revoked: 2}`、兩票轉 `revoked`、`session_event` 兩列 `revoked`／`admin_kick`、名單 `admin_kick`、稽核 `kick` 一列、正常標的踢除之 `session_event` 恰 n 列 `revoked`／`admin_kick` 且稽核 `kick` 恰一列（`{id, userName}`）；測試補：先序一案＝操作者自身另持一停用自建角色（T 含停用角色而 T⊄A）時對本人 kickUser＝`cannotKickSelf`（③先於④）；各格負向案逐案斷言零變更（票仍 active、零會話事件、名單零新鍵）與水位窗零稽核
+- [ ] T054 [US3] resetUserPassword 接真（data-model §3.7、§2.3；`contracts/wire-user-admin.md` 端點 9；research R11 決定 2；spec FR-035；依 T050）：`ResetPasswordReq { id, password }`（不 derive `Debug`、手寫遮蔽＋一案）；外殼 `begin` → `NewPassword::prepare` → advisory(id) → ① 鎖現役列 → ② 空格（seed 帳號可重設）→ ③ `id = 操作者`〔`cannotResetSelfPassword`〕→ ④ `guard_no_escalation(Some(id), N＝T)` → ⑤-a 政策（帳號名＝鎖內列；`password_policy_err`）→ ⑤-b `cooldown_remaining_secs(標的, 操作者)`（`Some(n)`＝`pwd_set_too_frequent_err(n)`）→ 寫：`set_password`（PHC＋`updated_*`）→ `sys_pwd_custody::touch(標的, 操作者)` → `revoke_sessions_in_txn(…, None, REASON_PASSWORD_RESET, …)` → 稽核 `reset_password`（`{id, userName}`）→ `finish_user_write`（名單 `revoked`）；回 `data: null`（永不回傳密碼）；測試：政策 BizData data 形、冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`、容忍牆鐘回撥＝LL-00054；不同操作者互不影響；冷卻 0＝停用）、② 空格（Super 重設 seed Admin 成功、測後 `SeedUserRestoreGuard` 還原）、★addUser 冷卻格空格釘（addUser 後同操作者於冷卻內 resetUserPassword 該帳號得 `pwdSetTooFrequent`＝初始密碼計入）、舊會話 `8888`、新密登入成功、已輪替列不動、已刪 `notFound`、本人拒；源碼掃描案名冊之呼叫點涵蓋本支、成功回應本體逐位元＝`{"data":null,"code":"0000","msg":"common.success"}`（不含新密碼明文與 `$argon2`）、`reset_password` 稽核列 `payload_after` 鍵集恰 {`id`, `userName`} 且全文不含新密碼明文樣本與 `$argon2`、`session_event` 恰 n 列 `revoked`／`password_reset`、`password_forbid_username` 設 on（設定列守衛還原）時以標的帳號名之大小寫異形重設＝`2222`＋`violations` 含 `forbidUsername`、以操作者帳號名重設則不含（帳號名取鎖內標的列）、重設後以舊換發票打 refreshToken ⇒ `8888`＋`auth.session.reLogin`（revoked 腿）且零新票、`session_event` 不增列、`test_kit::capture` 包住政策拒與冷卻拒兩腿＝輸出不含密碼樣本字面與 `$argon2`、政策即時生效案（同 T042 形、以 11 字密碼重設）；測試補：被撤 sid 之失效名單值逐枚＝`revoked`；先序一案＝操作者自身另持一停用自建角色時對本人 resetUserPassword＝`cannotResetSelfPassword`（③先於④）；各格負向案逐案斷言零變更（密碼雜湊、經手表、票面不動、零會話事件）與水位窗零稽核
+- [ ] T055 [US1] updateUserSessionPolicy 接真（data-model §3.8；`contracts/wire-user-admin.md` 端點 10；research R8 第 10 款；spec FR-018；依 T050）：`UpdateSessionPolicyReq { id, session_policy: Option<String> }`；advisory(id) → ① 鎖現役列〔`notFound`；body 缺席之 id 0〕→ ②③ 空格（本人可改）→ ④ `guard_no_escalation(Some(id), N＝T)`（端點屬封死集、生產恆過、仍掛）→ ⑤-a 必填三值收斂（缺席、null、空字串或 `SessionPolicy::parse` 值域外〔大小寫敏感、不 trim〕＝`sessionPolicyInvalid`）→ ⑤-b 同現值＝no-op（值 diff；本端點無全缺席早退）→ 寫：`set_session_policy`（＋`updated_*`）→ 稽核 `update` → commit；零撤票（`single` 下次登入生效）；測試：三值收斂各形、同值 no-op、本人改本人成功、④ 負向以測內資料列授權繞過封死集而釘、已刪 `notFound`、改 `single` 不即時踢、② 空格釘＝Super 對 seed 帳號 Admin（id 2）改為異值 ⇒ `0000`、值寫入並落稽核 `update` 一列（`SeedUserRestoreGuard` 還原）；測試補：`sessionPolicy` 收斂各形逐形一發——缺席（body 只帶 `id`；本端點無全缺席早退）、`null`、空字串、大小寫異形 `Single`、前後空白 ` single` ⇒ 皆 `2222 biz.user.sessionPolicyInvalid`、零寫入、水位窗零稽核；「本人改本人成功」案明定操作者＝Super、標的＝id 1；各格負向案逐案斷言零變更；同值 no-op 案斷言 `0000`、水位窗零新列、`session_policy`／`updated_at`／`updated_by` 與列版本（`xmin`）皆不變、零撤票
+- [ ] T056 [P] [US2] 登入第⑤步併發案與碼註（research R7 第 4 款「login」列、R22；`rust-api/server/src/handler/auth/login.rs`）：併發案＝同帳號之停用、刪除、重設與登入交錯——登入首動作 advisory(uid) ⇒ 與寫端排成單列、第⑤步鎖內三前提看得見已 commit 之停用（`1000`）、反序則撤票迴圈撈得到登入剛插之票；鎖內密碼比對：resetUserPassword 先 commit ⇒ 其後取得 advisory 之登入以舊密碼於第⑤步鎖內比對落空＝`1000`、以新密碼成功；登入先取 advisory ⇒ 重設等鎖後撤票迴圈撤掉登入剛插之票（該票下一次請求 `8888`）；本檔指單一會話被擠下之「踢除」碼註 3 處改「頂替」（research R22「踢除」種子）
+- [ ] T057 [US2] 契約（U10 三支與三向分派；`contracts/msg-keys.md` §5；依 T053～T055）：`user_msgs_real_db` 補 `cannotKickSelf`（kickUser `{id:1}`）、`cannotResetSelfPassword`（resetUserPassword `{id:1}`）、`sessionPolicyInvalid`（自建帳號、值域外字面）、`pwdSetTooFrequent`（以 `PwdCustodyWriteGuard` 登記並植〔自建帳號, Super〕經手列〔時戳＝當下〕後 resetUserPassword 一次＝首發即拒、零業務寫入；data `1 ≤ remainingSeconds ≤ 60`）；`observed_msgs_real_db` 於既有被踢腿旁增 `auth.session.kickedByAdmin` 一發（失效名單先種 `REASON_ADMIN_KICK`、同 sid 真票再打 Authed 端點 ⇒ `7777`＋本鍵；鍵自 sid 產生處即交 `CacheKeysGuard`、案末顯式 drop 後就地斷言零殘）；`biz.role.protectedGrant` 之本刀發出點（`contracts/msg-keys.md` §1.4；spec US4 AS6 前半）：Super 票打 updateRoleEndpoints、對 R_ADMIN 以其現況＋updateUserSessionPolicy 之（路徑, 方法）＝seed 政策列 68 提交 ⇒ `2222`＋本鍵、`data` null、R_ADMIN 名下授權列逐欄不動（零變更；形同既有「R_ADMIN 現況＋封死集成員」提交案）；包含規則三支各兩負一正；拒寫案清單與源碼次序釘擴三支；授權態矩陣收緊（Super 空 body：三支皆 `notFound`、零變更）；稽核落列失敗＝整筆不生效（同 T044 形）：kickUser、resetUserPassword、updateUserSessionPolicy 各一發 ⇒ 皆 `5000`、票仍 active、密碼雜湊與 `session_policy` 不動、經手表零新列、窗內零 `session_event` 零稽核、失效名單零新鍵；同一請求重送即 `0000`；同級互管正向：甲、乙同持同一自建角色 R（R 授 kickUser），甲之票打 kickUser `{id:乙}` ⇒ `0000`、乙之票下一請求 `7777`＋`auth.session.kickedByAdmin`、窗內恰一列 `kick` 且 `created_by`＝甲 uid；包含規則三支兩負一正明定同 T049 形：①對持 R_SUPER 之標的（以資料列指派 R_SUPER 予自建標的）②標的持操作者未持之自建角色 ⇒ 皆 `5003`、零變更零稽核零撤票（updateUserSessionPolicy 以測內資料列授權繞過封死集）；一正＝Super（只持 R_SUPER）對持其未持之自建角色之標的成功；停用角色計入 T 一案。**DoD：容器內全量 serial 綠；`python3 tools/msg-key-gate.py check` 綠（`pwdSetTooFrequent` 之構造點恰一與佔位符對賬生效）；`python3 tools/schema-gate.py check` 綠**
 
 **Checkpoint（U10）**: 踢除、重設、會話政策上線、`MSG_KEYS` 64、變體 11、生產 `BizData` 構造點恰兩、授權判定三向分派；兩子庫 commit → 外層一顆雙 pin bump＋generate
 
@@ -217,7 +218,7 @@ description: "Task list for 007-user-password-admin"
 
 **Independent Test**: 帳號被停用、刪除或其列已不存在時，以仍有效之換發票換發 ⇒ `8888`、零寫；失效名單寫入失敗時被撤者至多續通至 access 到期、換發即被擋（quickstart §5；US2 場景 5、6）。
 
-- [ ] T058 [US2] `rust-api/server/src/handler/auth/refresh.rs` 活性重驗與三向分派（research R10 第 6～8 款；data-model §2.2；spec FR-028、FR-029；先寫測試）：active 腿於票列 `FOR UPDATE` 與 idle 判定之後、DB 現查角色與簽發之前以 `sys_user::find_by_id(&txn, claims.uid)`（plain、不 `FOR UPDATE`、不取 advisory）重驗——`status == Some(1) && deleted_at.is_none()` 才放行、查無列＝不活、不活＝rollback＋`8888`（本腿唯一拒絕出口、零寫入）；revoked 腿三向（`kicked`→`ModalLogout`、`admin_kick`→`ModalLogoutByAdmin`、其餘→`Logout`；讀名單 `Err`＝靜默 `8888`）；grace 腿不重驗＝已知殘窗（碼註載明）；模組 doc「★兩件不搬：鎖內活性重驗…」與「票主不必在 `sys_user` 有列」改現在式（research R22「不搬」「`` rev5:007` 增量``」種子；不援用 `rev5:` 碼註「票列因競態而漏撤」之理由）；測試：停用、軟刪、查無列三形拒（零寫、事件與名單不動）、revoked 腿三向各臂、落點源序釘（票列 `FOR UPDATE` 之後、`find_by_id(&txn` 早於 `sign_pair`）、失效名單寫入失敗注入（被撤者以既有存取權杖續打至多至 `access_secs`、換發被兩層擋下＝US2 場景 6）
+- [ ] T058 [US2] `rust-api/server/src/handler/auth/refresh.rs` 活性重驗與三向分派（research R10 第 6～8 款；data-model §2.2；spec FR-028、FR-029；先寫測試）：active 腿於票列 `FOR UPDATE` 與 idle 判定之後、DB 現查角色與簽發之前以 `sys_user::find_by_id(&txn, claims.uid)`（plain、不 `FOR UPDATE`、不取 advisory）重驗——`status == Some(1) && deleted_at.is_none()` 才放行、查無列＝不活、不活＝rollback＋`8888`（本腿唯一拒絕出口、零寫入）；revoked 腿三向（`kicked`→`ModalLogout`、`admin_kick`→`ModalLogoutByAdmin`、其餘→`Logout`；讀名單 `Err`＝靜默 `8888`）；grace 腿不重驗＝已知殘窗（碼註載明）；模組 doc「★兩件不搬：鎖內活性重驗…」與「票主不必在 `sys_user` 有列」改現在式（research R22「不搬」「`` rev5:007` 增量``」種子；不援用 `rev5:` 碼註「票列因競態而漏撤」之理由）；測試：停用、軟刪、查無列三形拒（零寫、事件與名單不動）、revoked 腿三向各臂、落點源序釘（票列 `FOR UPDATE` 之後、`find_by_id(&txn` 早於 `sign_pair`）、失效名單寫入失敗注入（被撤者以既有存取權杖續打至多至 `access_secs`、換發被兩層擋下＝US2 場景 6）、踢除態重放已輪替舊票（植鏈 rotated＋active、以 `revoke_all_of_user` 撤 active 並種名單 `admin_kick`、DEL grace 鍵後重放 rotated 票）⇒ 走既有重用偵測（`8888`＋`auth.session.reLogin`、恰一列 `reuse` 事件、鏈全 `revoked`）、不得落 revoked 腿之 `7777`、源碼掃描案（三形聯集＝RL-0026、各附變異自證＝RL-0080）：`handler/auth/refresh.rs` 生產面 `advisory_lock_user` 零命中、`_for_update(` 恰一處（`sys_token::find_by_hash_for_update`）且活性重驗段零 `for_update`／`FOR UPDATE`；`auth/enforce.rs` 生產面 `sys_user::` 零命中（不新增每請求活性判定）；測試補：直改庫停用自建帳號（票與失效名單皆不動）構造「票仍有效而帳號不活」⇒ 既有存取權杖打一般 Authed 端點與 `getUserInfo` 皆 `0000`（零每請求活性判定之反向確認）、換發＝`8888`
 - [ ] T059 [US2] 換發與登出 fixture 改植（research R10 第 9 款；`contracts/code-gates.md` §5.2；依 T058）：`rust-api/server/src/handler/auth/refresh.rs` 斷言換發 `0000` 之十案（`refresh_active_rotates_to_new_pair_marks_rows_and_reads_ttl_current_value`、`refresh_second_presentation_within_grace_returns_identical_pair`、`refresh_grace_miss_triggers_reuse_revokes_family_audits_and_denylists`、`refresh_concurrent_same_token_one_rotates_one_graces_no_reuse_no_5000`、`refresh_grace_written_before_commit_while_row_lock_still_held`、`refresh_grace_read_error_fails_secure_into_reuse`、`refresh_activity_within_idle_window_rotates_with_zero_idle_side_effects`、`refresh_idle_threshold_follows_current_idle_timeout_setting`〔兩票主〕、`refresh_last_activity_read_error_fails_open_and_still_rotates`、`refresh_behind_proxy_serves_overflowing_chain_and_audits_trust_anchor_source`）與 `rust-api/server/src/handler/auth/logout.rs` 之 `logout_rotated_ticket_is_noop_and_active_successor_logout_revokes_only_that_row`：票主改植顯式 id 之活性 `sys_user` 列（沿既有合成 uid `9_300_000_1xx` 常數、不觸序列；`password` 植不可驗之佔位 PHC〔執行期組字＝RL-0054〕）、由 `UserRowsGuard` 清（合成 uid 落界上＝無條件清）；其餘十案零改；如需植列輔件落 `rust-api/server/src/model/facade/test_kit.rs`。**DoD：二十案＋登出案全綠；容器內全量 serial 綠**
 
 **Checkpoint（U11）**: 斷權第二層在場（停用／刪除／查無三形換發即 `8888`）、換發三向分派；rust-api commit → 外層 pin bump＋generate
@@ -232,11 +233,11 @@ description: "Task list for 007-user-password-admin"
 
 - [ ] T060 [US3] `rust-api/server/src/error.rs` 四鍵 `BIZ_USER_PASSWORD_CONFIRM_MISMATCH`／`BIZ_USER_CHANGE_PASSWORD_THROTTLED`／`BIZ_USER_OLD_PASSWORD_MISMATCH`／`BIZ_USER_PASSWORD_SAME_AS_OLD`（`contracts/msg-keys.md` §1.1 #19～#22）＋`MSG_KEYS` 64→68（型長終值）＋§4.3 測試與 doc（`changePasswordThrottled` 之構造點住 `handler::user_center`＝節流預檢回 `Result<(), Throttled>`、拒因由 handler 構造）
 - [ ] T061 [P] [US3] base-web i18n 四處補四鍵（`base-web/src/locales/langs/{en-us,zh-cn,zh-tw}.ts`＋`base-web/src/typings/app.d.ts`；同 T040 落點與出口斷言；零佔位符）
-- [ ] T062 [P] [US3] 改密節流與降級源（research R11 決定 3；data-model §2.4；`contracts/code-gates.md` §7.2；ADR-00078；先寫測試）：`rust-api/server/src/cache/mod.rs` 增 `CHANGE_PWD_KEY_PREFIX`（`cpwd:`）＋公開 builder `change_pwd_key(uid)`（單點渲染；tests crate 可用）＋`incr_with_window`（atomic pipeline `INCR`＋`EXPIRE`；原子形實作期定＝research R25）＋檔頭「`cpwd:` 前綴、`incr_with_window`…不帶」改現在式（research R22「後刀」種子）、前綴 doc 一句指 ADR-00078；新建 `rust-api/server/src/throttle/change_pwd.rs`（碼內常數 `CHANGE_PWD_MAX_FAILS`＝5、`CHANGE_PWD_WINDOW_SECS`＝900；`precheck(cache, uid) -> Result<(), Throttled>` 純讀、計數 ≥5＝`Err`、桶值不可解析視同 0；`record_failure`〔每次失敗刷回 900 秒〕；`clear`〔`DEL`〕；三支 redis `Err` 一律放行＝先落一則結構化 error〔target `security.throttle`、欄 `step`／`error`〕再經既有 `throttle::warn_degraded("redis_change_pwd")`；快取缺席放行不計；模組 doc 一句指 ADR-00078）；`rust-api/server/src/throttle/mod.rs` 宣告子模組、檔頭「快取層在本模組只承載兩種鍵」補射程限定、`warn_degraded` doc「十值」→十一值、「其餘九源皆在本模組」→「其餘十源皆在本模組樹（含 `change_pwd`）」、測試 `warn_degraded_increments_each_of_the_ten_sources` 改名 `…_eleven_sources` 與其 doc／訊息／長度斷言；`rust-api/server/src/obs.rs` 之 `THROTTLE_DEGRADED_SOURCES` `[&str; 10]`→`[&str; 11]`（末位 `redis_change_pwd`、預註冊 0）、常數 doc「恰十」→恰十一、「本常數逐字照抄」與測試訊息改述為「前十值＝004 刀 data-model §5 逐字、第十一值 007 刀增」、檔頭「十值」句與 004 刀 U9 歸因句補本刀、`pre_register_renders_throttle_degraded_ten_sources_explicit_zero` 改名與期望值；`rust-api/server/src/lib.rs` crate doc「降級十源」改十一源（research R22「恰十」「十源」「十值」種子）；發射掃描案已知發射點補 `throttle/change_pwd.rs`；名冊→發射端＝以 `test_kit::bad_cache()` 對三支各打一次；告警 `obs016-throttle-degraded` 零改動（無 source selector）
+- [ ] T062 [P] [US3] 改密節流與降級源（research R11 決定 3；data-model §2.4；`contracts/code-gates.md` §7.2；ADR-00078；先寫測試）：`rust-api/server/src/cache/mod.rs` 增 `CHANGE_PWD_KEY_PREFIX`（`cpwd:`）＋公開 builder `change_pwd_key(uid)`（單點渲染；tests crate 可用）＋`incr_with_window`（atomic pipeline `INCR`＋`EXPIRE`；原子形實作期定＝research R25）＋檔頭「`cpwd:` 前綴、`incr_with_window`…不帶」改現在式（research R22「後刀」種子）、前綴 doc 一句指 ADR-00078；新建 `rust-api/server/src/throttle/change_pwd.rs`（碼內常數 `CHANGE_PWD_MAX_FAILS`＝5、`CHANGE_PWD_WINDOW_SECS`＝900；`precheck(cache, uid) -> Result<(), Throttled>` 純讀、計數 ≥5＝`Err`、桶值不可解析視同 0；`record_failure`〔每次失敗刷回 900 秒〕；`clear`〔`DEL`〕；三支 redis `Err` 一律放行＝先落一則結構化 error〔target `security.throttle`、欄 `step`／`error`〕再經既有 `throttle::warn_degraded("redis_change_pwd")`；快取缺席放行不計；模組 doc 一句指 ADR-00078）；`rust-api/server/src/throttle/mod.rs` 宣告子模組、檔頭「快取層在本模組只承載兩種鍵」補射程限定、`warn_degraded` doc「十值」→十一值、「其餘九源皆在本模組」→「其餘十源皆在本模組樹（含 `change_pwd`）」、測試 `warn_degraded_increments_each_of_the_ten_sources` 改名 `…_eleven_sources` 與其 doc／訊息／長度斷言；`rust-api/server/src/obs.rs` 之 `THROTTLE_DEGRADED_SOURCES` `[&str; 10]`→`[&str; 11]`（末位 `redis_change_pwd`、預註冊 0）、常數 doc「恰十」→恰十一、「本常數逐字照抄」與測試訊息改述為「前十值＝004 刀 data-model §5 逐字、第十一值 007 刀增」、檔頭「十值」句與 004 刀 U9 歸因句補本刀、`pre_register_renders_throttle_degraded_ten_sources_explicit_zero` 改名與期望值；`rust-api/server/src/lib.rs` crate doc「降級十源」改十一源（research R22「恰十」「十源」「十值」種子）；發射掃描案已知發射點補 `throttle/change_pwd.rs`；名冊→發射端＝以 `test_kit::bad_cache()` 對三支各打一次；告警 `obs016-throttle-degraded` 零改動（無 source selector）；測試：`record_failure` 後鍵 TTL∈(0, 900]、再失敗刷回 900、以 `EXPIRE` 將鍵壽命改 1 秒待其過期後 `precheck` 放行（窗自癒）
 - [ ] T063 [US3] `Identity.sid`（research R12 決定 3；先改型使編譯器列出構造點）：`rust-api/server/src/auth/mod.rs` 之 `Identity` 增 `sid: String`＋模組 doc「恰兩欄」與 `Identity` doc「第三欄 `sid` 屬後刀域」改現在式；注入點唯一＝`rust-api/server/src/auth/enforce.rs` 之 `enforce_mw` 放行後 `insert(Identity { … })`、值取 `claims.sid`（`jwt::Claims` 必填欄＝`sys_token.rotation_chain`）；`enforce.rs` 檔頭與模組註之 `Identity.sid` 半改現在式；測試構造點 10 處（`rust-api/server/src/handler/{menu,policy_archive,role,system_settings,throttle}.rs`；由編譯器逐處列出＝RL-0026）補欄；`rev5:` 舊形「標頭再驗章取 sid」不帶；活書 06／08 注入形補 `sid` 歸 U21、ADR-00014 後果段「注入形不變」由 ADR-00077 註記（body 不改）
-- [ ] T064 [US3] 個人中心兩端點接真（`contracts/wire-user-center.md` 端點 1、2；data-model §3.9；research R12 決定 1、2；spec FR-036～FR-038；依 T060、T062、T063）：`rust-api/server/src/handler/user_center.rs` 替換兩支空殼；私有 `operator_from`（拒寫訊息＝「個人中心寫端取不到操作者來源 → 拒寫 5000（不以佔位位址補稽核列）」、target `security.user_center`、不帶 degraded 欄）、`BODY_FALLBACK_MSG`（「個人中心寫端 body 取用失敗——收斂成空請求交守門判」）、私有 `db_failure`；getPasswordPolicy＝`load_policy(&state.db)` 經唯一投影路徑 `impl From<PasswordPolicy> for PasswordPolicyView`（恰七鍵、不含冷卻秒數與位元組上界；唯讀零鎖零交易零稽核；不計矛盾數）；changePassword＝`ChangePasswordReq { old_password, new_password, confirm_password }`（不 derive `Debug`、手寫遮蔽三欄＋一案）→ 上下文 → body 三欄缺席＝空字串 → `change_pwd::precheck(uid)`（begin 前純讀、結果暫持）→ `begin` → `NewPassword::prepare(newPassword)` → C1 advisory(uid)＋鎖現役列〔`notFound`〕→ C2 兩次一致〔`passwordConfirmMismatch`〕→ C3 precheck 已達門檻〔`changePasswordThrottled`、零推進、零 verify〕→ C4 鎖內 `password::verify(oldPassword, 列.password)`〔`oldPasswordMismatch`；rollback 後 `record_failure`＝唯一推進腿〕→ C5 新＝舊〔`passwordSameAsOld`、零額外 argon2〕→ C6 政策（`password_policy_err`；帳號名取鎖內列）→ C7 冷卻（本人, 本人）（`pwd_set_too_frequent_err`）→ 寫：`set_password`（`updated_by`＝本人）→ `sys_pwd_custody::touch(uid, uid)` → `handler::user::revoke_sessions_in_txn(…, Some(&identity.sid), REASON_PASSWORD_CHANGED, …)` → 稽核 `change_password`（`{id, userName}`、`created_by`＝本人）→ `handler::user::finish_user_write`（他 sid 名單 `revoked`）→ commit 後 `change_pwd::clear(uid)`；回 `data: null`；名冊同批（★漏列不轉紅）：`rust-api/server/src/handler/common.rs` 之 `each_domain_keeps_its_own_log_literals` 加 `user_center.rs` 列、`rust-api/server/src/handler/ip_rule.rs` 之 `production_code_emits_no_degraded_field` 射程加 `user_center.rs`（錨＝行首 `fn operator_from(`）、`model/password.rs` 源碼掃描案名冊擴 `handler/user_center.rs`、寫端源碼次序釘擴本支；`docs/ops/RUNBOOK.md` target 列舉補 `security.user_center`；測試：C1～C7 各負向、第 6 次於比對前拒、其餘拒因不推進、成功即清（commit 後）、fail-open＋`throttle_degraded_total{source="redis_change_pwd"}` 增一、撤他保留當前（當前裝置續通、他裝置 `8888`）、冷卻 (uid, uid)、`getPasswordPolicy` seed 例逐位元、政策矛盾下照值投影（不拒）；改密之 `cpwd:` 鍵一律以 `RedisKeysGuard::track(cache::change_pwd_key(uid))` 先登記再寫
+- [ ] T064 [US3] 個人中心兩端點接真（`contracts/wire-user-center.md` 端點 1、2；data-model §3.9；research R12 決定 1、2；spec FR-036～FR-038；依 T060、T062、T063）：`rust-api/server/src/handler/user_center.rs` 替換兩支空殼；私有 `operator_from`（拒寫訊息＝「個人中心寫端取不到操作者來源 → 拒寫 5000（不以佔位位址補稽核列）」、target `security.user_center`、不帶 degraded 欄）、`BODY_FALLBACK_MSG`（「個人中心寫端 body 取用失敗——收斂成空請求交守門判」）、私有 `db_failure`；getPasswordPolicy＝`load_policy(&state.db)` 經唯一投影路徑 `impl From<PasswordPolicy> for PasswordPolicyView`（恰七鍵、不含冷卻秒數與位元組上界；唯讀零鎖零交易零稽核；不計矛盾數）；changePassword＝`ChangePasswordReq { old_password, new_password, confirm_password }`（不 derive `Debug`、手寫遮蔽三欄＋一案）→ 上下文 → body 三欄缺席＝空字串 → `change_pwd::precheck(uid)`（begin 前純讀、結果暫持）→ `begin` → `NewPassword::prepare(newPassword)` → C1 advisory(uid)＋鎖現役列〔`notFound`〕→ C2 兩次一致〔`passwordConfirmMismatch`〕→ C3 precheck 已達門檻〔`changePasswordThrottled`、零推進、零 verify〕→ C4 鎖內 `password::verify(oldPassword, 列.password)`〔`oldPasswordMismatch`；rollback 後 `record_failure`＝唯一推進腿〕→ C5 新＝舊〔`passwordSameAsOld`、零額外 argon2〕→ C6 政策（`password_policy_err`；帳號名取鎖內列）→ C7 冷卻（本人, 本人）（`pwd_set_too_frequent_err`）→ 寫：`set_password`（`updated_by`＝本人）→ `sys_pwd_custody::touch(uid, uid)` → `handler::user::revoke_sessions_in_txn(…, Some(&identity.sid), REASON_PASSWORD_CHANGED, …)` → 稽核 `change_password`（`{id, userName}`、`created_by`＝本人）→ `handler::user::finish_user_write`（他 sid 名單 `revoked`）→ commit 後 `change_pwd::clear(uid)`；回 `data: null`；名冊同批（★漏列不轉紅）：`rust-api/server/src/handler/common.rs` 之 `each_domain_keeps_its_own_log_literals` 加 `user_center.rs` 列、`rust-api/server/src/handler/ip_rule.rs` 之 `production_code_emits_no_degraded_field` 射程加 `user_center.rs`（錨＝行首 `fn operator_from(`）、`model/password.rs` 源碼掃描案名冊擴 `handler/user_center.rs`、寫端源碼次序釘擴本支；`docs/ops/RUNBOOK.md` target 列舉補 `security.user_center`；測試：C1～C7 各負向、第 6 次於比對前拒、其餘拒因不推進、成功即清（commit 後）、fail-open＋`throttle_degraded_total{source="redis_change_pwd"}` 增一、撤他保留當前（當前裝置續通、他裝置 `8888`）、冷卻 (uid, uid)、`getPasswordPolicy` seed 例逐位元、政策矛盾下照值投影（不拒）；改密之 `cpwd:` 鍵一律以 `RedisKeysGuard::track(cache::change_pwd_key(uid))` 先登記再寫；測試補：先序兩案（兩次不一致且舊密錯＝`passwordConfirmMismatch`、節流桶不推進；舊密正確且新＝舊而新值違反現行政策＝`passwordSameAsOld`）、C6 政策拒（舊密正確、新≠舊、新密短於下限）後密碼雜湊未變、零 `change_password` 稽核列、零 `password_changed` 會話事件、他會話票仍 `active`、經手表 (uid, uid) 零列、成功改密之稽核 `change_password` 恰一列（`created_by`＝本人、`payload_after` 鍵集恰 {`id`, `userName`}）且他 sid 之 `session_event` 各一列 `revoked`／`password_changed`、當前 sid 零列、成功回應本體逐位元＝`{"data":null,"code":"0000","msg":"common.success"}`、`test_kit::capture` 包住舊密錯與政策拒兩腿＝輸出不含三欄明文樣本與 `$argon2`、政策即時生效案（同 T042 形）；測試補：body 另帶 `"id":<自建帳號 B 之 id>`（舊密碼取登入者本人正確值）⇒ `0000`、本人密碼已變，B 之 `password`／`updated_*` 逐欄不變且其會話零撤銷、`change_password` 稽核列 `entity_id`＝登入者 uid；先序第三案＝舊密錯且新密違政策 ⇒ `oldPasswordMismatch`；C1（直改庫軟刪而票與名單不動、以其存取權杖打＝`notFound`）、C7（冷卻）兩拒腿各案末復核零寫入——密碼雜湊與 `updated_*` 不動、經手表無 (uid, uid) 新增或改寫、本人他票未撤、零 `session_event`、水位窗零稽核；植 (uid, Super) 經手列後本人改密成功 ⇒ 該列仍在且 `created_at` 不變、(uid, uid) 列時戳為本次（只 upsert、不做自改即全刪＝rev4 防回歸）；`validate_against_policy(` 生產呼叫點源碼掃描案（三形聯集＝RL-0026；扣定義與測試模組）：命中檔集恰 {`handler/user.rs`, `handler/user_center.rs`}、他檔零命中（暫於他檔植一呼叫即紅＝RL-0080）；`password_forbid_username` 設 on（設定列守衛還原）時自建帳號名取 ≥8 字元、新密取其大小寫異形 ⇒ `2222`＋`violations` 恰 `["forbidUsername"]`、密碼雜湊未變（帳號名取鎖內列）；政策矛盾（設定列守衛暫植 `password_min_length` 20／`password_max_length` 10、測後還原）下 addUser、resetUserPassword、changePassword 各一發皆 `2222 biz.user.passwordPolicy`、零寫入，`password_policy_invalid_total` 區域 recorder 各增恰 1；`change_pwd::clear(` 生產呼叫點源碼掃描案（三形聯集＝RL-0026；扣 `#[cfg(test)]`）：恰一處且位於 `handler/user_center.rs` 之 changePassword、`handler/throttle.rs` 生產面零 `change_pwd::`（於 unlockLogin 帳號維植一呼叫即紅＝RL-0080；無解鎖端點）；鍵分離：以錯舊密打 changePassword 五次後 `sys_login_attempt` 該帳號零新列且該帳號照常登入 `0000`、登入失敗數次後 `cache::change_pwd_key(uid)` 零鍵、`cache::change_pwd_key(7)`＝`cpwd:7`（入 `cache` 模組 key builder 逐字面案）
 - [ ] T065 [P] [US3] 自助路由白名單（research R12 決定 4、6；`contracts/code-gates.md` §3「`handler/route.rs`」列；spec FR-039；ADR-00077）：`rust-api/server/src/handler/route.rs` 增 `const SELF_SERVICE_ROUTES: [&str; 1] = ["user-center"]`、`get_user_routes` 於 `sys_menu::visible_menu_routes`（casbin `menu` 維過濾）**之後**、組樹之前恆併入（`HashSet` 去重）；測試：零選單政策角色（自建角色無 `menu` 授權之帳號、零指派帳號各一）得 `user-center`、白名單外路由不受影響、常數恰一列之射程釘、拆併入段即紅（變異）、零角色帳號登入落點＝個人中心；檔頭前代歸因勘誤（「自助路由白名單屬 `rev5:004` 增量…不帶」改為起源 `rev4:014-user-center`、`rev5:003` 不帶回、`rev5:007` U4 帶回）並改現在式（research R22「自助路由白名單」種子；`python3 tools/docsync errata 'rev5:004'` 枚舉）
-- [ ] T066 [US3] 契約（U12；`contracts/msg-keys.md` §5、`contracts/wire-user-center.md`「授權態矩陣」；依 T064、T065）：新段 `user_center_msgs_real_db`（植自建帳號〔密碼雜湊執行期算〕＋其票；arm 含 `cpwd:` 之 redis 鍵守衛）四鍵各一發（`passwordConfirmMismatch`＝兩次不一致；`oldPasswordMismatch`＝舊密錯〔該鍵登記 `CacheKeysGuard`〕；`changePasswordThrottled`＝先將該帳號節流桶置於門檻再發；`passwordSameAsOld`＝新＝舊）、段末復核密碼雜湊未變、零 `change_password` 稽核列；授權態矩陣收緊（getPasswordPolicy：三 seed 帳號＋零角色自建帳號 `0000`、未登入 `8888`；changePassword：四類身分皆過授權門、body 一律兩次不一致形＝research R15 第 5 款①）；拒寫案清單擴 changePassword（寫端清單至此 23）。**DoD：容器內全量 serial 綠；`python3 tools/msg-key-gate.py check` 綠（`MSG_KEYS` 68＝三檔 backend 子樹）；`python3 tools/schema-gate.py check` 綠**
+- [ ] T066 [US3] 契約（U12；`contracts/msg-keys.md` §5、`contracts/wire-user-center.md`「授權態矩陣」；依 T064、T065）：新段 `user_center_msgs_real_db`（植自建帳號〔密碼雜湊執行期算〕＋其票；arm 含 `cpwd:` 之 redis 鍵守衛）四鍵各一發（`passwordConfirmMismatch`＝兩次不一致；`oldPasswordMismatch`＝舊密錯〔該鍵登記 `CacheKeysGuard`〕；`changePasswordThrottled`＝先將該帳號節流桶置於門檻再發；`passwordSameAsOld`＝新＝舊）、段末復核密碼雜湊未變、零 `change_password` 稽核列；授權態矩陣收緊（getPasswordPolicy：三 seed 帳號＋零角色自建帳號 `0000`、未登入 `8888`；changePassword：四類身分皆過授權門、body 一律兩次不一致形＝research R15 第 5 款①）；拒寫案清單擴 changePassword（寫端清單至此 23）；稽核落列失敗＝整筆不生效（`handler/user_center.rs` 測試模組、同 T044 形）：changePassword 一發 ⇒ `5000`、密碼雜湊未變、經手表零新列、他會話票仍 active、窗內零 `session_event` 零稽核、失效名單零新鍵；同一請求重送即 `0000`。**DoD：容器內全量 serial 綠；`python3 tools/msg-key-gate.py check` 綠（`MSG_KEYS` 68＝三檔 backend 子樹）；`python3 tools/schema-gate.py check` 綠**
 
 **Checkpoint（U12）**: 個人中心兩端點與自助白名單上線、`MSG_KEYS` 68（22 新鍵全數實發）、降級源十一、`Identity.sid`；兩子庫 commit → 外層一顆雙 pin bump＋RUNBOOK 同顆＋generate
 
@@ -249,7 +250,7 @@ description: "Task list for 007-user-password-admin"
 **Independent Test**: 被授 `unlockLogin` 之非超管對持 R_SUPER 之帳號名解鎖＝`5003`、零稽核零標記；對其範圍內帳號解鎖＝`0000`＋稽核＋標記；查無帳號名＝`0000`（quickstart §9；US4 場景 9）。
 
 - [ ] T067 [US4] `rust-api/server/src/handler/throttle.rs` 之 `unlock_login` 帳號維（data-model §3.11；`contracts/wire-user-admin.md` 端點 11；research R9 決定 5；spec FR-021 第 9 點、FR-040；先寫測試）：`resolve_unlock_target`（畸形先於一切）→ `operator_from` → 帳號維：`begin` → `sys_user::find_by_user_name(txn, 原文)`（鎖前普通讀；大小寫敏感、零正規化）→ 命中＝`advisory_lock_user(uid)`＋`handler::user::guard_no_escalation(txn, 操作者, Some(uid), None, "unlockLogin")`、查無或已軟刪＝`guard_no_escalation(…, None, …)`（T＝∅ 恆過、不取 advisory、不以異碼洩漏存在性）→ `sys_operation_log::write_in_txn`（`unlock`；列形不變）→ commit → 快取在場 → `cache::set_ex` 寫標記（失敗＝`5000`、稽核已落、可重試）；拒＝`5003`、rollback、零稽核零標記（warn 掛 `security.user`、`endpoint` 欄區分）；來源維不變（裸連線稽核 → 標記、不套包含規則）；`STEP_ANCHORS` 源碼次序釘改兩維各一序（帳號維「解析 → 操作者 → begin → 帳號維判定 → 稽核 → commit → 寫標記」、來源維既有序）、「生產區零 `cache::del(`」不變；連動碼註（research R22）：`rust-api/server/src/model/facade/sys_user.rs` 之 `advisory_lock_user` doc「MUST 在 caller 已開的 txn 裡當首個動作呼叫」改「早於任何列鎖（鎖前普通讀容許）」（「首個動作」種子）、`rust-api/server/src/handler/mod.rs` 之 `throttle` 域句補「帳號維套包含規則、交易化」（T013 延至此）、本檔「後刀」類預告句改現在式；拒寫 log 字面若變＝同批改 `handler/common.rs` 之 `each_domain_keeps_its_own_log_literals` throttle 列；測試：帳號維套規則（兩負一正）、來源維不套、未鎖帳號回成功並落稽核（GR3）、查無與已刪恆過、停用帳號照套、拒腿零稽核零標記
-- [ ] T068 [US4] 契約（unlockLogin 帳號維；依 T067）：`rust-api/server/tests/contract.rs` 補帳號維包含規則真 seed 案（以資料列授 `unlockLogin` 予自建角色、持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、對同級帳號＝`0000`；測後清理）、來源維不受影響一案；既有 unlockLogin case 照綠。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
+- [ ] T068 [US4] 契約（unlockLogin 帳號維；依 T067）：`rust-api/server/tests/contract.rs` 補帳號維包含規則真 seed 案（以資料列授 `unlockLogin` 予自建角色、持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、對同級帳號＝`0000`；測後清理）、來源維不受影響一案；既有 unlockLogin case 照綠；帳號維另補：第二負＝標的帳號持操作者未持之自建角色＝`5003`、停用角色計入 T 一案（標的持操作者未持之停用自建角色＝`5003`）、正向補 Super（只持 R_SUPER）對持其未持之自建角色之帳號名解鎖＝`0000`（A＝全集非 vacuous；同級案保留）；各負向案零變更零稽核。**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check` 綠**
 
 **Checkpoint（U13）**: 包含規則九消費點全在場、使用者域與帳號維解鎖之寫端全上線；rust-api commit → 外層 pin bump＋generate
 
@@ -262,7 +263,7 @@ description: "Task list for 007-user-password-admin"
 **Independent Test**: `python3 tools/wire-schema.py check` 綠；植未入冊型、偏離帳四類植入、名冊外檔植 `guard_no_escalation` 皆紅（quickstart §12；FR-064）。
 
 - [ ] T069 [P] [US1] base-web 新檔四支（`contracts/code-gates.md` §1.3；research R14 決定 2；spec FR-053；檔頭首行 `//` 標記）：`base-web/src/typings/api/rev6-user-admin.d.ts`（`[rev6-inline BASE-WEB-ADAPT+ 007-user-password-admin]`；`declare namespace Api { namespace UserAdmin { … } }`＝`UserRecord`／`UserRole`／`SessionPolicy`／`UserListQuery`／`DeletedUserListQuery`／`AddReq`／`UpdateReq`／`UserIdReq`／`UserBatchDeleteReq`／`ResetPasswordReq`／`KickRes`／`UpdateSessionPolicyReq`／`UnlockReq` 十三型，欄形逐欄依 `contracts/wire-user-admin.md`「共用型」節、宣告序＝wire 欄序；`UpdateReq.userName` 列入〔出現即拒〕；宣告本體重打字、不自 `rev5-` 檔複製＝R5 #7）、`base-web/src/typings/api/rev6-user-center.d.ts`（同標記；`Api.UserCenter`＝`PasswordPolicyView`／`ChangePasswordReq`／`PasswordPolicyDetail`／`PasswordViolationCode`〔八枚字面聯集〕／`PwdSetTooFrequentDetail`）、`base-web/src/service/api/rev6-user-admin.ts`（`[rev6-inline BASE-WEB-WRAPPER+ 007-user-password-admin]`；`fetchGetUserList`／`fetchGetDeletedUsers`／`fetchAddUser`／`fetchUpdateUser`／`fetchDeleteUser`／`fetchBatchDeleteUser`／`fetchRestoreUser`／`fetchKickUser`／`fetchResetUserPassword`／`fetchUpdateUserSessionPolicy`／`fetchUnlockLogin`；DELETE 兩支以 JSON body；請求體以具名型組）、`base-web/src/service/api/rev6-user-center.ts`（同標記；`fetchGetPasswordPolicy`／`fetchChangePassword`）；不入 barrel（消費端直接路徑 import）、`src/service/api/index.ts` 與 `system-manage.ts` 零 diff；★同批（T003 分流至此）：`base-web/src/typings/api/rev6-{role,menu}-admin.d.ts` 碼註之 ADR-00047 改指 ADR-00080 同號決定（wire-schema 快照 `description` 料源＝隨本單元重抽）。**DoD：容器內 `pnpm typecheck` 綠；`python3 tools/fork-delta-lint.py` rc 0（新檔頭標記；`--diff-filter=A` 現為四檔）；新檔 `.ts`、`.d.ts` 各取一支同形自證（暫刪檔頭標記行 → 報缺檔頭標記 → 寫回 → `git -C base-web status --porcelain` 回基準；`contracts/code-gates.md` §1.5）**
-- [ ] T070 [US1] `rust-api/server/tests/wire_schema.rs` 受審名冊與偏離帳（`contracts/code-gates.md` §4；research R14 決定 3～5；spec FR-005、FR-008、FR-064；依 T069）：十八型各一行 `const …_DEF: &str = "Api.<節>.<型>";`（定名＝`USER_`／`USER_CENTER_` 前綴＋型名蛇形、不撞既有 `UPDATE_REQ_DEF` 等）、入 `AUDITED_READ_DEFS`（23→31）或 `AUDITED_REQUEST_DEFS`（23→33）、兩冊不交；`SessionPolicy`（值域釘值字典序 `["inherit", "multi", "single"]`）與 `PasswordViolationCode`（八枚字典序）入 `CLOSED_LITERAL_UNIONS`（rust 側逐值序列化過裁判、值域外／大小寫異形／非字串判否）；完備性腿 `in_role_menu_sections` 擴認 `Api.UserAdmin.`／`Api.UserCenter.` 前綴、其 doc 與 `audited_roster_is_complete_and_present_in_snapshot` doc 之「三節」全檔逐處改五節（research R22「三節」種子）、快照副本於新兩節各植一支未入冊型之自證；讀型序列化鍵集＝快照 properties 鍵集表驅動＋逐型「多帶一欄」反例（`UserRecord`：`roles` 元素缺 `roleCode`／`roleName`、`id` 為字串、時間偏移非 `+00:00`、`createdBy` 為數值；任何讀端型帶 `password`／`passwordHash` 類鍵之具名反例；`PasswordPolicyView` 恰七鍵、帶冷卻鍵即紅；明細兩形之值域外與型錯）；請求型逐欄簽名一表釘值＋逐欄反例＋合法形反序列化進 rust DTO（`roleIds` 元素非數值、`sessionPolicy` 值域外）；★承載密碼之 DTO（`AddReq`、`ResetPasswordReq`、`ChangePasswordReq` 之 rust 側與既有 `LoginReq`）反序列化後之 `Debug` 輸出不含密碼原文；首屏真串（getUserList 首屏 query 物件經 qs 於 base-web 容器實跑之字面逐欄落點、null 欄渲染 `k=` 等同不濾；getDeletedUsers 同形；壞形收斂逐 query 型各一）；分頁回應直裁既有 `Api.Common.PaginatingQueryRecord`；偏離帳 `DEVIATION_LEDGER` 兩列→三列（比對常數 `UPSTREAM_USER_CMP`＝`Api.SystemManage.User`〔非受審型、不帶 `_DEF`〕×`USER_RECORD_DEF`；`DeviationPin` 四欄自快照機器導出、首次抽取寫入；ADR-00083）＋doc「兩列」→三列（research R22）；`rust-api/server/tests/fixtures/wire-schema.json` 以 `python3 tools/wire-schema.py extract`（base-web 容器）重抽（definitions 實數以抽取為準、不符即回改 contracts 之預估註記）；rust DTO 可見性如需調整（`rust-api/server/src/handler/{user,user_center}.rs`；RL-0070 可見性放寬審查面）；`tests/wire_i64_guard_lint.rs` 零 diff（新 `Serialize` 型無巢狀 i64；`KickRes.revoked` 為 `usize`、`remainingSeconds` 為 `u64`）。**DoD：`python3 tools/wire-schema.py check` 綠；植入反例紅綠在案**
+- [ ] T070 [US1] `rust-api/server/tests/wire_schema.rs` 受審名冊與偏離帳（`contracts/code-gates.md` §4；research R14 決定 3～5；spec FR-005、FR-008、FR-064；依 T069）：十八型各一行 `const …_DEF: &str = "Api.<節>.<型>";`（定名＝`USER_`／`USER_CENTER_` 前綴＋型名蛇形、不撞既有 `UPDATE_REQ_DEF` 等）、入 `AUDITED_READ_DEFS`（23→31）或 `AUDITED_REQUEST_DEFS`（23→33）、兩冊不交；`SessionPolicy`（值域釘值字典序 `["inherit", "multi", "single"]`）與 `PasswordViolationCode`（八枚字典序）入 `CLOSED_LITERAL_UNIONS`（rust 側逐值序列化過裁判、值域外／大小寫異形／非字串判否）；完備性腿 `in_role_menu_sections` 擴認 `Api.UserAdmin.`／`Api.UserCenter.` 前綴、其 doc 與 `audited_roster_is_complete_and_present_in_snapshot` doc 之「三節」全檔逐處改五節（research R22「三節」種子）、快照副本於新兩節各植一支未入冊型之自證；讀型序列化鍵集＝快照 properties 鍵集表驅動＋逐型「多帶一欄」反例（`UserRecord`：`roles` 元素缺 `roleCode`／`roleName`、`id` 為字串、時間偏移非 `+00:00`、`createdBy` 為數值；任何讀端型帶 `password`／`passwordHash` 類鍵之具名反例；`PasswordPolicyView` 恰七鍵、帶冷卻鍵即紅；明細兩形之值域外與型錯）；請求型逐欄簽名一表釘值＋逐欄反例＋合法形反序列化進 rust DTO（`roleIds` 元素非數值、`sessionPolicy` 值域外）；★承載密碼之 DTO（`AddReq`、`ResetPasswordReq`、`ChangePasswordReq` 之 rust 側與既有 `LoginReq`）反序列化後之 `Debug` 輸出不含密碼原文；首屏真串（getUserList 首屏 query 物件經 qs 於 base-web 容器實跑之字面逐欄落點、null 欄渲染 `k=` 等同不濾；getDeletedUsers 同形；壞形收斂逐 query 型各一）；分頁回應直裁既有 `Api.Common.PaginatingQueryRecord`；偏離帳 `DEVIATION_LEDGER` 兩列→三列（比對常數 `UPSTREAM_USER_CMP`＝`Api.SystemManage.User`〔非受審型、不帶 `_DEF`〕×`USER_RECORD_DEF`；`DeviationPin` 四欄自快照機器導出、首次抽取寫入；ADR-00083）＋doc「兩列」→三列（research R22）；`rust-api/server/tests/fixtures/wire-schema.json` 以 `python3 tools/wire-schema.py extract`（base-web 容器）重抽（definitions 實數以抽取為準、不符即回改 contracts 之預估註記）；rust DTO 可見性如需調整（`rust-api/server/src/handler/{user,user_center}.rs`；RL-0070 可見性放寬審查面）；`tests/wire_i64_guard_lint.rs` 零 diff（新 `Serialize` 型無巢狀 i64；`KickRes.revoked` 為 `usize`、`remainingSeconds` 為 `u64`）；受審快照斷言補：`userMemo` 鍵只出現於 `UserRecord` 與 addUser／updateUser 請求型之 properties，其餘受審型（含角色、選單、IP、授權回收桶與 getAllRoles 候選）零命中（表驅動掃全部受審型；植入他型即紅）。**DoD：`python3 tools/wire-schema.py check` 綠；植入反例紅綠在案**
 - [ ] T071 [P] [US4] `rust-api/server/tests/authz_entrypoint_lint.rs` 腿⑦（`contracts/code-gates.md` §2.2；research R17 決定 2；ADR-00075；spec FR-022）：`const NO_ESCALATION_CALL_FILES: &[&str] = &["handler/throttle.rs", "handler/user.rs"];`（相對 `src/`、路徑字典序；受檢形＝`guard_no_escalation` 完整 token 使用點〔共用 `use_lines`、扣 `fn` 定義處、RL-0026 三形聯集〕；射程＝生產面；判決＝`verdict` 檔集恰等）＋主案（紅訊息附「包含規則由 handler 鎖內單一進入點判、擴列＝新消費點＝ADR-00075 範圍」）＋植入自證三發（名冊外 handler 生產面植一處＝紅；同植於測試模組＝不紅；記憶體內自 `handler/throttle.rs` 移除呼叫行＝紅〔消費點蒸發〕；磁碟零寫入）；同檔檔頭表與段首「六個側面」→七個、腿表增腿⑦列、「六腿主案」段標同改（research R22「六個側面」「六腿」種子）；`scan_surface_is_pinned` 關鍵檔清單補 `handler/user.rs`、`handler/user_center.rs`、`handler/throttle.rs`、`auth/no_escalation.rs`；★不新寫第三份字元級解析零件（BL-00108 反向確認之前提）
 - [ ] T072 [US1] `rust-api/server/tests/contract.rs` 收口（research R17 決定 3、R22；依 T070、T071）：寫端拒寫案 `role_and_menu_write_refusals_add_no_context_absent_leg_real_seed` 改名 `write_refusals_add_no_context_absent_leg_real_seed`（寫端清單 23 支、每發仍 2 格）＋其 doc 與檔頭「十四支角色／選單／授權寫端」改「二十三支角色／選單／授權／使用者／個人中心寫端」；檔頭「契約面用真 seed app 者恰二十一案」與該案 doc 逐刀列記段依收尾現算改寫（LL-00069 同主體異寫法併掃：「恰二十一案」「分頁五案」「app 面」）；registry 61＝61、授權態矩陣十二條全數收緊為終值（`contracts/wire-user-admin.md` 與 `contracts/wire-user-center.md`「授權態矩陣」）；`git -C rust-api grep -c '佔位：U7～U12 替換'` 為 0（空殼零殘留）。**DoD：容器內全量 serial 綠**
 
@@ -280,13 +281,13 @@ description: "Task list for 007-user-password-admin"
 
 - [ ] T073 [US5] `base-web/src/typings/app.d.ts`（I18N (iii)；`contracts/code-gates.md` §1.2 #11）：`type LangType = 'en-US' | 'zh-CN';` 增 `'zh-TW'`＝修改型（標記帶 (iii) 用途號、逐行 `原行:`）；(iii) 既有 backend 型節圈界之碼註改寫——「兩語缺樹即 typecheck 紅；LangType 擴充…不在授權內」改現在式三語（`contracts/msg-keys.md` §6；research R22「不在授權內」種子）、ADR-00039 改指 ADR-00084（T003 分流至此）、本檔圈界註「兩語」9 行依實義改三語（research R22「兩語」種子；指稱 upstream 兩檔 locale 之授權句不改）
 - [ ] T074 [US5] 三處註冊、預設語言與下拉（research R19 決定 1～3、5；`contracts/code-gates.md` §1.2 #12～#16、通則②；ADR-00084 決定 10 甲；依 T073）：`base-web/src/locales/locale.ts`（`import zhTW from './langs/zh-tw'` 與 `'zh-TW': zhTW` 兩處單行形新增型、插於 `'zh-CN'` 項之後 `'en-US'` 項之前）、`base-web/src/locales/naive.ts`（另起一行 `import { dateZhTW, zhTW } from 'naive-ui'`〔不改既有 import 行〕、兩表各插一行＝單行形新增型；lint 擋重複匯入即改「預估 1 處，修改型」並同批改 spec ★ 登記表型別欄＝停手升級屬射程內差額）、`base-web/src/locales/dayjs.ts`（`import 'dayjs/locale/zh-tw'`、`localMap` 插 `'zh-TW': 'zh-tw'`＝單行形新增型；預設參數與 fallback 之 `'zh-CN'`→`'zh-TW'`＝修改型 2 處）、`base-web/src/locales/index.ts`（未選過語言之預設 `'zh-CN'`→`'zh-TW'`＝修改型 1 處；`setupI18n` 內以現行語言同步 `<html lang>` 一行＝單行形新增型）、`base-web/src/store/modules/app/index.ts`（預設 `'zh-CN'`→`'zh-TW'`、`label: '中文'`→`'简体中文'`＝修改型 2 處；`{ label: '繁體中文', key: 'zh-TW' }` 插於兩項之間＝單行形新增型）；`fallbackLocale: 'en'` 不變；★`src/main.ts` 零 diff（research R19 決定 5）、`src/views/pro-naive/ConfigProvider.vue` 零 diff（user 2026-10-05 親決＝已知態）；單行形新增型逐項以其單行標記為對象（`contracts/code-gates.md` §1.5）
-- [ ] T075 [US5] `base-web/src/locales/langs/zh-tw.ts` 全樹（research R19 決定 4；`contracts/code-gates.md` §1.2 #18；rev6 自有檔、整檔新增型、只留檔頭一行；依 T073、T074）：由裸 `export default { backend: {…} }` 改為 `const local: App.I18n.Schema = { … }; export default local;`（與 zh-cn／en-us 同形）；既有 backend 子樹逐鍵保留（68 鍵）、補齊其餘十棵頂層樹（pin `fb4dac2` 現算 573 葉；最大 page 303、theme 104、route 81）——以 zh-cn 現行措辭之臺灣用語對譯（非逐字轉繁）、會話用語依 GR2（「頂替」「踢除」）；★`backend: {` MUST 仍為檔內首個獨佔一行之命中（msg-key-gate `RE_BACKEND_ANCHOR`）；檔頭句改現在式（「治理錨點孤立檔」「不接 runtime」「不註冊 LangType」「延前端 UI 刀」為 research R22 種子；軌道名與進場刀名 `003-auth-session` 保留）並 ADR-00039 改指 ADR-00084；同批 `base-web/src/locales/langs/{en-us,zh-cn}.ts` 之 backend 圈界標記行與碼註 ADR-00039 改指 ADR-00084、「兩語」各 3 行依實義改三語（research R22）。**DoD（U15 出口）：容器內 `pnpm typecheck` 綠（三語 `App.I18n.Schema`）；`python3 tools/msg-key-gate.py check` 綠；`python3 tools/fork-delta-lint.py` rc 0＋單行形與新增型逐項拔標記必報（`contracts/code-gates.md` §1.5）；`python3 tools/route-artifact-gate.py check` rc 0（base-web 容器在場）；I18N (iii) 逐檔逐用途計數（通則⑤字面）入 commit 訊息、與預估不等者記入 PATCH 實數化清單（通則⑥）；§1.4 變更檔集斷言；research R22 種子（「孤立檔」「不接 runtime」「前端 UI 刀」「不在授權內」「兩語」）於 base-web 面復掃零殘留**
+- [ ] T075 [US5] `base-web/src/locales/langs/zh-tw.ts` 全樹（research R19 決定 4；`contracts/code-gates.md` §1.2 #18；rev6 自有檔、整檔新增型、只留檔頭一行；依 T073、T074）：由裸 `export default { backend: {…} }` 改為 `const local: App.I18n.Schema = { … }; export default local;`（與 zh-cn／en-us 同形）；既有 backend 子樹逐鍵保留（68 鍵）、補齊其餘十棵頂層樹（pin `fb4dac2` 現算 573 葉；最大 page 303、theme 104、route 81）——以 zh-cn 現行措辭之臺灣用語對譯（非逐字轉繁）、會話用語依 GR2（「頂替」「踢除」）；★`backend: {` MUST 仍為檔內首個獨佔一行之命中（msg-key-gate `RE_BACKEND_ANCHOR`）；檔頭句改現在式（「治理錨點孤立檔」「不接 runtime」「不註冊 LangType」「延前端 UI 刀」為 research R22 種子；軌道名與進場刀名 `003-auth-session` 保留）並 ADR-00039 改指 ADR-00084；同批 `base-web/src/locales/langs/{en-us,zh-cn}.ts` 之 backend 圈界標記行與碼註 ADR-00039 改指 ADR-00084、「兩語」各 3 行依實義改三語（research R22）。**DoD（U15 出口）：容器內 `pnpm typecheck` 綠（三語 `App.I18n.Schema`）；`python3 tools/msg-key-gate.py check` 綠；`python3 tools/fork-delta-lint.py` rc 0＋單行形與新增型逐項拔標記必報（`contracts/code-gates.md` §1.5）；`python3 tools/route-artifact-gate.py check` rc 0（base-web 容器在場）；I18N (iii) 逐檔逐用途計數（通則⑤字面）入 commit 訊息、與預估不等者記入 PATCH 實數化清單（通則⑥）；§1.4 變更檔集斷言；research R22 種子（「孤立檔」「不接 runtime」「前端 UI 刀」「不在授權內」「兩語」）於 base-web 面復掃零殘留；`base-web/src/store/modules/app/index.ts` 之 `localeOptions` 恰三項、`label` 依序 `简体中文`／`繁體中文`／`English`、`key` 依序 `zh-CN`／`zh-TW`／`en-US`（python 讀檔斷言、不符即紅）；`grep -cF "'zh-TW': zhTW" base-web/src/locales/naive.ts`＝1、`grep -cF "'zh-TW': dateZhTW" base-web/src/locales/naive.ts`＝1、`grep -cF "import 'dayjs/locale/zh-tw'" base-web/src/locales/dayjs.ts`＝1、`grep -cF "'zh-TW': 'zh-tw'" base-web/src/locales/dayjs.ts`＝1；`grep -c '^const local: App.I18n.Schema = {' base-web/src/locales/langs/zh-tw.ts`＝1、`grep -c '^export default local;' base-web/src/locales/langs/zh-tw.ts`＝1；變異自證兩發（逐發單獨、存原文寫回、`git -C base-web status --porcelain` 回基準＝RL-0005）：暫刪 `zh-tw.ts` 任一 page 葉鍵 → 容器內 `pnpm typecheck` rc 非 0、暫於同層增一個 Schema 未定義之鍵 → rc 非 0；計數與兩發結果入 U15 commit 訊息；`grep -cE "type LangType = .*'zh-TW'" base-web/src/typings/app.d.ts`＝1（語系型別擴充之機器面）；`git -C base-web diff fb4dac2..HEAD -- src/locales/index.ts | grep -c fallbackLocale`＝0 且 `git -C base-web grep -c "fallbackLocale: 'en'" -- src/locales/index.ts`＝1（vue-i18n 退路語言不變；dayjs 預設值改 zh-TW 不屬之）**
 
 **Checkpoint（U15）**: zh-TW runtime 在場、首開繁中、三語鍵集型別守；base-web commit → 外層 pin bump＋generate
 
 ### U16 zh-tw-lint 碼面閘（`contracts/code-gates.md` §2.1；research R17 決定 1、R19 決定 7；ADR-00084 決定 7；FR-052；★依 U15；外層一顆、必要時含 base-web）
 
-- [ ] T076 [US5] 新建 `tools/zh-tw-lint.py`（`contracts/code-gates.md` §2.1 全節；stdlib-only、連字檔名 CLI；index 落 100755＝`git update-index --chmod=+x`）：`check`（預設；讀 `base-web/src/locales/langs/zh-tw.ts`、完備腿另讀 `zh-cn.ts`；不收路徑引數；不連帶跑自測）／`test`（離線合成 fixtures、零 docker）；用法錯 rc 64；掃描面＝剝註解後之字串字面值、鍵路徑以 brace 配對自物件根攤平（物件根＝首個 `const <名>(: <型>)? = {` 或 `export default {` 之開括號、兩形皆缺 rc 2；與 msg-key-gate 各持解析、不共用）；四腿＋空值檢查（①`SIMPLIFIED_CHARS` 簡體殘字附正體建議②字表完備〔兩檔所用 CJK 字每字屬 `SIMPLIFIED_CHARS` 鍵或 `APPROVED_CHARS`；未分類 rc 1、兩表相交 rc 2〕③`MAINLAND_TERMS` 大陸用語附建議詞〔初版必收詞見 §2.1、全表依 U15 審讀定稿；歧義詞不入表〕④會話用語〔「踢」只准出現於 `ADMIN_KICK_KEYS`＝`backend.auth.session.kickedByAdmin`＋§1.2 page 新鍵名冊之踢除三鍵（名冊鍵於真檔缺席時「MUST 含」類斷言對該鍵不判＝U17 落地前之過渡、自測釘此語意；U17 出口實證三 page 鍵之繁中值含「踢除」）；`kicked` 之值不含「踢」與「管理員」；`kickedByAdmin` 含「管理員」不含「頂替」；`ADMIN_KICK_KEYS` 之 page 鍵含「踢除」；全樹不得出現 `踢出`／`踢掉`／`踢下線`／`擠下線`／`擠掉`／`頂掉`〕⑤空值＝rc 1）；具名白名單 `EXEMPT`（只對①③生效、幽靈即紅、項數由自測釘、初版預期零筆）；退出碼 0／1／2／64（tracked 面缺席 rc 2、不設具名跳過）；自測 ①～⑩（§2.1「自測」）＋工具本體變異三發（暫拆完備腿歸類判斷、幽靈檢查、「踢」歸屬檢查 → 各自測紅 → 存原文寫回 → `git diff --name-only` 零殘留）；表值初建以 codec 判準（gb2312 可編而 cp950 不可編）自兩檔現有用字篩候選、逐字人審後入表（codec 不作判定）、一對多簡化字逐字記取捨（ADR-00084 決定 7 殘餘段）；真檔一正一反＝`check` rc 0（兩檔用字全分類；★既有三語鍵之繁中用語若有命中即同單元修 `base-web/src/locales/langs/zh-tw.ts`）＋於 `zh-tw.ts` 一字串值暫植一簡化字 → rc 1 指名該鍵與字 → 原檔寫回 → `git -C base-web status --porcelain` 回基準態（RL-0005）
+- [ ] T076 [US5] 新建 `tools/zh-tw-lint.py`（`contracts/code-gates.md` §2.1 全節；stdlib-only、連字檔名 CLI；index 落 100755＝`git update-index --chmod=+x`）：`check`（預設；讀 `base-web/src/locales/langs/zh-tw.ts`、完備腿另讀 `zh-cn.ts`；不收路徑引數；不連帶跑自測）／`test`（離線合成 fixtures、零 docker）；用法錯 rc 64；掃描面＝剝註解後之字串字面值、鍵路徑以 brace 配對自物件根攤平（物件根＝首個 `const <名>(: <型>)? = {` 或 `export default {` 之開括號、兩形皆缺 rc 2；與 msg-key-gate 各持解析、不共用）；四腿＋空值檢查（①`SIMPLIFIED_CHARS` 簡體殘字附正體建議②字表完備〔兩檔所用 CJK 字每字屬 `SIMPLIFIED_CHARS` 鍵或 `APPROVED_CHARS`；未分類 rc 1、兩表相交 rc 2〕③`MAINLAND_TERMS` 大陸用語附建議詞〔初版必收詞見 §2.1、全表依 U15 審讀定稿；歧義詞不入表〕④會話用語〔「踢」只准出現於 `ADMIN_KICK_KEYS`＝`backend.auth.session.kickedByAdmin`＋§1.2 page 新鍵名冊之踢除三鍵（名冊鍵於真檔缺席時「MUST 含」類斷言對該鍵不判＝U17 落地前之過渡、自測釘此語意；U17 出口實證三 page 鍵之繁中值含「踢除」）；`kicked` 之值不含「踢」與「管理員」；`kicked` 之值 MUST 含「頂替」（自測⑦補「`kicked` 缺『頂替』rc 1」一形）；`kickedByAdmin` 含「管理員」不含「頂替」；`ADMIN_KICK_KEYS` 之 page 鍵含「踢除」；全樹不得出現 `踢出`／`踢掉`／`踢下線`／`擠下線`／`擠掉`／`頂掉`〕⑤空值＝rc 1）；具名白名單 `EXEMPT`（只對①③生效、幽靈即紅、項數由自測釘、初版預期零筆）；退出碼 0／1／2／64（tracked 面缺席 rc 2、不設具名跳過）；自測 ①～⑩（§2.1「自測」）＋工具本體變異三發（暫拆完備腿歸類判斷、幽靈檢查、「踢」歸屬檢查 → 各自測紅 → 存原文寫回 → `git diff --name-only` 零殘留）；表值初建以 codec 判準（gb2312 可編而 cp950 不可編）自兩檔現有用字篩候選、逐字人審後入表（codec 不作判定）、一對多簡化字逐字記取捨（ADR-00084 決定 7 殘餘段）；真檔一正一反＝`check` rc 0（兩檔用字全分類；★既有三語鍵之繁中用語若有命中即同單元修 `base-web/src/locales/langs/zh-tw.ts`）＋於 `zh-tw.ts` 一字串值暫植一簡化字 → rc 1 指名該鍵與字 → 原檔寫回 → `git -C base-web status --porcelain` 回基準態（RL-0005）
 - [ ] T077 [US5] zh-tw-lint 接線與登記面（`contracts/code-gates.md` §2.1「接線」表；research R17 決定 1；依 T076；同一顆外層 commit）：`.githooks/pre-commit` 新條件段 `zh-tw-lint`（觸發 `-e 'base-web' -e 'tools/zh-tw-lint.py'`、命令 `python3 "$HOOK_DIR/../tools/zh-tw-lint.py" check`、段內零條件判斷；段位＝seed-view-gate 段之後、submodule-sync 段之前；不寫子庫檔路徑字面）＋`for t in` 自測迴圈加本檔＋碼面閘段首句「七支碼面閘」→八支與名列＋檔頭段序行；`tools/docsync/tests/test_hook_wiring.py`（`SEGMENTS` 增一元組、`MIRROR_WORDS` 增 `"zh-tw-lint": "zh-tw-lint"`、`MIRRORS` 三處人寫鏡像各補字樣恰一次、模組 docstring「十三條件段」→十四與段名列舉）；`tools/bootstrap.sh` 名冊註解「七支碼面閘（…）」→八支與列名（推導行零改）；`docs/ops/RUNBOOK.md` §12 工具鏈速查表一列＋碼面閘表一列（9→10 列；觸發時機欄尾標讀面型 (a) 閘面內、根據 ADR＝ADR-00084）；`README.md` 工具樹一行、`.githooks/` 行與守門條目；`docs/arc42/05-building-block-view.md` `tools/` 列補一項；`docs/arc42/12-glossary.md`「頂替」「踢除」兩條之機器守指針＝本工具 `ADMIN_KICK_KEYS`／`MAINLAND_TERMS`（用語表之家＝工具常數、活書只指）；`docs/ops/reference-src/code-gate-contracts.md` 新增 §8（行為契約：掃描面、四腿與空值、白名單與幽靈語意、退出碼、讀面型；接線落點不收＝ADR-00041 決定 2）；research R22／`contracts/code-gates.md` §2.1 種子（「七支碼面閘」「十三條件段」）復掃。**DoD：`python3 tools/zh-tw-lint.py test` 與 `check` 綠；`python3 -B tools/docsync test` 綠（`test_hook_wiring`）；`python3 tools/docsync lint` 零錯（GT-12 碼面閘表腿雙向對賬、GT-09 README 樹）；ADR-00032 觸發器①之處置續由 BL-00142 承載（不在本單元）**
 
 **Checkpoint（U16）**: 碼面閘十支、pre-commit 新段與自測迴圈在場、三處鏡像各恰一次；外層 commit（必要時含 base-web 用語修正之 pin bump）＋generate
@@ -302,7 +303,7 @@ description: "Task list for 007-user-password-admin"
 - [ ] T078 [US1] `page.manage.user.*` 鍵（research R18 決定 12、17；`contracts/code-gates.md` §1.2 #9～#11 與「page 新鍵名冊」；三語同批）：`base-web/src/locales/langs/{zh-cn,en-us}.ts` 之 `page.manage.user` 新增 (v) 新增型圈界塊（`[rev6-inline BASE-WEB-MANAGE-PAGE-WIRING(v)+ 007-user-password-admin START]`／`END`；鍵名沿 `rev5:src/locales/langs/zh-cn.ts` 之 `page.manage.user` 同名鍵；含欄名、回收桶開關與復原確認兩行句、`roleSeparator`、`roleDisabledTag`（「（已停用）」）、`roleOptionsUnavailable`、`sessionPolicyHint`、`passwordHint`、列操作下拉觸發與 `kick`／`confirmKick`／`kickSuccess`〔`ADMIN_KICK_KEYS`；繁中須含「踢除」〕；`resetPwd*`／`pwdGen.*`／`unlockLogin*` 隨 U18；upstream 既有值不改〔需改字面＝改用新鍵〕、`route:` 樹零新增；★新塊不插物件末項之後＝通則②）、`base-web/src/typings/app.d.ts` 之 `Schema.page.manage.user` (v) 型節新增型塊、`base-web/src/locales/langs/zh-tw.ts` 同鍵同位（無圈界）
 - [ ] T079 [US1] `base-web/src/views/manage/user/index.vue`（MANAGE (v) 修改型＋新增型；research R18 決定 1、13；`contracts/code-gates.md` §1.2 #1 與通則；spec FR-047、FR-048；依 T078）：資料源依回收桶開關切 `fetchGetUserList`（整份送出搜尋參、型改 `Api.UserAdmin.UserListQuery`）／`fetchGetDeletedUsers`（只收 `{current, size}`）——皆自 `@/service/api/rev6-user-admin` 直接路徑匯入（barrel 匯入行改指＝修改型）；表頭 `<TableHeaderOperation>` 改對標籤（`原行: />`）＋`#prefix` 插槽 NSwitch「顯示已刪除」（不掛碼；切換即清勾選並回第一頁）＋`:show-add="!showDeleted && hasAuth('user:add')"`、`:show-delete="!showDeleted && hasAuth('user:delete')"`（★不覆寫 default 插槽＝`rev5:B-099` 保底 div 形不帶回）；已刪模式 `<UserSearch v-if="!showDeleted">`、操作欄整欄換「復原」（`user:restore`；確認框兩行）、不加刪除時間欄；欄集＝基線九欄＋角色（`row.roles` 之 `roleCode` 以 `page.manage.user.roleSeparator` 串接）、會話政策、記事（★純文字插值、不設 render＝`tools/view-render-guard.py` 射程）、建立時間、建立者、更新時間、更新者；性別欄非 `'1'`／`'2'` 即不渲染；操作欄寬 130→200、`:scroll-x` 962→2002（Σ 欄寬；Vue 模板屬性行變體＝通則④）；列鈕 編輯 `user:edit`、刪除 `user:delete`；列操作下拉骨架（觸發鈕 `common.action`；選項集空即不渲染；下拉鍵以字面聯合型承載）＋本單元之「踢除下線」（`user:kick`；NModal dialog preset 確認 → `fetchKickUser` → 成功只出 toast）；`hasAuth` 經 `useAuth`（匯入與取用為新增型）；標記形依 research R18 決定 13（JSX 操作欄：標記置 `render:` 行上方、`原行: render: row => (`；template 單行 HTML 註解形）
 - [ ] T080 [US1] `base-web/src/views/manage/user/modules/user-operate-drawer.vue`（MANAGE (v)；research R18 決定 2；`contracts/code-gates.md` §1.2 #2；spec FR-020、FR-024、FR-047；依 T078；產密鈕隨 U18）：`fetchGetAllRoles` 改自 `@/service/api/rev6-role-admin` 直接路徑匯入（改指者帶 `原行:`；barrel 之 upstream 版不動）；候選全列不過濾（含 R_SUPER；前端不預判包含規則）；請求世代守 `roleOptionsReq`＋讀取態 `roleOptionsState` 三態（`failed` 停用並出 `roleOptionsUnavailable`）；每次開抽屜重置候選、快照與讀取態；★灰色保留選項（取代 `rev5:` 之 `unresolvedRoleCodes` 鎖）：編輯初值 `roleIds` 取自 `row.roles` 之 id、持有而不在候選者另立選項（標籤＝角色名＋`roleDisabledTag`、`disabled: true`）、以 `render-tag` 自繪標籤使停用項仍可移除；送出：`status` 與 `roleIds` 只在改動時才帶（防並行編輯以舊值回寫）、可空文字欄 `blankToNull`、組 body 不帶 `userName`、更新 body 逐欄顯式構造；會話政策僅編輯態渲染、非超管（`authStore.userInfo.roles` 不含 `R_SUPER`）停用並出 `sessionPolicyHint`、第二支呼叫 `fetchUpdateUserSessionPolicy` 之門＝超管且值有變（失敗時先 `emit('submitted')`、抽屜留原地）；本人列狀態與角色控制項停用；帳號名編輯態停用；密碼欄僅新增態（必填＋`passwordHint`、不掛即時規則）、關閉即清明文（`watch(visible)` falsy 邊）；★既有 `path="email"`→`userEmail`、`path="roles"`→`roleIds` 兩處修正（修改型）
-- [ ] T081 [P] [US1] `base-web/src/views/manage/user/modules/user-search.vue`（MANAGE (v) 修改型、零新增型；research R18 決定 3；`contracts/code-gates.md` §1.2 #3；spec FR-047）：拔除手機、信箱兩欄之 `patternRules`、連帶不再使用之型別與匯入同批移除或改寫、`validate()` 保留。**DoD（U17 出口）：容器內 `pnpm typecheck` 綠；`python3 tools/fork-delta-lint.py` rc 0；`python3 tools/view-render-guard.py check`、`python3 tools/seed-view-gate.py check`、`python3 tools/route-artifact-gate.py check`（base-web 容器在場）、`python3 tools/zh-tw-lint.py check` 綠；本單元新增圈界塊逐塊暫拔 START／END 必報未圈界（`contracts/code-gates.md` §1.5；LL-00058）；(v) 逐檔逐用途計數（通則⑤字面）入 commit 訊息、與預估不等者記 PATCH 清單（通則⑥）；`hasAuth('user:` 碼集 grep 集合相等（本單元在場者）；`git -C base-web grep -n 'fetchGetUserList' -- src/views/manage` 之命中只來自 `rev6-user-admin` 匯入（spec FR-008 機器斷言）；§1.4 變更檔集斷言（base-web 子庫 commit 之後、外層 commit 之前）**
+- [ ] T081 [P] [US1] `base-web/src/views/manage/user/modules/user-search.vue`（MANAGE (v) 修改型、零新增型；research R18 決定 3；`contracts/code-gates.md` §1.2 #3；spec FR-047）：拔除手機、信箱兩欄之 `patternRules`、連帶不再使用之型別與匯入同批移除或改寫、`validate()` 保留。**DoD（U17 出口）：容器內 `pnpm typecheck` 綠；`python3 tools/fork-delta-lint.py` rc 0；`python3 tools/view-render-guard.py check`、`python3 tools/seed-view-gate.py check`、`python3 tools/route-artifact-gate.py check`（base-web 容器在場）、`python3 tools/zh-tw-lint.py check` 綠；本單元新增圈界塊逐塊暫拔 START／END 必報未圈界（`contracts/code-gates.md` §1.5；LL-00058）；(v) 逐檔逐用途計數（通則⑤字面）入 commit 訊息、與預估不等者記 PATCH 清單（通則⑥）；`hasAuth('user:` 碼集 grep 集合相等（本單元在場者）；`git -C base-web grep -n 'fetchGetUserList' -- src/views/manage` 之命中只來自 `rev6-user-admin` 匯入（spec FR-008 機器斷言）；§1.4 變更檔集斷言（base-web 子庫 commit 之後、外層 commit 之前）；`git -C base-web grep -c 'patternRules' -- src/views/manage/user/modules/user-search.vue`＝0；`git -C base-web grep -c 'type="textarea"' -- src/views/manage/user/modules/user-operate-drawer.vue`＝1（記事欄多行輸入）；`git -C base-web grep -l 'userMemo' -- src` 之檔集 ⊆ {使用者頁 `index.vue` 與 `modules/user-operate-drawer.vue`、`typings/api/rev6-user-admin.d.ts`、三語 locale、`typings/app.d.ts`}（記事不入任何下拉、候選或他頁）；`git -C base-web grep -c ':scroll-x="2002"' -- src/views/manage/user/index.vue`＝1（T079 定值）；`git -C base-web grep -n 'fetchGetAllRoles' -- src/views/manage/user` 之匯入行恰一且來自 `@/service/api/rev6-role-admin`、barrel `@/service/api` 匯入零命中；`git -C base-web grep -n -e 'patternRules.phone' -e 'REG_PHONE' -- src/views/manage/user/` 零命中（搜尋卡手機已拔、新增抽屜手機照舊不驗格式）**
 
 **Checkpoint（U17）**: 使用者頁清單、回收桶、抽屜、搜尋卡、踢除接真；base-web commit → 外層 pin bump＋generate
 
@@ -314,11 +315,11 @@ description: "Task list for 007-user-password-admin"
 
 **Independent Test**: 重設密碼浮層即時規則隨政策變化、產密帶入後仍須按確定；使用者列「解鎖登入」對未鎖帳號回成功；IP 規則頁持 `ipRule:unlock` 者見「解鎖來源 IP」（quickstart §6、§9、§10；US3 場景 7、US4 場景 9）。
 
-- [ ] T082 [US3] 即時規則 hook 與 `page.passwordPolicy`（`contracts/msg-keys.md` §3；research R18 決定 8；spec FR-033、FR-038；ADR-00076）：新建 `base-web/src/hooks/business/pwd-policy.ts`（首行 `// [rev6-inline USER-CENTER-VIEW+ 007-user-password-admin] …`；`usePwdPolicy()`＝政策投影之模組層單例快取〔唯一寫入者 `ensureLoaded`、讀失敗靜默維持 `null`、只增不清＝已知態〕；`usePwdPolicyRules().buildPolicyRules(policy, userName)`＝七鍵→naive 規則〔`null` 只回必填；四類字元正則與後端同界；`forbidUsername` 不分大小寫相等、帳號名空字串即略過；訊息取 `page.passwordPolicy.violation.<碼>`；`maxBytes` 不預判〕；以 `fetchGetPasswordPolicy`〔`rev6-user-center.ts`〕取投影）；`page.passwordPolicy`（八枚違規子鍵＋`listSeparator`、零佔位符；zh-cn／en-us 逐字取 rev5 HEAD 實文、zh-tw 依 `contracts/msg-keys.md` §1.3）於 `base-web/src/locales/langs/{zh-cn,en-us}.ts` 與 `base-web/src/typings/app.d.ts` 各新增一塊 I18N (i) 新增型圈界（`[rev6-inline BASE-WEB-I18N-WIRING(i)+ 007-user-password-admin START]`／`END`；位置接 `page.about` 之後、`page.home` 之前，★前後皆為 upstream 行、不與其他圈界塊相鄰）、`base-web/src/locales/langs/zh-tw.ts` 同位無圈界
+- [ ] T082 [US3] 即時規則 hook 與 `page.passwordPolicy`（`contracts/msg-keys.md` §3；research R18 決定 8；spec FR-033、FR-038；ADR-00076）：新建 `base-web/src/hooks/business/pwd-policy.ts`（首行 `// [rev6-inline USER-CENTER-VIEW+ 007-user-password-admin] …`；`usePwdPolicy()`＝政策投影之模組層單例快取〔唯一寫入者 `ensureLoaded`、讀失敗靜默維持 `null`、只增不清＝已知態〕；`usePwdPolicyRules().buildPolicyRules(policy, userName)`＝七鍵→naive 規則〔`null` 只回必填；四類字元正則與後端同界；`forbidUsername` 不分大小寫相等、帳號名空字串即略過；訊息取 `page.passwordPolicy.violation.<碼>`；`maxBytes` 不預判〕；以 `fetchGetPasswordPolicy`〔`rev6-user-center.ts`〕取投影）；`page.passwordPolicy`（八枚違規子鍵＋`listSeparator`、零佔位符；zh-cn／en-us 逐字取 rev5 HEAD 實文、zh-tw 依 `contracts/msg-keys.md` §1.3）於 `base-web/src/locales/langs/{zh-cn,en-us}.ts` 與 `base-web/src/typings/app.d.ts` 各新增一塊 I18N (i) 新增型圈界（`[rev6-inline BASE-WEB-I18N-WIRING(i)+ 007-user-password-admin START]`／`END`；位置接 `page.about` 之後、`page.home` 之前，★前後皆為 upstream 行、不與其他圈界塊相鄰）、`base-web/src/locales/langs/zh-tw.ts` 同位無圈界；DoD：三檔 locale 之 `page.passwordPolicy` 葉鍵逐檔恰 9（`violation.*` 八枚＋`listSeparator`）、zh-cn／en-us 逐字＝`contracts/msg-keys.md` §3.1 表、`app.d.ts` 型節恰同九鍵（python 讀檔計數、逐檔計數入 commit 訊息）
 - [ ] T083 [US3] 重設與產密浮層（research R18 決定 1、2、4；`contracts/code-gates.md` §1.3；spec FR-038、FR-047；依 T082）：新建 `base-web/src/views/manage/user/modules/user-reset-pwd-modal.vue`（首行 `<!-- [rev6-inline MANAGE-USER-VIEW+ 007-user-password-admin] … -->` 置於 `<script setup>` 之前；輸入欄掛即時規則 `buildPolicyRules(policy, () => 標的列帳號名)`；送出鈕空值停用；失敗時浮層留著、值不清；關閉即清明文；接受產密帶入之預填值、帶入後仍須按確定）與 `base-web/src/components/custom/pwd-gen-modal.vue`（同標記形；props＝政策七鍵投影〔`null` 即後備界 8／64、偏好長度 16〕＋標的帳號名；零網路請求；`crypto.getRandomValues`＋拒絕取樣消模偏差＋Fisher–Yates 洗牌、依必含類別構造；長度可調〔矛盾政策以下限為準〕；複製如實回報成敗；「帶入」以 emit 交掛載端）；`user/index.vue` 列下拉增「重設密碼」「隨機密碼」（`user:reset-pwd`；★本人列不列此兩項）、標的列於開浮層時鎖定、重設成功刷新當前頁；`user-operate-drawer.vue` 新增態接上「隨機密碼」鈕（帶入即填欄）；`base-web/src/typings/components.d.ts`（★只由 unplugin 於容器內 dev server 重算、禁手改；`PwdGenModal` 兩行＋所用新圖示）；`page.manage.user.resetPwd`／`resetPwdTitle`（`{userName}` 具名插值）／`resetPwdSuccess`／`pwdGen.*` 三語＋型節（沿 T078 之 (v) 塊、不增塊）；★新子元件檔名 MUST NOT 為 `index.vue` 或 `[…].vue`（`contracts/code-gates.md` §1.3）
 - [ ] T084 [US4] 使用者列「解鎖登入」（research R18 決定 5；spec FR-040；GR3）：`user/index.vue` 列下拉增「解鎖登入」（`user:unlock`；本人列照列）→ dialog 確認 → `fetchUnlockLogin({ dimension: 'user', userName: row.userName })`（帳號名原樣、零 trim；`dimension` 顯式帶）→ 成功只出 toast；清單不顯示鎖定狀態、每列可按；`page.manage.user.unlockLogin`／確認句／成功句三語＋型節（沿 (v) 塊）；`rev5:` 頁首雙維浮層 `user-unlock-modal.vue` 不帶回（刻意分岔）
 - [ ] T085 [US4] IP 規則頁「解鎖來源 IP」（research R18 決定 6；`contracts/code-gates.md` §1.2 #9～#11（巢狀 (vii)）、§1.3、§1.5；spec FR-040、FR-048；ADR-00082 款 1 之實作面）：`base-web/src/views/manage/ip-rule/index.vue`（rev6 自有檔、檔頭標記不變）表頭 `<TableHeaderOperation>` 改對標籤、`#prefix` 插槽掛「解鎖來源 IP」鈕（`v-if="hasAuth('ipRule:unlock')"`）、既有兩 prop 錨值不動、表頭上方「標籤保持自閉合、不覆寫預設插槽」註解改寫為現行判準；新建 `base-web/src/views/manage/ip-rule/modules/ip-unlock-modal.vue`（首行 `<!-- [rev6-inline MANAGE-IP-RULE-VIEW+ 007-user-password-admin] … -->`；單欄位址字面只驗必填、形制交後端；`fetchUnlockLogin({ dimension: 'ip', target })`〔與帳號維共用同一包裝；欄名 `target`〕；開啟即復位）；`page.manage.ipRule.unlock.*` 於 `base-web/src/locales/langs/{zh-cn,en-us}.ts` 與 `base-web/src/typings/app.d.ts` 各以巢狀 (vii) 新增型圈界一塊落 MANAGE (i) 既有 `page.manage.ipRule` 塊內（塊首尾帶 `MANAGE-PAGE-WIRING(vii)+ 007-user-password-admin`；(i) 塊首尾與理由句不動）、`zh-tw.ts` 同位；`base-web/src/service/api/rev6-ip-rule.ts` 檔頭「無 UI 按鈕」同語意句改現在式（research R22「無 UI 按鈕」種子）
-- [ ] T086 [P] [US4] 外層 `tools/view-render-guard.py` 判準 (b) 與錨擴面（`contracts/code-gates.md` §3「`tools/view-render-guard.py` 腿②」列；research R18 決定 14）：判準 (b) 改為「標籤體內只許具名 `<template #prefix>`／`<template #suffix>` 子節點（及其 `v-slot:` 長形、空白、註解）、任何其他子節點＝default 插槽內容即紅」，(a) 兩屬性錨與 (c) 零 `#default`／`v-slot:default` 不變；錨由單檔常數（`ANCHOR_REL`＋`ANCHOR_ATTRS`）擴為具名常數 `ANCHORS`（路徑→兩屬性錨值），本單元落 IP 規則頁（錨值不變）與使用者頁兩錨（角色與選單頁隨 U19）；自測補「具名 prefix 插槽綠」「具名插槽外夾一節點紅」「`#default` 紅」三案＋判準變異（RL-0080）；同批改工具 docstring、`README.md` 工具樹、`docs/ops/RUNBOOK.md` §12 兩表、`docs/ops/reference-src/code-gate-contracts.md` §3 ①（「錨檔＝工具常數 `ANCHOR_REL`」改指 `ANCHORS`）、`docs/ops/RUNBOOK.md` §9 之「無 UI 按鈕」句改為兩處解鎖入口（`contracts/code-gates.md` §8.2）；research R22「`ANCHOR_REL`」種子復掃。**DoD（U18 出口）：`python3 tools/view-render-guard.py test` 與 `check` 綠；其餘同 T081 之 U17 出口斷言；★巢狀 (vii) 塊不適用拔標記法——三檔各以通則⑤字面 `grep -cF 'MANAGE-PAGE-WIRING(vii)+ 007-user-password-admin START]'` 計數恰 1 入 commit 訊息（`contracts/code-gates.md` §1.5）；本單元 `.vue` 新檔取一支同形自證（暫刪檔頭標記行 → 報缺檔頭標記 → 寫回；`.ts`／`.d.ts` 已於 T069 自證；`contracts/code-gates.md` §1.5）；`page.passwordPolicy` 塊拔標記必報**
+- [ ] T086 [P] [US4] 外層 `tools/view-render-guard.py` 判準 (b) 與錨擴面（`contracts/code-gates.md` §3「`tools/view-render-guard.py` 腿②」列；research R18 決定 14）：判準 (b) 改為「標籤體內只許具名 `<template #prefix>`／`<template #suffix>` 子節點（及其 `v-slot:` 長形、空白、註解）、任何其他子節點＝default 插槽內容即紅」，(a) 兩屬性錨與 (c) 零 `#default`／`v-slot:default` 不變；錨由單檔常數（`ANCHOR_REL`＋`ANCHOR_ATTRS`）擴為具名常數 `ANCHORS`（路徑→兩屬性錨值），本單元落 IP 規則頁（錨值不變）與使用者頁兩錨（角色與選單頁隨 U19）；自測補「具名 prefix 插槽綠」「具名插槽外夾一節點紅」「`#default` 紅」三案＋判準變異（RL-0080）；同批改工具 docstring、`README.md` 工具樹、`docs/ops/RUNBOOK.md` §12 兩表、`docs/ops/reference-src/code-gate-contracts.md` §3 ①（「錨檔＝工具常數 `ANCHOR_REL`」改指 `ANCHORS`）、`docs/ops/RUNBOOK.md` §9 之「無 UI 按鈕」句改為兩處解鎖入口（`contracts/code-gates.md` §8.2）；research R22「`ANCHOR_REL`」種子復掃。**DoD（U18 出口）：`python3 tools/view-render-guard.py test` 與 `check` 綠；其餘同 T081 之 U17 出口斷言；★巢狀 (vii) 塊不適用拔標記法——三檔各以通則⑤字面 `grep -cF 'MANAGE-PAGE-WIRING(vii)+ 007-user-password-admin START]'` 計數恰 1 入 commit 訊息（`contracts/code-gates.md` §1.5）；本單元 `.vue` 新檔取一支同形自證（暫刪檔頭標記行 → 報缺檔頭標記 → 寫回；`.ts`／`.d.ts` 已於 T069 自證；`contracts/code-gates.md` §1.5）；`page.passwordPolicy` 塊拔標記必報；兩入口共用同一包裝：`git -C base-web grep -n 'export function fetchUnlockLogin' -- src` 恰 1 處、`git -C base-web grep -n '/systemManage/unlockLogin' -- src` 恰 1 處（同檔 `src/service/api/rev6-user-admin.ts`）、`git -C base-web grep -l 'fetchUnlockLogin' -- src/views` 恰使用者頁與 IP 規則頁解鎖彈窗兩檔；`git -C base-web grep -cF "hasAuth('ipRule:unlock')" -- src/views/manage/ip-rule/index.vue`＝1；`git -C base-web grep -ohE "hasAuth[(]'user:[a-z-]+'[)]" -- src/views/manage/user | sort -u` 恰七碼（`user:add`／`user:edit`／`user:delete`／`user:restore`／`user:kick`／`user:reset-pwd`／`user:unlock`；多一或少一即紅）；base-web 容器內經 unplugin 重算 `src/typings/components.d.ts` 後 `git -C base-web status --porcelain -- src/typings/components.d.ts` 為空（已 commit 形＝工具重算形）；`git -C base-web grep -n -E '無 UI 按鈕|排除在本次授權之外' -- src/service/api/rev6-ip-rule.ts` 零命中（research R22 同義句）**
 
 **Checkpoint（U18）**: 即時規則 hook、重設與產密浮層、兩處解鎖入口、view-render-guard (b) 改寫與兩錨；base-web commit → 外層一顆（pin bump＋工具＋RUNBOOK＋README）＋generate
 
@@ -331,7 +332,7 @@ description: "Task list for 007-user-password-admin"
 **Independent Test**: 以持不同按鈕碼之角色登入 ⇒ 角色與選單頁之新增、編輯、刪除依碼顯隱；選單回收桶「復原」與角色抽屜三授權鈕不設碼（quickstart §10；US4 場景 10）。
 
 - [ ] T087 [US4] 角色與選單頁（MANAGE (viii)；research R18 決定 7、13；`contracts/code-gates.md` §1.2 #5、#6 與通則④；spec FR-042（UI）、FR-048）：`base-web/src/views/manage/role/index.vue`——表頭 `:show-add="hasAuth('role:add')"`、`:show-delete="hasAuth('role:delete')"`（自閉合開標籤無自然被替換行：兩 prop 排既有屬性之後、末個 prop 與自閉合符同行以取代基線獨行之 `/>`，`原行: />`；以 `pnpm lint` 與 fork-delta-lint 雙綠為準、不得以未圈界新增屬性行過關）、操作欄編輯 `role:edit`、刪除 `role:delete`、`useAuth` 匯入與取用為新增型、(ii) 既有 6 處修改型＋2 塊新增型不變、本用途標記帶 (viii)；`base-web/src/views/manage/menu/index.vue`——表頭兩 prop 為 (ii) 已加之 rev6 行（`:show-add="!showDeleted"`／`:show-delete="!showDeleted"`）＝於該行內併入 `&& hasAuth('menu:add')`／`&& hasAuth('menu:delete')`、不增 (viii) 標記（非基線行無 `原行:` 可記）、該 (ii) 標記理由句補按鈕碼；現役操作欄新增子選單 `menu:add`、編輯 `menu:edit`、刪除 `menu:delete`（JSX：標記置 `render:` 行上方、`原行: render: row => (`）；選單回收桶「復原」不設碼；「門在頁級」碼註改述（research R22「門在頁級」種子；ADR-00074 M-b）：`base-web/src/views/manage/role/modules/role-operate-drawer.vue` 之 (iii) 既有圈界首行碼註（三鈕不掛碼之理由改為「其讀寫端點屬封死集、非超管連現況都載不出」；只動碼註）、`menu/index.vue` 回收桶復原之 (ii) 標記理由句「此頁的門是頁級超管授權」同理改述；`policy-archive/index.vue` 同類句續真不改
-- [ ] T088 [P] [US4] 外層 `tools/view-render-guard.py` 之 `ANCHORS` 補角色頁與選單頁兩錨（四頁齊；選單頁表頭已含 `#prefix`＝依 U18 之 (b) 改寫）＋自測錨表四列。**DoD（U19 出口）：同 T081 之 U17 出口斷言；`hasAuth('role:` 恰三碼、`hasAuth('menu:` 恰三碼之 grep 集合相等；(viii) 逐檔逐用途計數入 commit 訊息（預估各 3 處修改型；不等者記 PATCH 清單）；`python3 tools/view-render-guard.py check` 綠**
+- [ ] T088 [P] [US4] 外層 `tools/view-render-guard.py` 之 `ANCHORS` 補角色頁與選單頁兩錨（四頁齊；選單頁表頭已含 `#prefix`＝依 U18 之 (b) 改寫）＋自測錨表四列。**DoD（U19 出口）：同 T081 之 U17 出口斷言；`hasAuth('role:` 恰三碼、`hasAuth('menu:` 恰三碼之 grep 集合相等；(viii) 逐檔逐用途計數入 commit 訊息（預估各 3 處修改型；不等者記 PATCH 清單）；`python3 tools/view-render-guard.py check` 綠；`git -C base-web grep -c 'hasAuth(' -- src/views/manage/role/modules/role-operate-drawer.vue`＝0（抽屜三顆授權鈕不設碼）；`menu/index.vue` 之已刪模式「復原」鈕所在 render 片段零 `hasAuth(`（python 取片段核、實得入 commit 訊息）；`git -C base-web grep -n -E '門(在|是)頁級' -- src` 之命中恰餘 `src/views/manage/policy-archive/index.vue`（續真句）**
 
 **Checkpoint（U19）**: 三頁按鈕碼顯隱全在場（ADR-00081 款 18 全解除之實作面）；base-web commit → 外層一顆（pin bump＋工具）＋generate
 
@@ -344,8 +345,8 @@ description: "Task list for 007-user-password-admin"
 **Independent Test**: 個人中心改密卡即時規則、新≠舊、確認欄；登入表單任意非空帳號與密碼皆送出、格式交後端；設密違規 toast 逐條列出違規、冷卻提示帶剩餘秒數（quickstart §6、§7、§10；US3 場景 1、5、7、10）。
 
 - [ ] T089 [US3] 個人中心（MANAGE (vi)；research R18 決定 8；`contracts/code-gates.md` §1.2 #4；spec FR-049；依 T082）：`base-web/src/views/user-center/index.vue` 兩行基線（`<script setup lang="ts"></script>`、`<LookForward />`）改修改型（前者之標記置於 SFC 頂層單行 HTML 註解）、只掛新檔、其餘卡位留白；新建 `base-web/src/views/user-center/modules/password-card.vue`（首行 `<!-- [rev6-inline USER-CENTER-VIEW+ 007-user-password-admin] … -->`；舊密碼一路、無信箱與手機選項；新密碼規則＝`buildPolicyRules(policy, '')`＋新≠舊〔訊息借 `backend.biz.user.passwordSameAsOld`〕；確認欄 `createConfirmPwdRule`；成功 toast `page.userCenter.password.success`、清欄；掛載即 `ensureLoaded`；★`forbidUsername` 即時提示結構性缺席〔前端唯一可得之 `userInfo.userName` 為顯示名〕、該條交後端；`fetchChangePassword` 自 `rev6-user-center.ts`）；`page.userCenter.*` 於 `base-web/src/locales/langs/{zh-cn,en-us}.ts` 與 `base-web/src/typings/app.d.ts` 各新增一塊 (vi) 新增型圈界（`page:` 樹新 top-level `userCenter`）、`zh-tw.ts` 同位；入口沿頭像下拉（`user-avatar.vue` 零 diff）
-- [ ] T090 [P] [US3] 登入表單（LOGIN-CAPTCHA (ii)；research R18 決定 9；`contracts/code-gates.md` §1.2 #7；spec FR-050）：`base-web/src/views/_builtin/login/modules/pwd-login.vue` 之 `rules` computed 內三行基線改修改型（`const { formRules } = useFormRules();` 改取 `createRequiredRule`；`userName`／`password` 兩欄只驗必填〔`form.userName.required`／`form.pwd.required`〕）；碼註照實寫規格（`REG_USER_NAME`＝4～16 字、限 U+4E00～U+9FA5 之漢字與英數、底線、連字號；`REG_PWD`＝6～18 字英數底線；後端帳號名形制與政策皆與之不同 ⇒ 兩欄前端正則皆會擋下合法輸入；`rev5:` 該處碼註之誤述不照抄）；003 刀軟區圈界首行碼註「★(ii) formRules 放寬不在授權內、不動」改現在式（`contracts/code-gates.md` §1.1 種子「(ii) formRules」）；★`src/constants/reg.ts` 零 diff、register／reset-pwd 不動、三顆快速登入鈕零 inline（BL-00049）、captcha 軟區零變更、(i) 既有 2 處＋2 塊不變
-- [ ] T091 [US3] 請求層明細轉譯（I18N (i)；research R18 決定 10；`contracts/msg-keys.md` §2.4；`contracts/wire-user-center.md` §3.4；spec FR-051；依 T082）：`base-web/src/service/request/index.ts` 之單一 helper 擴為 `translateBackendMsg(msg, detail?)`——只認兩鍵：`biz.user.passwordPolicy`（`detail.violations` 逐碼經 `$t('page.passwordPolicy.violation.<碼>', 碼)` 譯、以 `page.passwordPolicy.listSeparator` 串成 `{violations}`）、`biz.user.pwdSetTooFrequent`（`{remainingSeconds}` 原值插入）；兩鍵走 `$t(key, named, msg)` 三參（原文 fallback 照舊）；data 形不符＝退純 key、違規碼查無譯文＝顯示碼字面；其餘鍵一律不讀 data；只改 onError 業務碼分支之 toast 鏈（既有修改型行之內容、`原行:` 不變）、`7777` 對話框與 HTTP 層錯誤鏈不傳 data；明細表與轉譯落 003 刀既有圈界內（(i) 列 2 處修改型＋2 塊新增型實數不變）；圈界內註解「錯誤信封 `data` 恆 null、沒有明細通道 ⇒ 只此一支 helper」與「明細插值鏈不帶回」改寫（research R22「`translateDetailValue`」「恆 null」種子）、ADR-00039 改指 ADR-00084（T003 分流至此）
+- [ ] T090 [P] [US3] 登入表單（LOGIN-CAPTCHA (ii)；research R18 決定 9；`contracts/code-gates.md` §1.2 #7；spec FR-050）：`base-web/src/views/_builtin/login/modules/pwd-login.vue` 之 `rules` computed 內三行基線改修改型（`const { formRules } = useFormRules();` 改取 `createRequiredRule`；`userName`／`password` 兩欄只驗必填〔`form.userName.required`／`form.pwd.required`〕）；碼註照實寫規格（`REG_USER_NAME`＝4～16 字、限 U+4E00～U+9FA5 之漢字與英數、底線、連字號；`REG_PWD`＝6～18 字英數底線；後端帳號名形制與政策皆與之不同 ⇒ 兩欄前端正則皆會擋下合法輸入；`rev5:` 該處碼註之誤述不照抄）；003 刀軟區圈界首行碼註「★(ii) formRules 放寬不在授權內、不動」改現在式（`contracts/code-gates.md` §1.1 種子「(ii) formRules」）；★`src/constants/reg.ts` 零 diff、register／reset-pwd 不動、三顆快速登入鈕零 inline（BL-00049）、captcha 軟區零變更、(i) 既有 2 處＋2 塊不變；DoD（U20）：`git -C base-web diff <U20 起點> -- src/views/_builtin/login/modules/pwd-login.vue` 之 hunk 只落 `rules` computed 三行修改型與 003 START 塊首行碼註兩處、`BASE-WEB-LOGIN-CAPTCHA-WIRING+ 003-auth-session` 兩塊其餘行與 (i) 修改型兩行零 diff（hunk 清單入 commit 訊息、多出任一即紅）
+- [ ] T091 [US3] 請求層明細轉譯（I18N (i)；research R18 決定 10；`contracts/msg-keys.md` §2.4；`contracts/wire-user-center.md` §3.4；spec FR-051；依 T082）：`base-web/src/service/request/index.ts` 之單一 helper 擴為 `translateBackendMsg(msg, detail?)`——只認兩鍵：`biz.user.passwordPolicy`（`detail.violations` 逐碼經 `$t('page.passwordPolicy.violation.<碼>', 碼)` 譯、以 `page.passwordPolicy.listSeparator` 串成 `{violations}`）、`biz.user.pwdSetTooFrequent`（`{remainingSeconds}` 原值插入）；兩鍵走 `$t(key, named, msg)` 三參（原文 fallback 照舊）；data 形不符＝退純 key、違規碼查無譯文＝顯示碼字面；其餘鍵一律不讀 data；只改 onError 業務碼分支之 toast 鏈（既有修改型行之內容、`原行:` 不變）、`7777` 對話框與 HTTP 層錯誤鏈不傳 data；明細表與轉譯落 003 刀既有圈界內（(i) 列 2 處修改型＋2 塊新增型實數不變）；圈界內註解「錯誤信封 `data` 恆 null、沒有明細通道 ⇒ 只此一支 helper」與「明細插值鏈不帶回」改寫（research R22「`translateDetailValue`」「恆 null」種子）、ADR-00039 改指 ADR-00084（T003 分流至此）；DoD：`git -C base-web grep -l 'passwordPolicy.violation' -- src` 恰 `src/service/request/index.ts` 與 `src/hooks/business/pwd-policy.ts` 兩檔（改密卡、重設浮層與產密元件經 hook 共用、零自立違規命名空間）
 - [ ] T092 [P] [US3] 外層 `tools/msg-key-gate.py` 斷言 3 名冊（`contracts/msg-keys.md` §5 斷言 3；research R14 決定 8）：`FRONTEND_MSG_CONSUMERS` 增 `("service/request/index.ts", "biz.user.passwordPolicy"): 1`、`("service/request/index.ts", "biz.user.pwdSetTooFrequent"): 1`（1 項→3 項；次數以實掃為準）＋自測（拔請求層一處字面即 rc 1）；安全前綴集不變（`auth`、`biz`）。**DoD（U20 出口）：`python3 tools/msg-key-gate.py test` 與 `check` 綠（與 base-web 同顆外層 commit）；其餘同 T081 之 U17 出口斷言；`src/service/request/index.ts` 之 ` START]` 數不增、`原行:` 仍 2（`contracts/msg-keys.md` §6 出口斷言）；(vi)、LOGIN-CAPTCHA (ii)、I18N (i) 逐檔逐用途計數入 commit 訊息**
 
 **Checkpoint（U20）**: 前端交付面齊（使用者頁、浮層、解鎖兩入口、三頁按鈕碼、個人中心、登入、明細轉譯）；base-web commit → 外層一顆（pin bump＋msg-key-gate）＋generate
@@ -369,13 +370,13 @@ description: "Task list for 007-user-password-admin"
 **Purpose**: quickstart 端到端走查（API 面）、殘列演練、CDP 三方對照（判準＝SC-010）、繁中 GR5 驗收、已知態觀察與告警活體實測、走查收尾還原；ADR-00081／ADR-00082 經 user 逐款親決 accepted。★本 phase 之 dev 庫寫入逐步取 user 放行（LL-00053）；CDP 一律 opus[1m]／xhigh；22080 全程唯讀、一律 127.0.0.1。
 
 - [ ] T096 [US1] ★主線 U22 起手：spec 刻意分岔登記表凍結（research R25；凍結時點＝本任務；CDP 中新發現者須經 user 親決〔AskUserQuestion〕入表、否則判紅）；前置（quickstart §0）：rev6 stack 與 rev5 對照 stack（`../fork260509-rev5/` 起法＝CLAUDE.md §7；只 up／stop／ps）在跑、host 瀏覽器 `--remote-debugging-port=9229`、`tools/orchestration/cdp.mjs` 可連；走查基準 `python3 tools/walkthrough-baseline.py snapshot <工作區>/walkthrough-007-qs-v4.json`（v4、m0003 後）；走查密碼一律執行期串接（quickstart 之 `QP`；RL-0054）；告警活體所需 `--profile obs --profile metrics` 可起
-- [ ] T097 [US1] ★主線 quickstart API 面與工具面走查（`specs/007-user-password-admin/quickstart.md` §1～§9、§12；SC-013；dev 庫寫入逐步取 user 放行）：§1 路由與授權態、§2 讀端、§3 使用者寫端、§4 包含規則、§5 斷權、§6 密碼面、§7 個人中心與自助白名單、§8 自鎖防護與 m0003、§9 解鎖兩入口之 API 面逐條實得對照期望（寫入一律對自建帳號與自建角色；§8 之受保護撤銷與刪碼守門只打應被拒之路徑）；§12 工具與閘逐條；逐條結果記工作區走查紀錄、彙總入 U22 commit 訊息
-- [ ] T098 [US6] ★主線 殘列演練（`contracts/code-gates.md` §5.3；spec FR-058、SC-008；寫端 API 皆落地後、CDP 之前；dev 庫寫入逐步取 user 放行）：只經 API 對自建帳號產殘列——新增帳號（含初始密碼＝經手表列）、指派自建角色、以錯誤舊密打 changePassword 一次（`cpwd:` 鍵）；psql 只下 SELECT；帶殘列之容器內全量測試全程 serial 全綠（任何轉紅之案＝對自建帳號殘列敏感、同單元改錨或升級）；結果記 U22 commit 訊息（殘列之清除併 T102）
-- [ ] T099 [US1] CDP 三方對照（`specs/007-user-password-admin/quickstart.md` §10、driver＝`tools/orchestration/cdp.mjs`；spec SC-010、FR-065；主線派 CDP agent〔opus[1m]／xhigh〕執行、走查腳本落工作區）：三側一律先以 `evalJs` 對該 origin 執行 `localStorage.setItem('SOY_lang', JSON.stringify('zh-CN'))` 後 `Page.reload` 並以已知 zh-CN 字串斷言生效（22080、32080、必要時 22089）；22080 登入後即掛非 GET 請求攔截、開抽屜或彈窗後按取消；32080 前置之自建角色 `R_QS_CDP` 與帳號依 quickstart §10；逐面對照（使用者清單、搜尋卡、新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提示、只改暱稱 body 無 `status`／`roleIds`〕、刪除與批刪、回收桶、列操作下拉、踢除流程〔被踢分頁 `7777`＋`auth.session.kickedByAdmin` 文案〕、重設與產密浮層、列解鎖、三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕、按鈕權限彈窗六碼鎖定〔只觀察、按取消〕、選單刪碼守門〔32080 單邊〕、IP 規則頁解鎖、個人中心、登入頁複雜密碼可登入、語言下拉）——結構清單逐項全等、任一不等即紅；排除清單＝凍結之刻意分岔表＋ADR-00081／ADR-00082 草稿各款＋spec Edge Cases 已知態＋008 刀兩頁死項＋請求次數維度；間距／字體／顏色只記走查紀錄
-- [ ] T100 [US5] 繁中 GR5 驗收（quickstart §11；spec SC-009、US5 場景 4；research R19 決定 8；ADR-00084）：機器檢查（容器內 `pnpm typecheck`、`python3 tools/msg-key-gate.py check`、`python3 tools/zh-tw-lint.py check` 與 `test`）＋CDP agent（opus[1m]／xhigh）於 32080 設 `'zh-TW'` 後逐頁 AI 審讀（射程＝research R19 決定 8 所列接真頁面與全域外框、兩種 `7777` 對話框與重新登入提示；每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項；upstream 範例頁元件庫內建字與 pro-naive 已知態除外）＋首訪預設繁中（`removeItem('SOY_lang')` 後重載斷言繁中）＋主線以 AskUserQuestion 請 user 於 32080 繁中介面自選頁抽查並回報；發現者三分流（修〔回承載單元檔、主線順手修或升級〕／轉 BL／已知態）；★受版控紀錄＝本 T 落地註記（頁清單、發現數、處置、user 抽查結果）＋U22 commit 訊息、逐頁明細住工作區
+- [ ] T097 [US1] ★主線 quickstart API 面與工具面走查（`specs/007-user-password-admin/quickstart.md` §1～§9、§12；SC-013；dev 庫寫入逐步取 user 放行）：§1 路由與授權態、§2 讀端、§3 使用者寫端、§4 包含規則、§5 斷權、§6 密碼面、§7 個人中心與自助白名單、§8 自鎖防護與 m0003、§9 解鎖兩入口之 API 面逐條實得對照期望（寫入一律對自建帳號與自建角色；§8 之受保護撤銷與刪碼守門只打應被拒之路徑）；§12 工具與閘逐條；逐條結果記工作區走查紀錄、彙總入 U22 commit 訊息；判準：§1～§9、§12 任一條實得≠期望即紅——修回承載單元後重跑該條，或經 user 親決（AskUserQuestion）入 ADR-00081／ADR-00082 已知態；全數通過（含親決入已知態者）方可勾選，彙總（通過數／總數／入已知態數）入 U22 commit 訊息；§6 日誌面另查雜湊：`dc logs --since 30m rust-api | grep -c -F '$argon2'` 期望 0（時間窗涵蓋 §3 新增與 §6 重設、改密之成功腿與拒因腿），與明文 grep 同列入 U22 commit 訊息
+- [ ] T098 [US6] ★主線 殘列演練（`contracts/code-gates.md` §5.3；spec FR-058、SC-008；寫端 API 皆落地後、CDP 之前；dev 庫寫入逐步取 user 放行）：只經 API 對自建帳號產殘列——新增帳號（含初始密碼＝經手表列）、指派自建角色、以錯誤舊密打 changePassword 一次（`cpwd:` 鍵）；psql 只下 SELECT；帶殘列之容器內全量測試全程 serial 全綠（任何轉紅之案＝對自建帳號殘列敏感、同單元改錨或升級）；結果記 U22 commit 訊息（殘列之清除併 T102）；殘列補齊稽核詞彙：同一演練另只經 API 對另備之自建帳號各產一列 `delete`、`restore`、`kick`、`reset_password`、`change_password`、`unlock`，連同既有 add／update，前置斷言＝psql `SELECT DISTINCT operation FROM sys_operation_log` 八種皆在；帶殘列全量任一稽核斷言轉紅＝該案寫了絕對計數、同單元改取 `OpLogRowsGuard` 水位窗；全量前（含 T097 所跑 quickstart §12 全量步）先跑 `python3 tools/walkthrough-baseline.py diff <工作區>/walkthrough-007-qs-v4.json`，判準＝seed 帳號（id 1／2／3）之使用者列與指派鍵集、授權列與角色列零差（自建帳號與自建角色之差照列不擋）；有 seed 面之差＝先 restore、再重產自建殘列方跑全量，不得以改錨吸收
+- [ ] T099 [US1] CDP 三方對照（`specs/007-user-password-admin/quickstart.md` §10、driver＝`tools/orchestration/cdp.mjs`；spec SC-010、FR-065；主線派 CDP agent〔opus[1m]／xhigh〕執行、走查腳本落工作區）：三側一律先以 `evalJs` 對該 origin 執行 `localStorage.setItem('SOY_lang', JSON.stringify('zh-CN'))` 後 `Page.reload` 並以已知 zh-CN 字串斷言生效（22080、32080、必要時 22089）；22080 登入後即掛非 GET 請求攔截、開抽屜或彈窗後按取消；32080 前置之自建角色 `R_QS_CDP` 與帳號依 quickstart §10；逐面對照（使用者清單、搜尋卡、新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提示、只改暱稱 body 無 `status`／`roleIds`〕、刪除與批刪、回收桶、列操作下拉、踢除流程〔被踢分頁 `7777`＋`auth.session.kickedByAdmin` 文案〕、重設與產密浮層、列解鎖、三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕、按鈕權限彈窗六碼鎖定〔只觀察、按取消〕、選單刪碼守門〔32080 單邊〕、IP 規則頁解鎖、個人中心、登入頁複雜密碼可登入、語言下拉）——結構清單逐項全等、任一不等即紅；排除清單＝凍結之刻意分岔表＋ADR-00081／ADR-00082 草稿各款＋spec Edge Cases 已知態＋008 刀兩頁死項＋請求次數維度；間距／字體／顏色只記走查紀錄；★32080 單邊判準：刻意分岔表各列之 rev6 側、自建帳號（`R_QS_CDP`、零角色、探針角色）視角與寫入流程，一律依 quickstart §10 預期欄與分岔表「rev6 本刀」欄逐項判、不符即紅——排除清單只免除與 22080 之全等比對、不免除 32080 對預期之比對；32080 單邊增項：①持停用自建角色之帳號之編輯抽屜＝停用角色標籤為角色名＋「（已停用）」且呈灰色、角色下拉候選中該項 disabled 點選不入選、點其移除鈕即消失且送出 body `roleIds` 不含該 id；Super 開抽屜不動停用角色、加 R_ADMIN 送出 → 攔得 body `roleIds` 恰含三者 id、清單該列角色欄＝三代碼 ②按鈕權限彈窗（R_SUPER）六碼（`role:*` 三、`menu:*` 三）逐碼呈鎖定不可取消（disabled 或等效態）、任一可取消即紅（仍不送出、按取消）③按鈕碼單碼探針：自建角色 `R_QS_PROBE` 依序只授一碼（使用者頁七碼、角色頁三碼、選單頁三碼逐碼一輪；經角色按鈕寫端設定、每輪 `Page.reload`），以持該角色之自建帳號開對應頁，可見之操作鈕恰為該碼所對之鈕（多見或少見即紅）④持 `R_QS_CDP` 者開編輯抽屜之角色下拉候選集＝getAllRoles 全集（含 R_SUPER）逐項全等、只改暱稱送出 → 攔截恰一發 updateUser 且零 `updateUserSessionPolicy` 請求、於 Super 列所見列鈕與同級列逐項全等（列級鈕只依按鈕碼、不預判包含規則）⑤對某自建帳號列按「解鎖登入」→ 攔截之 unlockLogin 請求 body 恰 `{dimension:'user', userName:<該列帳號原文>}` ⑥重設密碼浮層與個人中心改密卡之即時規則隨政策：以設定寫端將 `password_min_length` 設 12 後先 `Page.reload`（政策快取一次登入只讀一次、只增不清）再開浮層／卡，輸入 10 字元＝即時顯示 `page.passwordPolicy.violation.minLength` 譯文；設回 8 並 `Page.reload` 後同輸入不顯示該提示；攔截 getPasswordPolicy 使之失敗後開浮層＝輸入欄只餘必填提示、無錯誤 toast，送出不合政策之密碼仍達後端並顯示 `biz.user.passwordPolicy` 違規明細 ⑦登入頁兩欄分別清空後按登入＝各顯示必填提示（`form.userName.required`／`form.pwd.required` 譯文）且不發 login 請求、以不合舊前端正則之帳號（如 3 字含 `.`）與 5 字密碼按登入＝發出 login 請求並顯示後端拒因（前端不擋）；三顆快速登入鈕（Super／Admin／User）在場為結構清單必判項、缺任一即紅；32080 單邊另判：⑧使用者清單與回收桶之「建立時間」「更新時間」儲存格文字＝該列 API `createdAt`／`updatedAt` 原字串逐字（不依瀏覽器時區換算＝ADR-00061）⑨列操作下拉逐列核「解鎖登入」恆在且可按（含本人列與停用帳號列、不隨鎖定狀態增減）⑩`R_QS_CDP` 另授 IP 規則頁之選單可見性（不授 `ipRule:unlock`）→ 以其帳號開 IP 規則頁不見「解鎖來源 IP」鈕（Super 見＝正向腿）⑪Super 開新增抽屜填合形制帳號名、合政策密碼並指派一自建角色送出 → 成功提示、清單出現該列且角色欄顯示該角色代碼；再以編輯抽屜只將該帳號狀態改停用送出 → 攔得 updateUser body 含 `status`、清單狀態欄轉停用；再只改會話政策送出 → 攔得 updateUserSessionPolicy 恰一發（body 恰 `{id, sessionPolicy}`）；任一不符即紅；⑫編輯抽屜 body 鍵集三形（Super、對自建帳號、網路攔截）：只改暱稱＝updateUser body 無 `status`／`roleIds` 且零 updateUserSessionPolicy、只改狀態＝含 `status` 無 `roleIds`、只改角色＝含 `roleIds` 無 `status`；任一不符即紅
+- [ ] T100 [US5] 繁中 GR5 驗收（quickstart §11；spec SC-009、US5 場景 4；research R19 決定 8；ADR-00084）：機器檢查（容器內 `pnpm typecheck`、`python3 tools/msg-key-gate.py check`、`python3 tools/zh-tw-lint.py check` 與 `test`）＋CDP agent（opus[1m]／xhigh）於 32080 設 `'zh-TW'` 後逐頁 AI 審讀（射程＝research R19 決定 8 所列接真頁面與全域外框、兩種 `7777` 對話框與重新登入提示；每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項；upstream 範例頁元件庫內建字與 pro-naive 已知態除外）＋首訪預設繁中（`removeItem('SOY_lang')` 後重載斷言繁中）＋主線以 AskUserQuestion 請 user 於 32080 繁中介面自選頁抽查並回報；發現者三分流（修〔回承載單元檔、主線順手修或升級〕／轉 BL／已知態）；★受版控紀錄＝本 T 落地註記（頁清單、發現數、處置、user 抽查結果）＋U22 commit 訊息、逐頁明細住工作區；照記斷言：32080 經語言下拉依序選 English、简体中文，每次選後 `Page.reload`，`localStorage.getItem('SOY_lang')` 恰為 `"en-US"`／`"zh-CN"` 且以該語已知字串斷言生效（不符即紅）；語言下拉單邊斷言（32080）：展開恰三項、序＝「简体中文／繁體中文／English」；執行 quickstart §11 之 grep 列並記實得；落地註記之頁清單與 research R19 決定 8 射程（接真頁面＋全域外框＋兩種 `7777` 對話框與重新登入提示）逐項對賬、缺任一＝未完成，對賬數（射程項數／已審項數）入落地註記；首訪（`localStorage` 無 `SOY_lang`）語言下拉當前項＝「繁體中文」、quickstart §11 之三檔 `'zh-TW'` grep 各 ≥1，任一不符即紅；首訪 `<html lang>` 同步：`localStorage.removeItem('SOY_lang')` 後 `Page.reload`，`document.documentElement.lang`＝`zh-TW`；`localStorage.setItem('SOY_lang', JSON.stringify('zh-CN'))` 後 `Page.reload`＝`zh-CN`（未經切換即同步）；不符即紅
 - [ ] T101 [US4] 已知態觀察與告警活體實測（quickstart §14；`contracts/code-gates.md` §7.3；spec FR-065；dev 庫寫入逐步取 user 放行）：以自建帳號持自建角色觀察 ADR-00081 款 7／10／11／18／20 與 ADR-00082 款 1／3、ADR-00080 並行編輯已知態，逐款記「觀察路徑→症狀」（`rev5:L-046`）；★ADR-00070 觸發器④＝`qs_dora` 對已停用之自身所屬角色只改名稱送出成功、body 無 `status` 鍵（API 兩發＋CDP）；告警活體（`contracts/code-gates.md` §7.3 步 1～5）：`/metrics` 見 `password_policy_invalid_total 0` 與 `throttle_degraded_total{source="redis_change_pwd"} 0` → 經系統設定寫端設 `password_min_length` 20／`password_max_length` 10 → 對自建帳號設密一次＝`2222 biz.user.passwordPolicy`、計數 ≥1 → 起 `metrics` profile、兩個評估週期內 Grafana `password-policy-invalid` 轉 Firing、窗過自然解除 → 兩鍵改回 8／64；查核命令形於實跑後原樣補入 RUNBOOK §11（只寫實跑過之命令）；新發現之已知態併入 ADR-00081／ADR-00082 草稿（交 T103 親決）
 - [ ] T102 [US6] ★主線 走查收尾還原（quickstart §13 前半；spec SC-008 後半、SC-013；dev 庫寫入逐步取 user 放行）：`password%` 設定逐鍵已改回 seed 值之 SELECT 核 → `python3 tools/walkthrough-baseline.py restore <工作區>/walkthrough-007-qs-v4.json` → 重啟 rust-api → `diff` rc 0 → `python3 tools/schema-gate.py check` 綠 → `casbin_rule_id_seq`＝(164, true)、`sys_user_id_seq` 回基準值、`cpwd:*` 零鍵；結果記 U22 commit 訊息
-- [ ] T103 [US4] ★主線任務（user 親決；ADR 顆；research R21、`contracts/code-gates.md` §8.1）：AskUserQuestion 逐款呈 `docs/arc42/decisions/ADR-00081-role-menu-known-states-v3.md`、`docs/arc42/decisions/ADR-00082-ip-domain-known-states-v4.md` 之決定節（以 T101 觀察定稿之款號、症狀與 ADR-00082 八詞落字；含 T099／T100 新發現之已知態）→ 兩支 proposed→accepted＋`supersedes: [ADR-00068]`／`[ADR-00069]`、被續行者 status→superseded（`superseded_by` 由 generate 回填、generate 後再 `git add docs/arc42/decisions`）；★現在式面改指（`python3 tools/docsync errata ADR-00068`／`ADR-00069` 現算、兩子庫另 `git -C <子庫> grep`）：`docs/arc42/11-risks-and-technical-debt.md` 已知態摘要改指 ADR-00081／ADR-00082、活書 11 已知態列「解除點」之「使用者域刀」改指 ADR-00081（research R22「使用者域刀」種子）、ADR-00069 款 3「五詞」之現在式面改八詞、子庫碼註引其為現行依據者改指（子庫只改註、走兩段式）；T099 新發現而經 user 親決入表之分岔列寫回 `specs/007-user-password-admin/spec.md` 刻意分岔登記表；tasks T096～T103 勾選與 T100 落地註記同顆；`generate`；commit `docs(adr): accept ADR-00081／ADR-00082（CDP 三方對照與已知態觀察後）`。**DoD：lint 全綠；ADR-00068／ADR-00069 之現在式引用零殘留**
+- [ ] T103 [US4] ★主線任務（user 親決；ADR 顆；research R21、`contracts/code-gates.md` §8.1）：AskUserQuestion 逐款呈 `docs/arc42/decisions/ADR-00081-role-menu-known-states-v3.md`、`docs/arc42/decisions/ADR-00082-ip-domain-known-states-v4.md` 之決定節（以 T101 觀察定稿之款號、症狀與 ADR-00082 八詞落字；含 T099／T100 新發現之已知態）→ 兩支 proposed→accepted＋`supersedes: [ADR-00068]`／`[ADR-00069]`、被續行者 status→superseded（`superseded_by` 由 generate 回填、generate 後再 `git add docs/arc42/decisions`）；★現在式面改指（`python3 tools/docsync errata ADR-00068`／`ADR-00069` 現算、兩子庫另 `git -C <子庫> grep`）：`docs/arc42/11-risks-and-technical-debt.md` 已知態摘要改指 ADR-00081／ADR-00082、活書 11 已知態列「解除點」之「使用者域刀」改指 ADR-00081（research R22「使用者域刀」種子）、ADR-00069 款 3「五詞」之現在式面改八詞、子庫碼註引其為現行依據者改指（子庫只改註、走兩段式）；T099 新發現而經 user 親決入表之分岔列寫回 `specs/007-user-password-admin/spec.md` 刻意分岔登記表；tasks T096～T103 勾選與 T100 落地註記同顆；`generate`；commit `docs(adr): accept ADR-00081／ADR-00082（CDP 三方對照與已知態觀察後）`。**DoD：lint 全綠；ADR-00068／ADR-00069 之現在式引用零殘留；`python3 tools/docsync errata 使用者域刀` 之現在式面零殘留（史料面與 accepted ADR body 除外、逐條記入 commit 訊息）**
 
 **Checkpoint（U22）**: SC-010 全等（排除清單內者記錄在案）、GR5 三件齊（機器、AI 審讀、user 抽查）、已知態實測與告警活體在案、走查後 diff rc 0、ADR-00081／ADR-00082 accepted；外層 commit（走查紀錄彙總）＋ADR 顆（必要時含子庫碼註改指之 pin bump）＋generate
 
@@ -384,12 +385,12 @@ description: "Task list for 007-user-password-admin"
 ## Phase 19: Polish & Cross-Cutting Concerns（U23 收刀前承載體檢＋DoD 收攏；final holistic review 之前）
 
 - [ ] T104 ★主線任務（user 親決；收刀前 PATCH Amendment 顆；ADR-00074 回填義務與翻案觸發器第三條、`contracts/code-gates.md` §8.1 末列、§8.3；research R21 末列、R25；前例 ADR-00051／ADR-00072）：先以逐用途 `grep -cF`（新增型 `<軌道>(<用途>)+ 007-user-password-admin START]`、修改型 `<軌道>(<用途>) 007-user-password-admin]`；★各列實數一律取逐用途計數、不得由全檔總數倒推）現算 `contracts/code-gates.md` §1.2 #1～#16 之本刀各項實數並逐檔對預估值（不等之項＝本顆實數化之依據；各單元收尾記入之 PATCH 清單逐項核）→ 新立 PATCH Amendment ADR（配號＝屆時下一號、`docs/arc42/decisions/ADR-<號>-<slug>.md`；`supersedes: []`）：MANAGE (v)～(viii)、LOGIN-CAPTCHA (ii)、I18N (i)(iii) 範圍欄預估值實數化（含「不預估」項一次實數化）→ AskUserQuestion 逐項呈 → accepted＋`.specify/memory/constitution.md` §III.2 各列範圍欄改實數＋版本 1.8.0→1.8.1＋`Last Amended`＋Amendment log 列＋`generate`；落地前主線親跑 `python3 tools/fork-delta-lint.py` rc 0（★實數化後對賬腿自動納入各項＝跳過項數降、對賬項數升，兩數記 commit 訊息）與 `python3 tools/route-artifact-gate.py check` rc 0；獨立一顆 `docs(constitution): amend` commit（§V.2 步 3／4）。**DoD：lint 全綠；對賬腿對本刀各列實數綠**
-- [ ] T105 收刀前承載體檢（唯讀；`contracts/code-gates.md` §8.3「反向確認」「另複核」；spec FR-060、SC-012；結果記 commit 訊息與收單事件註記之備料）：①BL-00108 反向確認＝`git -C rust-api grep -l -E 'fn (skip_ws|ident_at|close_of|split_top|peel_attrs|attr_spans|token_positions)\b' -- server` 之輸出仍恰為 `server/tests/entity_behavior_lint.rs`、`server/tests/wire_i64_guard_lint.rs` 兩檔 ②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（`git -C rust-api grep -n 'sys_access_log' -- server/src` 前後比對、零 `access_log_mw`） ③BL-00133 反向確認＝生產面對 `sys_casbin_policy_archive` 之讀寫點集合自起點 pin 零增 ④零新依賴＝`rust-api/Cargo.lock`、`base-web/pnpm-lock.yaml` 自本刀起點 pin 零 diff ⑤migration 目錄恰 `m0001_baseline_schema.rs`／`m0002_baseline_seeds.rs`／`m0003_seed_button_governance.rs`、`docs/ops/reference-src/schema-evolution.json` entries 恰九筆、`next_id` 10 ⑥Amendment 顆（T002）之 `git ls-tree <該顆> base-web` gitlink＝`fb4dac2` ⑦`contracts/code-gates.md` §1.4 變更檔集斷言全量復跑（M ⊆ #1～#17、#19 ∪ upstream 不存在之檔；A 恰 §1.3 九檔；DR 空；零 diff 斷言各檔）⑧`git -C rust-api grep -c '佔位：U7～U12 替換'`＝0、`Cow::Borrowed("` 生產面零命中（只 `error.rs` 測試模組矩陣列）、生產 `BizData(` 構造點恰兩處皆在 `handler/user.rs` 兩組裝件、`FRONTEND_MSG_CONSUMERS` 恰 3 ⑨`ROUTES` 61（Policy 45／Authed 5）、`MSG_KEYS` 68、變體 11、`THROTTLE_DEGRADED_SOURCES` 11、`AuditOperation` 8 之現算 ⑩角色域不撤會話之已核條件續真（research R7 第 5 款①；spec Edge Cases「角色寫端不連動撤會話」）＝`git -C rust-api grep -n 'sys_token::' -- server/src/handler/role.rs server/src/handler/menu.rs server/src/handler/policy_archive.rs server/src/model/facade/sys_casbin_archive.rs server/src/model/facade/sys_casbin_policy.rs server/src/model/facade/sys_role.rs server/src/model/facade/sys_menu.rs server/src/model/facade/sys_user_role.rs` 零命中（起點 pin 現況 0）
+- [ ] T105 收刀前承載體檢（唯讀；`contracts/code-gates.md` §8.3「反向確認」「另複核」；spec FR-060、SC-012；結果記 commit 訊息與收單事件註記之備料）：①BL-00108 反向確認＝`git -C rust-api grep -l -E 'fn (skip_ws|ident_at|close_of|split_top|peel_attrs|attr_spans|token_positions)\b' -- server` 之輸出仍恰為 `server/tests/entity_behavior_lint.rs`、`server/tests/wire_i64_guard_lint.rs` 兩檔 ②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（`git -C rust-api grep -n 'sys_access_log' -- server/src` 前後比對、零 `access_log_mw`） ③BL-00133 反向確認＝生產面對 `sys_casbin_policy_archive` 之讀寫點集合自起點 pin 零增 ④零新依賴＝`rust-api/Cargo.lock`、`base-web/pnpm-lock.yaml` 自本刀起點 pin 零 diff ⑤migration 目錄恰 `m0001_baseline_schema.rs`／`m0002_baseline_seeds.rs`／`m0003_seed_button_governance.rs`、`docs/ops/reference-src/schema-evolution.json` entries 恰九筆、`next_id` 10 ⑥Amendment 顆（T002）之 `git ls-tree <該顆> base-web` gitlink＝`fb4dac2` ⑦`contracts/code-gates.md` §1.4 變更檔集斷言全量復跑（M ⊆ #1～#17、#19 ∪ upstream 不存在之檔；A 恰 §1.3 九檔；DR 空；零 diff 斷言各檔）⑧`git -C rust-api grep -c '佔位：U7～U12 替換'`＝0、`Cow::Borrowed("` 生產面零命中（只 `error.rs` 測試模組矩陣列）、生產 `BizData(` 構造點恰兩處皆在 `handler/user.rs` 兩組裝件、`FRONTEND_MSG_CONSUMERS` 恰 3 ⑨`ROUTES` 61（Policy 45／Authed 5）、`MSG_KEYS` 68、變體 11、`THROTTLE_DEGRADED_SOURCES` 11、`AuditOperation` 8 之現算 ⑩角色域不撤會話之已核條件續真（research R7 第 5 款①；spec Edge Cases「角色寫端不連動撤會話」）＝`git -C rust-api grep -n 'sys_token::' -- server/src/handler/role.rs server/src/handler/menu.rs server/src/handler/policy_archive.rs server/src/model/facade/sys_casbin_archive.rs server/src/model/facade/sys_casbin_policy.rs server/src/model/facade/sys_role.rs server/src/model/facade/sys_menu.rs server/src/model/facade/sys_user_role.rs` 零命中（起點 pin 現況 0）；⑪C4-L2 拓樸不變反向確認＝`git diff <本刀起點外層 SHA>..HEAD -- docker-compose.yml docker-compose.dev.yml` 之 services 鍵集零增減（只容註解行）、`deploy/prometheus/prometheus.yml` 零 diff（零新容器、零新 scrape 目標）；⑩ 樣式擴間接撤會話路徑：同八檔另以 `git -C rust-api grep -n -e 'revoke_sessions_in_txn' -e 'finish_user_write' -e 'denylist_set' -e 'session_event::'` 零命中（起點 pin 以同命令現算＝0）
 - [ ] T106 [P] `docs/ops/BACKLOG.md` 帳本條文備妥（spec FR-060；`contracts/code-gates.md` §8.2「刪列前掃現在式引用」；★刪列與 `backlog_done` 屬收刀簿記、不在本任務）：`backlog_done` 8 條（BL-00031／BL-00047／BL-00048／BL-00065／BL-00091／BL-00124／BL-00136／BL-00138）逐條 `python3 tools/docsync errata BL-NNNNN` 現量現在式引用（RL-0050）——BACKLOG 本條以外之現在式引用（例：BL-00136 之 `rust-api/server/tests/contract.rs` 碼註、`docs/ops/NOTES.md`、`docs/ops/LESSONS/LL-00059-observation-window-full-test-must-carry-only-the-designated-residue.md`；BL-00138 ②移交 BL-00141 之指向）改寫為不依賴該列存續之形（子庫只改註、走兩段式；NOTES 之改寫隨收刀簿記）；反向確認三條（BL-00108／BL-00043／BL-00133）之註記備妥（T105 結果）；BL-00140／BL-00141／BL-00142 之條文復核（BL-00141 之 `config.rs`／compose 指向已由 T094 落地）
-- [ ] T107 ★主線 Day-1 登記三步（RUNBOOK §10；`contracts/code-gates.md` §8.3；quickstart §13 後半；spec US6 場景 2）：①`python3 tools/docsync refresh`（需乾淨 dev 庫——有自建帳號、指派殘列或 seed 帳號欄值殘留即先以走查還原工具回基準〔dev 庫寫入、逐步取 user 放行〕；照相改動快照檔者 `generate`＋`git add`）②演進帳九筆已於 U4 登記、只復核 ③pristine：一次性 postgres 容器＋獨立 network（命令形＝`specs/001-schema-baseline/fixtures/provenance.md` §6、名稱本刀自取）→ 容器內 migration up（m0001～m0003）→ `python3 tools/schema-gate.py check --container <pristine 容器>` rc 0（gate2 之 `casbin_rule` 序號期望 164）＋真庫變異自證（暫拆序號推進 → rc 1 指名 `casbin_rule_id_seq` → 寫回 → rc 0）→ 拆除容器、network、匿名 volume；★drvfs 上跑過 docker bind mount 後先重新 `cd` 再跑 python／git；`python3 tools/schema-gate.py doccheck` rc 0（schema-definition 不前進＝基線完整性對賬）
-- [ ] T108 ★主線 全量閘綠（spec FR-066 DoD 機器面、SC-013；`contracts/code-gates.md` §8.3「收刀 DoD 之機器面」）：全量前 `python3 tools/walkthrough-baseline.py snapshot <工作區>/walkthrough-007-final.json`（v4）→ 容器內 `cargo test --workspace -- --test-threads=1` 全綠（contract 61 case、22 新鍵實發點、名冊雙向閘、守衛自證）→ `diff <工作區>/walkthrough-007-final.json` rc 0 → 容器內 `cargo fmt --all --check` → base-web 容器 `pnpm typecheck` rc 0 → 碼面閘表全員 `check` rc 0（名冊唯一權威＝RUNBOOK §12 碼面閘表十支：`schema-gate`〔含 m0003 合成〕、`entity-drift-gate`、`rust-fmt-gate`、`wire-schema`、`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型只在授權檔〕、`msg-key-gate`、`view-render-guard`、`route-artifact-gate`〔容器在場〕、`seed-view-gate`、`zh-tw-lint`；容器依賴者具名跳過不算驗收）→ `python3 -B tools/docsync test`、`check`、`lint` 零紅 → `docs/generated/reference/routes.md` 61 列（Policy 45）→ 憲法 1.8.1；逐項結果記 commit 訊息
+- [ ] T107 ★主線 Day-1 登記三步（RUNBOOK §10；`contracts/code-gates.md` §8.3；quickstart §13 後半；spec US6 場景 2）：①`python3 tools/docsync refresh`（需乾淨 dev 庫——有自建帳號、指派殘列或 seed 帳號欄值殘留即先以走查還原工具回基準〔dev 庫寫入、逐步取 user 放行〕；照相改動快照檔者 `generate`＋`git add`）②演進帳九筆已於 U4 登記、只復核 ③pristine：一次性 postgres 容器＋獨立 network（命令形＝`specs/001-schema-baseline/fixtures/provenance.md` §6、名稱本刀自取）→ 容器內 migration up（m0001～m0003）→ `python3 tools/schema-gate.py check --container <pristine 容器>` rc 0（gate2 之 `casbin_rule` 序號期望 164）＋真庫變異自證（暫拆序號推進 → rc 1 指名 `casbin_rule_id_seq` → 寫回 → rc 0）→ 拆除容器、network、匿名 volume；★drvfs 上跑過 docker bind mount 後先重新 `cd` 再跑 python／git；`python3 tools/schema-gate.py doccheck` rc 0（schema-definition 不前進＝基線完整性對賬）；schema-definition 文字面不前進：本刀分支自 merge-base 起對 `docs/ops/reference-src/schema-definition.md` 之改動只落檔頭引言與 §1 導言（T003 改寫面）、§2 起零 diff，且 `grep -c 'casbin true×19' docs/ops/reference-src/schema-definition.md`＝1；不符即紅
+- [ ] T108 ★主線 全量閘綠（spec FR-066 DoD 機器面、SC-013；`contracts/code-gates.md` §8.3「收刀 DoD 之機器面」）：全量前 `python3 tools/walkthrough-baseline.py snapshot <工作區>/walkthrough-007-final.json`（v4）→ 容器內 `cargo test --workspace -- --test-threads=1` 全綠（contract 61 case、22 新鍵實發點、名冊雙向閘、守衛自證）→ `diff <工作區>/walkthrough-007-final.json` rc 0 → 容器內 `cargo fmt --all --check` → base-web 容器 `pnpm typecheck` rc 0 → 碼面閘表全員 `check` rc 0（名冊唯一權威＝RUNBOOK §12 碼面閘表十支：`schema-gate`〔含 m0003 合成〕、`entity-drift-gate`、`rust-fmt-gate`、`wire-schema`、`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型只在授權檔〕、`msg-key-gate`、`view-render-guard`、`route-artifact-gate`〔容器在場〕、`seed-view-gate`、`zh-tw-lint`；容器依賴者具名跳過不算驗收）→ `python3 -B tools/docsync test`、`check`、`lint` 零紅 → `docs/generated/reference/routes.md` 61 列（Policy 45）→ 憲法 1.8.1；逐項結果記 commit 訊息；rev5 唯讀復核：`bash tools/bootstrap.sh` rc 0 且輸出零則「rev5 對照樹有已追蹤檔改動」警告、三處 HEAD＝凍結 SHA；有警告＝停手升級
 - [ ] T109 ★主線 反例演練（RL-0080；spec SC-011、FR-063；每項存原文寫回、逐項單獨跑、寫回後 touch 並以 `Compiling` 自證重編＝RL-0085、三 porcelain 回演練前基準＝RL-0005）：①contract 覆蓋閘＝抽一 case 紅、殭屍 case 紅 ②★範圍欄對賬腿變異（`contracts/code-gates.md` §8.3；PATCH 實數化之後）＝逐用途取本刀一列暫把實數 +1（巢狀 (vii) 塊取「暫拔一對塊首塊尾」形）→ `python3 tools/fork-delta-lint.py` rc 1 指名該三元組或檔 → 寫回 → `git diff --name-only` 與 `git -C base-web status --porcelain` 零殘留 ③`guard_no_escalation` 植於名冊外 handler 生產面 → 腿⑦紅；`reload_enforcer` 植 `handler/user.rs` 生產面 → 腿①紅；`enter_menu_domain` 植 `handler/user.rs` → 腿⑤前半紅 ④msg-key-gate＝植第三支 `BizData` 鍵或射程鍵改 `Biz(` 純 key → rc 1 ⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）；逐項結果入 commit 訊息
-- [ ] T110 ★主線 需求對照與 perf（`specs/007-user-password-admin/tasks.md`「需求追溯」節；spec FR-066 末句：FR-001～FR-066 與 US1～US6 驗收場景全數對應至少一測試案、機器守或演練紀錄）：依文末「需求追溯」表逐條核承載 task 之落地證據（測試函式以 `git -C rust-api grep "fn <名>"` 逐支實存；base-web 項＝typecheck＋fork-delta-lint 對賬＋U22 CDP／GR5＋T097 走查）、無承載者即紅；對照表住工作區、摘要入 commit 訊息；perf＝`precommit_chain`（RUNBOOK §12b 命令形；收刀前無雙 pin 顆時於下一顆雙 pin bump commit 實量、次顆補記；RL-0053）；SC-014＝收刀面於簿記 commit 後驗（不在本任務）
+- [ ] T110 ★主線 需求對照與 perf（`specs/007-user-password-admin/tasks.md`「需求追溯」節；spec FR-066 末句：FR-001～FR-066 與 US1～US6 驗收場景全數對應至少一測試案、機器守或演練紀錄）：依文末「需求追溯」子句表逐列核（不以 task 勾選代之）：「測試名」欄每名實存（rust＝`git -C rust-api grep -n "fn <名>"`、外層工具＝`git grep -n "def <名>"`、base-web＝DoD 命令重跑實得）、走查與 CDP 錨核工作區走查紀錄該步之「實得 vs 期望」行；子句（「非測試承載」除外）無實存斷言或「測試名」欄空白即紅；收刀前以 AskUserQuestion 提請 user 裁定子句層追溯是否擴為 RULES 通則（調規拍板）；對照表住工作區、摘要入 commit 訊息；perf＝`precommit_chain`（RUNBOOK §12b 命令形；收刀前無雙 pin 顆時於下一顆雙 pin bump commit 實量、次顆補記；RL-0053）；SC-014＝收刀面於簿記 commit 後驗（不在本任務）
 
 **Checkpoint（U23）**: PATCH Amendment（1.8.1）落地、對賬腿實數綠與變異在案、Day-1 三步綠、全量閘綠、反例演練紅綠在案、需求對照無缺；主線：PATCH 顆（獨立）→ 收攏顆（tasks 勾選＋演練與體檢紀錄）＋generate → final holistic review（不落報告、以收單 commit 訊息逐項列處置＝RL-0073）
 
@@ -475,47 +476,1306 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 - 增量：刪除與復原（U9＝US1）→ 踢除、重設、會話政策與三向分派（U10＝US2／US3）→ 換發重驗（U11＝US2）→ 個人中心兩端點與自助白名單（U12＝US3）→ unlockLogin 帳號維（U13＝US4）→ wire 裁判收口（U14）→ 繁中 runtime 與 zh-tw-lint（U15～U16＝US5）→ 前端四單元（U17～U20＝US1／US3／US4）→ 文件 as-built（U21）→ CDP 三方對照、GR5、已知態觀察與 ADR-00081／ADR-00082 親決（U22）→ 收刀前承載體檢與 DoD（U23）；每單元收尾六步序、單元一支接一支連續跑完。
 - 收刀（★不在本清單）：final holistic review → `superpowers:finishing-a-development-branch`（push／merge 需 user 當次同意）→ 收刀簿記三步（`feature_close`：`adrs` 十五支〔ADR-00074～ADR-00087＋T104 之 PATCH ADR〕、`backlog_done` 8 條〔BACKLOG 同批刪列＝BL-00031／BL-00047／BL-00048／BL-00065／BL-00091／BL-00124／BL-00136／BL-00138〕、反向確認 3 條結果入註記、`backlog_add` 零〔BL-00140／BL-00141／BL-00142 已於 T003 誕生〕、`arch_impact` 以 `git diff --stat <merge-base>..HEAD -- docs/arc42/` 現算、notes 記淨流量值；NOTES 下一步→008 刀〔008 起每刀三語同批〕；generate）→ 第四步 `close_bookkeeping` perf（簿記 commit 落地後量牆鐘、隨下一顆 commit 入帳）＋同顆逐項核 SC-014 之簿記後驗子句、tasks 收刀清單各項與 contracts 指定寫入收單事件之註記，結果寫入其 commit 訊息（RL-0084）。
 
-## 需求追溯（FR-066：FR／SC／US 驗收場景／帳本 → 承載 task；無承載者即紅）
+## 需求追溯（FR-066：FR／US 驗收場景／SC／Edge Cases／帳本 → 承載；子句層、無承載者即紅）
 
-**FR**：
+**子句表**：spec 之 FR、US 驗收場景、SC、Edge Cases 逐條拆至子句（一條需求中可獨立違反之最小陳述；`#m` 起首者＝稽核複核補列之漏拆子句），每子句列承載錨＝`task·類別「該 task 行內逐字錨」`（一 task 一錨、錨可以 `grep -F` 對該 task 行實證）。類別＝測試（測試案）／機器守（閘、源碼釘、DoD 命令計數）／CDP（T099、T100 結構清單項與 32080 單邊判項）／走查（主線演練、實證與體檢 task 之步，如 T023、T097、T098、T107）／既有測試（函式名列「測試名」欄）；「非測試承載」子句（已知態、流程、文件面）以「文件」錨指其承載處。實作描述、泛稱全量綠、CDP 只觀察項、contracts 有案而無 task 指派，皆不算斷言。
 
-| FR | 承載 | FR | 承載 | FR | 承載 |
-|---|---|---|---|---|---|
-| 001 | T012 T013 T014 T016 T108 | 023 | T037 T067 T101 | 045 | T004 T019 T023 T107 |
-| 002 | T014 T038 T044 T049 T057 T066 T072 T097 | 024 | T080 T099 | 046 | T024 T025 |
-| 003 | T013 T042 T047 T064 | 025 | T044 T049 T057 T068 T109 | 047 | T078 T079 T080 T081 T083 |
-| 004 | T020 T022 T032 T034 T039 T040 T041 T045 T046 T050 T051 T060 T061 | 026 | T028 T041 T043 T047 T054 T063 T064 | 048 | T079 T083 T084 T085 T087 |
-| 005 | T038 T070 | 027 | T050 T052 T053 T057 | 049 | T089 |
-| 006 | T030 T041 T042 T043 T047 T048 T053 T054 T055 T064 T067 T072 | 028 | T058 T059 | 050 | T090 |
-| 007 | T026 T038 | 029 | T052 T058 | 051 | T032 T091 T092 |
-| 008 | T070 T081 | 030 | T002 T010 T028 T056 T076 T093 | 052 | T073 T074 T075 T076 T077 T100 |
-| 009 | T042 T043 T044 T047 | 031 | T062 T105 | 053 | T069 T080 |
-| 010 | T041 T042 T043 T047 T048 T053 T054 T055 | 032 | T031 T033 | 054 | T017 T022 T075 T081 T086 T088 T092 T105 |
-| 011 | T026 T027 T043 T044 T047 | 033 | T034 T041 T082 T091 | 055 | T001 T002 T017 |
-| 012 | T031 T042 | 034 | T031 T035 T101 | 056 | T002 T003 T103 T104 |
-| 013 | T043 | 035 | T029 T031 T054 T064 | 057 | T005 T006 T007 T008 T009 T010 T011 T023 |
-| 014 | T047 | 036 | T063 T064 | 058 | T006 T010 T043 T098 T102 |
-| 015 | T048 | 037 | T062 T064 | 059 | T093 T094 T095 |
-| 016 | T047 T053 T054 T055 | 038 | T064 T082 T083 T089 | 060 | T003 T106（＋收刀簿記） |
-| 017 | T041 T043 T047 | 039 | T065 | 061 | T014 T015 T016 T044 T071 T072 |
-| 018 | T055 | 040 | T067 T069 T084 T085 | 062 | T010 T011 全程紀律 |
-| 019 | T079 T081 | 041 | T018 T023 | 063 | T004 T020 T024 T031 T032 T043 T044 T047 T048 T052 T054 T056 T058 T064 T109 |
-| 020 | T027 T038 T043 T080 | 042 | T024 T087 | 064 | T069 T070 |
-| 021 | T036 T037 T042 T043 T047 T048 T053 T054 T055 T067 | 043 | T020 T021 T024 | 065 | T099 T100 T101 |
-| 022 | T036 T037 T071 | 044 | T018 T024 T099 | 066 | T108 T110 |
+**測試名欄**：單元收尾（六步序③落帳、與 tasks 勾選同批）由主線依該單元規格對照審查所指之測試函式名填入本單元承載之子句（rust `fn` 名、外層工具 `def` 名；base-web 與走查項填 DoD 命令或走查紀錄條目名）；斷言於實作期改形（改名、併案、改承載 task）者同批改錨與測試名。T110 依本表逐列核。
 
-**SC**：SC-001＝T012 T014 T072 T108｜SC-002＝T020 T021 T022 T039 T040 T044 T045 T046 T050 T051 T057 T060 T061 T066 T108｜SC-003＝T042 T043 T044 T047 T048 T053 T054 T055｜SC-004＝T036 T037 T044 T049 T057 T068 T109｜SC-005＝T043 T047 T053 T054 T058 T064｜SC-006＝T031 T054 T064 T097 T101｜SC-007＝T020 T023 T024 T087｜SC-008＝T006 T010 T011 T043 T098 T102｜SC-009＝T073 T074 T075 T076 T100｜SC-010＝T096 T099｜SC-011＝T081 T086 T088 T092 T104 T105 T109｜SC-012＝T002 T017 T105｜SC-013＝T097 T102 T108｜SC-014＝收刀簿記（T003 T106 預備）。
-
-**US 驗收場景**：
-
-| US | 場景 → 承載 |
-|---|---|
-| US1 | AS1＝T042 T044 T097 T099｜AS2＝T043 T044｜AS3＝T043｜AS4＝T038 T080 T099｜AS5＝T047 T049｜AS6＝T047｜AS7＝T048｜AS8＝T047 T053 T054 T055｜AS9＝T038 T081 T099｜AS10＝T079 T083 T084 T099 |
-| US2 | AS1＝T052 T053 T057 T099｜AS2＝T043｜AS3＝T054｜AS4＝T053｜AS5＝T058 T059｜AS6＝T058 |
-| US3 | AS1＝T031 T042 T054 T091｜AS2＝T031｜AS3＝T031 T101｜AS4＝T064 T089｜AS5＝T054 T064 T091｜AS6＝T062 T064｜AS7＝T064 T082 T083 T089｜AS8＝T065｜AS9＝T031 T097｜AS10＝T090 T099 |
-| US4 | AS1＝T036 T037 T044｜AS2＝T043 T044｜AS3＝T037 T044｜AS4＝T036 T044 T049 T057｜AS5＝T048 T049｜AS6＝T055 T057 T099｜AS7＝T079 T099｜AS8＝T080 T099｜AS9＝T067 T068 T084 T085｜AS10＝T087 T099｜AS11＝T018 T020 T024 T099 |
-| US5 | AS1＝T074 T100｜AS2＝T074 T100｜AS3＝T075｜AS4＝T076 T100｜AS5＝T051 T076 T100 |
-| US6 | AS1＝T002 T017 T105｜AS2＝T004 T018 T023 T107｜AS3＝T006｜AS4＝T006 T009 T023｜AS5＝T007｜AS6＝T007｜AS7＝T007｜AS8＝收刀簿記（T003 T106 預備） |
+| 子句 | 判定 | 承載錨（task·類別「該 task 行內逐字錨」） | 測試名 |
+|---|---|---|---|
+| FR-001#1 ROUTES MUST 由 49 條擴為 61 條 | 有斷言 | T012·測試「」；T014·測試「coverage 雙向閘 61＝61」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」 |  |
+| FR-001#2 路由條數常數同 commit bump | 有斷言 | T012·測試「`ROUTES_COUNT` 49→61」；既有·既有測試 | `routes_block_literal_form_and_pinned_rows` |
+| FR-001#3 新增管理面 10 條：路徑與動詞逐字對齊 001 凍結 seed 之政策列（getUserLi… | 有斷言 | T012·測試「路徑與動詞逐字對齊 seed 政策列 1／2〔getUserLi」；T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T016·測試「」 |  |
+| FR-001#4 個人中心 2 條——/userCenter/getPasswordPolicy（GET）、/u… | 有斷言 | T012·測試「路徑與動詞逐字對齊 seed 政策列 1／2〔getUserLi」；T014·測試「動詞不符 `4040` 取」；T016·測試「」 |  |
+| FR-001#5 個人中心兩條授權態＝登入即可用（零政策列） | 有斷言 | T012·測試「管理面十條 `Protection::Policy`〔GET 2」；T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」 |  |
+| FR-001#6 政策保護端點數 35→45 | 有斷言 | T012·測試「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「」 |  |
+| FR-001#7 contract case 登記表之 case 集 MUST 與 ROUTES 恰等（61＝6… | 有斷言 | T014·測試「coverage 雙向閘 61＝61」；T072·測試「registry 61＝61」；既有·既有測試；既有·既有測試；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route` |
+| FR-001#8 routes 生成表由 generate 重算 | 有斷言 | T097·走查「§1 路由與授權態」；T108·走查「`python3 -B tools/docsync test`、」 |  |
+| FR-001#9 外層 routes 生成器之真 repo 釘值測 MUST 同批 +12 列 | 有斷言 | T016·測試「」 |  |
+| FR-001#10 ROUTES 改動之單元另跑 docsync 自測 | 非測試承載 | T016·文件「＋`python3 -B tools/docsync test`」 |  |
+| FR-002#1 授權態 MUST 逐列照 seed（含 m0003）：管理面 10 條只授 R_SUPER | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「授權態矩陣十二條全數收緊為終值」；T097·走查「§1 路由與授權態」 |  |
+| FR-002#2 唯 getUserList 另授 R_ADMIN | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T038·測試「授權態矩陣兩支收緊（getUserList：Super／Admi」 |  |
+| FR-002#3 updateUserSessionPolicy 之政策列受保護＝屬封死集（島 G 之 G6）、… | 有斷言 | T057·測試「R_ADMIN 名下授權列逐欄不動（零變更」 |  |
+| FR-002#4 既有 unlockLogin 本刀接 UI | 有斷言 | T099·CDP「IP 規則頁解鎖、個人中心」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
+| FR-002#5 unlockLogin 端點本體不改（帳號維加掛包含規則＝FR-021） | 有斷言 | T067·測試「來源維不套、未鎖帳號回成功並落稽核（GR3）」；T068·測試「既有 unlockLogin case 照綠」；既有·既有測試 | `unlocking_a_target_that_is_not_locked_still_audits_and_marks` |
+| FR-002#6 動詞不符 → 4040 | 有斷言 | T014·測試「動詞不符 `4040` 取」；既有·既有測試 | `verb_mismatch_returns_4040_envelope_without_existence_leak` |
+| FR-003#1 使用者鍵 MUST 一律為 id | 有斷言 | T038·測試「seed 下 id 1 列形逐欄（含 `roles` 與」；T070·測試「`id` 為字串、時間偏移非 `+00:00`、」 |  |
+| FR-003#2 標的與操作者皆以 id 識別 | 有斷言 | T043·測試「測試：①～⑤ 各格負向」；T049·測試「以資料列指派 R_SUPER 予自建帳號、以其票 deleteU」；T057·測試「`cannotKickSelf`（kickUser」 |  |
+| FR-003#3 changePassword 之標的恆＝登入者本人（不信任 body 中之 id） | 有斷言 | T064·測試「body 另帶 `"id":<自建帳號 B 之 id>`」；T070·機器守「請求型逐欄簽名一表釘值＋逐欄反例＋合法形反序列化進 rust D」 |  |
+| FR-004#1 業務拒因 MUST 為純 i18n key | 有斷言 | T032·測試「」；T034·機器守「首引數 MUST 為」；T105·機器守「`Cow::Borrowed("` 生產面零命中（只」 |  |
+| FR-004#2 一因一鍵 | 有斷言 | T039·測試「」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T066·測試「四鍵各一發」；既有·既有測試 | `msg_roster_every_key_has_an_emitter` |
+| FR-004#3 唯二例外之 biz.user.passwordPolicy 攜違規清單、經新增之攜參明細通道（… | 有斷言 | T032·測試「經 `IntoResponse` 之本體逐位元＝」；T044·測試「`passwordPolicy` 斷言 data 恰」 |  |
+| FR-004#4 唯二例外之 biz.user.pwdSetTooFrequent 攜剩餘秒數、經同一明細通道 | 有斷言 | T054·測試「冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`」；T057·測試「data `1 ≤ remainingSeconds ≤ 60`」 |  |
+| FR-004#5 唯二：其餘拒因不攜參、明細通道構造點只此兩鍵 | 有斷言 | T034·機器守「④射程鍵以 `AppError::Biz(` 純 key 形構造」；T105·機器守「生產 `BizData(` 構造點恰兩處皆在」；T109·走查「④msg-key-gate＝植第三支 `BizData` 鍵或射」 |  |
+| FR-004#6 `5003` 恆純 key | 有斷言 | T032·測試「」；T036·測試「違者 `AppError::PermissionDenied`＝」 |  |
+| FR-004#7 13 碼矩陣與可發碼集不變 | 有斷言 | 既有·既有測試；既有·既有測試；T032·文件「13 碼矩陣與可發碼集九碼不變」 | `code_mod_matches_frozen_13_matrix`、`issuable_nine_and_no_variant_four` |
+| FR-004#8 錯誤變體 MUST 增二（攜參明細一、管理員踢除一；變體數 9→11） | 有斷言 | T032·測試「另立「變體樣本表」（現十變體各一樣本、逐變體斷言」；T050·測試「變體樣本表補成十一」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」 |  |
+| FR-004#9 變體數量詞同批改寫 | 有斷言 | T095·機器守「新值（六十一、十一域、十三支、三語、九島、十一源、十一變體、八詞」；T050·文件「`error.rs` 檔頭「恰十一」與「BizData／Moda」 |  |
+| FR-004#10 新增拒因鍵 MUST 隨首個發出它的單元落地（名冊、三檔 locale 後端子樹、型別樹同批） | 有斷言 | 既有·既有測試；T022·機器守「」；T040·機器守「」 | `msg_roster_every_key_has_an_emitter` |
+| FR-004#11 每鍵在契約測試之真 seed 應用面實際發出（名冊雙向閘） | 有斷言 | T021·測試「`biz.menu.protectedButtonRemove`」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T049·測試「`user_msgs_real_db` 補」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T066·測試「新段 `user_center_msgs_real_db`」；T108·走查「contract 61 case、22 新鍵實發點、名冊雙向閘、」 |  |
+| FR-004#12 名冊之鍵名與實數於 plan 期 contracts 定案（biz.user.* 家族＋aut… | 非測試承載 | msg-keys.md·文件「### 1.1 鍵表（表序＝`MSG_KEYS` 尾端追加序）」 |  |
+| FR-005#1 回應 MUST 逐欄白名單構造（絕不序列化原始資料列） | 有斷言 | T038·測試「多帶一欄與 `password` 類鍵不出現之反例」；T070·機器守「讀型序列化鍵集＝快照 properties 鍵集表驅動＋逐型「多」 |  |
+| FR-005#2 欄名 camelCase | 有斷言 | T038·測試「seed 下 id 1 列形逐欄（含 `roles` 與」；T070·機器守「讀型序列化鍵集＝快照 properties 鍵集表驅動＋逐型「多」 |  |
+| FR-005#3 id 為 number | 有斷言 | T070·測試「`id` 為字串、時間偏移非 `+00:00`、」 |  |
+| FR-005#4 id 守 2^53 上界 | 有斷言 | 既有·既有測試；T070·機器守「`tests/wire_i64_guard_lint.rs` 零」 | `unguarded_wire_i64_fields_match_declared_roster` |
+| FR-005#5 時間為帶 +00:00 之 RFC3339 | 有斷言 | T038·測試「seed 下 id 1 列形逐欄（含 `roles` 與」；T070·測試「`id` 為字串、時間偏移非 `+00:00`、」 |  |
+| FR-005#6 時間欄前端原樣顯示（ADR-00061） | 有斷言 | T099·CDP「⑧使用者清單與回收桶之「建立時間」「更新時間」」 |  |
+| FR-005#7 建立者與更新者以帳號名批次回填（查無→null） | 有斷言 | T038·測試「`updatedBy`＝O 之帳號名」；T070·測試「`id` 為字串、時間偏移非 `+00:00`、」；T097·走查「§3 使用者寫端」 |  |
+| FR-005#8 清單列 MUST 帶持有角色之 id、代碼與名稱（Q13） | 有斷言 | T038·測試「持停用角色之帳號列帶該角色 {id, 代碼, 名稱}（FR-02」；T070·測試「`roles` 元素缺 `roleCode`／」 |  |
+| FR-005#9 代碼供清單角色欄沿 rev5 HEAD 形顯示 | 有斷言 | T099·CDP「逐面對照（使用者清單、搜尋卡、」 |  |
+| FR-005#10 密碼明文與雜湊 MUST NOT 出現於任何回應 | 有斷言 | T038·測試「多帶一欄與 `password` 類鍵不出現之反例」；T070·測試「任何讀端型帶 `password`／`passwordHash`」；T097·走查「§2 讀端」 |  |
+| FR-005#11 密碼明文與雜湊 MUST NOT 出現於稽核 | 有斷言 | T042·測試「稽核快照不含密碼」；T054·測試「`reset_password` 稽核列」；T041·機器守「★機器釘＝正向逐鍵、負向 `password`／」；T097·走查「§3 使用者寫端」 |  |
+| FR-005#12 密碼明文與雜湊 MUST NOT 出現於日誌 | 有斷言 | T033·測試「一案（密碼欄樣本互異、`{:?}` 不含任一樣本、遮蔽字面次數＝」；T042·測試「手寫遮蔽密碼欄〔恆印 `<redacted>`〕＋一案」；T070·測試「反序列化後之 `Debug` 輸出不含密碼原文」；T097·走查「§6 密碼面」 |  |
+| FR-006#1 操作稽核 MUST 與業務寫入同一交易 | 有斷言 | T044·測試「稽核落列失敗＝整筆不生效」；T049·測試「稽核落列失敗＝整筆不生效（同 T044 形）」；T057·測試「稽核落列失敗＝整筆不生效（同 T044 形）」；T066·測試「稽核落列失敗＝整筆不生效」 |  |
+| FR-006#2 動作詞彙 MUST 由封閉五詞擴為八詞（新增 kick／reset_password／chan… | 有斷言 | T030·測試「`EXPECTED_LITERALS` 型長 5→8 尾端追加」；既有·既有測試；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」 | `audit_operation_literals_are_the_db_contract` |
+| FR-006#3 稽核列之 payload MUST NOT 含密碼明文或雜湊 | 有斷言 | T042·測試「稽核快照不含密碼」；T054·測試「`reset_password` 稽核列」；T041·機器守「★機器釘＝正向逐鍵、負向 `password`／」 |  |
+| FR-006#4 操作者取自請求上下文 | 有斷言 | 既有·既有測試；既有·既有測試；T097·走查「§4 包含規則」 | `write_in_txn_lands_exactly_one_row_with_every_column_mapped`、`operator_from_context_is_none_without_a_context_and_transcribes_it_when_present` |
+| FR-006#5 操作者上下文缺席＝拒寫 5000、不以佔位補列 | 有斷言 | T044·測試「」；T049·測試「拒寫案清單擴三支」；T057·測試「拒寫案清單與源碼次序釘擴三支」；T066·測試「拒寫案清單擴 changePassword（寫端清單至此 23）」；T041·機器守「之」 |  |
+| FR-006#6 操作者之取得 MUST 先於一切守門 | 有斷言 | T044·測試「」；T066·測試「拒寫案清單擴 changePassword（寫端清單至此 23）」；T072·測試「寫端清單 23 支、每發仍 2 格」 |  |
+| FR-006#7 既有 unlockLogin 依 FR-040 維持 004 刀處理序：標的解析先於上下文 | 有斷言 | 既有·既有測試；T067·機器守「`STEP_ANCHORS` 源碼次序釘改兩維各一序（帳號維「解」 | `handler_source_order_resolve_operator_audit_then_marker` |
+| FR-006#8 `real_ip` 缺席拒寫（島 F F3① 同向） | 有斷言 | T044·測試「」；T066·測試「拒寫案清單擴 changePassword（寫端清單至此 23）」 |  |
+| FR-007#1 getUserList／getDeletedUsers MUST 採共用分頁規則（005 刀分… | 有斷言 | T038·測試「兩支各補分頁五案」；T097·走查「§2 讀端」 |  |
+| FR-007#2 採共用分頁信封 | 有斷言 | T070·機器守「分頁回應直裁既有」 |  |
+| FR-007#3 伺服端固定穩定序、不收排序參數（ADR-00058 決定 1） | 有斷言 | T038·測試「排序參數一律忽略」；T070·機器守「請求型逐欄簽名一表釘值＋逐欄反例＋合法形反序列化進 rust D」 |  |
+| FR-007#4 現役清單依 id 升冪 | 有斷言 | T038·測試「`total` 與 id 序列以獨立 SQL 現算」；T097·走查「§2 讀端」 |  |
+| FR-007#5 回收桶依刪除時間降冪再 id 降冪（rev5:007 形） | 有斷言 | T026·測試「`list_deleted` 植三筆已刪自建帳號」；T038·測試「`total` 與 id 序列以獨立 SQL 現算」；T097·走查「§3 使用者寫端」 |  |
+| FR-007#6 getUserList MUST 支援六欄過濾——帳號名、暱稱、手機、信箱以部分字串比對 | 有斷言 | T038·測試「六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使」；T097·走查「§2 讀端」 |  |
+| FR-007#7 性別、狀態等值過濾 | 有斷言 | T038·測試「六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使」；T097·走查「§2 讀端」 |  |
+| FR-008#1 使用者清單之 wire 型與 upstream 宣告型（Api.SystemManage.Us… | 有斷言 | T070·機器守「偏離帳 `DEVIATION_LEDGER` 兩列→三列」 |  |
+| FR-008#2 欄名、可空性與角色欄形之差集由 wire 裁判機器導出、漂移即紅 | 有斷言 | 既有·既有測試；既有·既有測試；T070·機器守「`DeviationPin` 四欄自快照機器導出、首次抽取寫入；」 | `deviation_ledger_turns_red_on_each_planted_drift`、`upstream_same_url_types_deviate_exactly_as_ledger_pins` |
+| FR-008#3 使用者管理頁 MUST NOT 再消費 upstream 舊函式 | 有斷言 | T081·機器守「」 |  |
+| FR-008#4 excel 示範頁零 diff | 有斷言 | T081·機器守「§1.4 變更檔集斷言（base-web 子庫 commit 之」；T105·機器守「§1.4 變更檔集斷言全量復跑」 |  |
+| FR-008#5 src/views/plugin/excel/index.vue 示範頁為殘存消費面（所讀六欄… | 非測試承載 | ADR-00083-user-list-wire-deviation-ledger.md·文件「所讀六欄皆為兩型共有欄、同名同義」 |  |
+| FR-008#6 excel 示範頁之偏離入偏離帳（ADR⑩；user 2026-10-05 親決） | 有斷言 | T070·機器守「偏離帳 `DEVIATION_LEDGER` 兩列→三列」 |  |
+| FR-009#1 寫端請求 body 缺席 MUST 依既有 wire 慣例以共用件收斂為預設值 | 有斷言 | T044·測試「授權態矩陣收緊：Super 空 body addUser＝」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「授權態矩陣收緊（Super 空 body：三支皆」；既有·既有測試；T041·機器守「body 以」 | `json_or_default_reads_valid_bodies_and_collapses_every_rejection` |
+| FR-009#2 寫端請求 body 壞形 MUST 以同一共用件收斂為預設值 | 有斷言 | 既有·既有測試；T041·機器守「body 以」；T097·走查「§1 路由與授權態」 | `json_or_default_reads_valid_bodies_and_collapses_every_rejection` |
+| FR-009#3 收斂後走既有拒因早拒（標的不存在 → `biz.user.notFound`） | 有斷言 | T044·測試「授權態矩陣收緊：Super 空 body addUser＝」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「授權態矩陣收緊（Super 空 body：三支皆」 |  |
+| FR-009#4 body 缺席或壞形之請求零變更 | 有斷言 | T044·測試「updateUser＝」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「三支皆 `notFound`、零變更」 |  |
+| FR-009#5 授權中介層 MUST NOT 讀 body | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§1 路由與授權態」 |  |
+| FR-009#6 MUST NOT 為 body 缺席或壞形新增錯誤碼 | 有斷言 | T039·測試「」；既有·既有測試；既有·既有測試 | `code_mod_matches_frozen_13_matrix`、`issuable_nine_and_no_variant_four` |
+| FR-010#1 八支使用者寫端 MUST 依固定序 ①活性標的鎖讀→②seed 保護→③本人規則→④包含規則→… | 有斷言 | T043·測試「多重違規取先序五案」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T047·測試「多重違規取先序相位」；T053·測試「先序一案＝操作者自身另持一停用自建角色」；T054·測試「對本人 resetUserPassword＝」 |  |
+| FR-010#2 任一拒＝整筆 rollback、零變更 | 有斷言 | T043·測試「①～⑤ 各格負向案（含 ④ `5003`）逐案斷言標的」；T044·測試「段末復核零寫入」；T047·測試「整批 rollback（任一違規＝全批零變更）」；T048·測試「各格負向案逐案斷言零變更與水位窗零稽核（同 T043 形）」；T053·測試「各格負向案逐案斷言零變更（票仍 active、零會話事件、名單零」；T054·測試「各格負向案逐案斷言零變更（密碼雜湊、經手表、票面不動、零會話事件」；T055·測試「各格負向案逐案斷言零變更」；T057·測試「三支皆 `notFound`、零變更」；T097·走查「§4 包含規則」 |  |
+| FR-010#3 任一拒＝零稽核 | 有斷言 | T043·測試「`OpLogRowsGuard` 水位窗零新列（拒＝整筆 rol」；T044·測試「段末復核零寫入」；T047·測試「各格負向案逐案斷言零變更與水位窗零稽核（同 T043 形）」；T048·測試「各格負向案逐案斷言零變更與水位窗零稽核（同 T043 形）」；T053·測試「各格負向案逐案斷言零變更（票仍 active、零會話事件、名單零」；T097·走查「§4 包含規則」 |  |
+| FR-010#4 逐支之空格 MUST 以測試釘住空格理由 | 有斷言 | T042·測試「②③ 不適用之釘」；T047·測試「⑤ 空格（持指派與多會話之自建帳號照刪成功）」；T048·測試「②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得」；T053·測試「零 active 亦成功並落稽核（⑤ 空格）」；T054·測試「② 空格（Super 重設 seed Admin 成功、測後」；T055·測試「本人改本人成功」 |  |
+| FR-010#5 addUser ①：無既有標的（不取 advisory；同名並發由現役唯一索引兜底） | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·機器守「內層首句取 advisory〔addUser 內層零」 |  |
+| FR-010#6 addUser ②：seed 保護不適用 | 有斷言 | T042·測試「②③ 不適用之釘」 |  |
+| FR-010#7 addUser ③：本人規則不適用 | 有斷言 | T042·測試「②③ 不適用之釘」 |  |
+| FR-010#8 addUser ④：N⊆A（T＝∅） | 有斷言 | T044·測試「包含規則每消費點兩負一正」 |  |
+| FR-010#9 addUser ⑤：帳號名形制與現役唯一、信箱格式與現役唯一、角色 id 皆存在且未刪、密碼政… | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T054·測試「★addUser 冷卻格空格釘（addUser 後同操作者於冷卻」 |  |
+| FR-010#10 updateUser ①：鎖現役列 | 有斷言 | T043·測試「①～⑤ 各格負向」；T044·測試「updateUser＝」；T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」 |  |
+| FR-010#11 updateUser ②：Super 恆禁停用、恆禁解除其 R_SUPER 指派 | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-010#12 updateUser ③：本人之狀態與角色欄出現即拒、其餘欄可改 | 有斷言 | T043·測試「本人可改非角色欄」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§4 包含規則」 |  |
+| FR-010#13 updateUser ④：T⊆A∧N⊆A | 有斷言 | T044·測試「停用角色計入 T 一案（FR-025）」；T097·走查「§4 包含規則」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-010#14 updateUser ⑤：帳號名出現即拒、信箱、角色 id、值 diff no-op | 有斷言 | T043·測試「①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入、零稽」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-010#15 deleteUser ①：鎖現役列 | 有斷言 | T047·測試「測試：各格負向」；T049·測試「deleteUser／restoreUser＝」 |  |
+| FR-010#16 deleteUser ②：三帳號不可刪 | 有斷言 | T041·測試「讀庫釘值案（與 seed 三列一致」；T047·測試「測試：各格負向」 |  |
+| FR-010#17 deleteUser ③：不得刪本人 | 有斷言 | T047·測試「測試：各格負向」；T049·測試「`user_msgs_real_db` 補」 |  |
+| FR-010#18 deleteUser ④：T⊆A（N＝∅） | 有斷言 | T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」 |  |
+| FR-010#19 deleteUser ⑤：空格（——） | 有斷言 | T047·測試「⑤ 空格（持指派與多會話之自建帳號照刪成功）」 |  |
+| FR-010#20 batchDeleteUser ①：id 升序去重、同交易逐 id 鎖 | 有斷言 | T047·測試「測試：各格負向」；T097·走查「§3 使用者寫端」 |  |
+| FR-010#21 batchDeleteUser ②：含任一 seed 帳號整批拒 | 有斷言 | T047·測試「測試：各格負向」 |  |
+| FR-010#22 batchDeleteUser ③：含本人整批拒 | 有斷言 | T047·測試「測試：各格負向」；T097·走查「§4 包含規則」 |  |
+| FR-010#23 batchDeleteUser ④：逐筆 T⊆A | 有斷言 | T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」 |  |
+| FR-010#24 batchDeleteUser ⑤：空陣列提前 no-op；任一違規整批 rollback、不… | 有斷言 | T047·測試「多重違規取先序相位」；T049·測試「batchDeleteUser＝`0000` 提前成功」；T034·機器守「射程守分階段四句（①構造點之鍵 ⊆」；T097·走查「§3 使用者寫端」 |  |
+| FR-010#25 restoreUser ①：鎖已刪列 | 有斷言 | T048·測試「對現役自建帳號 id 打 restoreUser」；T049·測試「deleteUser／restoreUser＝」 |  |
+| FR-010#26 restoreUser ②：結構性不可達（seed 帳號不可刪） | 有斷言 | T048·測試「②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得」 |  |
+| FR-010#27 restoreUser ③：結構性不可達（本人不可刪） | 有斷言 | T048·測試「②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得」 |  |
+| FR-010#28 restoreUser ④：T⊆A（T＝∅ 恆成立） | 有斷言 | T048·測試「④ 負向以合成「已刪列仍掛指派」態釘」；T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」 |  |
+| FR-010#29 restoreUser ⑤：同帳號名、同信箱皆無現役列（撞名 `userNameExists`… | 有斷言 | T048·測試「撞名與撞信箱兩腿」 |  |
+| FR-010#30 kickUser ①：鎖現役列 | 有斷言 | T053·測試「已刪標的 `notFound`」；T057·測試「三支皆 `notFound`、零變更」 |  |
+| FR-010#31 kickUser ②：空（Super 可被踢） | 有斷言 | T053·測試「② 空格（第二個持 R_SUPER 之自建帳號踢 Super 成」 |  |
+| FR-010#32 kickUser ③：不得踢本人 | 有斷言 | T053·測試「本人拒」；T057·測試「`cannotKickSelf`（kickUser」 |  |
+| FR-010#33 kickUser ④：T⊆A | 有斷言 | T057·測試「包含規則三支各兩負一正」 |  |
+| FR-010#34 kickUser ⑤：空格（——） | 有斷言 | T053·測試「零 active 亦成功並落稽核（⑤ 空格）」 |  |
+| FR-010#35 resetUserPassword ①：鎖現役列 | 有斷言 | T054·測試「已刪 `notFound`」；T057·測試「三支皆 `notFound`、零變更」 |  |
+| FR-010#36 resetUserPassword ②：空 | 有斷言 | T054·測試「② 空格（Super 重設 seed Admin 成功、測後」 |  |
+| FR-010#37 resetUserPassword ③：不得以本端點重設本人 | 有斷言 | T054·測試「本人拒」；T057·測試「`cannotResetSelfPassword`（resetU」 |  |
+| FR-010#38 resetUserPassword ④：T⊆A | 有斷言 | T057·測試「包含規則三支各兩負一正」 |  |
+| FR-010#39 resetUserPassword ⑤：密碼政策、設密冷卻 | 有斷言 | T054·測試「政策 BizData data 形、冷卻邊界（」；T057·測試「`pwdSetTooFrequent`（以」 |  |
+| FR-010#40 updateUserSessionPolicy ①：鎖現役列 | 有斷言 | T055·測試「已刪 `notFound`」；T057·測試「三支皆 `notFound`、零變更」 |  |
+| FR-010#41 updateUserSessionPolicy ②：空 | 有斷言 | T055·測試「本人改本人成功」 |  |
+| FR-010#42 updateUserSessionPolicy ③：空（本人可改） | 有斷言 | T055·測試「本人改本人成功」 |  |
+| FR-010#43 updateUserSessionPolicy ④：T⊆A | 有斷言 | T055·測試「④ 負向以測內資料列授權繞過封死集而釘」；T057·測試「包含規則三支各兩負一正」 |  |
+| FR-010#44 updateUserSessionPolicy ⑤：三值收斂、值域外拒、值 diff no-op | 有斷言 | T055·測試「三值收斂各形、同值 no-op」；T057·測試「`sessionPolicyInvalid`（自建帳號、值域外字」 |  |
+| FR-011#1 handler 持交易（外殼 begin → 內層 `*_in_txn`） | 有斷言 | T026·機器守「`compile_fail` doctest（以」；T044·機器守「外殼 begin 後第一呼叫即內層」；T049·機器守「源碼次序釘擴三支」 |  |
+| FR-011#2 寫端之交易內主體首句取 per-user advisory（既有共用件） | 有斷言 | 既有·既有測試；T044·機器守「內層首句取 advisory〔addUser 內層零」；T049·機器守「源碼次序釘擴三支」；T057·機器守「拒寫案清單與源碼次序釘擴三支」 | `advisory_lock_user_blocks_same_uid_and_lets_other_uid_through` |
+| FR-011#3 使用者列 `FOR UPDATE` 鎖讀 | 有斷言 | T026·測試「先寫真 DB 案、先確認紅」 |  |
+| FR-011#4 使用者列鎖讀之活性濾軟刪 | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」；T053·測試「已刪標的 `notFound`」；T054·測試「已刪 `notFound`」；T055·測試「已刪 `notFound`」 |  |
+| FR-011#5 使用者列鎖讀不看狀態 | 有斷言 | T043·測試「回復啟用零撤票（SC-005）」；T097·走查「§3 使用者寫端」 |  |
+| FR-011#6 restoreUser 鎖已刪列 | 有斷言 | T026·測試「`find_deleted_by_id_for_update` 」；T048·測試「零回灌（復原後 `roles` 為空）」；T049·測試「deleteUser／restoreUser＝」 |  |
+| FR-011#7 角色列依 id 去重升序 `FOR UPDATE` | 有斷言 | T043·測試「兩交易分對不同自建帳號同時 updateUser」 |  |
+| FR-011#8 角色列於鎖內重驗未軟刪；lock-then-redecide、永不信 pre-read | 有斷言 | T043·測試「deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝」 |  |
+| FR-011#9 批次寫端整批聯集一次升序鎖角色列 | 有斷言 | T047·測試「∪Tᵢ 一次升序鎖角色列」 |  |
+| FR-011#10 → 指派全量替換 | 有斷言 | T027·測試「（data-model §1.2、§4；先寫測試）」；T043·測試「角色集差集硬刪＋新增」 |  |
+| FR-011#11 指派寫端 MUST NOT 入選單序列化域 | 有斷言 | 既有·既有測試；T027·機器守「生產面零 `advisory_lock_user`、零」；T109·走查「`enter_menu_domain` 植」 | `domain_lock_sites_match_roster` |
+| FR-011#12 ADR-00043 決定 8 之無 ABBA 論證於 ADR 重核（角色域寫端不取 per-u… | 非測試承載 | 既有·既有測試；T105·機器守「⑩角色域不撤會話之已核條件續真」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「★ADR-00043 決定 8 無 ABBA 論證重核（spec」 | `per_user_lock_stays_out_of_menu_domain_write_side` |
+| FR-011#m1 鎖序跨類單調：寫端之交易內主體 per-user advisory → 使用者列 FOR UP… | 有斷言 | T044·測試「寫端源碼次序釘另釘跨類鎖序」 |  |
+| FR-012#1 addUser MUST 收帳號名（形制守門） | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-012#2 帳號名現役唯一 | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| FR-012#3 初始密碼走政策 | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「`passwordPolicy` 斷言 data 恰」 |  |
+| FR-012#4 初始密碼走冷卻 | 有斷言 | T054·測試「★addUser 冷卻格空格釘（addUser 後同操作者於冷卻」 |  |
+| FR-012#5 初始密碼寫經手表 | 有斷言 | T042·測試「經手表一列」 |  |
+| FR-012#6 收暱稱、記事 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| FR-012#7 收性別 | 有斷言 | T042·測試「性別與狀態收斂」 |  |
+| FR-012#8 手機（選填、不守長度） | 有斷言 | T042·測試「手機不守格式與長度」；T097·走查「§3 使用者寫端」 |  |
+| FR-012#9 信箱（選填、簡式格式） | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-012#10 信箱現役唯一不分大小寫 | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| FR-012#11 狀態（預設啟用） | 有斷言 | T042·測試「性別與狀態收斂」；T097·走查「§3 使用者寫端」 |  |
+| FR-012#12 角色集（可空） | 有斷言 | T042·測試「零角色合法」 |  |
+| FR-012#13 空字串＝空值（Q16） | 有斷言 | T042·測試「空字串＝NULL」 |  |
+| FR-012#14 密碼雜湊於交易內、不持列鎖時計算 | 有斷言 | T042·機器守「`NewPassword::prepare(` 生產呼叫點之源碼」 |  |
+| FR-013#1 updateUser MUST 採部分更新三態：缺席＝不動 | 有斷言 | T043·測試「部分更新只送 `nickName` 時其餘可空文字欄」；既有·既有測試；T097·走查「§3 使用者寫端」 | `tristate_keeps_absent_null_and_value_apart_for_any_carried_type` |
+| FR-013#2 三態：null＝清空 | 有斷言 | 既有·既有測試；T097·走查「§3 使用者寫端」 | `tristate_keeps_absent_null_and_value_apart_for_any_carried_type` |
+| FR-013#3 三態：值＝設值 | 有斷言 | T043·測試「本人可改非角色欄」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#4 可空文字欄之空字串＝清空（Q16） | 有斷言 | T043·測試「空字串清空」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#5 帳號名出現即拒 | 有斷言 | T043·測試「①～⑤ 各格負向」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-013#6 no-op 判準：先全缺席早退 | 有斷言 | T043·測試「①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入、零稽」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#7 再於值域歸一（空字串＝空值、角色集以集合比）後比對現值 | 有斷言 | T043·測試「⑤-e 值域歸一 no-op 兩形」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#8 同值零寫入、零稽核、不動更新時間（Q15） | 有斷言 | T043·測試「①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入、零稽」 |  |
+| FR-013#9 角色集缺席＝不動 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| FR-013#10 角色集陣列＝寫後角色集恰等於之 | 有斷言 | T043·測試「角色集差集硬刪＋新增」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#11 角色集去重 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| FR-013#12 含不存在或已刪角色 id 則整筆拒 | 有斷言 | T043·測試「①～⑤ 各格負向」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#13 空陣列＝全撤 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| FR-013#14 差集以硬刪＋新增同交易落地 | 有斷言 | T027·測試「（data-model §1.2、§4；先寫測試）」；T043·測試「角色集差集硬刪＋新增」 |  |
+| FR-013#15 角色集變更稽核一列 `update` | 有斷言 | T043·測試「僅改角色集之成功案窗內恰一列 `update`」；T097·走查「§3 使用者寫端」 |  |
+| FR-013#16 使用者域此口徑與角色選單域（ADR-00047 決定 3）不同、MUST 由 ADR⑦ 明文逐… | 非測試承載 | T003·文件「」；ADR-00080-user-domain-write-semantics.md·文件「逐域差異表（本刀新增；單一出處）」 |  |
+| FR-014#1 deleteUser／batchDeleteUser MUST 於通過守門後軟刪（成對刪除時間… | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#2 → 硬刪該使用者全部角色指派列 | 有斷言 | T047·測試「刪除後 deleteRole 可刪該角色（軟刪同交易硬刪指派」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#3 → 撤銷全部有效票 | 有斷言 | T047·測試「撤票＋`user_deleted`＋名單」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#4 → 會話事件 `revoked`／`user_deleted` | 有斷言 | T047·測試「撤票＋`user_deleted`＋名單」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#5 → 稽核 `delete` | 有斷言 | T047·測試「單筆 `delete` 稽核恰一列」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#6 上述各步於同一交易 | 有斷言 | T047·測試「同交易（deleteUser／batchDeleteUser 內」；T049·機器守「源碼次序釘擴三支」 |  |
+| FR-014#7 batchDeleteUser 通過守門後逐人套同一寫序（軟刪→硬刪指派→撤票→事件→稽核） | 有斷言 | T047·測試「批刪兩名各持指派與兩會話之自建帳號成功」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#8 批刪任一違規整批 rollback | 有斷言 | T047·測試「整批 rollback（任一違規＝全批零變更）」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#9 拒因純 key 不指筆 | 有斷言 | T047·測試「多重違規取先序相位」；T034·機器守「射程守分階段四句（①構造點之鍵 ⊆」；T097·走查「§3 使用者寫端」 |  |
+| FR-014#10 空陣列提前 no-op | 有斷言 | T049·測試「batchDeleteUser＝`0000` 提前成功」；T097·走查「§3 使用者寫端」 |  |
+| FR-015#1 restoreUser MUST 鎖已刪列 | 有斷言 | T048·測試「對現役自建帳號 id 打 restoreUser」；T049·測試「deleteUser／restoreUser＝」 |  |
+| FR-015#2 鎖內重驗同帳號名無現役列（撞名回 `biz.user.userNameExists`） | 有斷言 | T048·測試「撞名與撞信箱兩腿」；T097·走查「§3 使用者寫端」 |  |
+| FR-015#3 鎖內重驗同信箱無現役列（撞信箱回 `biz.user.userEmailExists`） | 有斷言 | T048·測試「撞名與撞信箱兩腿」；T097·走查「§3 使用者寫端」 |  |
+| FR-015#4 成對清除軟刪標記 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| FR-015#5 MUST NOT 回灌角色指派（復原後零角色） | 有斷言 | T048·測試「零回灌（復原後 `roles` 為空）」 |  |
+| FR-015#6 狀態保留刪除前原值 | 有斷言 | T048·測試「狀態保留」；T097·走查「§3 使用者寫端」 |  |
+| FR-015#7 稽核 `restore` | 有斷言 | T048·測試「稽核 `restore` 恰一列」；T097·走查「§3 使用者寫端」 |  |
+| FR-015#8 本條即 ADR-00044 觸發器①之答案（軟刪者已無指派⇒「使用中」口徑不必改） | 有斷言 | T047·測試「刪除後 deleteRole 可刪該角色（軟刪同交易硬刪指派＝i」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「I4＝FR-014～FR-016（即 ADR-00044 翻案觸」 |  |
+| FR-016#1 對已軟刪標的之 updateUser MUST 回 `biz.user.notFound` | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」；T097·走查「§3 使用者寫端」 |  |
+| FR-016#2 對已軟刪標的之 kickUser MUST 回 `biz.user.notFound` | 有斷言 | T053·測試「已刪標的 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| FR-016#3 對已軟刪標的之 resetUserPassword MUST 回 | 有斷言 | T054·測試「已刪 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| FR-016#4 對已軟刪標的之 updateUserSessionPolicy MUST 回 | 有斷言 | T055·測試「已刪 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| FR-016#5 對已軟刪標的之 deleteUser MUST 回 `biz.user.notFound` | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」；T097·走查「§3 使用者寫端」 |  |
+| FR-016#6 只有 restoreUser 認得已刪列（活性判準＝未軟刪） | 有斷言 | T047·測試「測試：各格負向」；T048·測試「零回灌（復原後 `roles` 為空）」 |  |
+| FR-017#1 seed 帳號結構保護 MUST 為碼內常數形 | 有斷言 | T041·測試「讀庫釘值案（與 seed 三列一致；形同」 |  |
+| FR-017#2 id 1／2／3 不可刪（deleteUser 與 batchDeleteUser 之 ② s… | 有斷言 | T041·測試「讀庫釘值案（與 seed 三列一致；形同」；T047·測試「測試：各格負向」 |  |
+| FR-017#3 id 1 恆禁停用 | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-017#4 id 1 恆禁解除其 R_SUPER 指派 | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| FR-017#5 本人五不之一：不得刪除本人（deleteUser；batchDeleteUser 含本人整批拒） | 有斷言 | T047·測試「測試：各格負向」；T049·測試「`user_msgs_real_db` 補」；T097·走查「§4 包含規則」 |  |
+| FR-017#6 本人五不之二：不得停用本人（updateUser 本人帶 status 出現即拒） | 有斷言 | T043·測試「①～⑤ 各格負向」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§4 包含規則」 |  |
+| FR-017#7 本人五不之三：不得踢除本人 | 有斷言 | T053·測試「本人拒」；T057·測試「`cannotKickSelf`（kickUser」；T097·走查「§4 包含規則、§5 斷權、§6 密碼面」 |  |
+| FR-017#8 本人五不之四：不得改自身指派（updateUser 本人帶 roleIds 出現即拒、同值亦拒） | 有斷言 | T043·測試「①～⑤ 各格負向」；T097·走查「§4 包含規則」 |  |
+| FR-017#9 本人五不之五：不得以 resetUserPassword 重設本人 | 有斷言 | T054·測試「本人拒」；T057·測試「`cannotResetSelfPassword`（resetU」 |  |
+| FR-017#10 本人五不各配純 key 拒因（拒因不攜 data） | 有斷言 | T044·測試「十一鍵各一發（觸發形逐鍵依」；既有·既有測試；T034·機器守「射程守分階段四句（①構造點之鍵 ⊆」 | `each_issuable_code_builds_error_envelope` |
+| FR-017#11 本人可改非角色欄 | 有斷言 | T043·測試「本人可改非角色欄」；T097·走查「§4 包含規則」 |  |
+| FR-017#12 本人可改會話政策 | 有斷言 | T055·測試「本人改本人成功」 |  |
+| FR-018#1 三值收斂：inherit／single／multi 為合法值、寫入生效 | 有斷言 | T055·測試「三值收斂各形」；既有·既有測試；T097·走查「§5 斷權」 | `session_policy_domain_is_exactly_three_values_and_parse_rejects_others` |
+| FR-018#2 sessionPolicy 必填：缺席一律 2222（本端點無全缺席早退） | 有斷言 | T055·測試「三值收斂各形」 |  |
+| FR-018#3 sessionPolicy 為 null 一律 2222 | 有斷言 | T055·測試「三值收斂各形」 |  |
+| FR-018#4 sessionPolicy 為空字串一律 2222 | 有斷言 | T055·測試「三值收斂各形」；既有·既有測試 | `session_policy_domain_is_exactly_three_values_and_parse_rejects_others` |
+| FR-018#5 sessionPolicy 值域外一律 2222（ | 有斷言 | T055·測試「三值收斂各形」；T057·測試「`sessionPolicyInvalid`（自建帳號、值域外字」；既有·既有測試；T097·走查「§5 斷權」 | `session_policy_domain_is_exactly_three_values_and_parse_rejects_others` |
+| FR-018#6 同值 no-op（值 diff） | 有斷言 | T055·測試「同值 no-op」；T097·走查「§5 斷權」 |  |
+| FR-018#7 改為 single MUST NOT 即時踢除 | 有斷言 | T055·測試「改 `single` 不即時踢」；T097·走查「§5 斷權」 |  |
+| FR-018#8 single 於下次登入才生效 | 有斷言 | T097·走查「§5 斷權」 |  |
+| FR-018#9 對已刪標的 `biz.user.notFound` | 有斷言 | T055·測試「已刪 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| FR-019#1 記事欄 MUST 於清單以純文字插值顯示 | 有斷言 | T081·機器守「」；T099·CDP「使用者清單」 |  |
+| FR-019#2 記事欄 MUST 於抽屜多行編輯 | 有斷言 | T081·機器守「type="textarea"」；T099·CDP「新增與編輯抽屜」 |  |
+| FR-019#3 記事欄 MUST NOT 出現在下拉（選項、候選） | 有斷言 | T081·機器守「」 |  |
+| FR-019#4 記事欄 MUST NOT 出現在引用（他域以使用者為參照之回填與引用件） | 有斷言 | T038·測試「`find_names_by_ids` 等跨域引用件與他域 ha」 |  |
+| FR-019#5 記事欄 MUST NOT 出現在對外之其他 API | 有斷言 | 既有·既有測試；T070·機器守「`userMemo` 鍵只出現於 `UserRecord`」 | `every_audited_read_type_serializes_to_exactly_its_snapshot_key_set` |
+| FR-020#1 持停用角色之帳號：ADR⑧ 款 7＝`rev5:B-145` 結案 | 非測試承載 | T103·文件「AskUserQuestion 逐款呈」；ADR-00081-role-menu-known-states-v3.md·文件「`rev5:B-145` 結案（Q13、spec FR-020）」 |  |
+| FR-020#2 清單列 MUST 帶持有角色之 id、代碼與名稱（停用角色亦列） | 有斷言 | T027·測試「`roles_by_user_ids`（清單回填 {id, 代碼」；T038·測試「持停用角色之帳號列帶該角色 {id, 代碼, 名稱}（FR-02」 |  |
+| FR-020#3 抽屜 MUST 以「（已停用）」灰色選項呈現持有之停用角色 | 有斷言 | T099·CDP「灰色保留選項」 |  |
+| FR-020#4 灰色選項不可新選 | 有斷言 | T099·CDP「灰色保留選項」 |  |
+| FR-020#5 灰色選項可移除 | 有斷言 | T099·CDP「灰色保留選項」 |  |
+| FR-020#6 灰色選項送出時預設保留 | 有斷言 | T043·測試「持停用角色之帳號可編（FR-020）」；T099·CDP「灰色保留選項」 |  |
+| FR-020#7 角色欄 MUST 只在改動時才送 | 有斷言 | T099·CDP「只改暱稱 body 無 `status`／`roleIds`」 |  |
+| FR-021#1 9 個消費點（八支使用者寫端＋unlockLogin 帳號維）MUST 皆判包含規則 | 有斷言 | T044·測試「包含規則每消費點兩負一正」；T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」；T057·測試「包含規則三支各兩負一正」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-021#2 判定 MUST 於鎖內、任何寫入前 | 有斷言 | T044·測試「寫端源碼次序釘另錨 `guard_no_escalation(`」；T067·機器守「帳號維「解析 → 操作者 → begin → 帳號維判定 → 稽」 |  |
+| FR-021#3 A＝操作者現役角色集：濾停用角色 | 有斷言 | T027·測試「`role_ids_active_of_user`（A 料源：濾」；T097·走查「§4 包含規則」 |  |
+| FR-021#4 A＝操作者現役角色集：濾已軟刪角色 | 有斷言 | T027·測試「`role_ids_active_of_user`（A 料源：濾」 |  |
+| FR-021#5 A 資料庫現讀（不取票面或快取） | 有斷言 | T097·走查「§4 包含規則」 |  |
+| FR-021#6 持 R_SUPER 者之 A 視為全集 | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T037·測試「A＝全集短路不讀 T」；T044·測試「A＝全集正向」 |  |
+| FR-021#7 T＝標的全部指派列所指角色、不濾角色狀態（停用角色計入 T） | 有斷言 | T027·測試「`role_ids_all_of_user`（T：濾角色軟刪、*」；T037·測試「停用角色計入 T」；T044·測試「停用角色計入 T 一案（FR-025）」 |  |
+| FR-021#8 T 濾已軟刪角色 | 有斷言 | T027·測試「`role_ids_all_of_user`（T：濾角色軟刪、*」 |  |
+| FR-021#9 MUST T⊆A（標的持操作者未持之角色＝拒） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T044·測試「被授權之非超管對持 R_SUPER 之標的 `5003`」 |  |
+| FR-021#10 N＝寫後標的角色集、MUST N⊆A（指派超出自身角色集＝拒） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T044·測試「addUser 之 N 含 R_SUPER 一案」；T097·走查「§4 包含規則」 |  |
+| FR-021#11 違者 `5003` 純 key（不洩差集） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T044·測試「被授權之非超管對持 R_SUPER 之標的 `5003`」；T097·走查「§4 包含規則」 |  |
+| FR-021#12 違者零變更 | 有斷言 | T044·測試「包含規則各負向案（含 T049、T057 擴列之消費點）拒後一律」；T047·測試「整批 rollback（任一違規＝全批零變更）」；T097·走查「§4 包含規則」 |  |
+| FR-021#13 違者零稽核 | 有斷言 | T044·測試「`session_event` 與」；T067·測試「拒腿零稽核零標記」；T097·走查「§4 包含規則」 |  |
+| FR-021#14 違者記一則 warn 日誌（操作者 id、標的 id、端點） | 有斷言 | T037·測試「恰一則 target `security.user` warn」；T097·走查「§4 包含規則」 |  |
+| FR-021#15 warn 日誌不含角色差集 | 有斷言 | T037·測試「輸出不含任一角色 id 差集字面」；T097·走查「§4 包含規則」 |  |
+| FR-021#16 違者不新增觀測序列 | 有斷言 | T037·測試「render 文字零序列（不新增觀測序列）」 |  |
+| FR-021#17 判定位次＝固定序第④（FR-010） | 有斷言 | T043·測試「P 對持 R_SUPER 之自建帳號送 `userName`＝」；T047·測試「多重違規取先序相位」 |  |
+| FR-021#18 同級互管允許 | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T068·測試「對同級帳號＝`0000`」；T097·走查「§4 包含規則」 |  |
+| FR-021#19 unlockLogin 來源維不套包含規則 | 有斷言 | T067·測試「來源維不套」；T068·測試「來源維不受影響一案」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
+| FR-022#1 判定 MUST 以具名純函式單點實作 | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-022#2 9 個消費點共用同一判定 | 有斷言 | T044·測試「拆 `guard_no_escalation` 呼叫即轉紅之變異」；T071·機器守「植入自證三發（名冊外 handler 生產面植一處＝紅；同植於測」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-022#3 於 handler 路徑鎖內呼叫 | 有斷言 | T044·測試「寫端源碼次序釘另錨 `guard_no_escalation(`」；T049·機器守「拒寫案清單擴三支；源碼次序釘擴三支」；T057·機器守「拒寫案清單與源碼次序釘擴三支」；T067·機器守「`STEP_ANCHORS` 源碼次序釘改兩維各一序」；T071·機器守「受檢形＝`guard_no_escalation` 完整 tok」 |  |
+| FR-022#4 中介層 no-escalation 掛點續留恆放行（ADR-00014 決定 5 之掛點簽章無… | 有斷言 | 既有·既有測試；T037·機器守「`no_escalation_check` 簽章、函式體與唯一呼」 | `no_escalation_hook_defaults_to_ok` |
+| FR-022#5 ADR② MUST 寫明兩實作位之射程分工 | 非測試承載 | T003·文件「AskUserQuestion 逐支呈 ADR-00075（I7」；ADR-00075-inclusion-rule-scope-and-hook-split.md·文件「5. **兩實作位之射程分工**（補充 ADR-00014 決定」 |  |
+| FR-022#6 ADR② MUST 寫 ADR-00064 觸發器首條與次條之複核結論（不與撤銷、封死互吞；正… | 非測試承載 | T003·文件「AskUserQuestion 逐支呈 ADR-00075（I7」；ADR-00075-inclusion-rule-scope-and-hook-split.md·文件「7. **與撤銷拒、封死之邊界**（ADR-00064 翻案觸發」 |  |
+| FR-022#7 BL-00048 以兌現連動面收（enforce 模組註與掛點 doc 兩處預告、002 FR… | 非測試承載 | T037·文件「★BL-00048 兌現連動面（research R9 決定 9」；T106·文件「`backlog_done` 8 條（BL-00031／BL-0」 |  |
+| FR-023#1 包含規則射程 MUST 只限使用者域與 unlockLogin 帳號維 | 有斷言 | T068·測試「來源維不受影響一案」；T071·機器守「植入自證三發（名冊外 handler 生產面植一處＝紅；同植於測」；T109·走查「③`guard_no_escalation` 植於名冊外 han」 |  |
+| FR-023#2 角色域、IP 域與授權回收桶復原續 ADR-00068 款 9 已知態 | 非測試承載 | T103·文件「AskUserQuestion 逐款呈」；ADR-00081-role-menu-known-states-v3.md·文件「★**續存之半**＝角色域、選單域、IP 域寫端、unlockL」 |  |
+| FR-023#3 ADR② MUST 寫複核結論與不掛理由 | 非測試承載 | T003·文件「AskUserQuestion 逐支呈 ADR-00075（I7」；ADR-00075-inclusion-rule-scope-and-hook-split.md·文件「6. **射程只限使用者域與 unlockLogin 帳號維**」 |  |
+| FR-024#1 前端 MUST NOT 預判包含規則：角色下拉全列（含 R_SUPER） | 有斷言 | T099·CDP「新增與編輯抽屜」 |  |
+| FR-024#2 前端 MUST NOT 預判包含規則：列級鈕只依按鈕碼顯隱 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T099·CDP「列級鈕只依按鈕碼、不預判包含規則」 |  |
+| FR-024#3 非超管時停用會話政策欄（顯示現值＋提示） | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
+| FR-024#4 只在非超管時停用（超管可改會話政策欄） | 有斷言 | T099·CDP「」 |  |
+| FR-024#5 非超管 MUST NOT 發出必敗之會話政策呼叫 | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
+| FR-024#6 停用本人列之狀態與角色控制項 | 有斷言 | T099·CDP「本人列停用」 |  |
+| FR-025#1 每個消費點 MUST 至少配兩案負向測：被授權之非超管對持 R_SUPER 之標的仍 | 有斷言 | T044·測試「被授權之非超管對持 R_SUPER 之標的 `5003`；add」；T048·測試「④ 負向以合成「已刪列仍掛指派」態釘」；T049·測試「①對持 R_SUPER 之標的」；T055·測試「④ 負向以測內資料列授權繞過封死集而釘」；T057·測試「包含規則三支各兩負一正；拒寫案清單與源碼次序釘擴三支」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`」；T097·走查「§4 包含規則」 |  |
+| FR-025#2 帶指派之消費點〔addUser／updateUser〕另配指派超出自身角色集仍 `5003` | 有斷言 | T037·測試「表驅動真 DB 案（A＝全集短路不讀 T、T／N 各形、停用角色」；T043·測試「①～⑤ 各格負向」；T044·測試「addUser 之 N 含 R_SUPER 一案」；T097·走查「§4 包含規則」 |  |
+| FR-025#3 其餘消費點另配標的持操作者未持之角色仍 `5003` | 有斷言 | T049·測試「②標的持操作者未持之自建角色」；T057·測試「包含規則三支各兩負一正」；T067·測試「帳號維套規則（兩負一正）」；T068·測試「第二負＝標的帳號持操作者未持之自建角色」 |  |
+| FR-025#4 restoreUser 以合成「已刪列仍掛指派」態構造（負向案） | 有斷言 | T048·測試「④ 負向以合成「已刪列仍掛指派」態釘」；T049·測試「restoreUser 以合成態釘」 |  |
+| FR-025#5 測內以資料列授權、測後清理 | 有斷言 | T044·測試「以資料列授權、測後清理」；T068·測試「以資料列授 `unlockLogin` 予自建角色」；T108·機器守「→」 |  |
+| FR-025#6 一案正向（Super 只持 R_SUPER 而對持其未持角色之標的成功＝A＝全集非 vacuo… | 有斷言 | T037·測試「A＝全集短路不讀 T」；T044·測試「＋A＝全集正向」；T049·測試「一正＝Super（只持 R_SUPER）對持其未持之自建角色之標」；T054·測試「② 空格（Super 重設 seed Admin 成功、測後」；T057·測試「一正＝Super（只持 R_SUPER）對持其未持之自建角色之標」；T068·測試「正向補 Super（只持 R_SUPER）」；T097·走查「§4 包含規則」 |  |
+| FR-025#7 停用角色計入 T 一案（每消費點） | 有斷言 | T037·測試「停用角色計入 T」；T044·測試「＋停用角色計入 T 一案（FR-025）」；T049·測試「停用角色計入 T 一案」；T057·測試「停用角色計入 T 一案」；T068·測試「停用角色計入 T 一案」 |  |
+| FR-025#8 拆掉判定呼叫 MUST 有測試轉紅 | 有斷言 | T044·測試「拆 `guard_no_escalation` 呼叫即轉紅之變異」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-026#1 停用（狀態轉停用）MUST 同交易撤銷標的全部有效票 | 有斷言 | T043·測試「停用撤票＋事件 `user_disabled`＋名單」；T097·走查「§5 斷權」 |  |
+| FR-026#2 刪除 MUST 同交易撤銷標的全部有效票 | 有斷言 | T047·測試「批刪兩名各持指派與兩會話之自建帳號成功」；T097·走查「§3 使用者寫端」 |  |
+| FR-026#3 管理員重設密碼 MUST 同交易撤銷標的全部有效票 | 有斷言 | T054·測試「舊會話 `8888`、新密登入成功、已輪替列不動」；T097·走查「§6 密碼面」 |  |
+| FR-026#4 自助改密 MUST 同交易撤銷本人其他有效票並保留當前會話 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| FR-026#5 撤票 MUST 與停用／刪除／設密同交易（同進退） | 有斷言 | T028·測試「★禁單句 UPDATE；並發三序案（research R10 第」；T041·測試「交易內呼」；T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」 |  |
+| FR-026#6 以迴圈形撤票原語（先 SELECT 後撤）落地 | 有斷言 | T028·測試「★禁單句 UPDATE；並發三序案（research R10 第」；既有·既有測試 | `revoke_others_of_user_keeps_kept_chain_rotated_rows_and_other_users` |
+| FR-026#7 寫會話事件 `revoked`（原因 `user_disabled`） | 有斷言 | T043·測試「停用撤票＋事件 `user_disabled`」；T097·走查「§5 斷權」 |  |
+| FR-026#8 寫會話事件 `revoked`（原因 `user_deleted`） | 有斷言 | T047·測試「撤票＋`user_deleted`＋名單」；T097·走查「§3 使用者寫端」 |  |
+| FR-026#9 寫會話事件 `revoked`（原因 `password_reset`） | 有斷言 | T028·測試「＋值集案、欄寬案（最長 16 字元 ≤ `reason` var」；T054·測試「`session_event` 恰 n 列 `revoked`／」；T097·走查「§6 密碼面」 |  |
+| FR-026#10 寫會話事件 `revoked`（原因 `password_changed`） | 有斷言 | T028·測試「＋值集案、欄寬案（最長 16 字元 ≤ `reason` var」；T064·測試「他 sid 之 `session_event` 各一列」；T097·走查「§6 密碼面」 |  |
+| FR-026#11 commit 後寫入失效名單、原因 `revoked` | 有斷言 | T043·測試「名單 `revoked`、停用者下一次請求 `8888`」；T047·測試「撤票＋`user_deleted`＋名單」；T054·測試「舊會話 `8888`」；T064·測試「他裝置 `8888`」 |  |
+| FR-026#12 失效名單於 commit 後盡力寫入 | 有斷言 | T041·測試「`finish_user_write` 三形」；T058·測試「失效名單寫入失敗注入（被撤者以既有存取權杖續打至多至」 |  |
+| FR-026#13 失效名單存活＝換發票全壽命 | 有斷言 | T043·測試「停用撤票後被撤 sid 之失效名單鍵 TTL」 |  |
+| FR-026#14 被撤者下一次請求 `8888` | 有斷言 | T043·測試「停用者下一次請求 `8888`」；T054·測試「舊會話 `8888`」；T064·測試「他裝置 `8888`」；T097·走查「§3 使用者寫端」 |  |
+| FR-026#15 停用或刪除者再登入得 `1000` | 有斷言 | T056·測試「第⑤步鎖內三前提看得見已 commit 之停用（`1000`）」；既有·既有測試；T097·走查「§5 斷權」 | `login_disabled_account_is_1000_with_identified_audit_row_and_no_token` |
+| FR-027#1 kickUser MUST 撤全部有效票 | 有斷言 | T053·測試「被踢者兩會話下一次請求皆 `7777`＋」；T097·走查「§5 斷權」 |  |
+| FR-027#2 kickUser MUST NOT 動已輪替列 | 有斷言 | T053·測試「已輪替列不動」；T097·走查「§5 斷權」 |  |
+| FR-027#3 會話事件原因為 `admin_kick` | 有斷言 | T028·測試「`REASON_PASSWORD_CHANGED`／」；T053·測試「正常標的踢除之 `session_event` 恰 n 列」；T097·走查「§5 斷權」 |  |
+| FR-027#4 失效名單原因為 `admin_kick` | 有斷言 | T053·測試「被踢者兩會話下一次請求皆 `7777`＋」；T057·測試「失效名單先種 `REASON_ADMIN_KICK`、同 sid」；T097·走查「§5 斷權」 |  |
+| FR-027#5 被踢者 → `7777`＋`auth.session.kickedByAdmin` | 有斷言 | T050·測試「`ModalLogoutByAdmin` 經」；T053·測試「被踢者兩會話下一次請求皆 `7777`＋」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」 |  |
+| FR-027#6 被踢者提示照 rev5 畫面字面「此工作階段已被管理員結束」 | 有斷言 | T051·測試「`auth.session.kickedByAdmin` 之 z」；T076·機器守「`kickedByAdmin` 含「管理員」不含「頂替」」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」 |  |
+| FR-027#7 單一會話頂替之 `kicked`／`auth.session.kicked` 文案 MUST … | 有斷言 | T052·測試「三向各臂一案（含未知字面落 `8888`）」；既有·既有測試；既有·既有測試；T051·機器守「頂替文案 `auth.session.kicked` 兩語不變」；T076·機器守「`kicked` 之值不含「踢」與「管理員」」；T097·走查「§5 斷權」 | `enforce_mw_denylist_kicked_7777_counts_redis_source`、`login_global_single_session_on_second_login_kicks_previous_to_7777` |
+| FR-027#8 授權判定 MUST 三向分派（`kicked`／`revoked`／`admin_kick`） | 有斷言 | T052·測試「三向各臂一案（含未知字面落 `8888`）」 |  |
+| FR-027#9 換發 MUST 三向分派（`kicked`／`revoked`／`admin_kick`） | 有斷言 | T058·測試「revoked 腿三向各臂」；T097·走查「§5 斷權」 |  |
+| FR-027#10 射程：本人禁 | 有斷言 | T053·測試「本人拒」；T057·測試「`cannotKickSelf`（kickUser」；T097·走查「§3 使用者寫端、§4 包含規則」 |  |
+| FR-027#11 射程：Super 可（受 FR-021） | 有斷言 | T053·測試「② 空格（第二個持 R_SUPER 之自建帳號踢 Super 成」；T097·走查「§4 包含規則」 |  |
+| FR-027#12 射程：停用可 | 有斷言 | T097·走查「§5 斷權」 |  |
+| FR-027#13 射程：已刪 `biz.user.notFound` | 有斷言 | T053·測試「已刪標的 `notFound`」 |  |
+| FR-028#1 換發 MUST 於票列鎖之後、簽發之前重驗帳號活性 | 有斷言 | T058·機器守「落點源序釘（票列 `FOR UPDATE` 之後、」 |  |
+| FR-028#2 重驗以一般讀取（非鎖讀） | 有斷言 | T058·機器守「落點源序釘（票列 `FOR UPDATE` 之後、」 |  |
+| FR-028#3 不活（非啟用＝停用）即 `8888` | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| FR-028#4 不活（已軟刪）即 `8888` | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| FR-028#5 查無列＝不活 → `8888` | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| FR-028#6 換發 MUST NOT 取 advisory | 有斷言 | T058·測試「`handler/auth/refresh.rs` 生產面」 |  |
+| FR-028#7 換發 MUST NOT 改鎖序 | 有斷言 | T058·測試「`_for_update(` 恰一處（」；既有·既有測試；既有·既有測試 | `refresh_grace_written_before_commit_while_row_lock_still_held`、`refresh_concurrent_same_token_one_rotates_one_graces_no_reuse_no_5000` |
+| FR-028#8 既有換發 10 案與登出 1 案之測試 fixture MUST 改種帳號列（含清理守衛） | 有斷言 | T059·測試「票主改植顯式 id 之活性 `sys_user` 列」 |  |
+| FR-029#1 系統 MUST NOT 新增每請求活性判定：登入後之一般端點不判帳號狀態 | 有斷言 | T058·測試「既有存取權杖打一般 Authed 端點」；既有·既有測試；既有·既有測試 | `enforce_mw_injects_identity_or_rejects_8888`、`enforce_mw_denylist_nil_passes_and_advances_last_activity` |
+| FR-029#2 帳號資訊讀端不判帳號狀態 | 有斷言 | T058·測試「`getUserInfo` 皆 `0000`」 |  |
+| FR-029#3 斷權之兩層＝同交易撤票（含失效名單）＋換發鎖內重驗 | 非測試承載 | T093·文件「I2 斷權兩層與三向分派」 |  |
+| FR-030#1 憲法島 B 把「單一會話被別處登入擠掉」改述為「頂替」 | 非測試承載 | T002·文件「島 B 第三點、島 C 第三點」 |  |
+| FR-030#2 活書 12 把「單一會話被別處登入擠掉」改述為「頂替」 | 非測試承載 | T093·文件「「踢除」2 處指單一會話之句改「頂替」」 |  |
+| FR-030#3 「踢除」專指管理員結束他人全部會話 | 非測試承載 | T076·機器守「「踢」只准出現於 `ADMIN_KICK_KEYS`」；T010·文件「本檔指單一會話被擠下之「踢除」碼註改「頂替」」；T028·文件「兩檔指單一會話被擠下之「踢除」碼註改「頂替」」；T056·文件「本檔指單一會話被擠下之「踢除」碼註 3 處改「頂替」」；T093·文件「使用者域詞組〔撤銷、頂替、踢除、包含規則、設密冷卻、改密節流、經」 |  |
+| FR-030#4 島 C「`kicked` 與 `revoked` 兩 reason」改含 | 非測試承載 | T002·文件「島 B 第三點、島 C 第三點」 |  |
+| FR-030#5 程式內之原因值 MUST NOT 改 | 有斷言 | T028·測試「＋值集案、欄寬案（最長 16 字元 ≤ `reason` var」；T052·測試「reason 二值互異案擴三值」；既有·既有測試；既有·既有測試 | `constants_match_data_model`、`vocabularies_are_exactly_the_data_model_literals` |
+| FR-031#1 ADR-00037 觸發器 MUST 反向確認（工程判斷⑨） | 非測試承載 | T003·文件「」；ADR-00078-password-set-cooldown-and-change-password-throttle.md·文件「ADR-00037 翻案觸發器首條不成立——changePass」 |  |
+| FR-031#2 改密為登入即可用 | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「changePassword：四類身分皆過授權門」 |  |
+| FR-031#3 改密依使用者 id 節流 | 有斷言 | T062·測試「」；T064·測試「第 6 次於比對前拒」；T066·測試「`changePasswordThrottled`＝先將該帳號節」；T097·走查「§5 斷權、§6 密碼面」 |  |
+| FR-031#4 改密 MUST NOT 新增存取軌跡寫入面（BL-00043 反向確認） | 有斷言 | T105·機器守「②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（」 |  |
+| FR-031#5 踢除 MUST NOT 新增存取軌跡寫入面（BL-00043 反向確認） | 有斷言 | T105·機器守「②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（」 |  |
+| FR-032#1 密碼政策 MUST 以單一驗證點承載並消費七個設定鍵 | 有斷言 | T031·測試「先寫測試、先確認紅」；T097·走查「§6 密碼面」 |  |
+| FR-032#2 只在消費當下讀現值（不快取） | 有斷言 | T031·測試「每次消費現讀不快取」；T097·走查「§6 密碼面」 |  |
+| FR-032#3 字元數上下界 | 有斷言 | T031·測試「字元數 `chars().count()`、位元組」；T097·走查「§6 密碼面」 |  |
+| FR-032#4 位元組上界 512（引既有登入密碼位元組上界常數） | 有斷言 | T031·測試「字元數 `chars().count()`、位元組」；T097·走查「§6 密碼面」 |  |
+| FR-032#5 四類字元要求（數字、小寫、大寫、特殊） | 有斷言 | T031·測試「special＝任一非 ASCII 英數字元」；T097·走查「§6 密碼面」 |  |
+| FR-032#6 禁止密碼與帳號相同：設定開啟時，密碼與帳號名不分大小寫相等即違規 | 有斷言 | T031·測試「`forbid_username` 不分大小寫相等、子串不算」；T097·走查「§6 密碼面」 |  |
+| FR-032#7 子串不算（只含帳號名之子串不違規） | 有斷言 | T031·測試「`forbid_username` 不分大小寫相等、子串不算」；T097·走查「§6 密碼面」 |  |
+| FR-032#8 MUST 一次收集全部違規 | 有斷言 | T031·測試「一次收集全部」；T097·走查「§6 密碼面」 |  |
+| FR-032#9 密碼三重不洩——回應面：明文與雜湊不出現於回應（含錯誤明細 data） | 有斷言 | T038·測試「多帶一欄與 `password` 類鍵不出現之反例」；T044·測試「`passwordPolicy` 斷言 data 恰」；T070·機器守「任何讀端型帶 `password`／`passwordHash`」；T097·走查「§2 讀端」 |  |
+| FR-032#10 密碼三重不洩——稽核面：明文與雜湊不出現於稽核列 | 有斷言 | T041·測試「負向 `password`／`sessionId` 兩鍵不存在、」；T042·測試「稽核快照不含密碼」；T054·測試「`reset_password` 稽核列」；T097·走查「§3 使用者寫端」 |  |
+| FR-032#11 密碼三重不洩——日誌面：明文與雜湊不出現於日誌（含請求 DTO 之 Debug） | 有斷言 | T033·測試「`{:?}` 不含任一樣本」；T042·測試「手寫遮蔽密碼欄〔恆印 `<redacted>`〕＋一案」；T054·測試「不 derive `Debug`、手寫遮蔽＋一案」；T064·測試「手寫遮蔽三欄＋一案」；T070·機器守「反序列化後之 `Debug` 輸出不含密碼原文」；T097·走查「§6 密碼面」 |  |
+| FR-032#12 addUser 初始密碼、resetUserPassword、changePassword 三… | 有斷言 | T044·測試「`passwordPolicy` 斷言 data 恰」；T054·測試「測試：政策 BizData data 形」；T064·測試「測試：C1～C7 各負向」；T034·機器守「②已入 `MSG_KEYS` 之射程鍵生產區恰一處構造點」；T097·走查「§6 密碼面」 |  |
+| FR-032#13 登入路徑 MUST NOT 驗政策 | 有斷言 | T031·機器守「登入路徑零政策之源碼掃描案（」；T097·走查「§6 密碼面」 |  |
+| FR-033#1 違規明細 MUST 經攜參通道下發：`biz.user.passwordPolicy` 攜違規… | 有斷言 | T032·測試「經 `IntoResponse` 之本體逐位元＝」；T044·測試「`passwordPolicy` 斷言 data 恰」；T054·測試「測試：政策 BizData data 形」；T034·機器守「④射程鍵以 `AppError::Biz(` 純 key 形構造」 |  |
+| FR-033#2 違規碼八枚＝minLength／maxLength／maxBytes／requireDigit… | 有斷言 | T031·測試「違規碼八枚 `VIOLATION_*`」；T070·機器守「`PasswordViolationCode`（八枚字典序）入 」 |  |
+| FR-033#3 違規子鍵之譯文 MUST 落 page 樹（不落 backend 樹） | 有斷言 | T086·機器守「`page.passwordPolicy` 塊拔標記必報」；T092·機器守「」 |  |
+| FR-033#4 單一共用命名空間：請求層明細轉譯、即時規則提示與產密元件共用（請求層為全域、不知所在頁） | 有斷言 | T091·機器守「」 |  |
+| FR-033#5 違規子鍵譯文三語各一份 | 有斷言 | T082·機器守「葉鍵逐檔恰 9」；T086·機器守「`page.passwordPolicy` 塊拔標記必報」 |  |
+| FR-034#1 政策矛盾（最小長度＞最大長度）時 MUST 對任何設密一律拒（安全側） | 有斷言 | T031·測試「min＞max 時自然全拒、不另設碼」；T064·測試「政策矛盾（設定列守衛暫植」；T097·走查「§6 密碼面」；T101·走查「對自建帳號設密一次＝」 |  |
+| FR-034#2 落設定異常告警出口一：新設專屬計數族〔開機預註冊為 0〕、矛盾設密時增量 | 有斷言 | T031·測試「`obs.rs` 測試：預註冊顯式 0、每呼一次恰 +1、」；T097·走查「§6 密碼面」；T101·走查「`/metrics` 見」 |  |
+| FR-034#3 出口二：既有告警佈建新增一條規則〔5 分鐘內增長即告警〕 | 有斷言 | T101·走查「兩個評估週期內 Grafana」 |  |
+| FR-034#4 出口三：一則結構化 warn 日誌 | 有斷言 | T031·測試「恰一則 target `security.password` w」；T097·走查「§6 密碼面」 |  |
+| FR-034#5 MUST NOT 併入節流降級計數〔非節流降級、免告警標題誤導〕 | 有斷言 | T062·測試「」；既有·既有測試；T105·機器守「`THROTTLE_DEGRADED_SOURCES` 11」 | `degraded_emit_literals_across_src_stay_within_roster` |
+| FR-034#6 新規則依既有告警活體驗證慣例實測 | 有斷言 | T101·走查「告警活體（`contracts/code-gates.md` §」 |  |
+| FR-034#7 設定寫端 MUST NOT 新增組合守門 | 有斷言 | T097·走查「§6 密碼面」；T101·走查「經系統設定寫端設 `password_min_length` 2」 |  |
+| FR-034#8 登入不受影響 | 有斷言 | T031·機器守「登入路徑零政策之源碼掃描案（」；T097·走查「§6 密碼面」 |  |
+| FR-034#9 MUST 於憲法跨島註寫明與島 E「整組退回預設」方向相反之理由 | 非測試承載 | T002·文件「跨島註補句、跨島總則依 X-b〔決定二〕」 |  |
+| FR-034#10 BL-00031 收 | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」 |  |
+| FR-035#1 設密冷卻 MUST 讀冷卻秒數設定鍵（seed 60 秒） | 有斷言 | T031·測試「秒數讀」；T054·測試「冷卻 0＝停用」；T057·測試「data `1 ≤ remainingSeconds ≤ 60`」 |  |
+| FR-035#2 0＝停用 | 有斷言 | T031·測試「0＝停用早退不查經手表」；T054·測試「冷卻 0＝停用」；T097·走查「§6 密碼面」 |  |
+| FR-035#3 維度＝（標的 id, 操作者 id） | 有斷言 | T054·測試「不同操作者互不影響」；T064·測試「冷卻 (uid, uid)」；T097·走查「§6 密碼面」 |  |
+| FR-035#4 以經手表該對之時戳為上次設密時間 | 有斷言 | T029·測試「時戳取 `facade::now_ts()`＝與冷卻判定同一時鐘」；T031·測試「料源」；T057·測試「以 `PwdCustodyWriteGuard` 登記並植〔自建」 |  |
+| FR-035#5 只 upsert、不刪他列 | 有斷言 | T029·測試「」；T064·測試「植 (uid, Super) 經手列後本人改密成功」；T097·走查「§6 密碼面」 |  |
+| FR-035#6 未滿 → `2222`＋`biz.user.pwdSetTooFrequent` 攜剩餘秒數 | 有斷言 | T054·測試「冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`」；T057·測試「data `1 ≤ remainingSeconds ≤ 60`」；T064·測試「冷卻 (uid, uid)」；T034·機器守「②已入 `MSG_KEYS` 之射程鍵生產區恰一處構造點」 |  |
+| FR-035#7 剩餘秒數＝冷卻秒數扣除已過整秒數、介於 1 與冷卻秒數之間（照提示秒數重試必過） | 有斷言 | T031·測試「剩餘＝`min(max(I − ⌊Δ⌋, 1), I)`；時鐘回」；T054·測試「容忍牆鐘回撥＝LL-00054」 |  |
+| FR-035#8 一體適用、零豁免 | 有斷言 | T057·測試「植〔自建帳號, Super〕經手列」；T064·測試「冷卻 (uid, uid)」 |  |
+| FR-035#9 addUser 初始密碼同計入 | 有斷言 | T042·測試「經手表一列」；T054·測試「★addUser 冷卻格空格釘（addUser 後同操作者於冷卻」；T097·走查「§2 讀端、§3 使用者寫端」 |  |
+| FR-036#1 changePassword MUST 依序判：兩次輸入一致 → 舊密正確 → 新≠舊 → 政策 | 有斷言 | T064·測試「先序兩案」 |  |
+| FR-036#2 任一步拒即零寫入 | 有斷言 | T064·測試「其餘拒因不推進」；T066·測試「段末復核密碼雜湊未變、零 `change_password` 稽」 |  |
+| FR-036#3 成功後依 FR-026 撤本人其他有效票 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| FR-036#4 保留當前會話 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| FR-036#5 身分 MUST 帶會話 id | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T063·機器守「先改型使編譯器列出構造點」 |  |
+| FR-036#6 會話事件 `password_changed` | 有斷言 | T028·測試「值集案、欄寬案（最長 16 字元 ≤ `reason` varc」；T064·測試「他 sid 之 `session_event` 各一列」；T097·走查「§6 密碼面」 |  |
+| FR-036#7 稽核 `change_password` | 有斷言 | T030·測試「`ChangePassword`（」；T064·測試「成功改密之稽核 `change_password` 恰一列」；T097·走查「§6 密碼面」 |  |
+| FR-037#1 改密舊密節流 MUST 於舊密雜湊比對之前判 | 有斷言 | T064·測試「第 6 次於比對前拒」；T066·測試「`changePasswordThrottled`＝先將該帳號節」；T097·走查「§6 密碼面」 |  |
+| FR-037#2 每使用者計數窗 5 次／15 分鐘 | 有斷言 | T062·測試「碼內常數 `CHANGE_PWD_MAX_FAILS`＝5、」；T064·測試「第 6 次於比對前拒」；T097·走查「§6 密碼面」 |  |
+| FR-037#3 窗自最後一次失敗起算、每次失敗刷新（非登入節流之時間序列滑動窗） | 有斷言 | T062·測試「先寫測試」 |  |
+| FR-037#4 第 6 次起 `biz.user.changePasswordThrottled`（純 key） | 有斷言 | T064·測試「第 6 次於比對前拒」；T066·測試「`changePasswordThrottled`＝先將該帳號節」；T034·機器守「①構造點之鍵 ⊆ `BIZ_DATA_KEYS`」 |  |
+| FR-037#5 成功改密即清 | 有斷言 | T064·測試「成功即清（commit 後）」；T097·走查「§6 密碼面」 |  |
+| FR-037#6 窗自癒、無解鎖端點（ADR-00069 款 5 不觸發） | 有斷言 | T062·測試「`incr_with_window`（atomic pipeli」；T108·走查「」 |  |
+| FR-037#7 門檻為碼內常數 | 有斷言 | T062·測試「碼內常數 `CHANGE_PWD_MAX_FAILS`＝5、」；T105·機器守「」 |  |
+| FR-037#8 計數載體＝redis、鍵與登入節流分離 | 有斷言 | T062·測試「增 `CHANGE_PWD_KEY_PREFIX`（」；T097·走查「§6 密碼面」 |  |
+| FR-037#9 載體不可用 MUST 放行 | 有斷言 | T062·測試「名冊→發射端＝以 `test_kit::bad_cache()`」；T064·測試「fail-open＋」 |  |
+| FR-037#10 並計入既有節流降級計數之新來源（來源值集 10→11） | 有斷言 | T062·測試「`THROTTLE_DEGRADED_SOURCES`」；T064·測試「fail-open＋」；T105·機器守「`THROTTLE_DEGRADED_SOURCES` 11」 |  |
+| FR-037#11 新來源開機預註冊、名冊雙向守 | 有斷言 | T062·測試「發射掃描案已知發射點補」；既有·既有測試；T101·走查「」 | `degraded_emit_literals_across_src_stay_within_roster` |
+| FR-037#12 「恰十」數量詞同批改 | 有斷言 | T062·測試「」；T095·機器守「新值（六十一、十一域、十三支、三語、九島、十一源、十一變體、八詞」 |  |
+| FR-037#13 ADR⑤ MUST 釐清 ADR-00038 射程限登入節流 | 非測試承載 | T003·文件「」；T062·文件「模組 doc 一句指 ADR-00078」 |  |
+| FR-037#14 以 rev6 形重做 BL-00124 之四面比較（Q20） | 非測試承載 | T003·文件「」；T106·文件「`backlog_done` 8 條（BL-00031／BL-0」 |  |
+| FR-038#1 getPasswordPolicy MUST 登入即可用 | 有斷言 | T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」；T097·走查「§7 個人中心與自助白名單」 |  |
+| FR-038#2 回七鍵投影 | 有斷言 | T064·測試「`getPasswordPolicy` seed 例逐位元」；T070·機器守「`PasswordPolicyView` 恰七鍵、帶冷卻鍵即紅」；T097·走查「§6 密碼面」 |  |
+| FR-038#3 投影不含冷卻秒數 | 有斷言 | T064·測試「`getPasswordPolicy` seed 例逐位元」；T070·機器守「`PasswordPolicyView` 恰七鍵、帶冷卻鍵即紅」 |  |
+| FR-038#4 個人中心改密卡 MUST 據以即時提示 | 有斷言 | T099·CDP「個人中心」 |  |
+| FR-038#5 重設密碼浮層 MUST 據以即時提示 | 有斷言 | T099·CDP「重設與產密浮層」 |  |
+| FR-038#6 取不到時靜默退為必填 | 有斷言 | T099·CDP「個人中心」 |  |
+| FR-038#7 後端仍是唯一裁判 | 有斷言 | T044·測試「`passwordPolicy` 斷言 data 恰」；T054·測試「測試：政策 BizData data 形」；T064·測試「測試：C1～C7 各負向」 |  |
+| FR-038#8 新增抽屜之設密欄只掛提示文字 | 有斷言 | T099·CDP「新增與編輯抽屜」 |  |
+| FR-039#1 getUserRoutes MUST 於授權過濾後恆併入碼內常數自助路由白名單（現含 | 有斷言 | T065·測試「拆併入段即紅（變異）」；T097·走查「§7 個人中心與自助白名單」 |  |
+| FR-039#2 白名單 MUST 只收受眾＝本人之自助頁、授權資源頁禁入 | 有斷言 | T065·測試「常數恰一列之射程釘」；ADR-00077-self-service-route-whitelist.md·文件「授權資源頁禁入（授權仍走 casbin 唯一路徑）」 |  |
+| FR-039#3 seed 之 R_SUPER `user-center` 選單政策列保留 | 有斷言 | T024·機器守「」；T105·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-039#4 MUST 配「零選單政策角色仍得自助路由」案 | 有斷言 | T065·測試「零選單政策角色（自建角色無 `menu` 授權之帳號、零指派帳號」 |  |
+| FR-039#5 MUST 配「白名單外路由不受影響」案 | 有斷言 | T065·測試「白名單外路由不受影響」；T097·走查「§7 個人中心與自助白名單」 |  |
+| FR-039#6 另立 ADR④ 說明與 §I.2 之關係（承 `rev5:ADR 0065`） | 非測試承載 | T003·文件「」；ADR-00077-self-service-route-whitelist.md·文件「①§I.2 含義第一條之射程是「業務 menu」」 |  |
+| FR-039#7 路由讀端檔頭之前代歸因 MUST 勘誤（`rev4:014` 起源、`rev5:007` U4… | 有斷言 | T065·機器守「」 |  |
+| FR-039#8 005 刀照帶之「不帶回」前提隨本刀消失 MUST 明寫翻轉 | 非測試承載 | T003·文件「」；ADR-00077-self-service-route-whitelist.md·文件「005 刀 research R3 照帶之「」 |  |
+| FR-040#1 解鎖入口 MUST 兩處；帳號維＝使用者清單列操作「解鎖登入」 | 有斷言 | T086·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「列解鎖」 |  |
+| FR-040#2 帳號維入口以 `user:unlock` 顯隱 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T086·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| FR-040#3 帳號維標的＝該列帳號（送出該列帳號名原文） | 有斷言 | T099·CDP「對某自建帳號列按「解鎖登入」」 |  |
+| FR-040#4 帳號維 MUST 套包含規則（違者 `5003`） | 有斷言 | T067·測試「帳號維套規則（兩負一正）」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-040#5 包含規則判定位次＝上下文檢查之後、稽核之前 | 有斷言 | 既有·既有測試；T067·機器守「`STEP_ANCHORS` 源碼次序釘改兩維各一序（帳號維「解」 | `handler_source_order_resolve_operator_audit_then_marker` |
+| FR-040#6 包含規則拒＝零稽核（亦零標記） | 有斷言 | T067·測試「拒腿零稽核零標記」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
+| FR-040#7 清單不顯示鎖定狀態 | 有斷言 | T099·CDP「逐面對照（使用者清單」 |  |
+| FR-040#8 每列可按（不依鎖定狀態增減；本人列照列） | 有斷言 | T099·CDP「列操作下拉」 |  |
+| FR-040#9 對未鎖帳號回成功並落一筆解鎖稽核（GR3） | 有斷言 | T067·測試「未鎖帳號回成功並落稽核（GR3）」；既有·既有測試；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 | `unlocking_a_target_that_is_not_locked_still_audits_and_marks` |
+| FR-040#10 來源維＝IP 規則頁表頭前綴插槽「解鎖來源 IP」鈕＋彈窗輸入 IP | 有斷言 | T086·機器守「判準 (b) 改為「標籤體內只許具名」；T099·CDP「IP 規則頁解鎖」 |  |
+| FR-040#11 來源維入口以 `ipRule:unlock` 顯隱 | 有斷言 | T086·機器守「hasAuth('ipRule:unlock')」；T099·CDP「IP 規則頁解鎖」 |  |
+| FR-040#12 來源維不套包含規則 | 有斷言 | T067·測試「來源維不套」；T068·測試「來源維不受影響一案」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
+| FR-040#13 兩入口 MUST 共用同一 API 包裝 | 有斷言 | T086·機器守「兩入口共用同一包裝」 |  |
+| FR-040#14 unlockLogin 端點本體不變 | 有斷言 | T068·測試「既有 unlockLogin case 照綠」；既有·既有測試；既有·既有測試 | `unlocking_a_source_lets_the_same_login_through_at_once`、`resolve_unlock_target_rejects_every_malformed_shape_with_one_key` |
+| FR-040#15 「稽核先於標記」不變 | 有斷言 | 既有·既有測試；T067·機器守「`STEP_ANCHORS` 源碼次序釘改兩維各一序（帳號維「解」 | `handler_source_order_resolve_operator_audit_then_marker` |
+| FR-040#16 BL-00091 收 | 非測試承載 | T106·文件「BL-00065／BL-00091／BL-00124」 |  |
+| FR-040#17 ADR-00069 款 1 解除（ADR⑨） | 非測試承載 | T103·文件「」；ADR-00082-ip-domain-known-states-v4.md·文件「解除（本刀；號不再配）」 |  |
+| FR-041#1 本刀 MUST 恰新增一支 seed-only migration `m0003`；migra… | 有斷言 | T105·機器守「migration 目錄恰」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#2 m0003 零 DDL、不建表 | 有斷言 | T023·機器守「」；T108·走查「`entity-drift-gate`」 |  |
+| FR-041#3 列 58～63（R_SUPER 之 role:add／edit／delete、menu:add… | 有斷言 | T024·測試「」；T018·機器守「①～④ 以 `rows_affected()` 比恰等值」；T023·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#4 列 44（R_ADMIN 之 `user:edit`；按鈕維）刪除 | 有斷言 | T023·機器守「」；T024·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#5 新列 164（R_SUPER 之 `ipRule:unlock`；按鈕維；受保護 FALSE、… | 有斷言 | T023·機器守「`pg_dump --data-only` 取列 164 與選單」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#6 選單 78（`manage_ip-rule`）按鈕清單增 `ipRule:unlock` 一碼… | 有斷言 | T023·機器守「`pg_dump --data-only` 取列 164 與選單」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#7 遷移後授權列數維持 163（刪一增一） | 有斷言 | T023·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#8 序號 163→164 | 有斷言 | T023·機器守「暫拆 `tools/schema-gate.py` 之序號推進 」；T107·機器守「真庫變異自證（暫拆序號推進 → rc 1 指名」 |  |
+| FR-041#9 受保護列 19→25（皆屬 R_SUPER：端點維 15、選單維 4、按鈕維 6） | 有斷言 | T024·測試「（20, 0）→（21, 6）」；T023·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#10 選單列數 78 不變 | 有斷言 | T023·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-041#11 m0003 直接改列、MUST NOT 走執行期之撤銷歸檔 | 有斷言 | T018·機器守「②刪列 44」；T023·機器守「」 |  |
+| FR-041#12 m0003 MUST NOT 走執行期之操作稽核 | 有斷言 | T023·走查「`sys_operation_log` 列數＝0」 |  |
+| FR-041#13 遷移服務先於 rust-api 啟動、判定面開機即載新值 | 有斷言 | 既有·既有測試；T097·走查「§8 自鎖防護與 m0003」；T023·文件「重起 stack（一次性 migrate 服務套 m0003、r」 | `three_accounts_user_info_four_fields_roles_db_fresh_buttons_match_policy` |
+| FR-041#m1 內容逐列 MUST 恰為表列之演進帳 kind：列 58～63＝`seed_update` ×… | 有斷言 | T023·機器守「」；T105·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-042#1 R_SUPER 六碼受保護後，按鈕權限彈窗之撤銷 MUST 由既有受保護拒絕整批拒（ | 有斷言 | T024·測試「Super 以 updateRoleButton 對 R_SUP」 |  |
+| FR-042#2 受保護拒絕三維皆適用 | 有斷言 | 既有·既有測試；既有·既有測試 | `a_protected_endpoint_revoke_rejects_the_whole_batch_with_zero_writes`、`protected_revokes_reject_the_whole_batch_with_zero_writes_in_both_dimensions` |
+| FR-042#3 按鈕維受保護列 MUST NOT 進入封死集（ADR-00064 決定 1 之 HTTP 方法… | 有斷言 | T024·測試「」；既有·既有測試；既有·既有測試 | `seed_reads_and_the_seal_set_match_the_seed_facts`、`dimension_markers_are_fixed_and_disjoint_from_the_method_whitelist` |
+| FR-042#4 ADR⑬ MUST 註記 ADR-00064 背景「按鈕維受保護 0 列」於 m0003 後為… | 非測試承載 | T003·文件「」；T025·文件「ADR-00064 背景＝ADR-00085 註記、不改」；ADR-00085-seed-migration-m0003-button-protected-rows.md·文件「ADR-00064 背景「按鈕維 0 列」於 m0003 後為 」 |  |
+| FR-042#5 受保護旗標之設定與解除經一般管理介面 MUST NOT 提供（島 G 之 G2） | 有斷言 | 既有·既有測試；ADR-00085-seed-migration-m0003-button-protected-rows.md·文件「一般管理介面永不提供設定或解除受保護旗標（G2）」 | `role_menu_request_types_match_signature_pins_and_judge_field_by_field` |
+| FR-043#1 updateMenu 按鈕清單移除集含尚有受保護授權列之碼 MUST 整筆拒（移除形） | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T021·測試「以移除該碼之按鈕清單打 updateMenu ⇒ `2222`＋」；T024·測試「對 `manage_role`（選單 id 4）送移除」 |  |
+| FR-043#2 改碼＝移除舊碼，同樣整筆拒 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T024·測試「對 `manage_role`（選單 id 4）送移除」 |  |
+| FR-043#3 拒＝零變更 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T021·測試「段末復核選單列與授權列不變」 |  |
+| FR-043#4 拒＝零稽核 | 有斷言 | T021·測試「歸檔表與稽核表於守衛水位窗內零新列」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-043#5 拒＝零判定面同步 | 有斷言 | T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-043#6 新拒因鍵三語 | 有斷言 | T020·測試「`MSG_KEYS` 46→47 尾端追加」；T021·測試「以移除該碼之按鈕清單打 updateMenu ⇒ `2222`＋」；T022·機器守「」 |  |
+| FR-043#7 判定 MUST 於歸檔之前 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」 |  |
+| FR-043#8 與既有受保護選單守門（只看停用與改父）並列 | 有斷言 | T020·測試「先序兩案（⑤ `protectedMenu` 與 ⑨」；既有·既有測試 | `protected_menus_refuse_disabling_and_reparenting_but_accept_other_edits` |
+| FR-043#9 MUST 配正負向測 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」 |  |
+| FR-043#10 MUST 配變異自證 | 有斷言 | T020·測試「判準變異（拆守門 → 負向轉紅）」 |  |
+| FR-044#1 m0003 後 R_ADMIN MUST NOT 持 `user:edit`（GR7） | 有斷言 | T023·機器守「」；T024·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-044#2 Admin 於 seed 預設態只見使用者清單、無操作鈕 | 有斷言 | T038·測試「getUserList：Super／Admin `0000`、U」；T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T099·CDP「★32080 單邊判準」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-044#3 R_ADMIN 按鈕碼餘 `B_CODE2`／`B_CODE3` | 有斷言 | T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-044#4 與 rev5 HEAD 之差 MUST 入刻意分岔登記 | 非測試承載 | spec.md·文件「\| Admin 預設之使用者頁 \| 見「編輯」鈕、送出必回」 |  |
+| FR-045#1 演進帳 MUST 登記 m0003 全部 9 筆（seed_update×7、seed_del… | 有斷言 | T019·機器守「」；T023·機器守「」；T105·機器守「」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| FR-045#2 schema-gate seed_add 合成 MUST 擴充：新列 id 大於期望序號值時將… | 有斷言 | T004·測試「`TestSeedSynthesis` 增案——`t_ok` 加」；T023·機器守「暫拆 `tools/schema-gate.py` 之序號推進 」 |  |
+| FR-045#3 seed_add 序號合成 MUST 配自測 | 有斷言 | T004·測試「`TestNegativeInjection` 增一案」 |  |
+| FR-045#4 seed_add 序號合成 MUST 配變異自證 | 有斷言 | T004·測試「變異自證＝暫拆推進段 → 首案與注入案轉紅 → 存原文寫回（RL」；T107·機器守「真庫變異自證（暫拆序號推進 → rc 1 指名」 |  |
+| FR-045#5 收刀前 MUST 跑 Day-1 登記三步（RUNBOOK §10；第 3 步以全新庫驗） | 非測試承載 | T107·文件「★主線 Day-1 登記三步（RUNBOOK §10；」 |  |
+| FR-045#6 schema-definition MUST NOT 前進（留 001 基線） | 有斷言 | T107·機器守「schema-definition 文字面不前進」 |  |
+| FR-045#7 差額只登演進帳 | 有斷言 | T023·機器守「」；T108·走查「`schema-gate`〔含 m0003 合成〕」 |  |
+| FR-045#8 schema-definition 檔頭句 MUST 同批改寫（含「現況看實庫照相檔」之指向） | 非測試承載 | T003·文件「ADR-00087 決定 8 之」；T008·文件「」 |  |
+| FR-045#9 表數常數維持（基線恆真） | 有斷言 | T004·機器守「`len(tables) != 14` 斷言與其釘值案不動」 |  |
+| FR-045#10 BL-00047 收 | 非測試承載 | T106·文件「BL-00031／BL-00047／BL-00048」 |  |
+| FR-045#11 ADR⑮ MUST 整支續行並 supersede ADR-00012 | 非測試承載 | T003·文件「ADR-00087」；ADR-00087-schema-definition-stays-at-001-baseline.md·文件「整顆續行並 supersede ADR-00012」 |  |
+| FR-045#12 ADR⑮ 內容：決定 2 改為各節留 001 基線、決定 6 表數斷言改屬基線恆真、其餘原文續… | 非測試承載 | ADR-00087-schema-definition-stays-at-001-baseline.md·文件「缺歸屬訊息與導言同義句改寫為」 |  |
+| FR-046#1 seed 錨定之測試 MUST 隨 m0003 改對：受保護列 19→25（按鈕維受保護 0→… | 有斷言 | T024·測試「「seed 選單登記之碼恰 20 個」→ 21」；T023·機器守「」 |  |
+| FR-046#2 授權列數 163 不變而新列 id 164（序號 (164, true)）之錨隨 m0003 … | 有斷言 | T023·機器守「」；T107·機器守「gate2 之 `casbin_rule` 序號期望 164」；T097·走查「§8 自鎖防護與 m0003」；T102·走查「`casbin_rule_id_seq`＝(164, true)」 |  |
+| FR-046#3 R_ADMIN 按鈕集去 `user:edit` 之錨隨 m0003 改對 | 有斷言 | 既有·既有測試；T023·機器守「」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§8 自鎖防護與 m0003」 | `three_accounts_user_info_four_fields_roles_db_fresh_buttons_match_policy` |
+| FR-046#4 seed 三帳號之帳號資訊按鈕集之錨隨 m0003 改對 | 有斷言 | 既有·既有測試；T097·走查「§8 自鎖防護與 m0003」 | `three_accounts_user_info_four_fields_roles_db_fresh_buttons_match_policy` |
+| FR-046#5 現在式文件 MUST 隨 m0003 改對（受保護列 25＝端點 15／選單 4／按鈕 6；受… | 有斷言 | T025·機器守「rust 現在式碼與測試、活書、RUNBOOK 零命中」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-046#6 schema-definition 屬 001 基線之「19」等字面 MUST NOT 改 | 有斷言 | T107·機器守「grep -c 'casbin true×19'」 |  |
+| FR-047#1 使用者管理頁 MUST 接真（清單資料源改走 rev6 包裝、不再消費 upstream 舊函… | 有斷言 | T081·機器守「」；T099·CDP「逐面對照（使用者清單、搜尋卡」 |  |
+| FR-047#2 接真形 MUST 為 rev5 HEAD 形重打字 | 非測試承載 | tasks.md·文件「重打字消化不拷貝」 |  |
+| FR-047#3 清單：六欄搜尋 | 有斷言 | T099·CDP「逐面對照（使用者清單、搜尋卡」 |  |
+| FR-047#4 清單：分頁 | 有斷言 | T099·CDP「逐面對照（使用者清單、搜尋卡」 |  |
+| FR-047#5 清單：回收桶切換 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#6 已刪模式隱搜尋卡 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#7 已刪模式操作欄換復原 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#8 已刪模式不加刪除時間欄 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#9 欄位含角色（沿 rev5 HEAD 以角色代碼串接顯示） | 有斷言 | T099·CDP「逐面對照（使用者清單、搜尋卡」 |  |
+| FR-047#10 欄位含狀態、會話政策、記事、審計欄 | 有斷言 | T081·機器守「」；T099·CDP「逐面對照（使用者清單、搜尋卡」 |  |
+| FR-047#11 新增／編輯抽屜：帳號名於編輯態停用 | 有斷言 | T099·CDP「新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提」 |  |
+| FR-047#12 抽屜：密碼僅新增＋隨機產密＋提示 | 有斷言 | T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-047#13 抽屜：會話政策僅編輯態、非超管停用＋提示 | 有斷言 | T099·CDP「新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提」 |  |
+| FR-047#14 抽屜：本人列狀態與角色停用 | 有斷言 | T099·CDP「新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提」 |  |
+| FR-047#15 抽屜：角色欄灰色保留 | 有斷言 | T099·CDP「持停用自建角色之帳號之編輯抽屜」 |  |
+| FR-047#16 狀態與角色只在改動時送（防並行之舊狀態值把他人剛停用之帳號啟用回來） | 有斷言 | T099·CDP「新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提」 |  |
+| FR-047#17 會話政策改動時另打其端點 | 有斷言 | T099·CDP「攔得 updateUserSessionPolicy 恰一發」 |  |
+| FR-047#18 刪除與批刪 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#19 復原（確認框明示需重新指派角色） | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#20 列操作下拉收納「踢除下線」〔GR2〕 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-047#21 列操作下拉收納「重設密碼」浮層（掛即時規則）＋產密浮層 | 有斷言 | T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-047#22 列操作下拉收納「解鎖登入」〔GR3〕 | 有斷言 | T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-047#23 七碼逐鈕顯隱 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T086·機器守「恰七碼」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| FR-047#24 表頭新增與批刪走既有 showAdd／showDelete | 有斷言 | T086·機器守「本單元落 IP 規則頁（錨值不變）與使用者頁兩錨」 |  |
+| FR-047#25 搜尋卡手機與信箱拔除格式驗證（Q17） | 有斷言 | T099·CDP「逐面對照（使用者清單、搜尋卡」 |  |
+| FR-047#26 橫向捲動寬度隨欄寬同批改 | 有斷言 | T081·機器守「:scroll-x="2002"」 |  |
+| FR-047#m1 使用者管理頁接真之新增／編輯抽屜送出（新增→addUser 成功、清單出現新列；編輯→upda… | 有斷言 | T099·CDP「⑪Super 開新增抽屜」 |  |
+| FR-048#1 使用者頁新增／編輯／刪除與批刪／復原／踢除下線／重設密碼／解鎖登入 MUST 依七碼逐鈕顯隱 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T086·機器守「本單元落 IP 規則頁（錨值不變）與使用者頁兩錨」；T099·CDP「按鈕碼單碼探針」 |  |
+| FR-048#2 角色頁新增／編輯／刪除與批刪 MUST 依 role:add／role:edit／role:d… | 有斷言 | T088·機器守「`ANCHORS` 補角色頁與選單頁兩錨（四頁齊」；T099·CDP「按鈕碼單碼探針」 |  |
+| FR-048#3 選單頁新增與新增子選單／編輯／刪除與批刪 MUST 依 menu:add／menu:edit／… | 有斷言 | T088·機器守「`ANCHORS` 補角色頁與選單頁兩錨（四頁齊」；T099·CDP「按鈕碼單碼探針」 |  |
+| FR-048#4 選單頁回收桶「復原」不設碼（其讀寫屬封死集、非超管連清單都載不出） | 有斷言 | T088·機器守「「復原」鈕所在 render 片段零 `hasAuth(`」 |  |
+| FR-048#5 角色抽屜選單權限／按鈕權限／端點權限三鈕不設碼 | 有斷言 | T088·機器守「抽屜三顆授權鈕不設碼」 |  |
+| FR-048#6 IP 規則頁「解鎖來源 IP」MUST 依 `ipRule:unlock` 顯隱（GR4） | 有斷言 | T099·CDP「IP 規則頁解鎖」 |  |
+| FR-048#7 表頭新增與批刪走既有 showAdd／showDelete（使用者、角色、選單三頁） | 有斷言 | T086·機器守「本單元落 IP 規則頁（錨值不變）與使用者頁兩錨」；T088·機器守「`ANCHORS` 補角色頁與選單頁兩錨（四頁齊」 |  |
+| FR-048#8 ADR-00068 款 18 全解除（ADR⑧） | 非測試承載 | T103·文件「兩支 proposed→accepted＋」；ADR-00081-role-menu-known-states-v3.md·文件「解除（本刀；號不再配）——角色、選單、使用者三頁之鈕依 spec」 |  |
+| FR-049#1 個人中心 MUST 改為真頁、只掛「修改密碼」卡 | 有斷言 | T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-049#2 改密卡：舊密碼一路、無信箱與手機選項 | 有斷言 | T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-049#3 改密卡即時規則來自 FR-038（getPasswordPolicy 投影） | 有斷言 | T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-049#4 改密成功後保留當前會話 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-049#5 個人中心其餘卡位留白 | 有斷言 | T105·機器守「A 恰 §1.3 九檔」；T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-049#6 入口沿既有頭像下拉 | 有斷言 | T092·機器守「其餘同 T081 之 U17 出口斷言」；T105·機器守「`contracts/code-gates.md` §1.4 變」；T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-049#7 零角色帳號可達個人中心（FR-039） | 有斷言 | T065·測試「零角色帳號登入落點＝個人中心」；T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-050#1 登入表單 MUST 對帳號與密碼兩欄只驗必填 | 有斷言 | T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-050#2 MUST NOT 動全域正則（src/constants/reg.ts 零 diff） | 有斷言 | T092·機器守「其餘同 T081 之 U17 出口斷言」；T105·機器守「DR 空；零 diff 斷言各檔」 |  |
+| FR-050#3 captcha 軟區零變更 | 有斷言 | T090·機器守「之 hunk 只落 `rules` computed 三行修改型」；T092·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-050#4 三顆快速登入鈕 MUST 保留（BL-00049） | 有斷言 | T092·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「個人中心、登入頁複雜密碼可登入」 |  |
+| FR-051#1 請求層 MUST 建錯誤明細轉譯（passwordPolicy 違規清單、pwdSetTooF… | 有斷言 | T034·機器守「＋佔位符對賬（已入名冊之射程鍵」；T092·機器守「＋自測（拔請求層一處字面即 rc 1）」；T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-051#2 明細轉譯只限兩鍵（Q18；白名單外之鍵不讀 data） | 有斷言 | T032·測試「其餘 `data` 恆 null 不省略」；T034·機器守「①構造點之鍵 ⊆ `BIZ_DATA_KEYS`」；T092·機器守「＋自測（拔請求層一處字面即 rc 1）」；T109·走查「④msg-key-gate＝植第三支 `BizData` 鍵或射」 |  |
+| FR-051#3 其餘錯誤仍由共用攔截層呈現純 key 提示 | 有斷言 | T032·測試「其餘 `data` 恆 null 不省略」；T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-051#4 I18N (i)「錯誤信封 data 恆 null、不建明細轉譯」之條文由 Amendment… | 非測試承載 | T002·文件「I18N (i)(iii) 整列改寫」 |  |
+| FR-051#5 002 wire 契約之對應條之現在式承載改指 ADR③（002 原檔不改；改寫對照住本刀 w… | 非測試承載 | T032·文件「002 原檔不改＝ADR-00041 決定 3」；wire-user-center.md·文件「002 刀 wire 契約 §3 第 3 條之改寫對照（FR-0」 |  |
+| FR-051#6 碼註指向 002 契約該條者同批改指 | 非測試承載 | T032·文件「碼註以 002 契約 §3 第 3 條為錯誤 data 規則依據」 |  |
+| FR-051#7 錯誤信封釘案同批改寫 | 有斷言 | T032·測試「`BizData` 經 `from_err` 仍」 |  |
+| FR-051#8 msg-key-gate 同批擴 | 有斷言 | T034·機器守「DoD：」；T092·機器守「＋自測（拔請求層一處字面即 rc 1）」 |  |
+| FR-052#1 語系型別擴 `zh-TW` | 有斷言 | T075·機器守「type LangType = .*'zh-TW'」；T100·CDP「於 32080 設 `'zh-TW'` 後逐頁 AI 審讀」 |  |
+| FR-052#2 locale 註冊 zh-TW（vue-i18n 訊息表） | 有斷言 | T100·CDP「每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項」 |  |
+| FR-052#3 元件庫註冊繁中語系與日期語系（naive zhTW／dateZhTW） | 有斷言 | T075·機器守「'zh-TW': zhTW」；T100·CDP「每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項」 |  |
+| FR-052#4 日期庫註冊 `zh-tw`（dayjs） | 有斷言 | T075·機器守「import 'dayjs/locale/zh-tw'」 |  |
+| FR-052#5 語言下拉「简体中文／繁體中文／English」 | 有斷言 | T099·CDP「語言下拉）——結構清單逐項全等」 |  |
+| FR-052#6 未選過語言之預設改 zh-TW（現行三處「未選過＝zh-CN」） | 有斷言 | T100·CDP「首訪預設繁中（`removeItem('SOY_lang')` 」 |  |
+| FR-052#7 繁中語系檔 MUST 改為以完整 `App.I18n.Schema` 標型之全樹（補齊其餘樹） | 有斷言 | T075·機器守「^const local: App.I18n.Schema = 」 |  |
+| FR-052#8 繁中語系檔保留既有後端子樹 | 有斷言 | T075·機器守「★`backend: {` MUST 仍為檔內首個獨佔一行之命中」 |  |
+| FR-052#9 繁中譯文採臺灣用語 | 有斷言 | T076·機器守「③`MAINLAND_TERMS` 大陸用語附建議詞」；T100·機器守「」 |  |
+| FR-052#10 型別即三語鍵集之機器守 | 有斷言 | T075·機器守「暫刪 `zh-tw.ts` 任一 page 葉鍵」 |  |
+| FR-052#11 msg-key-gate 後端三檔全等照舊 | 有斷言 | T075·機器守「」；T100·機器守「」 |  |
+| FR-052#12 零新依賴（元件庫與日期庫既有版本已含繁中） | 有斷言 | T105·機器守「④零新依賴＝`rust-api/Cargo.lock`、」 |  |
+| FR-052#13 本刀起每刀三語同批 | 非測試承載 | T078·文件「三語同批」；ADR-00084-zh-tw-runtime-and-default-locale.md·文件「本刀起每刀三語同批」 |  |
+| FR-053#1 API 包裝與型別 MUST 為 `rev6-` 前綴新檔（§III.1 BASE-WEB-W… | 有斷言 | T069·機器守「」；T105·機器守「A 恰 §1.3 九檔；DR 空；零 diff 斷言各檔」 |  |
+| FR-053#2 API 型別 MUST 為獨立命名空間（`Api.UserAdmin`／ | 有斷言 | T070·機器守「**DoD：」 |  |
+| FR-053#3 兩份取全部角色之 fetcher MUST 擇一（使用者抽屜取 | 有斷言 | T081·機器守「之匯入行恰一且來自」 |  |
+| FR-053#4 新 wire 型之 i64 欄 MUST 掛守衛序列化 | 有斷言 | 既有·既有測試；T070·機器守「`tests/wire_i64_guard_lint.rs` 零」 | `unguarded_wire_i64_fields_match_declared_roster` |
+| FR-054#1 修改型 inline MUST 只出現於 Amendment 授權之用途 (v)～(viii)… | 有斷言 | T017·機器守「預期七列：MANAGE (v)～(viii)、LOGIN-CAP」；T081·機器守「容器內 `pnpm typecheck` 綠；」；T108·走查「`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型」 |  |
+| FR-054#2 新增型 MUST 以圈界 | 有斷言 | T075·機器守「單行形與新增型逐項拔標記必報」；T081·機器守「本單元新增圈界塊逐塊暫拔 START／END 必報未圈界」；T086·機器守「`page.passwordPolicy` 塊拔標記必報」 |  |
+| FR-054#3 新檔（改密卡、產密與重設浮層元件、API 包裝與型別）MUST 以檔頭一行標記 | 有斷言 | T069·機器守「新檔 `.ts`、`.d.ts` 各取一支同形自證（暫刪檔頭標記」；T086·機器守「本單元 `.vue` 新檔取一支同形自證（暫刪檔頭標記行 → 報」 |  |
+| FR-054#4 base-web 變更檔集 MUST 以機器斷言 ⊆ 授權檔集＋新增檔 | 有斷言 | T075·機器守「§1.4 變更檔集斷言」；T081·機器守「§1.4 變更檔集斷言（base-web 子庫 commit 之」；T105·機器守「⑦`contracts/code-gates.md` §1.4 」 |  |
+| FR-054#5 不新增 view 目錄 ⇒ 路由外掛產物 MUST 零重算 | 有斷言 | T075·機器守「」；T081·機器守「」；T105·機器守「A 恰 §1.3 九檔；DR 空；零 diff 斷言各檔」 |  |
+| FR-054#6 `components.d.ts` 若有變化 MUST 只許工具重算形 | 有斷言 | T086·機器守「已 commit 形＝工具重算形」；T097·走查「§12 工具與閘逐條」 |  |
+| FR-054#7 修改型標記 MUST 逐行 `原行:` | 有斷言 | T022·機器守「」；T081·機器守「容器內 `pnpm typecheck` 綠；」；T108·走查「`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型」 |  |
+| FR-055#1 憲法 Amendment MUST 一次 MINOR（1.7.1→1.8.0） | 非測試承載 | T002·文件「版本行 1.8.0」 |  |
+| FR-055#2 Amendment MUST 獨立 commit | 非測試承載 | T002·文件「獨立 commit，訊息＝ADR-00074 決定五「Amend」 |  |
+| FR-055#3 條文字面 MUST 由 user 逐款親決（U0） | 非測試承載 | T002·文件「「親決題索引」一題一問」 |  |
+| FR-055#4 ①§I.7 島 I 入憲（I1～I5、I7；I6 留空並寫明原因；以 `rev5:007` 島… | 非測試承載 | T001·文件「ADR-00074 所引「現行」原文」；T002·文件「§I.7 島 I 段置於島 H 之後、跨島註之前〔決定一〕」 |  |
+| FR-055#5 ②跨島重審結論：密碼政策壞值「設密全拒」與島 E「整組退」方向相反之跨島註；I6／J2 空缺位 | 非測試承載 | T002·文件「跨島註補句、跨島總則依 X-b〔決定二〕」 |  |
+| FR-055#6 ③島 C「`kicked` 與 `revoked` 兩 reason」MUST 改含 | 非測試承載 | T002·文件「島 B 第三點、島 C 第三點、H2 補句〔H-a 取甲時；決定」 |  |
+| FR-055#7 ③島 B「踢除」MUST 改述為「頂替」、「踢除」專指管理員結束他人全部會話〔GR2〕 | 非測試承載 | T001·文件「「踢除」」；T002·文件「島 B 第三點、島 C 第三點、H2 補句〔H-a 取甲時；決定」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「頂替（同帳號之新登入使既有會話失效；「踢除」專指管理員結束他人全」 |  |
+| FR-055#8 ③島 H 之 H2 是否補「選單編輯移除之按鈕碼尚有受保護授權＝整筆拒」一句於親決輪定〔GR1… | 非測試承載 | T002·文件「H-a 取乙＝U4 之 H2 指針句」 |  |
+| FR-055#9 ④§III.2 MANAGE-PAGE-WIRING 新用途 (v) 使用者管理頁、(vi) … | 有斷言 | T017·機器守「預期七列：MANAGE (v)～(viii)、LOGIN-CAP」；T081·機器守「容器內 `pnpm typecheck` 綠；」 |  |
+| FR-055#10 ④(viii) MUST 改寫 (iii) 列「門在頁級、三鈕不做按鈕碼 gating」字面 | 非測試承載 | T002·文件「MANAGE (i)(iii) 各一句」 |  |
+| FR-055#11 ④`BASE-WEB-LOGIN-CAPTCHA-WIRING` (ii) 開立 | 有斷言 | T017·機器守「預期七列：MANAGE (v)～(viii)、LOGIN-CAP」；T092·機器守「其餘同 T081 之 U17 出口斷言」 |  |
+| FR-055#12 ④`BASE-WEB-I18N-WIRING` (i) 改寫（明細通道） | 非測試承載 | T017·機器守「預期七列：MANAGE (v)～(viii)、LOGIN-CAP」；T002·文件「I18N (i)(iii) 整列改寫」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「**I18N (i) 整列改寫（N-a）**」 |  |
+| FR-055#13 ④I18N (iii) 改寫並擴範圍（語系型別擴 zh-TW、三處註冊、繁中檔標型、預設 zh… | 有斷言 | T017·機器守「預期七列：MANAGE (v)～(viii)、LOGIN-CAP」；T075·機器守「」 |  |
+| FR-055#14 ④各列「兩語鍵集 MUST 相等」MUST 改為三語（逐處判讀） | 非測試承載 | T001·文件「「兩語」14 處」；T002·文件「「兩語」逐處依 T-a〔決定四〕」 |  |
+| FR-055#15 ⑤承襲指針 I 列 MUST 補 rev6 入憲載體 | 非測試承載 | T002·文件「承襲指針表 I 列尾註」 |  |
+| FR-055#16 ⑤「八島」MUST 改「九島」與 MAJOR 射程句 | 非測試承載 | T095·機器守「新值（六十一、十一域、十三支、三語、九島、十一源、十一變體、八詞」；T002·文件「MAJOR 射程句「九島」」 |  |
+| FR-055#17 ⑤Amendment 顆 MUST 跑 generate | 非測試承載 | T002·文件「`generate`（DECISIONS-INDEX、STATE」 |  |
+| FR-055#18 ⑤範圍欄初值 MUST 依表外宣告 1 例外路徑預估或「不預估」 | 有斷言 | T002·機器守「主線親跑」 |  |
+| FR-055#19 ⑤收刀前 MUST PATCH 實數化範圍欄（前例 ADR-00051／ADR-00072） | 有斷言 | T104·機器守「**DoD：lint 全綠；對賬腿對本刀各列實數綠**」；T108·走查「→ 憲法 1.8.1」；T109·走查「②★範圍欄對賬腿變異」 |  |
+| FR-055#20 Amendment accepted 前 base-web 既有檔 MUST 零 diff | 有斷言 | T002·機器守「此 commit 之」；T017·機器守「斷言 T002 已落地、」；T105·機器守「⑥Amendment 顆（T002）之」 |  |
+| FR-056#1 ADR MUST 於 plan 期起草（feature branch 內、序號接續） | 非測試承載 | ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「status: proposed」；tasks.md·文件「ADR 十四支 ADR-00074～ADR-00087 皆 pr」 |  |
+| FR-056#2 proposed 期 MUST NOT 宣告 supersedes、accepted 同顆補 | 非測試承載 | T003·文件「續行型三支同顆補 supersedes：ADR-00080」；T103·文件「兩支 proposed→accepted＋」 |  |
+| FR-056#3 收刀前 PATCH Amendment ADR 一支（配號＝當下下一號、plan 期不起草） | 非測試承載 | T104·文件「新立 PATCH Amendment ADR（配號＝屆時下一號」 |  |
+| FR-056#4 ①島 I 入憲 Amendment（provenance `rev5:ADR 0063`＋ | 非測試承載 | T002·文件「ADR-00074 proposed→accepted（補親決紀」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「憲法 Amendment 1.7.1→1.8.0——§I.7 島」 |  |
+| FR-056#5 ②包含規則與射程分工（FR-022、FR-023） | 非測試承載 | T003·文件「AskUserQuestion 逐支呈 ADR-00075（I7」；ADR-00075-inclusion-rule-scope-and-hook-split.md·文件「包含規則（島 I7）與射程分工」 |  |
+| FR-056#6 ③明細通道射程與受眾（`rev5:ADR 0064`；FR-004、FR-033、FR-051） | 非測試承載 | T003·文件「ADR-00076（I18N (i) 所指款以外各款）」；ADR-00076-error-detail-channel-two-keys.md·文件「錯誤明細通道射程恰兩鍵」 |  |
+| FR-056#7 ④自助路由白名單（`rev5:ADR 0065`；FR-039） | 非測試承載 | T003·文件「」；ADR-00077-self-service-route-whitelist.md·文件「自助路由白名單為碼內常數」 |  |
+| FR-056#8 ⑤設密冷卻＋改密節流（`rev5:ADR 0066`；FR-035、FR-037） | 非測試承載 | T003·文件「」；ADR-00078-password-set-cooldown-and-change-password-throttle.md·文件「設密冷卻與改密舊密節流刻意分家」 |  |
+| FR-056#9 ⑥密碼政策壞值方向與告警出口（FR-034） | 非測試承載 | T003·文件「ADR-00079（跨島註所指方向款以外各款）」；ADR-00079-password-policy-invalid-direction-and-alert.md·文件「密碼政策壞值方向」 |  |
+| FR-056#10 ⑦ADR-00047 續行（使用者域空字串、no-op、會話政策寫端；FR-013） | 非測試承載 | T003·文件「續行型三支同顆補 supersedes：ADR-00080」；ADR-00080-user-domain-write-semantics.md·文件「部分更新語意（續行 ADR-00047）」 |  |
+| FR-056#11 ⑧ADR-00068 續行（決定 4① 收回；款 7 結案；款 9 部分解除；款 10／11 … | 非測試承載 | T101·文件「ADR-00070 觸發器④＝`qs_dora` 對已停用之自身」；T103·文件「」；ADR-00081-role-menu-known-states-v3.md·文件「角色與選單管理之已知態（續行 ADR-00068）」 |  |
+| FR-056#12 ⑨ADR-00069 續行（款 1 解除；款 3 稽核寫入者擴列、五詞→八詞） | 非測試承載 | T103·文件「ADR-00069 款 3「五詞」之現在式面改八詞」；ADR-00082-ip-domain-known-states-v4.md·文件「IP 域已知態集（續行 ADR-00069）」 |  |
+| FR-056#13 ⑩清單 wire 偏離帳（FR-008） | 非測試承載 | T003·文件「」；ADR-00083-user-list-wire-deviation-ledger.md·文件「使用者清單之 upstream 同 URL 型偏離帳」 |  |
+| FR-056#14 ⑪繁中 runtime（supersede ADR-00039；ADR-00049／ADR-0… | 非測試承載 | T003·文件「ADR-00084」；ADR-00084-zh-tw-runtime-and-default-locale.md·文件「繁中介面接上 runtime 並預設繁中」 |  |
+| FR-056#15 ⑫刻意分岔登記 MUST 併入本 spec 刻意分岔表、不另立 ADR（各列指承載 ADR／F… | 非測試承載 | T096·文件「spec 刻意分岔登記表凍結」；spec.md·文件「**刻意分岔登記（CDP 對照用：與 rev5 HEAD 行為之」 |  |
+| FR-056#16 ⑬seed migration m0003 與按鈕維受保護列首例（ADR-00008 delt… | 非測試承載 | T003·文件「」；ADR-00085-seed-migration-m0003-button-protected-rows.md·文件「seed-only migration m0003（rev6 首」 |  |
+| FR-056#17 ⑭選單編輯移除受保護授權碼之守門（FR-043） | 非測試承載 | T003·文件「ADR-00086（H2 所指款以外各款）」；ADR-00086-menu-edit-protected-button-removal-guard.md·文件「選單編輯不得移除尚有受保護授權之按鈕碼」 |  |
+| FR-056#18 ⑮ADR-00012 整支續行並 supersede（FR-045） | 非測試承載 | T003·文件「ADR-00087」；ADR-00087-schema-definition-stays-at-001-baseline.md·文件「schema 定稿權威留 001 基線（續行並 supersed」 |  |
+| FR-056#19 親決時點：Amendment 顆 MUST 只含 ADR① 與其連動條文、其餘另顆 | 非測試承載 | T002·文件「本顆內容恰為決定五「Amendment commit」條所列、不」 |  |
+| FR-056#20 ADR⑧⑨ MUST 於治理單元（CDP 觀察定稿之後）accepted | 非測試承載 | T103·文件「以 T101 觀察定稿之款號、症狀與 ADR-00082 八詞落」 |  |
+| FR-057#1 被刪之 seed 角色指派 MUST 按原值回補（走查還原工具與測試守衛） | 有斷言 | T006·測試「①使用者域回基準（US6 場景 3：seed 指派 (2, 2)」；T010·測試「③`UserRoleRowsGuard` 回補腿取嵌套形」；T043·測試「★spec SC-008 末句正向整合案（T011 延至此）」 |  |
+| FR-057#2 新增之使用者列與其指派 MUST 刪除、序列回值 | 有斷言 | T006·測試「新帳號列 id 4 與其指派」；T010·測試「①嵌套 `UserRowsGuard`」；T108·走查「→」 |  |
+| FR-057#3 seed 帳號可變欄（含密碼雜湊與審計欄）MUST 寫回基準值 | 有斷言 | T006·測試「seed 帳號 2 之 `nick_name` 與」；T010·測試「②`SeedUserRestoreGuard` 以自建帳號 id」 |  |
+| FR-057#4 經手表 MUST 清理 | 有斷言 | T010·測試「④`PwdCustodyRowsGuard`」；T006·機器守「經手表出清理面」 |  |
+| FR-057#5 改密節流鍵前綴 MUST 清除 | 有斷言 | T006·機器守「`cpwd` 出前綴名冊各令 rc 1 並歸因於對應面」；T108·走查「→」 |  |
+| FR-057#6 走查還原工具與測試守衛擴面 MUST 附自測合成案 | 有斷言 | T007·機器守「**DoD：」；T011·機器守「**DoD：守衛自證紅綠在案」 |  |
+| FR-057#7 RUNBOOK §9c 契約 MUST 同批（使用者域擴面） | 非測試承載 | T008·文件「`docs/ops/RUNBOOK.md` §9c（R16 決定」 |  |
+| FR-057#8 測試守衛 MUST 早於任一寫 seed 帳號或角色指派之寫端單元 | 非測試承載 | tasks.md·文件「U2（使用者域守衛）MUST 早於 U8～U13（spec FR」 |  |
+| FR-057#9 走查工具 MUST 早於前端 CDP | 非測試承載 | tasks.md·文件「U1（走查還原工具 v4＋schema 閘序號合成）MUST 早」 |  |
+| FR-057#10 (a) 基準檔 MUST 記錄拍攝時已套用之遷移清單 | 有斷言 | T005·測試「新兩欄壞形 rc 2」；T009·機器守「（現庫遷移帳＝m0001／m0002＝repo 清單＝無告警）→」 |  |
+| FR-057#11 (a) 基準檔模式還原 MUST 於任何寫入前比對現庫遷移帳，不等＝拒跑 rc 2、零寫入、訊… | 有斷言 | T006·測試「自測②補反向一案」 |  |
+| FR-057#12 (b) seed 模式之目標態（角色／選單域與本刀擴入之使用者域面）MUST 改為凍結 see… | 有斷言 | T007·測試「③seed 模式合成（US6 場景 5」 |  |
+| FR-057#13 (b) 兩模式之 `system_settings` 比對左源 MUST 改為凍結 seed … | 有斷言 | T007·測試「⑤`system_settings` 合成（US6 場景 7：增」 |  |
+| FR-057#14 (b) 合成語意 MUST 同 schema 閘與帳號快照投影；新列之序號期望同 FR-045 | 有斷言 | T007·測試「⑦合成語意對賬案」 |  |
+| FR-057#15 (b) 合成所涉之表有 `seed_*` 登記而現庫已套用之遷移與 repo migratio… | 有斷言 | T007·測試「自測④補反向一案」 |  |
+| FR-057#16 (b) 清理面各表（本刀起含經手表）之 `seed_*` 登記 MUST 照舊拒跑（整表清空面… | 有斷言 | T006·測試「⑥清理面登記照舊拒跑（含 `sys_pwd_custody`）」 |  |
+| FR-057#17 (c) (a)(b) MUST 各附自測合成案與變異自證 | 有斷言 | T006·機器守「變異自證（存原文寫回、逐發單獨跑）：暫拆遷移帳前置呼叫 → ②紅」；T007·機器守「變異自證：暫改合成為只讀凍結段 → ③⑤紅」 |  |
+| FR-057#18 (c) (a)(b) 之 RUNBOOK §9c MUST 同批 | 非測試承載 | T008·文件「(a)(b) 兩條拒跑與補救」 |  |
+| FR-057#19 (a)(b) 所在單元 MUST 早於撰寫 m0003 之單元 | 非測試承載 | tasks.md·文件「U1（走查還原工具 v4＋schema 閘序號合成）MUST 早」 |  |
+| FR-057#20 m0003 套進 dev 庫後 MUST 即重拍本刀基準 | 非測試承載 | T023·文件「即重拍本刀基準」 |  |
+| FR-058#1 殘列不連坐 MUST 具名排除兩形：seed 帳號角色指派被改（形②）與 seed 帳號欄值被… | 非測試承載 | T008·文件「具名排除兩形與「走查寫入一律對自建帳號」」；spec.md·文件「殘列不連坐之具名排除：seed 帳號之角色指派被改（BL-001」 |  |
+| FR-058#2 走查與測試之寫入 MUST 一律對自建帳號 | 非測試承載 | T010·文件「一律「自建列代 seed 列」形」；T097·文件「寫入一律對自建帳號與自建角色」；T098·文件「只經 API 對自建帳號產殘列」 |  |
+| FR-058#3 非改 seed 帳號不可之觀察 MUST 限於觀察窗、全量測試前先還原 | 非測試承載 | T102·文件「」；T107·文件「需乾淨 dev 庫——有自建帳號、指派殘列或 seed 帳號欄值」 |  |
+| FR-058#4 自建帳號與其指派之殘列存在時全量測試 MUST 全綠 | 有斷言 | T098·走查「帶殘列之容器內全量測試全程 serial 全綠（任何轉紅之案＝對」 |  |
+| FR-059#1 活書 06 MUST 於 feature branch 內改為現在式 as-built：島 I… | 非測試承載 | T093·文件「`docs/arc42/06-runtime-view.md`（」 |  |
+| FR-059#2 活書 08 記事欄句 MUST 改為 as-built | 非測試承載 | T093·文件「§8.1 記事欄純文字插值句」 |  |
+| FR-059#3 活書 08 i18n MUST 改為三語 | 非測試承載 | T093·文件「i18n 三語」 |  |
+| FR-059#4 活書 10 MUST 改為 as-built（島 I 情境） | 非測試承載 | T093·文件「」 |  |
+| FR-059#5 活書 11 MUST 改為 as-built | 非測試承載 | T103·文件「」 |  |
+| FR-059#6 活書 12 使用者域詞組與「頂替」「踢除」及「撤銷三型」消歧 MUST 改為 as-built | 非測試承載 | T093·文件「`docs/arc42/12-glossary.md`（使用者域」 |  |
+| FR-059#7 RUNBOOK §9／§9c／§12 MUST 改為現在式 as-built | 非測試承載 | T094·文件「§12（工具與碼面閘表十支）」 |  |
+| FR-059#8 假述 MUST 以機器枚舉逐處判讀改對：「使用者域刀」「使用者角色指派寫端」「007 刀」三詞 | 有斷言 | T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」；T103·機器守「」 |  |
+| FR-059#9 假述改對：「屬後刀域、不帶」類碼註 | 有斷言 | T095·機器守「research R22 表全部種子（含本清單逐單元點名者）以 」 |  |
+| FR-059#10 假述改對：兩處「不產 hash」類句 | 有斷言 | T031·測試「「不產 hash」之 server 側同義句逐處核」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#11 假述改對：「恰十」 | 有斷言 | T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#12 假述改對：路由讀端前代歸因 | 有斷言 | T065·機器守「」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#13 假述改對：「門在頁級」 | 有斷言 | T088·機器守「'門(在\|是)頁級'」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」；T087·文件「`menu/index.vue` 回收桶復原之 (ii) 標記理」 |  |
+| FR-059#14 假述改對：「zh-tw 不接 runtime／孤立檔」 | 有斷言 | T075·機器守「research R22 種子（「孤立檔」「不接 runtime」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#15 假述改對：憲法「兩語」各處 | 有斷言 | T002·機器守「T001 之 errata 種子復掃（憲法與 S-a 面已改」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#16 假述改對：「無 UI 按鈕」句 | 有斷言 | T086·機器守「'無 UI 按鈕\|排除在本次授權之外'」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」；T085·文件「」 |  |
+| FR-059#17 假述改對：受保護列數「19」之現在式面〔schema-definition 除外〕 | 有斷言 | T025·機器守「research R22「受保護列數 19」雙向掃描（」；T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#18 假述改對：「零 migration」類句 | 有斷言 | T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#19 假述改對：schema-definition 檔頭前進句 | 有斷言 | T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#20 假述改對：「踢除」指單會話之句 | 有斷言 | T095·機器守「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| FR-059#21 C4-L2 拓樸不變（零新容器） | 有斷言 | T105·機器守「⑪C4-L2 拓樸不變反向確認」 |  |
+| FR-060#1 收刀 `feature_close.backlog_done` 含 BL-00031（FR-0… | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「BL-00031（T031 T035 T101；ADR-0007」 |  |
+| FR-060#2 `backlog_done` 含 BL-00047（FR-045 兌現） | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「BL-00047（T003 T004；ADR-00087）」 |  |
+| FR-060#3 `backlog_done` 含 BL-00048（FR-022 兌現） | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「BL-00048（T037；ADR-00075）」 |  |
+| FR-060#4 `backlog_done` 含 BL-00065（FR-028、FR-029 兌現） | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「BL-00065（T058 T059；島 I2）」 |  |
+| FR-060#5 `backlog_done` 含 BL-00091（FR-040 兌現） | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「BL-00091（T069 T084 T085）」 |  |
+| FR-060#6 `backlog_done` 含 BL-00124（FR-037 兌現） | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「BL-00124（T062；ADR-00078 四面比較）」 |  |
+| FR-060#7 `backlog_done` 含 BL-00136（FR-057、FR-058 兌現） | 非測試承載 | T106·文件「BL-00136 之」；tasks.md·文件「BL-00136（T005 T006 T007 T010 T01」 |  |
+| FR-060#8 `backlog_done` 含 BL-00138（①由 FR-052 兌現、②移交 BL-0… | 非測試承載 | T094·文件「之「消費歸各自功能刀」改指 BL-00141」；T106·文件「BL-00138 ②移交 BL-00141 之指向）改寫為不依賴」；tasks.md·文件「BL-00138（①T073 T074 T075；②移交 BL-」 |  |
+| FR-060#9 反向確認 BL-00108：本刀不於 rust 側新寫字元級解析組（結果入收單事件註記） | 有斷言 | T105·機器守「之輸出仍恰為」；T071·文件「★不新寫第三份字元級解析零件（BL-00108 反向確認之前提）」；tasks.md·文件「反向確認 3 條結果入註記」 |  |
+| FR-060#10 反向確認 BL-00043（FR-031）：改密與踢除不新增存取軌跡寫入面 | 有斷言 | T105·機器守「②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（」；tasks.md·文件「反向確認 3 條結果入註記」 |  |
+| FR-060#11 反向確認 BL-00133：本刀不觸授權歸檔表 | 有斷言 | T105·機器守「③BL-00133 反向確認＝生產面對」；tasks.md·文件「反向確認 3 條結果入註記」 |  |
+| FR-060#12 BL-00140／BL-00141／BL-00142 之 `backlog_add` MUST… | 非測試承載 | T003·機器守「lint 全綠且 GT-03 零警告」 |  |
+| FR-060#13 `feature_close.adrs` 列全（plan 期 ADR-00074～ADR-00… | 非測試承載 | T104·文件「新立 PATCH Amendment ADR（配號＝屆時下一號」；tasks.md·文件「`adrs` 十五支〔ADR-00074～ADR-00087＋T」 |  |
+| FR-060#14 `arch_impact` 以收刀時 diff 現算之活書節號為準 | 非測試承載 | tasks.md·文件「`arch_impact` 以」 |  |
+| FR-060#15 NOTES 下一步於 specify 起手後改 007 進行中 | 非測試承載 | T003·文件「`docs/ops/NOTES.md`「下一步」改為「現在＝00」；NOTES.md·文件「**進行中＝007 user-password-admin**（」 |  |
+| FR-060#16 收刀時 NOTES 下一步改 008（008 起每刀三語同批） | 非測試承載 | tasks.md·文件「同顆逐項核 SC-014 之簿記後驗子句」 |  |
+| FR-061#1 每支新端點（十二支）MUST 配 contract case | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」 |  |
+| FR-061#2 覆蓋閘雙向（每路由有案、每案有路由） | 有斷言 | 既有·既有測試；既有·既有測試；T014·機器守「coverage 雙向閘 61＝61」；T072·機器守「registry 61＝61」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route` |
+| FR-061#3 case_key 綁定（反查擋殭屍） | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」；既有·既有測試；T012·文件「case_key＝`get-user-list`、」 | `contract_case_key_binding_detects_mismatched_verify` |
+| FR-061#4 授權態矩陣對照 seed 政策列（含 m0003 後之 seed） | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「registry 61＝61、授權態矩陣十二條全數收緊為終值」 |  |
+| FR-061#5 判定只呼單一進入點 | 有斷言 | 既有·既有測試；T071·機器守「主案（紅訊息附「包含規則由 handler 鎖內單一進入點判、擴」 | `decision_calls_converge_on_single_entrypoint` |
+| FR-061#6 handler 層零 path-root `entity::` token | 有斷言 | 既有·既有測試 | `src_tree_outside_facade_has_zero_path_root_entity_access` |
+| FR-061#7 名冊閘（判定面）全綠：建構與載入、封死查詢與授權表寫入各腿，含本刀新增腿⑦包含規則呼叫點 | 有斷言 | T071·測試「植入自證三發（名冊外 handler 生產面植一處＝紅；同植於測」；既有·既有測試；既有·既有測試；既有·既有測試 | `seal_query_call_sites_match_roster`、`policy_insert_writers_match_roster`、`build_and_load_tokens_live_only_in_home` |
+| FR-061#8 名冊閘（寫鎖）全綠：判定面寫鎖、選單域鎖與 per-user 鎖交集 ∅ | 有斷言 | 既有·既有測試；既有·既有測試；既有·既有測試；T109·走查「`enter_menu_domain` 植」；T027·文件「生產面零 `advisory_lock_user`、零」 | `domain_lock_sites_match_roster`、`enforcer_write_sites_match_roster`、`per_user_lock_stays_out_of_menu_domain_write_side` |
+| FR-061#9 名冊閘（同步呼叫點）全綠 | 有斷言 | 既有·既有測試 | `reload_call_sites_match_roster` |
+| FR-061#10 使用者域寫端零授權重載（工程判斷④） | 有斷言 | T043·測試「行為面以 `casbin_reload_total` 區域 re」；既有·既有測試 | `reload_call_sites_match_roster` |
+| FR-061#11 同步呼叫點名冊零擴列並配反向確認測試 | 有斷言 | T043·測試「」；T109·走查「`reload_enforcer` 植」 |  |
+| FR-061#12 四支以「本刀端點未註冊」為前提之既有測試 MUST 改植合成探針列或依新路由現算改值 | 有斷言 | T015·測試「四支先依新路由轉紅、改後綠」 |  |
+| FR-062#1 真表測試配使用者列清理守衛：帶界水位＋arm 當下現讀之序列值還原 | 有斷言 | T010·測試「變異＝暫拔 setval → 紅」；T011·測試「帶界水位〔表, 序列〕常數之逐字對賬案四組→五組」 |  |
+| FR-062#2 角色指派清理守衛（擴使用者帶界腿與 seed 指派回補） | 有斷言 | T010·測試「變異＝暫拔回補步 → 紅」；T011·測試「tests 側守衛各一正一反自證」 |  |
+| FR-062#3 經手表清理守衛 | 有斷言 | T010·測試「④`PwdCustodyRowsGuard`（arm〔track」 |  |
+| FR-062#4 票與會話事件清理守衛 | 有斷言 | 既有·既有測試；T108·機器守「→」；T010·文件「組合序 doc（`OpLogRowsGuard`→」 | `session_rows_guard_drop_deletes_own_rows_keeps_older_rows_and_clears_session_id` |
+| FR-062#5 操作稽核清理守衛（水位） | 有斷言 | 既有·既有測試；T108·機器守「→」；T010·文件「組合序 doc（`OpLogRowsGuard`→」 | `op_log_rows_guard_drop_deletes_own_rows_keeps_older_rows_and_leaves_sequence_alone` |
+| FR-062#6 seed 帳號快照守衛 | 有斷言 | T010·測試「變異＝自寫回欄集暫拔 `password` → 紅」；T043·測試「經 updateUser 改 seed 帳號（如 id 3）之指」 |  |
+| FR-062#7 改密節流鍵清理 | 有斷言 | T064·測試「改密之 `cpwd:` 鍵一律以」；T066·測試「arm 含 `cpwd:` 之 redis 鍵守衛」；T108·機器守「→」；T011·文件「改密節流鍵以既有 `CacheKeysGuard` 逐鍵登記」 |  |
+| FR-062#8 測試 MUST NOT 留下對 seed 列之變更 | 有斷言 | T108·機器守「→」；T010·文件「一律「自建列代 seed 列」形、直改 seed 列做拆腿或反序」 |  |
+| FR-062#9 稽核斷言取水位窗、不寫絕對計數 | 有斷言 | T098·走查「殘列補齊稽核詞彙」；tasks.md·文件「稽核斷言一律取 `OpLogRowsGuard` 水位窗、不寫絕」 |  |
+| FR-062#10 測後 schema 三閘綠 | 有斷言 | T044·機器守「容器內全量 serial 綠；」；T108·機器守「`schema-gate`〔含 m0003 合成〕」；tasks.md·文件「寫端單元（U8～U13）收尾②加跑」 |  |
+| FR-062#11 CDP 走查排 schema-gate 驗收之後、或走查後照 RUNBOOK §9c 還原 | 有斷言 | T102·走查「→ 重啟 rust-api → `diff` rc 0 →」 |  |
+| FR-062#12 dev 庫寫入步驟逐步取 user 放行（LL-00053） | 非測試承載 | T098·文件「dev 庫寫入逐步取 user 放行」；T102·文件「dev 庫寫入逐步取 user 放行」；tasks.md·文件「（LL-00053；逐步取 user 放行）只四處」 |  |
+| FR-063#1 寫端固定序各步負向與逐支空格（FR-010） | 有斷言 | T042·測試「測試：①②③ 空格釘（內層零」；T043·測試「測試：①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入」；T047·測試「測試：各格負向、⑤ 空格（持指派與多會話之自建帳號照刪成功）、整」；T048·測試「②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得」；T053·測試「零 active 亦成功並落稽核（⑤ 空格）、② 空格（第二個持」；T054·測試「② 空格（Super 重設 seed Admin 成功、測後」；T055·測試「測試：三值收斂各形、同值 no-op、本人改本人成功、④ 負向以」 |  |
+| FR-063#2 包含規則（FR-025）自證：各消費點負向＋拆判定呼叫即轉紅 | 有斷言 | T044·測試「拆 `guard_no_escalation` 呼叫即轉紅之變異」；T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」；T057·測試「包含規則三支各兩負一正」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| FR-063#3 批刪任一違規整批 rollback | 有斷言 | T047·測試「測試：各格負向、⑤ 空格（持指派與多會話之自建帳號照刪成功）、整」 |  |
+| FR-063#4 復原兩腿撞名（撞帳號名、撞信箱） | 有斷言 | T048·測試「測試：撞名與撞信箱兩腿」 |  |
+| FR-063#5 換發活性重驗（FR-028） | 有斷言 | T058·測試「測試：停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| FR-063#6 三向分派（kicked／admin_kick／其餘） | 有斷言 | T052·測試「三向各臂一案（含未知字面落 `8888`）」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T058·測試「revoked 腿三向各臂」 |  |
+| FR-063#7 設密冷卻邊界 | 有斷言 | T054·測試「冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`」 |  |
+| FR-063#8 改密節流第 6 次拒 | 有斷言 | T064·測試「第 6 次於比對前拒、其餘拒因不推進、成功即清（commit 後」；T066·測試「`changePasswordThrottled`＝先將該帳號節」 |  |
+| FR-063#9 改密節流載體不可用放行並計入降級計數 | 有斷言 | T064·測試「fail-open＋」 |  |
+| FR-063#10 政策矛盾（min＞max）時任何設密全拒 | 有斷言 | T031·測試「政策矛盾（`min_length` 20／」；T097·走查「§6 密碼面」；T101·走查「經系統設定寫端設 `password_min_length` 2」 |  |
+| FR-063#11 政策矛盾落設定異常告警（專屬計數＋告警規則） | 有斷言 | T031·測試「`obs.rs` 測試：預註冊顯式 0、每呼一次恰 +1、」；T101·走查「兩個評估週期內 Grafana」 |  |
+| FR-063#12 明細通道與錯誤信封契約改寫 | 有斷言 | T032·測試「釘案：`BizData` 經 `from_err` 仍」 |  |
+| FR-063#13 受保護六碼撤銷拒（FR-042） | 有斷言 | T024·測試「「按鈕維 seed 實數」斷言與 doc 句（20, 0）→（2」；T018·機器守「」 |  |
+| FR-063#14 選單刪碼守門正負向＋變異（FR-043） | 有斷言 | T020·測試「判準變異（拆守門 → 負向轉紅）」；T024·測試「對 `manage_role`（選單 id 4）送移除」 |  |
+| FR-063#15 seed_add 序號合成自測＋變異（FR-045） | 有斷言 | T004·測試「變異自證＝暫拆推進段 → 首案與注入案轉紅」；T107·走查「真庫變異自證（暫拆序號推進 → rc 1 指名」 |  |
+| FR-063#16 登入第⑤步鎖內密碼比對併發測（寫端進場後首次可測） | 有斷言 | T056·測試「鎖內密碼比對」 |  |
+| FR-063#17 ADR-00044 觸發器②：使用中（in-use）腿生產可達 | 有斷言 | T043·測試「指派寫端先鎖角色 X ⇒ deleteRole 等其 commi」 |  |
+| FR-063#18 ADR-00044 觸發器②：本人角色（self-role）腿生產可達 | 有斷言 | T043·測試「self-role 腿生產可達」；既有·既有測試；既有·既有測試；T101·走查「★ADR-00070 觸發器④＝`qs_dora` 對已停用之自」 | `delete_role_gates_run_seeded_then_in_use_then_self_role`、`disable_guards_refuse_self_role_before_super_and_count_disabled_memberships` |
+| FR-063#19 指派寫端與刪除角色併發之角色列鎖內重判 | 有斷言 | T043·測試「deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝」 |  |
+| FR-064#1 本刀新增全部 wire 型（清單、寫端請求、政策讀、改密、明細信封；實數以抽取為準）入受審名冊 | 有斷言 | T070·測試「快照副本於新兩節各植一支未入冊型之自證」；T069·文件「`Api.UserCenter`＝」 |  |
+| FR-064#2 各型配正向＋反例裁判 | 有斷言 | T070·測試「明細兩形之值域外與型錯」 |  |
+| FR-064#3 前端型別檢查綠（三語 Schema） | 有斷言 | T069·機器守「容器內 `pnpm typecheck` 綠」；T075·機器守「容器內 `pnpm typecheck` 綠（三語」；T108·機器守「base-web 容器 `pnpm typecheck` rc 」 |  |
+| FR-064#4 msg 鍵跨端閘：三檔 locale 後端子樹與名冊雙向相等 | 有斷言 | T066·機器守「」；T108·機器守「`msg-key-gate`、」 |  |
+| FR-065#1 CDP 覆蓋使用者頁清單 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| FR-065#2 CDP 覆蓋使用者頁抽屜 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| FR-065#3 CDP 覆蓋回收桶 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| FR-065#4 CDP 覆蓋踢除（對方 `7777` 新文案） | 有斷言 | T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」 |  |
+| FR-065#5 CDP 覆蓋重設密碼與產密浮層 | 有斷言 | T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-065#6 CDP 覆蓋列解鎖 | 有斷言 | T099·CDP「重設與產密浮層、列解鎖」 |  |
+| FR-065#7 按鈕顯隱：使用者頁以 Super 與 Admin 實測 | 有斷言 | T099·CDP「★32080 單邊判準」 |  |
+| FR-065#8 按鈕顯隱：角色與選單頁以 Super 與持部分碼之自建角色帳號實測 | 有斷言 | T099·CDP「按鈕碼單碼探針」 |  |
+| FR-065#9 CDP 覆蓋 IP 規則頁解鎖 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| FR-065#10 CDP 覆蓋個人中心改密卡 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| FR-065#11 CDP 覆蓋登入頁複雜密碼可登入 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| FR-065#12 對照三側＝rev5 22080 vs rev6 32080、必要時 22089 | 非測試承載 | T099·文件「（22080、32080、必要時 22089）」 |  |
+| FR-065#13 22080 側全程唯讀 | 非測試承載 | T099·文件「22080 登入後即掛非 GET 請求攔截、開抽屜或彈窗後按取消」；tasks.md·文件「22080 全程唯讀、一律 127.0.0.1」 |  |
+| FR-065#14 三側步驟一律顯式設簡中（rev6 未選過即繁中） | 有斷言 | T099·CDP「三側一律先以 `evalJs` 對該 origin 執行」 |  |
+| FR-065#15 一律 127.0.0.1 | 非測試承載 | quickstart.md·文件「一律派 opus[1m]／xhigh agent 以 CDP 接」；tasks.md·文件「22080 全程唯讀、一律 127.0.0.1」 |  |
+| FR-065#16 CDP 操作一律 opus[1m]／xhigh | 非測試承載 | T099·文件「主線派 CDP agent〔opus[1m]／xhigh〕執行」；T100·文件「CDP agent（opus[1m]／xhigh）」；tasks.md·文件「CDP 一律 opus[1m]／xhigh」 |  |
+| FR-065#17 刻意分岔逐項登記（spec 登記表） | 非測試承載 | T096·文件「spec 刻意分岔登記表凍結（research R25；凍結時點」；T099·文件「排除清單＝凍結之刻意分岔表」；T103·文件「T099 新發現而經 user 親決入表之分岔列寫回」 |  |
+| FR-065#18 繁中畫面驗收 GR5：機器檢查 | 有斷言 | T100·機器守「機器檢查（容器內 `pnpm typecheck`、」 |  |
+| FR-065#19 繁中畫面驗收 GR5：AI 逐頁審讀 | 有斷言 | T100·CDP「每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項」 |  |
+| FR-065#20 繁中畫面驗收 GR5：user 抽查 | 非測試承載 | T100·文件「主線以 AskUserQuestion 請 user 於 320」 |  |
+| FR-065#21 ADR-00070 觸發器④（只改名稱不被擋）實測 | 有斷言 | T101·走查「★ADR-00070 觸發器④＝`qs_dora` 對已停用之自」 |  |
+| FR-065#22 ADR-00068 款 20 可達性實測 | 有斷言 | T101·走查「觀察 ADR-00081 款 7／10／11／18／20」 |  |
+| FR-066#1 容器內後端全量測試（全程 serial）全綠 | 有斷言 | T108·機器守「容器內」 |  |
+| FR-066#2 contract 61 case | 有斷言 | T072·機器守「registry 61＝61」；T108·機器守「容器內」 |  |
+| FR-066#3 前端型別檢查綠 | 有斷言 | T108·機器守「base-web 容器 `pnpm typecheck` rc 」 |  |
+| FR-066#4 fork-delta-lint：新用途列名冊載入變異自證 | 有斷言 | T108·機器守「`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型」；T017·走查「名冊載入新列變異自證」 |  |
+| FR-066#5 fork-delta-lint：範圍欄對賬腿 | 有斷言 | T104·機器守「對賬腿對本刀各列實數綠」；T108·機器守「`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型」；T109·走查「」 |  |
+| FR-066#6 fork-delta-lint：修改型只在授權檔 | 有斷言 | T105·機器守「⑦`contracts/code-gates.md` §1.4 」；T108·機器守「`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型」 |  |
+| FR-066#7 msg-key-gate 綠 | 有斷言 | T108·機器守「`msg-key-gate`、」 |  |
+| FR-066#8 wire 裁判 check 綠 | 有斷言 | T070·機器守「」；T108·機器守「`wire-schema`」 |  |
+| FR-066#9 schema 三閘（含 m0003 合成）綠 | 有斷言 | T107·機器守「」；T108·機器守「`schema-gate`〔含 m0003 合成〕」 |  |
+| FR-066#10 路由產物冪等（route-artifact-gate） | 有斷言 | T108·機器守「`msg-key-gate`、」 |  |
+| FR-066#11 seed-view-gate 綠 | 有斷言 | T108·機器守「`msg-key-gate`、」 |  |
+| FR-066#12 docsync check／lint 零紅 | 有斷言 | T108·機器守「`python3 -B tools/docsync test`、」 |  |
+| FR-066#13 走查基準 diff rc 0 | 有斷言 | T108·機器守「→」；T102·走查「→ 重啟 rust-api → `diff` rc 0 →」 |  |
+| FR-066#14 CDP 三方對照（判準＝SC-010） | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| FR-066#15 FR-001～FR-066 與 US1～US6 驗收場景全數對應至少一測試案、機器守或演練紀錄… | 有斷言 | T110·走查「依文末「需求追溯」子句表逐列核（不以 task 勾選代之）」 |  |
+| US1-AS1#1 When 新增帳號（帳號名合形制且現役唯一、密碼合政策）→ Then 成功（`0000`） | 有斷言 | T042·測試「零角色合法」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#2 Then 清單出現新列 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#3 新列狀態預設啟用（缺席＝1） | 有斷言 | T042·測試「性別與狀態收斂」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#4 角色可為空（零角色新增合法） | 有斷言 | T042·測試「零角色合法」 |  |
+| US1-AS1#5 稽核一列 `add` | 有斷言 | T042·測試「稽核快照不含密碼」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#6 帳號名重複 → `biz.user.userNameExists` | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#7 信箱重複（不分大小寫）→ `biz.user.userEmailExists` | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#8 信箱唯一只比現役列（已刪列之同信箱不擋新增） | 有斷言 | T026·測試「`active_email_taken`（`lower()` 比」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS1#m1 帳號名唯一只比現役列：When 之「現役唯一」，已刪列之同帳號名不擋新增 | 有斷言 | T026·測試「預檢 `active_name_taken`（帳號名全等、大小寫」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#1 When 請求含帳號名欄 → Then 出現即拒（純 key | 有斷言 | T043·測試「①～⑤ 各格負向」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#2 When 未改任何值或改成與現值相同 → Then 零寫入（缺席早退＋值 diff） | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#3 同上 → Then 零稽核 | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#4 同上 → Then 更新時間不動 | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#5 When 只改暱稱 → Then 暱稱照寫入 | 有斷言 | T043·測試「本人可改非角色欄」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#6 When 只改暱稱 → Then 同交易稽核一列 `update` | 有斷言 | T043·測試「只改暱稱＝窗內稽核恰一列 `update`」；T044·測試「稽核落列失敗＝整筆不生效」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#7 When 清空信箱（空字串）→ Then 成功、存為空值（不觸格式拒） | 有斷言 | T043·測試「空字串清空」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS2#8 When 清空暱稱（空字串）→ Then 成功、存為空值 | 有斷言 | T043·測試「空字串清空」 |  |
+| US1-AS3#1 When 角色欄缺席 → Then 指派不動 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| US1-AS3#2 When 帶陣列 → Then 寫後角色集恰等於該陣列（去重） | 有斷言 | T043·測試「角色集差集硬刪＋新增」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS3#3 差集以硬刪＋新增同交易落地 | 有斷言 | T027·測試「`replace_roles_of_user`（期望全集 N：差」；T043·測試「角色集差集硬刪＋新增」 |  |
+| US1-AS3#4 When 陣列含不存在之角色 → Then 整筆拒 | 有斷言 | T043·測試「①～⑤ 各格負向」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS3#5 When 陣列含已刪之角色 → Then 整筆拒 | 有斷言 | T043·測試「deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝」 |  |
+| US1-AS3#6 When 帶空陣列 → Then 全撤 | 有斷言 | T097·走查「§3 使用者寫端」 |  |
+| US1-AS3#7 When 與現值同集合 → Then 屬同值、不寫 | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS3#8 When 與現值同集合 → Then 不記（零稽核） | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS4#1 Super 開 bob 編輯抽屜 → R_X 以「（已停用）」灰色選項呈現 | 有斷言 | T038·測試「持停用角色之帳號列帶該角色 {id, 代碼, 名稱}（FR-02」；T099·CDP「灰色保留選項」 |  |
+| US1-AS4#2 R_X 不可新選 | 有斷言 | T099·CDP「灰色保留選項」 |  |
+| US1-AS4#3 R_X 可移除 | 有斷言 | T099·CDP「灰色保留選項」 |  |
+| US1-AS4#4 送出時預設保留 R_X | 有斷言 | T099·CDP「灰色保留選項」 |  |
+| US1-AS4#5 Super 再加 R_ADMIN 送出 → bob＝{R_X, R_USER_COMMON, … | 有斷言 | T043·測試「持停用角色之帳號可編（FR-020）」；T097·走查「§4 包含規則」 |  |
+| US1-AS5#1 Super 刪除 X → X 軟刪（成對寫刪除時間與刪除者） | 有斷言 | T026·測試「`soft_delete`（`deleted_*` 成對、不動 」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS5#2 X 之全部角色指派列硬刪 | 有斷言 | T047·測試「刪除後 deleteRole 可刪該角色」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS5#3 X 之全部有效票撤銷（多會話） | 有斷言 | T047·測試「撤票＋`user_deleted`＋名單」 |  |
+| US1-AS5#4 會話事件記 `revoked`／`user_deleted` | 有斷言 | T041·測試「逐 sid 落 `session_event`〔」；T047·測試「撤票＋`user_deleted`＋名單」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS5#5 稽核一列 `delete` | 有斷言 | T047·測試「單筆 `delete` 稽核恰一列」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS5#6 X 下一次請求得 `8888` | 有斷言 | T047·測試「撤票＋`user_deleted`＋名單」；T052·測試「三向各臂一案（含未知字面落 `8888`）」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS5#7 上列軟刪、硬刪指派、撤票、事件與稽核同交易落地 | 有斷言 | T049·測試「deleteUser 與 batchDeleteUser 各一發」；T044·機器守「外殼 begin 後第一呼叫即內層」 |  |
+| US1-AS6#1 批刪集合含任一 seed 帳號 → 整批拒（ | 有斷言 | T047·測試「各格負向」 |  |
+| US1-AS6#2 批刪集合含操作者本人 → 整批拒（`biz.user.cannotDeleteSelf`） | 有斷言 | T047·測試「各格負向」；T097·走查「§4 包含規則」 |  |
+| US1-AS6#3 整批拒之拒因純 key、不指出是哪筆 | 有斷言 | T047·測試「多重違規取先序相位」 |  |
+| US1-AS6#4 整批拒 → 零變更 | 有斷言 | T047·測試「整批 rollback（任一違規＝全批零變更）」 |  |
+| US1-AS6#5 Given 空陣列 When 提交 → Then 提前回成功 | 有斷言 | T049·測試「batchDeleteUser＝`0000` 提前成功，皆零變更」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS6#6 Given 空陣列 → Then 零變更 | 有斷言 | T049·測試「batchDeleteUser＝`0000` 提前成功，皆零變更」 |  |
+| US1-AS7#1 When 復原 → Then 清除軟刪標記（成對清空） | 有斷言 | T026·測試「`restore`（`deleted_*` 成對清空、不動」；T048·測試「零回灌（復原後 `roles` 為空）」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS7#2 鎖內重驗同帳號名有現役列 → `biz.user.userNameExists` | 有斷言 | T048·測試「撞名與撞信箱兩腿」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS7#3 鎖內重驗同信箱（不分大小寫）有現役列 → `biz.user.userEmailExists` | 有斷言 | T048·測試「撞名與撞信箱兩腿」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS7#4 復原後 X 角色為空（零回灌） | 有斷言 | T048·測試「零回灌（復原後 `roles` 為空）」 |  |
+| US1-AS7#5 狀態為刪除前原值 | 有斷言 | T048·測試「狀態保留」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS7#6 確認框明示「復原後需重新指派角色」 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| US1-AS7#7 稽核一列 `restore` | 有斷言 | T048·測試「稽核 `restore` 恰一列」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS8#1 對已刪 X 呼叫編輯（updateUser）→ `biz.user.notFound` | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS8#2 對已刪 X 呼叫踢除（kickUser）→ `biz.user.notFound` | 有斷言 | T053·測試「已刪標的 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS8#3 對已刪 X 呼叫重設密碼（resetUserPassword）→ | 有斷言 | T054·測試「已刪 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS8#4 對已刪 X 呼叫會話政策（updateUserSessionPolicy）→ | 有斷言 | T055·測試「已刪 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS8#5 對已刪 X 呼叫刪除（deleteUser）→ `biz.user.notFound` | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS8#6 只有復原（restoreUser）認得已刪列 | 有斷言 | T048·測試「零回灌（復原後 `roles` 為空）」 |  |
+| US1-AS9#1 清單與回收桶共用分頁信封（005 刀分頁通則、PageRes 信封） | 有斷言 | T038·測試「兩支各補分頁五案（缺席→(1,10)／`current` 逾界→」；T070·機器守「分頁回應直裁既有」；T097·走查「§2 讀端」 |  |
+| US1-AS9#2 現役清單固定穩定序（id 升冪、伺服端定序、不收排序參數） | 有斷言 | T038·測試「`total` 與 id 序列以獨立 SQL 現算」；T070·機器守「請求型逐欄簽名一表釘值」；T097·走查「§2 讀端」 |  |
+| US1-AS9#3 回收桶固定穩定序（刪除時間降冪再 id 降冪） | 有斷言 | T026·測試「`list_deleted` 植三筆已刪自建帳號」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS9#4 手機、信箱兩欄可以部分字串搜尋（後端子字串過濾） | 有斷言 | T038·測試「六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使」；T099·CDP「逐面對照（使用者清單、搜尋卡、新增與編輯抽屜」；T097·走查「§3 使用者寫端」 |  |
+| US1-AS9#5 搜尋卡不再擋手機、信箱格式（前端拔除 patternRules；Q17） | 有斷言 | T099·CDP「逐面對照（使用者清單、搜尋卡、新增與編輯抽屜」 |  |
+| US1-AS9#6 已刪模式隱藏搜尋卡 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| US1-AS9#7 已刪模式操作欄換成復原 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| US1-AS9#8 已刪模式不加刪除時間欄 | 有斷言 | T099·CDP「刪除與批刪、回收桶、列操作下拉」 |  |
+| US1-AS9#9 記事欄以純文字顯示 | 有斷言 | T081·機器守「」；T099·CDP「逐面對照（使用者清單、搜尋卡、新增與編輯抽屜」 |  |
+| US1-AS10#1 使用者頁七枚按鈕碼逐鈕依碼顯隱（user:add／edit／delete／restore／ki… | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T086·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「按鈕碼單碼探針」 |  |
+| US1-AS10#2 Admin 於 seed 預設態（m0003 後）可開使用者頁並見清單 | 有斷言 | T038·測試「getUserList：Super／Admin `0000`、U」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| US1-AS10#3 Admin 於 seed 預設態（m0003 後）無任何操作鈕（GR7：R_ADMIN 不持任… | 有斷言 | T018·機器守「②刪列 44（」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| US1-AS10#4 User 無使用者頁（When 句前提：側欄不見此頁、清單 API 拒） | 有斷言 | T038·測試「getUserList：Super／Admin `0000`、U」；T097·走查「§7 個人中心與自助白名單」 |  |
+| US2-AS1#1 踢除撤銷 alice 全部有效票 | 有斷言 | T028·測試「並發三序案（research R10 第 3 款：換發先鎖 T1」；T053·測試「被踢者兩會話下一次請求皆 `7777`＋」；T097·走查「§5 斷權」 |  |
+| US2-AS1#2 已輪替列不動 | 有斷言 | T053·測試「重登成功、已輪替列不動」；T097·走查「§5 斷權」 |  |
+| US2-AS1#3 已輪替舊票之重放仍走既有重用偵測 | 有斷言 | T058·測試「踢除態重放已輪替舊票」；T059·測試「」；既有·既有測試 | `refresh_grace_miss_triggers_reuse_revokes_family_audits_and_denylists` |
+| US2-AS1#4 會話事件 `revoked`／`admin_kick` | 有斷言 | T053·測試「正常標的踢除之 `session_event` 恰 n 列」；T097·走查「§5 斷權」 |  |
+| US2-AS1#5 alice 下一次請求得 `7777`＋`auth.session.kickedByAdmin` | 有斷言 | T052·測試「三向各臂一案（含未知字面落 `8888`）」；T053·測試「被踢者兩會話下一次請求皆 `7777`＋」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T058·測試「revoked 腿三向各臂」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」 |  |
+| US2-AS1#6 單一會話被頂替之既有 `7777` 文案 `auth.session.kicked` 不變 | 有斷言 | T052·測試「`kicked`→`ModalLogout`、」；既有·既有測試；既有·既有測試；既有·既有測試；T097·走查「§5 斷權」 | `enforce_mw_denylist_kicked_7777_counts_redis_source`、`refresh_revoked_row_with_kicked_denylist_returns_7777_modal`、`login_global_single_session_on_second_login_kicks_previous_to_7777` |
+| US2-AS2#1 停用時同交易撤 alice 全部有效票 | 有斷言 | T043·測試「停用撤票＋事件 `user_disabled`＋名單」；T044·測試「停用持兩有效會話之標的一發」；T097·走查「§5 斷權」 |  |
+| US2-AS2#2 會話事件 `revoked`／`user_disabled` | 有斷言 | T043·測試「停用撤票＋事件 `user_disabled`＋名單」；T097·走查「§5 斷權」 |  |
+| US2-AS2#3 commit 後盡力寫入失效名單（reason `revoked`） | 有斷言 | T041·測試「`finish_user_write` 三形」；T043·測試「停用撤票＋事件 `user_disabled`＋名單」 |  |
+| US2-AS2#4 alice 下一次請求 `8888` | 有斷言 | T043·測試「停用者下一次請求 `8888`」；T097·走查「§5 斷權」 |  |
+| US2-AS2#5 換發於鎖內重驗活性後拒 | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」；T097·走查「§5 斷權」 |  |
+| US2-AS2#6 停用者再登入得 `1000` | 有斷言 | T056·測試「第⑤步鎖內三前提看得見已 commit 之停用（`1000`）」；既有·既有測試；T097·走查「§5 斷權」 | `login_disabled_account_is_1000_with_identified_audit_row_and_no_token` |
+| US2-AS3#1 管理員重設密碼時同交易撤全部有效票（同上） | 有斷言 | T054·測試「舊會話 `8888`、新密登入成功、已輪替列不動」；T057·測試「kickUser、resetUserPassword、updat」 |  |
+| US2-AS3#2 會話事件原因 `password_reset`（`revoked`／ | 有斷言 | T054·測試「`session_event` 恰 n 列 `revoked`／」；T097·走查「§6 密碼面」 |  |
+| US2-AS3#3 commit 後盡力寫入失效名單（同上） | 有斷言 | T041·測試「`finish_user_write` 函式體內」；T054·測試「舊會話 `8888`」 |  |
+| US2-AS3#4 被撤者下一次請求 `8888`（同上） | 有斷言 | T054·測試「舊會話 `8888`」；T097·走查「§6 密碼面」 |  |
+| US2-AS3#5 以新密碼登入成功 | 有斷言 | T054·測試「新密登入成功」；T097·走查「§6 密碼面」 |  |
+| US2-AS3#m1 （同上；AS2「換發…拒」經「同上」帶入）重設密碼後，alice 以舊換發票換發被拒，得 | 有斷言 | T054·測試「重設後以舊換發票打 refreshToken ⇒ `8888`」；T058·測試「revoked 腿三向各臂」 |  |
+| US2-AS4#1 操作者本人踢除自己 → 拒（純 key `biz.user.cannotKickSelf`） | 有斷言 | T053·測試「已刪標的 `notFound`、本人拒」；T057·測試「`user_msgs_real_db` 補」；T097·走查「§4 包含規則」 |  |
+| US2-AS4#2 已刪帳號踢除 → `biz.user.notFound` | 有斷言 | T053·測試「已刪標的 `notFound`」；T097·走查「§3 使用者寫端」 |  |
+| US2-AS4#3 停用中帳號踢除 → 允許 | 有斷言 | T097·走查「§5 斷權」 |  |
+| US2-AS4#4 停用中帳號踢除清乾淨殘留會話 | 有斷言 | T053·測試「停用中標的帶殘留會話」 |  |
+| US2-AS5#1 帳號已停用、換發票仍有效 → 換發 `8888` | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| US2-AS5#2 帳號已軟刪、換發票仍有效 → 換發 `8888` | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| US2-AS5#3 帳號列已不存在、換發票仍有效 → 換發 `8888` | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| US2-AS5#4 活性讀取落於票列鎖之後、簽發之前（Q12） | 有斷言 | T058·機器守「落點源序釘（票列 `FOR UPDATE` 之後、」 |  |
+| US2-AS5#5 換發之鎖序不變（活性讀為一般讀、不加列鎖） | 有斷言 | T058·測試「`_for_update(` 恰一處（」；T059·測試「」 |  |
+| US2-AS5#6 換發不另取 advisory | 有斷言 | T058·測試「`handler/auth/refresh.rs` 生產面」 |  |
+| US2-AS6#1 失效名單寫入失敗（盡力型）時，被撤者以既有存取權杖續打，至遲於存取權杖到期失效 | 有斷言 | T058·測試「失效名單寫入失敗注入（被撤者以既有存取權杖續打至多至」；既有·既有測試 | `enforce_mw_expired_access_is_3333_not_8888` |
+| US2-AS6#2 換發被鎖內重驗擋下（兩層兜底） | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| US2-AS6#3 系統不新增每請求活性判定 | 有斷言 | T058·測試「`auth/enforce.rs` 生產面」 |  |
+| US3-AS1#1 政策最小長度 8 且要求數字，設密 abcdefgh → 2222＋biz.user.pass… | 有斷言 | T031·測試「依 `minLength`→`maxLength`→」；T044·測試「`passwordPolicy` 斷言 data 恰」；T097·走查「§6 密碼面」 |  |
+| US3-AS1#2 全部違規一次收集 | 有斷言 | T031·測試「`requireSpecial`→」；T097·走查「§6 密碼面」 |  |
+| US3-AS1#3 密碼明文與雜湊不出現於回應 | 有斷言 | T032·測試「經 `IntoResponse` 之本體逐位元＝」；T042·測試「成功回應本體逐位元」；T044·測試「`passwordPolicy` 斷言 data 恰」；T054·測試「成功回應本體逐位元」；T064·測試「成功回應本體逐位元」；T070·機器守「任何讀端型帶 `password`／`passwordHash`」；T097·走查「§2 讀端、§3 使用者寫端」 |  |
+| US3-AS1#4 密碼明文與雜湊不出現於稽核 | 有斷言 | T041·測試「負向 `password`／`sessionId` 兩鍵不存在、」；T042·測試「稽核快照不含密碼」；T054·測試「`reset_password` 稽核列」；T097·走查「§2 讀端、§3 使用者寫端」 |  |
+| US3-AS1#5 密碼明文與雜湊不出現於日誌 | 有斷言 | T031·測試「`NewPassword` 零 `Debug` 之」；T033·測試「一案（密碼欄樣本互異、`{:?}` 不含任一樣本、遮蔽字面次數＝」；T042·測試「手寫遮蔽密碼欄〔恆印 `<redacted>`〕＋一案」；T054·測試「不 derive `Debug`、手寫遮蔽＋一案」；T064·測試「手寫遮蔽三欄＋一案」；T070·機器守「反序列化後之 `Debug` 輸出不含密碼原文」；T097·走查「§6 密碼面」 |  |
+| US3-AS2#1 政策「禁止密碼與帳號相同」開啟時，密碼與帳號名不分大小寫相等 → 拒 | 有斷言 | T031·測試「`forbid_username` 不分大小寫相等、子串不算」；T054·測試「`password_forbid_username` 設 on」；T097·走查「§6 密碼面」 |  |
+| US3-AS2#2 只含帳號名之子串不算違規 | 有斷言 | T031·測試「`forbid_username` 不分大小寫相等、子串不算」；T097·走查「§6 密碼面」 |  |
+| US3-AS2#3 密碼超過 512 bytes → 設密拒 | 有斷言 | T031·測試「`MAX_BYTES` 直引」；T097·走查「§6 密碼面」 |  |
+| US3-AS2#4 字元數＋位元組數雙約束（長度以字元計、上界以位元組計） | 有斷言 | T031·測試「字元數 `chars().count()`、位元組」；T097·走查「§6 密碼面」 |  |
+| US3-AS3#1 最小長度設定值大於最大長度時，任一入口設密一律拒（安全側） | 有斷言 | T031·測試「min＞max 時自然全拒、不另設碼」；T097·走查「§6 密碼面」；T101·走查「對自建帳號設密一次＝」 |  |
+| US3-AS3#2 並落一則設定異常告警（專屬計數＋warn＋告警規則） | 有斷言 | T031·測試「`obs.rs` 測試：預註冊顯式 0、每呼一次恰 +1、」；T097·走查「§6 密碼面」；T101·走查「兩個評估週期內 Grafana」 |  |
+| US3-AS3#3 登入不受影響（Q19） | 有斷言 | T031·機器守「登入路徑零政策之源碼掃描案（」；T097·走查「§6 密碼面」 |  |
+| US3-AS4#1 自助改密（兩次一致→舊密正確→新≠舊→政策）全過即成功 | 有斷言 | T064·測試「C1～C7 各負向、第 6 次於比對前拒、其餘拒因不推進、成功即」；T097·走查「§6 密碼面」 |  |
+| US3-AS4#2 成功後撤銷本人其他有效票 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；既有·既有測試 | `revoke_others_of_user_keeps_kept_chain_rotated_rows_and_other_users` |
+| US3-AS4#3 成功後保留當前會話 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| US3-AS4#4 會話事件 password_changed | 有斷言 | T064·測試「他 sid 之 `session_event` 各一列」；T097·走查「§6 密碼面」 |  |
+| US3-AS4#5 稽核一列 change_password | 有斷言 | T064·測試「成功改密之稽核 `change_password` 恰一列」；T097·走查「§6 密碼面」 |  |
+| US3-AS4#6 任一步失敗即回該步拒因（依序：兩次一致→舊密正確→新≠舊→政策） | 有斷言 | T064·測試「先序兩案」；T066·測試「`passwordSameAsOld`＝新＝舊」；T097·走查「§6 密碼面」 |  |
+| US3-AS4#7 任一步失敗即零寫入 | 有斷言 | T064·測試「C6 政策拒（舊密正確、新≠舊、新密短於下限）後密碼雜湊未變」；T066·測試「段末復核密碼雜湊未變、零 `change_password` 稽」 |  |
+| US3-AS5#1 T0 重設後 T0＋30 秒再重設（冷卻 60 秒）→ 2222＋biz.user.pwdSe… | 有斷言 | T054·測試「冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`」；T057·測試「resetUserPassword 一次＝首發即拒、零業務寫入；」；T097·走查「§6 密碼面」 |  |
+| US3-AS5#2 攜剩餘秒數（冷卻扣除已過整秒，例中 30 秒） | 有斷言 | T031·測試「剩餘秒數換算抽為不讀牆鐘之純函式」；T054·測試「冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`」 |  |
+| US3-AS5#3 另一管理員同時重設不受限（維度＝標的×操作者） | 有斷言 | T054·測試「不同操作者互不影響」；T097·走查「§6 密碼面」 |  |
+| US3-AS5#4 冷卻設 0 即停用 | 有斷言 | T031·測試「0＝停用早退不查經手表」；T054·測試「冷卻 0＝停用」；T097·走查「§6 密碼面」 |  |
+| US3-AS5#5 新增帳號之初始密碼同計入冷卻 | 有斷言 | T042·測試「經手表一列」；T054·測試「★addUser 冷卻格空格釘（addUser 後同操作者於冷卻」；T097·走查「§6 密碼面」 |  |
+| US3-AS6#1 連續猜錯舊密碼，第 6 次（15 分鐘窗內）於比對舊密之前即拒 | 有斷言 | T062·測試「」；T064·測試「C1～C7 各負向、第 6 次於比對前拒、其餘拒因不推進、成功即」；T097·走查「§6 密碼面」 |  |
+| US3-AS6#2 拒因 biz.user.changePasswordThrottled、純 key | 有斷言 | T066·測試「`changePasswordThrottled`＝先將該帳號節」；T034·機器守「①構造點之鍵 ⊆ `BIZ_DATA_KEYS`」 |  |
+| US3-AS6#3 改密成功即清零 | 有斷言 | T062·測試「`clear`〔`DEL`〕」；T064·測試「C1～C7 各負向、第 6 次於比對前拒、其餘拒因不推進、成功即」；T097·走查「§6 密碼面」 |  |
+| US3-AS6#4 窗自癒（自最後一次失敗起 15 分鐘到期、每次失敗刷新） | 有斷言 | T062·測試「`CHANGE_PWD_WINDOW_SECS`＝900」；T097·走查「§6 密碼面」 |  |
+| US3-AS6#5 無解鎖端點 | 有斷言 | T012·機器守「ROUTES_COUNT」；ADR-00078-password-set-cooldown-and-change-password-throttle.md·文件「窗自癒、無解鎖端點」 |  |
+| US3-AS6#6 計數存放處不可用時放行 | 有斷言 | T062·測試「三支 redis `Err` 一律放行」；T064·測試「fail-open＋」 |  |
+| US3-AS6#7 並計入節流降級計數 | 有斷言 | T062·測試「名冊→發射端＝以 `test_kit::bad_cache()`」；T064·測試「fail-open＋」 |  |
+| US3-AS7#1 Given 任一登入者，When 讀取密碼政策——登入即可讀（含零角色帳號；Authed 層） | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」；T097·走查「§7 個人中心與自助白名單」 |  |
+| US3-AS7#2 Then 回七鍵投影（不含冷卻秒數） | 有斷言 | T064·測試「`getPasswordPolicy` seed 例逐位元」；T070·機器守「`PasswordPolicyView` 恰七鍵、帶冷卻鍵即紅」；T097·走查「§6 密碼面」 |  |
+| US3-AS7#3 個人中心改密卡據以即時提示 | 有斷言 | T099·CDP「個人中心」 |  |
+| US3-AS7#4 重設密碼浮層據以即時提示 | 有斷言 | T099·CDP「重設與產密浮層」 |  |
+| US3-AS7#5 讀不到時靜默退為必填 | 有斷言 | T099·CDP「個人中心」 |  |
+| US3-AS7#6 後端仍是唯一裁判（前端退為必填時，不合政策的密碼由後端拒） | 有斷言 | T054·測試「測試：政策 BizData data 形」；T064·測試「測試：C1～C7 各負向」；T097·走查「§6 密碼面」 |  |
+| US3-AS8#1 Given 零角色帳號 When 登入 Then 路由含個人中心（自助路由白名單；Q11） | 有斷言 | T065·測試「零角色帳號登入落點＝個人中心」；T099·CDP「個人中心」；T097·走查「§7 個人中心與自助白名單」 |  |
+| US3-AS8#2 其餘管理頁不可見 | 有斷言 | T065·測試「白名單外路由不受影響」；T097·走查「§7 個人中心與自助白名單」 |  |
+| US3-AS9#1 Given seed 三帳號之密碼短於政策下限 When 登入 Then 成功（登入路徑不驗政… | 有斷言 | 既有·既有測試；T031·機器守「登入路徑零政策之源碼掃描案（」；T097·走查「§6 密碼面」 | `login_success_three_accounts_issue_pair_token_row_and_audit_row` |
+| US3-AS9#2 三顆快速登入鈕照留（BL-00049） | 有斷言 | T099·CDP「登入頁複雜密碼可登入」 |  |
+| US3-AS10#1 Given 登入表單 When 輸入任意非空帳號與密碼 Then 前端只驗必填、格式判定交後端 | 有斷言 | T099·CDP「登入頁複雜密碼可登入」 |  |
+| US3-AS10#2 captcha 軟區零變更 | 有斷言 | T090·機器守「之 hunk 只落 `rules` computed 三行修改型」；T099·CDP「登入頁複雜密碼可登入」 |  |
+| US4-AS1#1 任一使用者寫端（新增／編輯／刪除／批刪／復原／踢除／重設密碼／會話政策）或 unlockLog… | 有斷言 | T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」；T057·測試「包含規則三支各兩負一正」；T067·測試「測試：帳號維套規則（兩負一正）」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`」；T071·機器守「記憶體內自 `handler/throttle.rs` 移除呼叫」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| US4-AS1#2 帶指派之寫端（新增／編輯）判 N⊆A，寫後角色集超出操作者角色集＝`5003` | 有斷言 | T036·測試「T⊄A、N⊄A、皆 ⊆」；T037·測試「T／N 各形」；T044·測試「addUser 之 N 含 R_SUPER 一案」；T097·走查「§4 包含規則」 |  |
+| US4-AS1#3 鎖內、寫入前判 T⊆A∧N⊆A | 有斷言 | T044·測試「寫端源碼次序釘另錨 `guard_no_escalation(`」；T067·機器守「帳號維「解析 → 操作者 → begin → 帳號維判定 → 稽」 |  |
+| US4-AS1#4 違者 `5003`（純 key、不洩漏差集） | 有斷言 | T032·測試「`BizData` 之 `data`＝明細物件、其餘」；T036·測試「違者 `AppError::PermissionDenied`＝」；T097·走查「§4 包含規則」 |  |
+| US4-AS1#5 違者零變更 | 有斷言 | T044·測試「包含規則各負向案（含 T049、T057 擴列之消費點）拒後一律」；T047·測試「整批 rollback（任一違規＝全批零變更）」；T067·測試「拒腿零稽核零標記」；T097·走查「§4 包含規則」 |  |
+| US4-AS1#6 違者零稽核 | 有斷言 | T044·測試「`session_event` 與」；T067·測試「拒腿零稽核零標記」；T097·走查「§4 包含規則」 |  |
+| US4-AS1#7 持 R_SUPER 之操作者 A＝全集、恆過 | 有斷言 | T036·測試「`All` 對任意 T／N」；T037·測試「A＝全集短路不讀 T」；T044·測試「A＝全集正向」 |  |
+| US4-AS2#1 Super（只持 R_SUPER）編輯持 {R_ADMIN} 之 Y 並指派 R_USER_C… | 有斷言 | T036·測試「`All` 對任意 T／N」；T037·測試「A＝全集短路不讀 T」；T044·測試「A＝全集正向」；T097·走查「§4 包含規則」 |  |
+| US4-AS3#1 Given 標的所持某角色被停用 When 未持該角色者操作標的 Then 仍 `5003`（… | 有斷言 | T027·測試「`role_ids_all_of_user`（T：濾角色軟刪、*」；T037·測試「停用角色計入 T」；T044·測試「停用角色計入 T 一案（FR-025）」；T097·走查「§4 包含規則」 |  |
+| US4-AS3#2 Given 操作者所持某角色被停用 When 該操作者操作持該角色之標的 Then 該角色不計… | 有斷言 | T027·測試「`role_ids_active_of_user`（A 料源：濾」；T097·走查「§4 包含規則」 |  |
+| US4-AS4#1 Given 持相同角色集之甲與乙，When 甲停用乙，Then 允許（同級互管） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T044·測試「同級互管正向（spec US4 AS4、FR-021）」 |  |
+| US4-AS4#2 When 甲刪除乙，Then 允許（同級互管） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T049·測試「甲之票打 deleteUser `{id:乙}` ⇒」 |  |
+| US4-AS4#3 When 甲踢除乙，Then 允許（同級互管） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T053·測試「② 空格（第二個持 R_SUPER 之自建帳號踢 Super 成」；T057·測試「甲之票打 kickUser `{id:乙}` ⇒ `0000`」 |  |
+| US4-AS4#4 Then 稽核記甲 | 有斷言 | T044·測試「窗內恰一列 `update` 且 `created_by`＝甲 」；T097·走查「§4 包含規則」 |  |
+| US4-AS5#1 Given 回收桶中曾持 R_SUPER 之 X（指派已隨刪除硬刪、T＝∅），When 被授復… | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T097·走查「§4 包含規則」 |  |
+| US4-AS5#2 Then X 復原後零角色 | 有斷言 | T048·測試「零回灌（復原後 `roles` 為空）」；T097·走查「§4 包含規則」 |  |
+| US4-AS6#1 Given 會話政策寫端為受保護端點，When 超管試圖授予非 R_SUPER，Then 00… | 有斷言 | T057·測試「Super 票打 updateRoleEndpoints、對 R」；T097·走查「§4 包含規則」 |  |
+| US4-AS6#2 非超管之編輯抽屜中會話政策欄顯示現值 | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
+| US4-AS6#3 但停用並提示「僅超級管理員可改」 | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
+| US4-AS6#4 不發出必敗呼叫 | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
+| US4-AS7#1 Given 某角色被授按鈕碼而未被授對應端點，When 持該角色者於使用者頁，Then 鈕可見 | 有斷言 | T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| US4-AS7#2 按下得 `5003`（誠實） | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 |  |
+| US4-AS7#3 Given 反之端點有、碼無，When 持該角色者開使用者頁，Then 鈕不見 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| US4-AS7#4 API 可達 | 有斷言 | T068·測試「以資料列授 `unlockLogin` 予自建角色、持該角色之自」；T097·走查「§4 包含規則」 |  |
+| US4-AS7#5 （兩鍵各自獨立、由超管一併治理） | 非測試承載 | spec.md·文件「按鈕碼與端點授權各自獨立：碼有端點無＝鈕見而 `5003`；端點」 |  |
+| US4-AS8#1 Given 前端不預判包含規則，When 被授權者開編輯抽屜，Then 角色下拉全列（含 R_… | 有斷言 | T099·CDP「角色下拉候選集＝getAllRoles 全集（含 R_SUPER」 |  |
+| US4-AS8#2 勾選送出得 `5003` 提示 | 有斷言 | T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T099·CDP「新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提」；T097·走查「§4 包含規則」 |  |
+| US4-AS8#3 列級操作鈕只依按鈕碼顯隱 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T099·CDP「於 Super 列所見列鈕與同級列逐項全等」 |  |
+| US4-AS9#1 使用者列操作「解鎖登入」依 `user:unlock` 顯隱 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T086·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「列操作下拉」 |  |
+| US4-AS9#2 When 對任一列按下，Then 以該列帳號為標的 | 有斷言 | T099·CDP「列解鎖」 |  |
+| US4-AS9#3 解除帳號維節流鎖 | 有斷言 | 既有·既有測試；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 | `unlocking_an_account_lets_the_same_login_through_at_once` |
+| US4-AS9#4 並套包含規則 | 有斷言 | T067·測試「測試：帳號維套規則（兩負一正）、來源維不套、未鎖帳號回成功並落稽」；T068·測試「以資料列授 `unlockLogin` 予自建角色、持該角色之自」；T071·機器守「記憶體內自 `handler/throttle.rs` 移除呼叫」 |  |
+| US4-AS9#5 清單不顯示鎖定狀態 | 有斷言 | T070·機器守「讀型序列化鍵集＝快照 properties 鍵集表驅動＋逐型「多」；T099·CDP「使用者清單」 |  |
+| US4-AS9#6 每列皆可按 | 有斷言 | T099·CDP「列解鎖」 |  |
+| US4-AS9#7 對未鎖帳號按下亦回成功 | 有斷言 | T067·測試「未鎖帳號回成功並落稽核（GR3）」；既有·既有測試；T099·CDP「列解鎖」 | `unlocking_a_target_that_is_not_locked_still_audits_and_marks` |
+| US4-AS9#8 並落一筆解鎖稽核（GR3） | 有斷言 | T067·測試「測試：帳號維套規則（兩負一正）、來源維不套、未鎖帳號回成功並落稽」；既有·既有測試；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 | `unlocking_a_target_that_is_not_locked_still_audits_and_marks` |
+| US4-AS9#9 Given IP 規則頁表頭「解鎖來源 IP」鈕（`ipRule:unlock` 顯隱；GR4） | 有斷言 | T086·機器守「」；T099·CDP「IP 規則頁解鎖」 |  |
+| US4-AS9#10 When 於彈窗輸入 IP 送出，Then 解除來源維節流鎖 | 有斷言 | 既有·既有測試；T099·CDP「IP 規則頁解鎖」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 | `unlocking_a_source_lets_the_same_login_through_at_once` |
+| US4-AS9#11 不套包含規則 | 有斷言 | T067·測試「測試：帳號維套規則（兩負一正）、來源維不套、未鎖帳號回成功並落稽」；T068·測試「來源維不受影響一案」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
+| US4-AS9#12 兩入口共用同一 API 包裝 | 有斷言 | T086·機器守「兩入口共用同一包裝」 |  |
+| US4-AS10#1 Given 角色頁，When 以持不同按鈕碼之角色登入，Then 新增、編輯、刪除（含批刪）鈕… | 有斷言 | T088·機器守「`hasAuth('role:` 恰三碼、」；T099·CDP「按鈕碼單碼探針」 |  |
+| US4-AS10#2 選單頁之新增、編輯、刪除（含批刪、新增子選單）鈕依對碼表顯隱 | 有斷言 | T088·機器守「`hasAuth('role:` 恰三碼、」；T099·CDP「按鈕碼單碼探針」 |  |
+| US4-AS10#3 選單回收桶「復原」鈕不設碼（Q8） | 有斷言 | T088·機器守「`hasAuth('role:` 恰三碼、」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| US4-AS10#4 角色抽屜三顆授權鈕不設碼（Q8） | 有斷言 | T088·機器守「`hasAuth('role:` 恰三碼、」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| US4-AS11#1 When 超管於「按鈕權限」彈窗取消 R_SUPER 名下六碼（role:add／edit／d… | 有斷言 | T024·測試「→ 21 項、受保護 6」；T018·機器守「①～④ 以 `rows_affected()` 比恰等值、不符回」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| US4-AS11#2 （按鈕權限彈窗撤六碼之一被拒時）零變更 | 有斷言 | T024·測試「整批拒、零變更（ADR-00085 決定 8；SC-007）」 |  |
+| US4-AS11#3 When 於選單頁編輯任一選單、自其按鈕清單移除尚有受保護授權之碼，Then 整筆拒（新拒因鍵… | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T021·測試「以移除該碼之按鈕清單打 updateMenu ⇒ `2222`＋」；T024·測試「對 `manage_role`（選單 id 4）送移除」；T099·CDP「選單刪碼守門〔32080 單邊〕」；T097·走查「§8 之受保護撤銷與刪碼守門只打應被拒之路徑」 |  |
+| US4-AS11#4 （選單編輯移除受保護授權碼被拒時）零變更 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T021·測試「段末復核選單列與授權列不變」；T024·測試「對 `manage_role`（選單 id 4）送移除」 |  |
+| US4-AS11#5 （選單編輯移除受保護授權碼被拒時）零稽核 | 有斷言 | T021·測試「歸檔表與稽核表於守衛水位窗內零新列」；T097·走查「§8 之受保護撤銷與刪碼守門只打應被拒之路徑」 |  |
+| US4-AS11#6 When 試圖刪除角色管理頁或選單管理頁之選單本身，Then 既有受保護選單守門擋下（GR1、… | 有斷言 | 既有·既有測試 | `delete_menu_gates_run_protected_then_live_children_and_refusals_write_nothing` |
+| US5-AS1#1 Given 從未選過語言之瀏覽器，When 開啟系統，Then 介面為繁中（Q4a） | 有斷言 | T100·CDP「首訪預設繁中（`removeItem('SOY_lang')` 」 |  |
+| US5-AS1#2 Given 曾選過簡中或英文，When 再開啟，Then 照記 | 有斷言 | T099·CDP「三側一律先以 `evalJs` 對該 origin 執行」；T100·CDP「照記斷言」 |  |
+| US5-AS2#1 Given 語言下拉，When 展開，Then 恰三項「简体中文／繁體中文／English」 | 有斷言 | T075·機器守「`localeOptions` 恰三項」；T099·CDP「語言下拉）——結構清單逐項全等、任一不等即紅」 |  |
+| US5-AS3#1 Given 繁中語系檔，When 型別檢查，Then 其鍵集與簡中、英文完全相等（缺鍵或多鍵即… | 有斷言 | T075·機器守「暫於同層增一個 Schema 未定義之鍵 → rc 非 0」；T100·機器守「機器檢查（容器內 `pnpm typecheck`、」 |  |
+| US5-AS3#2 元件庫與日期庫之繁中語系隨之註冊 | 有斷言 | T075·機器守「DoD（U15 出口）：容器內 `pnpm typecheck`」 |  |
+| US5-AS4#1 Given 繁中驗收（GR5），When 收刀前，Then 機器檢查（型別、簡體字掃描、用語表… | 有斷言 | T076·機器守「真檔一正一反＝`check` rc 0」；T100·機器守「機器檢查（容器內 `pnpm typecheck`、」；T108·走查「`seed-view-gate`、`zh-tw-lint`；容器」 |  |
+| US5-AS4#2 AI 逐頁審讀紀錄齊 | 非測試承載 | T100·文件「受版控紀錄＝本 T 落地註記（頁清單、發現數、處置、user 抽」 |  |
+| US5-AS4#3 user 抽查完成 | 非測試承載 | T100·文件「主線以 AskUserQuestion 請 user 於 320」 |  |
+| US5-AS5#1 管理員踢除情境：被迫下線者看到之提示用語為「踢除」語意（GR2） | 有斷言 | T053·測試「被踢者兩會話下一次請求皆 `7777`＋」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T076·機器守「`kickedByAdmin` 含「管理員」不含「頂替」；」；T100·CDP「每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項」；T097·走查「§5 斷權」 |  |
+| US5-AS5#2 單一會話頂替情境：被迫下線者看到之提示用語為「頂替」語意（GR2） | 有斷言 | 既有·既有測試；T076·機器守「`kicked` 之值不含「踢」與「管理員」」；T100·CDP「每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項」；T097·走查「§5 斷權」 | `login_global_single_session_on_second_login_kicks_previous_to_7777` |
+| US5-AS5#3 程式內之原因值不改 | 有斷言 | T028·測試「字面釘值」；T052·測試「reason 二值互異案擴三值」；既有·既有測試；既有·既有測試 | `constants_match_data_model`、`vocabularies_are_exactly_the_data_model_literals` |
+| US6-AS1#1 When user 逐款親決 → Amendment ADR accepted → 憲法更新＋… | 非測試承載 | T002·文件「ADR-00074 proposed→accepted（補親決紀」 |  |
+| US6-AS1#2 在此（Amendment commit）之前 base-web 既有檔零 diff | 有斷言 | T002·機器守「此 commit 之」；T017·機器守「斷言 T002 已落地、」；T105·機器守「⑥Amendment 顆（T002）之」 |  |
+| US6-AS2#1 全新庫依序跑 m0001～m0003，跑 schema 三閘→綠（演進帳 seed_updat… | 有斷言 | 既有·既有測試；既有·既有測試；T023·機器守「」；T107·機器守「容器內 migration up（m0001～m0003）→」 | `test_seed_update`、`test_seed_delete` |
+| US6-AS2#2 新列序號期望值隨之推進（GR9） | 有斷言 | T004·測試「`t_ok` 加 id 3＝(2,t)→(3,t)、加不高於已發」；T107·機器守「rc 0（gate2 之 `casbin_rule` 序號期望 」 |  |
+| US6-AS2#3 When 拆掉序號合成，Then gate2 紅（變異自證） | 有斷言 | T004·測試「變異自證＝暫拆推進段 → 首案與注入案轉紅 → 存原文寫回（RL」；T023·走查「暫拆 `tools/schema-gate.py` 之序號推進 」；T107·走查「真庫變異自證（暫拆序號推進 → rc 1 指名」 |  |
+| US6-AS2#4 schema-definition 不前進（GR8） | 有斷言 | T107·機器守「schema-definition 文字面不前進」 |  |
+| US6-AS3#1 seed 指派按原值補回 | 有斷言 | T006·測試「暫拔 `sys_user_role` 回補句 → ①紅」 |  |
+| US6-AS3#2 新帳號列與其指派清除 | 有斷言 | T006·測試「經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字」 |  |
+| US6-AS3#3 序列回值 | 有斷言 | T006·測試「經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字」 |  |
+| US6-AS3#4 seed 帳號可變欄寫回基準值（暱稱與密碼雜湊被改之合成案） | 有斷言 | T006·測試「經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字」 |  |
+| US6-AS3#5 經手表清除 | 有斷言 | T006·測試「經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字」 |  |
+| US6-AS3#6 改密節流鍵清除 | 有斷言 | T006·測試「經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字」 |  |
+| US6-AS3#7 全表基準 diff rc 0 | 有斷言 | T006·測試「經手表一列、`cpwd:4` 一鍵 → restore 寫句逐字」；T097·走查「§12 工具與閘逐條」 |  |
+| US6-AS4#1 以拍於 m0003 之前的基準跑走查還原→寫入前即拒跑 rc 2 | 有斷言 | T006·測試「②遷移帳前置（US6 場景 4：v4 基準之」 |  |
+| US6-AS4#2 零寫入 | 有斷言 | T006·測試「②遷移帳前置（US6 場景 4：v4 基準之」 |  |
+| US6-AS4#3 訊息指名基準與現況之遷移差 | 有斷言 | T006·測試「②遷移帳前置（US6 場景 4：v4 基準之」 |  |
+| US6-AS4#4 訊息指示重拍 | 有斷言 | T006·測試「②遷移帳前置（US6 場景 4：v4 基準之」 |  |
+| US6-AS4#5 When 拆掉該前置，Then 自測轉紅（變異自證） | 有斷言 | T006·測試「暫拆遷移帳前置呼叫 → ②紅」；T097·走查「§12 工具與閘逐條」 |  |
+| US6-AS4#6 （Given 附帶行為）006 刀終態基準屬舊檔形、由檔形版本檢查先行拒跑，同為 rc 2、零… | 有斷言 | T005·測試「v3 檔 rc 2 檔形訊息」；既有·既有測試；T009·走查「T001 之 v3 起手檔 `diff` → rc 2 檔形訊息」 | `test_v2_baseline_is_refused_rc2_naming_resnapshot_with_zero_docker_calls` |
+| US6-AS5#1 seed 模式還原目標態＝凍結 seed ⊕ 演進登記：列 44 不在 | 有斷言 | T007·測試「③seed 模式合成（US6 場景 5：m0003 九筆形之合成」 |  |
+| US6-AS5#2 列 164 在 | 有斷言 | T007·測試「列 164 在、列 58～63 受保護、」 |  |
+| US6-AS5#3 列 58～63 受保護 | 有斷言 | T007·測試「列 164 在、列 58～63 受保護、」 |  |
+| US6-AS5#4 序號 164 | 有斷言 | T007·測試「monkeypatch 拆共用鏈之序號推進 → 上界 164 高」 |  |
+| US6-AS5#5 殘列清除 | 有斷言 | T007·測試「seed 模式收尾比對擴及使用者域（`sys_user` 列數、」 |  |
+| US6-AS5#6 收尾比對 rc 0 | 有斷言 | T007·測試「列 164 在、列 58～63 受保護、」；T097·走查「§12 工具與閘逐條」 |  |
+| US6-AS5#7 When 拆掉合成，Then 自測轉紅（變異自證） | 有斷言 | T007·測試「暫改合成為只讀凍結段 → ③⑤紅」 |  |
+| US6-AS6#1 repo 含 m0003 與其登記而 dev 庫未套用，seed 模式還原→拒跑 rc 2 | 有斷言 | T007·測試「暫拆 repo↔現庫前置 → ④紅」；T097·走查「§12 工具與閘逐條」 |  |
+| US6-AS6#2 零寫入 | 有斷言 | T007·測試「④repo↔現庫不同步（US6 場景 6：repo 清單三支而現」 |  |
+| US6-AS6#3 訊息指名未套用之遷移 | 有斷言 | T007·測試「④repo↔現庫不同步（US6 場景 6：repo 清單三支而現」 |  |
+| US6-AS7#1 基準檔模式之系統設定比對以凍結 seed ⊕ 演進登記為左源，值等於合成值者不報差且不拒跑 | 有斷言 | T007·測試「⑤`system_settings` 合成（US6 場景 7：增」 |  |
+| US6-AS7#2 seed 模式之系統設定比對同以合成為左源，值等於合成值者不報差且不拒跑 | 有斷言 | T007·測試「⑤`system_settings` 合成（US6 場景 7：增」；T097·走查「§12 工具與閘逐條」 |  |
+| US6-AS7#3 When 拆掉合成，Then 自測轉紅（變異自證） | 有斷言 | T007·測試「暫改合成為只讀凍結段 → ③⑤紅」 |  |
+| US6-AS8#1 收刀 append feature_close 事件：backlog_done 8 條與 FR… | 非測試承載 | CLAUDE.md·文件「同顆逐項核 spec 標「收刀面於簿記 commit 後驗」之 」；T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；code-gates.md·文件「**收刀 `feature_close`**：」；spec.md·文件「`backlog_done` 8 條與 FR-060 相符；BL」 |  |
+| US6-AS8#2 BL-00140／BL-00141／BL-00142 之 backlog_add 已由本刀第一… | 有斷言 | T003·機器守「lint 全綠且 GT-03 零警告」 |  |
+| SC-001#1 路由表恰 61 條 | 有斷言 | T012·機器守「`ROUTES_COUNT` 49→61」；T014·機器守「coverage 雙向閘 61＝61」；T016·機器守「」；T108·走查「」 |  |
+| SC-001#2 政策保護端點恰 45 | 有斷言 | T012·機器守「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「」 |  |
+| SC-001#3 與 seed 政策列路徑×動詞逐字對齊 | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T015·測試「路由註冊後列 68 與列 2 轉入候選集」；既有·既有測試 | `seed_reads_and_the_seal_set_match_the_seed_facts` |
+| SC-001#4 契約覆蓋閘無缺案 | 有斷言 | T014·機器守「coverage 雙向閘 61＝61」；T072·機器守「registry 61＝61」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 |  |
+| SC-001#5 契約覆蓋閘無殭屍案 | 有斷言 | T014·機器守「共用驗證函式反查 case_key 綁定擋殭屍」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 |  |
+| SC-001#6 授權態矩陣逐端點實測：Super 對 12 條皆通 | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「授權態矩陣十二條全數收緊為終值」 |  |
+| SC-001#7 Admin 對管理面除 getUserList 外 9 條皆 `5003`（getUserLi… | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」 |  |
+| SC-001#8 個人中心 2 條對三個 seed 帳號皆通 | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」 |  |
+| SC-002#1 每支新鍵（22）各至少一案實際發出 | 有斷言 | T021·測試「`biz.menu.protectedButtonRemove`」；T044·測試「十一鍵各一發」；T049·測試「`user_msgs_real_db` 補」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T066·測試「四鍵各一發」；既有·既有測試 | `msg_roster_every_key_has_an_emitter` |
+| SC-002#2 名冊雙向閘綠 | 有斷言 | 既有·既有測試；T022·機器守「」；T108·走查「contract 61 case、22 新鍵實發點、名冊雙向閘、」 | `msg_roster_every_key_has_an_emitter` |
+| SC-002#3 13 碼矩陣不變 | 有斷言 | T032·測試「13 碼矩陣與可發碼集九碼不變」；既有·既有測試 | `code_mod_matches_frozen_13_matrix` |
+| SC-002#4 可發碼集不變 | 有斷言 | T032·測試「13 碼矩陣與可發碼集九碼不變」；T050·測試「`issuable_witness` 補」；既有·既有測試 | `issuable_nine_and_no_variant_four` |
+| SC-002#5 錯誤變體恰增二（BizData、ModalLogoutByAdmin；9→11） | 有斷言 | T032·測試「另立「變體樣本表」（現十變體各一樣本、逐變體斷言」；T050·測試「變體樣本表補成十一」；T105·走查「`MSG_KEYS` 68、變體 11」 |  |
+| SC-002#6 變體數量詞同批改寫 | 非測試承載 | T032·文件「`error.rs` 檔頭「變體集恰九」→恰十（U10 定稿十一」；T050·文件「`error.rs` 檔頭「恰十一」與「BizData／Moda」；T095·文件「十一變體」 |  |
+| SC-002#7 三檔 locale 後端子樹逐檔與名冊雙向相等 | 有斷言 | T040·機器守「」；T066·機器守「」 |  |
+| SC-002#8 型節齊備（app.d.ts backend 型節） | 有斷言 | T022·機器守「容器內 `pnpm typecheck` 綠」；T040·機器守「容器內 `pnpm typecheck` 綠」 |  |
+| SC-003#1 FR-010 表之拒格各至少一負向案 | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T043·測試「①～⑤ 各格負向」；T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T047·測試「測試：各格負向」；T048·測試「撞名與撞信箱兩腿」；T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」；T053·測試「已刪標的 `notFound`、本人拒」；T054·測試「已刪 `notFound`、本人拒」；T055·測試「三值收斂各形」；T057·測試「包含規則三支各兩負一正」 |  |
+| SC-003#2 FR-010 表之空格各以案釘空格理由 | 有斷言 | T042·測試「①②③ 空格釘（內層零 `advisory_lock_user`」；T047·測試「⑤ 空格（持指派與多會話之自建帳號照刪成功）」；T048·測試「②③ 空格釘（兩刪除拒案＋已刪帳號殘留之存取權杖打政策端點得」；T053·測試「零 active 亦成功並落稽核（⑤ 空格）、② 空格（第二個持」；T054·測試「② 空格（Super 重設 seed Admin 成功」；T055·測試「本人改本人成功」 |  |
+| SC-003#3 同值 no-op 一案（零寫入、零稽核、時戳不動） | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」 |  |
+| SC-003#4 異值照寫一案 | 有斷言 | T043·測試「本人可改非角色欄」；T097·走查「§3 使用者寫端」 |  |
+| SC-003#5 空字串清空一案 | 有斷言 | T042·測試「零角色合法、性別與狀態收斂、空字串＝NULL、兩帳號同送空信箱不」；T043·測試「空字串清空」；T097·走查「§3 使用者寫端」 |  |
+| SC-003#6 角色集全量替換：缺席＝指派不動 | 有斷言 | T043·測試「角色欄缺席＝`sys_user_role` 逐列不動且零撤票」；T097·走查「§3 使用者寫端」 |  |
+| SC-003#7 角色集全量替換：陣列＝寫後角色集恰等於之 | 有斷言 | T043·測試「角色集差集硬刪＋新增」；T097·走查「§3 使用者寫端」 |  |
+| SC-003#8 角色集全量替換：界外（不存在或已刪）角色 id 整筆拒 | 有斷言 | T043·測試「①～⑤ 各格負向」；T097·走查「§3 使用者寫端」 |  |
+| SC-003#9 角色集全量替換：空陣列＝全撤 | 有斷言 | T043·測試「`roleIds: []`＝全撤且稽核 `update` 之 a」；T097·走查「§3 使用者寫端」 |  |
+| SC-003#10 批刪整批 rollback 一案 | 有斷言 | T047·測試「整批 rollback（任一違規＝全批零變更）」 |  |
+| SC-003#11 復原撞名一案 | 有斷言 | T048·測試「撞名與撞信箱兩腿」 |  |
+| SC-003#12 復原撞信箱一案 | 有斷言 | T048·測試「撞名與撞信箱兩腿」 |  |
+| SC-003#13 已刪標的 updateUser 回 `notFound` | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」 |  |
+| SC-003#14 已刪標的 deleteUser 回 `notFound` | 有斷言 | T047·測試「已刪標的對 deleteUser 與 updateUser 皆 」 |  |
+| SC-003#15 已刪標的 kickUser 回 `notFound` | 有斷言 | T053·測試「已刪標的 `notFound`、本人拒」 |  |
+| SC-003#16 已刪標的 resetUserPassword 回 `notFound` | 有斷言 | T054·測試「已刪 `notFound`、本人拒」 |  |
+| SC-003#17 已刪標的 updateUserSessionPolicy 回 `notFound` | 有斷言 | T055·測試「已刪 `notFound`」 |  |
+| SC-004#1 被授權之非超管以 UI 可達路徑操作持 R_SUPER 之帳號必 `5003` | 有斷言 | T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T049·測試「包含規則三支各兩負一正（restoreUser 以合成態釘）」；T057·測試「包含規則三支各兩負一正」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」；T097·走查「§3 使用者寫端、§4 包含規則、§5 斷權」 |  |
+| SC-004#2 拆掉判定呼叫必有測試轉紅 | 有斷言 | T044·測試「拆 `guard_no_escalation` 呼叫即轉紅之變異」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| SC-004#3 停用中角色仍擋一案 | 有斷言 | T037·測試「停用角色計入 T」；T044·測試「停用角色計入 T 一案（FR-025）」 |  |
+| SC-004#4 Super 正向一案 | 有斷言 | T036·測試「`All` 對任意 T／N」；T044·測試「A＝全集正向」 |  |
+| SC-004#5 unlockLogin 帳號維套包含規則一案 | 有斷言 | T067·測試「帳號維套規則（兩負一正）」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」 |  |
+| SC-004#6 unlockLogin 來源維不套一案 | 有斷言 | T067·測試「來源維不套」；T068·測試「來源維不受影響一案」 |  |
+| SC-005#1 停用：撤票（票列撤銷、會話事件） | 有斷言 | T043·測試「停用撤票＋事件 `user_disabled`＋名單」 |  |
+| SC-005#2 刪除：撤票 | 有斷言 | T047·測試「撤票＋`user_deleted`＋名單」 |  |
+| SC-005#3 重設：撤票 | 有斷言 | T054·測試「已輪替列不動」；T097·走查「§6 密碼面」 |  |
+| SC-005#4 自助改密：撤票（撤他保留當前） | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| SC-005#5 撤票與業務寫入同交易 | 有斷言 | T044·測試「兩票仍 active、窗內零 `session_event` 零」 |  |
+| SC-005#6 停用：被撤者下一次請求 `8888` | 有斷言 | T043·測試「停用者下一次請求 `8888`」 |  |
+| SC-005#7 刪除：被撤者下一次請求 `8888` | 有斷言 | T047·測試「被刪者兩會話以既有存取權杖下一次請求皆 `8888`」；T099·CDP「刪除與批刪」；T097·走查「§3 使用者寫端」 |  |
+| SC-005#8 重設：被撤者下一次請求 `8888` | 有斷言 | T054·測試「舊會話 `8888`」 |  |
+| SC-005#9 自助改密：被撤者下一次請求 `8888` | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」 |  |
+| SC-005#10 停用者再登入 `1000` | 有斷言 | T056·測試「第⑤步鎖內三前提看得見已 commit 之停用（`1000`）」；既有·既有測試；T097·走查「§5 斷權」 | `login_disabled_account_is_1000_with_identified_audit_row_and_no_token` |
+| SC-005#11 刪除者再登入 `1000` | 有斷言 | T056·測試「併發案＝同帳號之停用、刪除、重設與登入交錯」；既有·既有測試；既有·既有測試；T097·走查「§3 使用者寫端」 | `soft_deleted_row_hidden_by_name_but_visible_by_id`、`login_unknown_account_and_wrong_password_collapse_to_same_1000` |
+| SC-005#12 踢除：被踢者 `7777` | 有斷言 | T053·測試「被踢者兩會話下一次請求皆 `7777`＋」 |  |
+| SC-005#13 踢除：新文案（auth.session.kickedByAdmin） | 有斷言 | T076·機器守「`kickedByAdmin` 含「管理員」不含「頂替」」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」 |  |
+| SC-005#14 踢除：已輪替列不動 | 有斷言 | T053·測試「已輪替列不動」 |  |
+| SC-005#15 換發重驗：停用形拒 | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| SC-005#16 換發重驗：刪除形拒 | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| SC-005#17 換發重驗：列不存在形拒 | 有斷言 | T058·測試「停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| SC-005#18 失效名單寫入失敗注入下換發仍被擋一案 | 有斷言 | T058·測試「失效名單寫入失敗注入（被撤者以既有存取權杖續打至多至」 |  |
+| SC-006#1 以系統設定寫端調政策後三入口即時生效 | 有斷言 | T031·測試「`load_policy` 每次現讀不快取」；T042·測試「政策即時生效案（設定列守衛將」；T054·測試「政策即時生效案（同 T042 形、以 11 字密碼重設）」；T064·測試「政策即時生效案（同 T042 形）」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」；T097·走查「§6 密碼面」；T101·走查「經系統設定寫端設 `password_min_length` 2」 |  |
+| SC-006#2 違規明細逐條顯示 | 有斷言 | T044·測試「`passwordPolicy` 斷言 data 恰」；T092·機器守「自測（拔請求層一處字面即 rc 1）」；T099·CDP「重設與產密浮層」 |  |
+| SC-006#3 冷卻剩餘秒數顯示 | 有斷言 | T057·測試「data `1 ≤ remainingSeconds ≤ 60`」；T092·機器守「自測（拔請求層一處字面即 rc 1）」；T099·CDP「重設與產密浮層」 |  |
+| SC-006#4 改密節流第 6 次拒 | 有斷言 | T064·測試「第 6 次於比對前拒」；T097·走查「§6 密碼面」 |  |
+| SC-006#5 改密節流成功即清 | 有斷言 | T064·測試「成功即清（commit 後）」 |  |
+| SC-006#6 改密節流載體不可用放行 | 有斷言 | T064·測試「fail-open＋」 |  |
+| SC-006#7 載體不可用時降級計數增一 | 有斷言 | T064·測試「fail-open＋」 |  |
+| SC-006#8 政策矛盾全拒一案 | 有斷言 | T097·走查「§6 密碼面」；T101·走查「經系統設定寫端設 `password_min_length` 2」 |  |
+| SC-006#9 政策矛盾告警一案 | 有斷言 | T031·測試「預註冊顯式 0、每呼一次恰 +1」；T101·走查「兩個評估週期內 Grafana」 |  |
+| SC-006#10 seed 帳號以短密碼登入不受影響 | 有斷言 | 既有·既有測試；T031·機器守「登入路徑零政策之源碼掃描案（」；T097·走查「§6 密碼面」 | `login_success_three_accounts_issue_pair_token_row_and_audit_row` |
+| SC-006#11 含特殊字元且超過 18 字之密碼可自登入頁登入 | 有斷言 | T099·CDP「登入頁複雜密碼可登入」；T097·走查「§6 密碼面」 |  |
+| SC-007#1 按鈕權限彈窗撤 R_SUPER 六碼之任一整批拒 | 有斷言 | T024·測試「（20, 0）→（21, 6）」；既有·既有測試；T018·機器守「①六碼改受保護」 | `protected_revokes_reject_the_whole_batch_with_zero_writes_in_both_dimensions` |
+| SC-007#2 選單編輯移除受保護授權碼整筆拒 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T024·測試「對 `manage_role`（選單 id 4）送移除」 |  |
+| SC-007#3 選單刪碼守門含變異自證 | 有斷言 | T020·測試「判準變異（拆守門 → 負向轉紅）」 |  |
+| SC-007#4 UI 上不存在使超管失去 `role:edit` 之路徑（測試證） | 有斷言 | T024·測試「Super 以 updateRoleButton 對 R_SUP」；T043·測試「Super 恆禁停用與恆禁解除 R_SUPER」 |  |
+| SC-007#5 UI 上不存在使超管失去 `role:edit` 之路徑（CDP 證） | 有斷言 | T099·CDP「選單刪碼守門〔32080 單邊〕」 |  |
+| SC-007#6 全新庫重放後 schema 三閘綠 | 有斷言 | T023·走查「」；T107·走查「」 |  |
+| SC-007#7 拆掉序號合成即紅 | 有斷言 | T004·機器守「變異自證＝暫拆推進段 → 首案與注入案轉紅」；T023·走查「暫拆 `tools/schema-gate.py` 之序號推進 」；T107·走查「真庫變異自證（暫拆序號推進 → rc 1 指名」 |  |
+| SC-007#8 migration 目錄恰三支 | 有斷言 | T105·走查「⑤migration 目錄恰」 |  |
+| SC-007#9 授權列 163 | 有斷言 | T018·機器守「①～④ 以 `rows_affected()` 比恰等值、不符回」；T023·走查「」 |  |
+| SC-007#10 受保護授權列 25 | 有斷言 | T024·測試「（20, 0）→（21, 6）」；T018·機器守「①六碼改受保護」；T023·走查「」 |  |
+| SC-007#11 新列 id 164 | 有斷言 | T018·機器守「③增列 164」；T023·走查「`pg_dump --data-only` 取列 164 與選單」；T107·走查「gate2 之 `casbin_rule` 序號期望 164」 |  |
+| SC-008#1 dev 庫存在自建帳號、自建角色指派與走查殘列時容器內全量測試全綠 | 有斷言 | T097·走查「§12 工具與閘逐條」；T098·走查「帶殘列之容器內全量測試全程 serial 全綠（任何轉紅之案＝對」 |  |
+| SC-008#2 具名排除兩形（seed 帳號指派被改、seed 帳號欄值被改）於 spec 與 RUNBOOK… | 非測試承載 | T008·文件「具名排除兩形與「走查寫入一律對自建帳號」」；spec.md·文件「殘列不連坐之具名排除：seed 帳號之角色指派被改（BL-001」 |  |
+| SC-008#3 走查工具自測之合成案（seed 指派被刪、新帳號列、seed 帳號欄值被改、經手表與改密節流鍵… | 有斷言 | T006·測試「①使用者域回基準（US6 場景 3：seed 指派 (2, 2)」 |  |
+| SC-008#4 以早於現行遷移之基準還原拒跑零寫入（附變異自證） | 有斷言 | T006·測試「②遷移帳前置（US6 場景 4：v4 基準之」 |  |
+| SC-008#5 m0003 後 seed 模式還原至合成目標且收尾比對 rc 0（附變異自證） | 有斷言 | T007·測試「`casbin_rule_id_seq`＝(164, true)」 |  |
+| SC-008#6 系統設定演進登記於兩模式以合成值比對（附變異自證） | 有斷言 | T007·測試「⑤`system_settings` 合成（US6 場景 7：增」 |  |
+| SC-008#7 合成所涉之表有登記而 repo 與 dev 庫遷移不同步時拒跑（附變異自證） | 有斷言 | T007·測試「④b 基準檔模式 repo↔現庫不同步」 |  |
+| SC-008#8 測試守衛之整合測試按原值回補 seed 指派與欄值 | 有斷言 | T010·測試「②`SeedUserRestoreGuard` 以自建帳號 id」；T043·測試「★spec SC-008 末句正向整合案（T011 延至此）：經」 |  |
+| SC-009#1 語言下拉恰三項 | 有斷言 | T075·機器守「`localeOptions` 恰三項」；T099·CDP「登入頁複雜密碼可登入、語言下拉）——結構清單逐項全等、任一不等即」；T100·CDP「語言下拉單邊斷言（32080）：展開恰三項」 |  |
+| SC-009#2 清除儲存後首次開啟為繁中 | 有斷言 | T100·CDP「首訪預設繁中（`removeItem('SOY_lang')` 」 |  |
+| SC-009#3 型別檢查證三語鍵集相等 | 有斷言 | T075·機器守「容器內 `pnpm typecheck` 綠（三語」 |  |
+| SC-009#4 繁中樹簡體殘字掃描零命中（具名白名單除外） | 有斷言 | T076·測試「於 `zh-tw.ts` 一字串值暫植一簡化字 → rc 1 指」 |  |
+| SC-009#5 用語表檢查綠（含「頂替」「踢除」） | 有斷言 | T076·機器守「U17 出口實證三 page 鍵之繁中值含「踢除」」；T100·走查「」 |  |
+| SC-009#6 AI 逐頁審讀紀錄涵蓋全部接真頁面 | 有斷言 | T100·CDP「落地註記之頁清單與 research R19 決定 8 射程」 |  |
+| SC-009#7 user 抽查完成並記錄（GR5） | 非測試承載 | T100·文件「受版控紀錄＝本 T 落地註記（頁清單、發現數、處置、user 抽」 |  |
+| SC-010#1 CDP 三方對照（rev5 22080 vs rev6 32080；upstream 2208… | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| SC-010#2 結構清單項：使用者頁欄位集合與列序、搜尋卡、抽屜欄位與停用態、回收桶流程、列操作下拉、踢除與重… | 有斷言 | T099·CDP「踢除流程〔被踢分頁 `7777`＋」 |  |
+| SC-010#3 間距／字體／顏色只記入走查紀錄、不擋收刀 | 非測試承載 | T099·文件「間距／字體／顏色只記走查紀錄」 |  |
+| SC-010#4 排除清單＝刻意分岔登記表各項（CDP 開跑前凍結）＋已知態各款＋008 兩頁死項＋請求次數維度 | 非測試承載 | T096·文件「spec 刻意分岔登記表凍結（research R25；凍結時點」；T099·文件「排除清單＝凍結之刻意分岔表＋ADR-00081／ADR-0008」 |  |
+| SC-010#5 CDP 中新發現者須經 user 親決入表、否則判紅 | 非測試承載 | T096·文件「CDP 中新發現者須經 user 親決〔AskUserQuest」；T103·文件「T099 新發現而經 user 親決入表之分岔列寫回」 |  |
+| SC-010#6 三側步驟一律顯式設簡中（rev6 未選過即繁中） | 有斷言 | T099·CDP「三側一律先以 `evalJs` 對該 origin 執行」 |  |
+| SC-011#1 前端型別檢查綠 | 有斷言 | T075·機器守「容器內 `pnpm typecheck` 綠（三語」；T081·機器守「**DoD（U17 出口）：容器內」；T108·走查「base-web 容器 `pnpm typecheck` rc 」 |  |
+| SC-011#2 修改型標記只出現於授權檔 | 有斷言 | T081·機器守「」；T108·走查「`fork-delta-lint`〔名冊載入、範圍欄對賬、修改型」 |  |
+| SC-011#3 base-web 變更檔集 ⊆ 授權檔集＋新增檔（機器斷言） | 有斷言 | T075·機器守「§1.4 變更檔集斷言」；T081·機器守「§1.4 變更檔集斷言（base-web 子庫 commit 之」；T105·機器守「⑦`contracts/code-gates.md` §1.4 」 |  |
+| SC-011#4 範圍欄對賬腿綠且變異自證 | 有斷言 | T104·機器守「**DoD：lint 全綠；對賬腿對本刀各列實數綠**」；T109·走查「→」 |  |
+| SC-011#5 路由產物零重算（冪等） | 有斷言 | T081·機器守「」；T104·機器守「」；T105·機器守「⑦`contracts/code-gates.md` §1.4 」 |  |
+| SC-011#6 seed-view-gate 綠 | 有斷言 | T081·機器守「」；T108·走查「`seed-view-gate`」 |  |
+| SC-011#7 各新增圈界塊拔標記必紅 | 有斷言 | T075·機器守「單行形與新增型逐項拔標記必報」；T081·機器守「本單元新增圈界塊逐塊暫拔 START／END 必報未圈界」；T088·機器守「同 T081 之 U17 出口斷言」；T092·機器守「其餘同 T081 之 U17 出口斷言」；T109·走查「巢狀 (vii) 塊取「暫拔一對塊首塊尾」形」 |  |
+| SC-012#1 憲法 1.8.0（收刀前 PATCH 實數化範圍欄後為 1.8.x） | 有斷言 | T108·走查「憲法 1.8.1；逐項結果記 commit 訊息」；T002·文件「版本行 1.8.0」；T104·文件「版本 1.8.0→1.8.1」 |  |
+| SC-012#2 accepted 前 base-web 既有檔零 diff（git 史可證） | 有斷言 | T002·機器守「此 commit 之」；T017·機器守「斷言 T002 已落地、」；T105·機器守「⑥Amendment 顆（T002）之」 |  |
+| SC-012#3 新用途列被名冊載入器讀進（變異自證） | 有斷言 | T017·機器守「名冊載入新列變異自證」 |  |
+| SC-012#4 docsync lint 零錯誤 | 有斷言 | T002·機器守「**DoD：lint 全綠」；T108·走查「`python3 -B tools/docsync test`、」 |  |
+| SC-013#1 後端全量測試容器內 serial 全綠 | 有斷言 | T108·走查「容器內」 |  |
+| SC-013#2 SC-011 所列前端面與其餘全部閘零紅 | 有斷言 | T108·走查「碼面閘表全員 `check` rc 0」 |  |
+| SC-013#3 手動端到端走查（入口 http://127.0.0.1:32080）全數通過 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」；T097·走查「API 面逐條實得對照期望」；T101·走查「已知態觀察與告警活體實測（quickstart §14」 |  |
+| SC-013#4 走查後 diff rc 0 | 有斷言 | T102·走查「→ 重啟 rust-api → `diff` rc 0 →」 |  |
+| SC-014#1 （★收刀面子句於簿記 commit 後驗） | 非測試承載 | T110·文件「SC-014＝收刀面於簿記 commit 後驗（不在本任務）」；tasks.md·文件「同顆逐項核 SC-014 之簿記後驗子句」 |  |
+| SC-014#2 plan 期 ADR 與收刀前 PATCH Amendment 全數 accepted | 非測試承載 | T002·文件「ADR-00074 proposed→accepted」；T003·文件「十一支 proposed→accepted」；T103·文件「兩支 proposed→accepted」；T104·文件「新立 PATCH Amendment ADR」 |  |
+| SC-014#3 `feature_close.adrs` 列全 | 非測試承載 | tasks.md·文件「`adrs` 十五支〔ADR-00074～ADR-00087＋T」 |  |
+| SC-014#4 `backlog_done` 8 條與 FR-060 相符 | 非測試承載 | T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；tasks.md·文件「`backlog_done` 8 條〔BACKLOG 同批刪列＝」 |  |
+| SC-014#5 BL-00140／BL-00141／BL-00142 之 `backlog_add` 在事件帳 | 非測試承載 | T003·文件「**DoD：lint 全綠且 GT-03 零警告」 |  |
+| SC-014#6 NOTES 下一步指 008 | 非測試承載 | tasks.md·文件「NOTES 下一步→008 刀〔008 起每刀三語同批〕」 |  |
+| SC-014#7 活書各節現在式更新、機器枚舉之假述零殘留 | 非測試承載 | T093·文件「活書 as-built（spec FR-059、FR-030」；T095·文件「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 |  |
+| E01#1 seed 帳號 id 1／2／3 不可刪：deleteUser 對 seed 帳號＝ | 有斷言 | T041·測試「常數」；T047·測試「測試：各格負向」 |  |
+| E01#2 批刪含任一 seed 帳號之整批拒（拒因 `seededProtected`、不指筆、全批零變… | 有斷言 | T047·測試「測試：各格負向」 |  |
+| E01#3 Super（id 1）恆禁停用：updateUser 對 id 1 送停用＝ | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER、本人可改非角色欄」；T044·測試「段末復核零寫入」 |  |
+| E01#4 恆禁解除 Super 之 R_SUPER 指派：updateUser id 1 之 roleI… | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER、本人可改非角色欄」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| E01#5 seed 保護之拒因純 key（`2222`＋鍵、data null、不經攜參明細通道） | 有斷言 | T032·測試「」；T034·機器守「射程守分階段四句（①構造點之鍵 ⊆」；T105·機器守「生產 `BizData(` 構造點恰兩處皆在」 |  |
+| E02#1 本人不得刪除自己：deleteUser 自身 id＝ | 有斷言 | T047·測試「③ 操作者 ∈ ids」；T049·測試「`user_msgs_real_db` 補」；T097·走查「§4 包含規則」 |  |
+| E02#2 本人不得停用自己：updateUser 本人帶 status（出現即拒、值不比對）＝ | 有斷言 | T043·測試「③ `id = 操作者` 且狀態或 `roleIds` 出現（值」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§4 包含規則」 |  |
+| E02#3 本人不得踢除自己：kickUser 自身＝`biz.user.cannotKickSelf` | 有斷言 | T053·測試「已刪標的 `notFound`、本人拒」；T057·測試「`cannotKickSelf`（kickUser」；T097·走查「§4 包含規則」 |  |
+| E02#4 本人不得改自身角色指派：updateUser 本人帶 roleIds（含同值）＝ | 有斷言 | T043·測試「測試：①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入」；T097·走查「§4 包含規則」 |  |
+| E02#5 本人不得以管理頁重設自己密碼：resetUserPassword 自身＝ | 有斷言 | T054·測試「已刪 `notFound`、本人拒」；T057·測試「`cannotKickSelf`（kickUser」；T097·走查「§4 包含規則」 |  |
+| E02#6 本人可改自己的非角色欄（如暱稱）＝成功 | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER、本人可改非角色欄」；T097·走查「§4 包含規則」 |  |
+| E02#7 本人可改自己的會話政策：updateUserSessionPolicy 本人改本人＝成功 | 有斷言 | T055·測試「本人改本人成功」 |  |
+| E02#8 前端：本人列之狀態控制項停用 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| E02#9 前端：本人列之角色控制項停用 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| E02#10 前端：本人列之操作下拉不列「重設密碼」 | 有斷言 | T099·CDP「列操作下拉」 |  |
+| E03#1 零角色帳號可建立（addUser 無 roleIds＝成功） | 有斷言 | T042·測試「零角色合法」；T097·走查「§3 使用者寫端、§4 包含規則」 |  |
+| E03#2 零角色帳號可登入 | 有斷言 | T065·測試「拆併入段即紅（變異）、零角色帳號登入落點＝個人中心」；T099·CDP「個人中心」；T097·走查「§3 使用者寫端」 |  |
+| E03#3 零角色帳號得個人中心：getUserRoutes 恆併入自助路由白名單 | 有斷言 | T065·測試「零選單政策角色（自建角色無 `menu` 授權之帳號、零指派帳號」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」；T097·走查「§7 個人中心與自助白名單」 |  |
+| E03#4 零角色帳號只得常量路由＋個人中心（白名單恰一列、不帶出其他選單路由） | 有斷言 | T065·測試「零選單政策角色（自建角色無 `menu` 授權之帳號、零指派帳號」；T097·走查「§7 個人中心與自助白名單」 |  |
+| E03#5 N＝∅ 恆滿足包含規則（N⊆A 對任何 A 成立） | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」 |  |
+| E04#1 回收桶中前超管之 T＝∅（軟刪同交易硬刪全部指派） | 有斷言 | T047·測試「刪除後 deleteRole 可刪該角色（軟刪同交易硬刪指派＝i」；T097·走查「§4 包含規則」 |  |
+| E04#2 任何被授 restoreUser 者（非超管）皆可復原前超管＝`0000` | 有斷言 | T097·走查「§4 包含規則」 |  |
+| E04#3 前超管復原後零角色（零回灌指派） | 有斷言 | T048·測試「測試：撞名與撞信箱兩腿、零回灌（復原後 `roles` 為空）」；T097·走查「§4 包含規則」 |  |
+| E04#4 要回超管須持 R_SUPER 者指派：非超管以 roleIds 指派 R_SUPER（N⊄A）… | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N、T⊄A、N⊄A、皆 ⊆」；T044·測試「addUser 之 N 含 R_SUPER 一案」；T097·走查「§4 包含規則」 |  |
+| E04#m1 要回超管須持 R_SUPER 者指派之正向面：持 R_SUPER 者（A＝全集）可對（含復原後… | 有斷言 | T044·測試「停用角色計入 T 一案（FR-025）＋A＝全集正向」；T097·走查「§3 使用者寫端、§4 包含規則」 |  |
+| E05#1 同一標的之兩個寫端於 per-user advisory 序列化（各寫端內層首句取 advis… | 有斷言 | T044·測試「寫端源碼次序釘另斷言 advisory 之 key 引數＝標的 」；T056·測試「併發案＝同帳號之停用、刪除、重設與登入交錯」；T026·機器守「★`advisory_lock_user` 簽章收窄為只收」；T049·機器守「源碼次序釘擴三支」；T057·機器守「拒寫案清單與源碼次序釘擴三支」 |  |
+| E05#2 lock-then-redecide：後到寫端取得 advisory 與列鎖後以新語句重判、不… | 有斷言 | T043·測試「deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝」；T047·測試「同標的兩寫端併發」；T056·測試「登入首動作 advisory(uid) ⇒ 與寫端排成單列、第⑤」；T044·機器守「外殼 begin 後第一呼叫即內層、內層首句取 advisory」 |  |
+| E05#3 新增帳號無既有標的、addUser 不取 advisory | 有斷言 | T042·機器守「①②③ 空格釘（內層零 `advisory_lock_user`」；T044·機器守「外殼 begin 後第一呼叫即內層、內層首句取 advisory」 |  |
+| E05#4 同名並發由現役唯一索引兜底（23505 依索引名收窄為 `userNameExists`／ | 有斷言 | T026·測試「先寫真 DB 案、先確認紅」；T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」 |  |
+| E05#5 角色指派寫端（addUser／updateUser）與 deleteRole 併發：角色列鎖內… | 有斷言 | T042·測試「指派併發兩序」；T043·測試「deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝」 |  |
+| E06#1 信箱唯一不分大小寫（`lower()` 比；大小寫異形＝ | 有斷言 | T026·測試「`active_email_taken`（`lower()` 比」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| E06#2 信箱唯一只比現役列（已刪列不參與比對） | 有斷言 | T026·測試「先寫真 DB 案、先確認紅」；T097·走查「§3 使用者寫端」 |  |
+| E06#3 已刪列與現役列同信箱並存合法 | 有斷言 | T026·測試「`active_email_taken`（`lower()` 比」；T097·走查「§3 使用者寫端」 |  |
+| E06#4 復原時鎖內重驗帳號名：同名現役列存在＝`biz.user.userNameExists` | 有斷言 | T048·測試「測試：撞名與撞信箱兩腿、零回灌（復原後 `roles` 為空）」；T049·機器守「源碼次序釘擴三支」；T097·走查「§3 使用者寫端」 |  |
+| E06#5 復原時鎖內重驗信箱：同信箱（`lower()`）現役列存在＝ | 有斷言 | T048·測試「測試：撞名與撞信箱兩腿、零回灌（復原後 `roles` 為空）」；T049·機器守「源碼次序釘擴三支」；T097·走查「§3 使用者寫端」 |  |
+| E07#1 新增：暱稱、手機、信箱、記事之空字串＝存空值（NULL） | 有斷言 | T042·測試「空字串＝NULL」 |  |
+| E07#2 更新：暱稱、手機、信箱、記事之空字串＝清空存空值 | 有斷言 | T043·測試「空字串清空逐欄各一發」；T097·走查「§3 使用者寫端」 |  |
+| E07#3 值 diff 於歸一後比對：現值 NULL 而送空字串＝同值 no-op（零寫入、零稽核、不動… | 有斷言 | T043·測試「⑤-e 值域歸一 no-op 兩形」 |  |
+| E08#1 不存在之角色 id → 整筆拒 `biz.user.roleNotFound`、非靜默略過（a… | 有斷言 | T042·測試「⑤ 各腿負向（含 23505 兜底兩索引）」；T043·測試「測試：①～⑤ 各格負向＋⑤-0／⑤-e 兩種 no-op（零寫入」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| E08#2 已（軟）刪之角色 id → 整筆拒 `biz.user.roleNotFound` | 有斷言 | T042·測試「`roleIds` 含已軟刪之自建角色 id」；T043·測試「deleteRole 先鎖 X ⇒ 指派寫端等鎖後重評＝」 |  |
+| E08#3 整筆拒＝零變更：同請求之合法角色與他欄皆不落地、零稽核 | 有斷言 | T044·測試「段末復核零寫入」 |  |
+| E08#4 界外整筆拒與 006 授權彈窗之候選外略過刻意不同形（角色是指派主體、非候選集過濾） | 非測試承載 | ADR-00080-user-domain-write-semantics.md·文件「★與三維授權寫端之候選集射程（ADR-00066 決定 2／4：」 |  |
+| E09#1 持停用角色：清單帶持有角色（含停用角色）之 id、代碼與名稱 | 有斷言 | T038·測試「持停用角色之帳號列帶該角色 {id, 代碼, 名稱}（FR-02」；T070·機器守「`UserRecord`：`roles` 元素缺」 |  |
+| E09#2 抽屜灰色保留選項 | 有斷言 | T099·CDP「新增與編輯抽屜〔灰色保留選項」 |  |
+| E09#3 角色欄只在改動時才送（Q13） | 有斷言 | T099·CDP「⑫編輯抽屜 body 鍵集三形」 |  |
+| E10#1 值域：狀態讀向二值收斂（存 1＝啟用、其餘＝停用） | 有斷言 | T038·測試「狀態讀向二值收斂」；既有·既有測試 | `db_status_to_wire_is_one_only_for_some_one` |
+| E10#2 寫向恰二值嚴格解析（值域外與 null＝缺席；ADR⑦） | 有斷言 | T042·測試「性別與狀態收斂」；T043·測試「`status` 值域三形」；既有·既有測試 | `wire_two_value_to_db_accepts_exactly_trimmed_one_or_two` |
+| E10#3 會話政策三值（inherit／single／multi、必填、值域外拒） | 有斷言 | T055·測試「測試：三值收斂各形、同值 no-op」；T057·測試「`sessionPolicyInvalid`（自建帳號、值域外字」；T070·機器守「`SessionPolicy`（值域釘值字典序」；T097·走查「§5 斷權」 |  |
+| E10#4 帳號名形制 `^[A-Za-z0-9_-]{1,64}$` | 有斷言 | T042·測試「帳號名形制表驅動」；T044·測試「十一鍵各一發（觸發形逐鍵依」；既有·既有測試；T097·走查「§3 使用者寫端」 | `fail_default_constants_hold_living_doc_values_and_ordering` |
+| E10#5 帳號名建後不可變 | 有斷言 | T043·測試「⑤-a `userName` 出現〔」；T044·測試「十一鍵各一發（觸發形逐鍵依」；T097·走查「§3 使用者寫端」 |  |
+| E10#6 密碼 ≤512 bytes | 有斷言 | T031·測試「位元組邊界」；既有·既有測試；T097·走查「§6 密碼面」 | `fail_default_constants_hold_living_doc_values_and_ordering` |
+| E10#7 手機不守長度（`rev5:ADR 0069` 形） | 有斷言 | T042·測試「手機不守格式與長度」 |  |
+| E11#1 使用者域寫端「缺席早退」：除 id 外全欄缺席＝no-op（零寫入、零稽核、不動更新時間） | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| E11#2 使用者域寫端「值 diff」：歸一後同值＝零寫入、零稽核、不動更新時間 | 有斷言 | T043·測試「⑤-0／⑤-e 兩種 no-op（零寫入、零稽核、」；T097·走查「§3 使用者寫端」 |  |
+| E11#3 會話政策寫端「值 diff」：同值零寫入、零稽核、不動更新時間 | 有斷言 | T055·測試「同值 no-op 案斷言」；T097·走查「§5 斷權」 |  |
+| E11#4 `sessionPolicy` 必填——缺席、null、空字串、值域外一律拒（本端點無全缺席早… | 有斷言 | T055·測試「測試：三值收斂各形、同值 no-op」；T057·測試「`sessionPolicyInvalid`（自建帳號、值域外字」 |  |
+| E11#5 角色選單域續 ADR-00047 決定 3（同值照寫照稽核） | 有斷言 | T044·測試「逐域 no-op 口徑對照腿」；既有·既有測試；既有·既有測試；既有·既有測試；既有·既有測試 | `update_role_early_no_op_shapes_succeed_with_zero_writes`、`update_menu_early_no_op_shapes_succeed_with_zero_writes`、`update_menu_writes_only_present_fields_with_paired_audit_columns`、`update_role_home_always_writes_and_clears_on_absent_null_or_empty` |
+| E11#6 使用者域與角色選單域之 no-op 口徑逐域差異由 ADR⑦ 明文 | 非測試承載 | T003·文件「」 |  |
+| E12#1 並行編輯：抽屜之狀態只在改動時才送（舊值不會把他人剛停用之帳號啟用回來） | 有斷言 | T099·CDP「⑫編輯抽屜 body 鍵集三形」 |  |
+| E12#2 抽屜之角色只在改動時才送（不覆蓋他人之指派） | 有斷言 | T099·CDP「⑫編輯抽屜 body 鍵集三形」 |  |
+| E12#3 會話政策改動時另打其端點 | 有斷言 | T099·CDP「CDP 三方對照（」 |  |
+| E12#4 其餘恆送欄（暱稱、性別、手機、信箱、記事）後送出者為準＝已知態（rev5 HEAD 同形；落點… | 非測試承載 | T003·文件「」；T101·文件「ADR-00080 並行編輯已知態」 |  |
+| E13#1 請求上下文缺席（操作者不可得）→ 寫端拒寫 `5000` | 有斷言 | T044·測試「」；T049·測試「拒寫案清單擴三支」；T057·測試「拒寫案清單與源碼次序釘擴三支」；T066·測試「拒寫案清單擴 changePassword（寫端清單至此 23）」；T072·測試「寫端拒寫案」；既有·既有測試 | `role_and_menu_write_refusals_add_no_context_absent_leg_real_seed` |
+| E13#2 不以佔位補稽核列（拒寫零稽核） | 有斷言 | T044·測試「」；T072·測試「寫端拒寫案」；既有·既有測試 | `role_and_menu_write_refusals_add_no_context_absent_leg_real_seed` |
+| E14#1 body 缺席 → 依既有 wire 慣例以共用件收斂為預設值 | 有斷言 | T044·測試「授權態矩陣收緊：Super 空 body addUser＝」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「授權態矩陣收緊（Super 空 body：三支皆」；T041·機器守「body 以」 |  |
+| E14#2 body 壞形（壞 JSON、欄型別不符）→ 以共用件整包收斂為預設值 | 有斷言 | T044·測試「壞 body 四式」；既有·既有測試；T041·機器守「body 以」；T097·走查「§1 路由與授權態」 | `json_or_default_reads_valid_bodies_and_collapses_every_rejection` |
+| E14#3 標的 id 預設值不對應現役列 → `biz.user.notFound` | 有斷言 | T044·測試「授權態矩陣收緊：Super 空 body addUser＝」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「授權態矩陣收緊（Super 空 body：三支皆」；T097·走查「§1 路由與授權態」 |  |
+| E14#4 不新增錯誤碼 | 有斷言 | 既有·既有測試；既有·既有測試；T105·機器守「`MSG_KEYS` 68、變體 11」；T097·走查「§1 路由與授權態」 | `code_mod_matches_frozen_13_matrix`、`issuable_nine_and_no_variant_four` |
+| E14#5 授權中介層不讀 body | 有斷言 | 既有·既有測試；T071·機器守「受檢形＝`guard_no_escalation` 完整 tok」；T097·走查「§1 路由與授權態」 | `no_escalation_hook_defaults_to_ok` |
+| E15#1 持 R_SUPER 者之 A＝全集：對任何標的與指派恆過 | 有斷言 | T036·測試「全分支表驅動（`All` 對任意 T／N」；T037·測試「A＝全集短路不讀 T」；T044·測試「＋A＝全集正向」；T097·走查「§4 包含規則」 |  |
+| E15#2 seed 保護對持 R_SUPER 者仍先判 | 有斷言 | T043·測試「Super 恆禁停用與恆禁解除 R_SUPER」；T044·測試「十一鍵各一發（觸發形逐鍵依」 |  |
+| E15#3 本人五不對持 R_SUPER 者仍先判 | 有斷言 | T044·測試「十一鍵各一發（觸發形逐鍵依」；T049·測試「`user_msgs_real_db` 補」；T057·測試「`cannotKickSelf`（kickUser」 |  |
+| E16#1 停用角色計入標的 T | 有斷言 | T027·測試「`role_ids_all_of_user`（T：濾角色軟刪、*」；T037·測試「停用角色計入 T」；T044·測試「停用角色計入 T 一案（FR-025）」；T097·走查「§4 包含規則」 |  |
+| E16#2 停用角色不計入操作者 A | 有斷言 | T027·測試「`role_ids_active_of_user`（A 料源：濾」；T097·走查「§4 包含規則」 |  |
+| E16#3 停用角色之指派列不硬刪 | 有斷言 | T044·測試「經 updateRole 停用該角色後其」；T097·走查「§4 包含規則」 |  |
+| E16#4 只有軟刪使用者才硬刪指派（停用帳號等其他路徑不硬刪） | 有斷言 | T043·測試「停用撤票案另斷言該帳號 `sys_user_role` 鍵集停用」；T047·測試「刪除後 deleteRole 可刪該角色（軟刪同交易硬刪指派」；T097·走查「§3 使用者寫端」 |  |
+| E17#1 按鈕碼與端點授權各自獨立：碼有端點無＝鈕見（前端顯隱只依碼） | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| E17#2 碼有端點無＝按下得 `5003`（後端只依端點授權） | 有斷言 | T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 |  |
+| E17#3 端點有碼無＝鈕不見 | 有斷言 | T099·CDP「按鈕碼單碼探針」 |  |
+| E17#4 端點有碼無＝API 可達 | 有斷言 | T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」；T097·走查「§4 包含規則」 |  |
+| E18#1 Admin 於 seed 預設態只見使用者清單（m0003 後無任何操作鈕；GR7） | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T038·測試「getUserList：Super／Admin `0000`、U」；T072·測試「授權態矩陣十二條全數收緊為終值」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| E18#2 m0003 刪 R_ADMIN 之 `user:edit`（列 44） | 有斷言 | T023·機器守「」；T024·機器守「**DoD：容器內全量 serial 綠；」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| E18#3 要讓 Admin 能編輯＝超管於角色頁同授端點與碼 | 有斷言 | T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 |  |
+| E18#4 （同授後之編輯）由包含規則兜底 | 有斷言 | T044·測試「拆 `guard_no_escalation` 呼叫即轉紅之變異」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| E19#1 unlockLogin 授予非超管之 006 已知態「授出後無帳號維守門」（本刀起解除帳號維半） | 非測試承載 | T095·文件「ADR-00081／ADR-00082 草稿依 U4～U20 a」；T103·文件「」 |  |
+| E19#2 本刀起帳號維套包含規則 | 有斷言 | T067·測試「測試：帳號維套規則（兩負一正）、來源維不套、未鎖帳號回成功並落稽」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
+| E19#3 來源維不套包含規則 | 有斷言 | T067·測試「測試：帳號維套規則（兩負一正）、來源維不套、未鎖帳號回成功並落稽」；T068·測試「來源維不受影響一案」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
+| E20#1 包含規則違反（`5003`）與既有撤銷拒、封死拒之判定位次不互吞 | 有斷言 | T055·測試「④ 負向以測內資料列授權繞過封死集而釘」；T057·測試「⇒ `2222`＋本鍵、`data` null、R_ADMIN 」；既有·既有測試；既有·既有測試；T071·機器守「植入自證三發（名冊外 handler 生產面植一處＝紅」；T109·走查「③`guard_no_escalation` 植於名冊外 han」 | `no_escalation_hook_defaults_to_ok`、`seal_query_call_sites_match_roster` |
+| E20#2 違反記一則 warn 日誌（操作者 id、標的 id、端點） | 有斷言 | T037·測試「恰一則 target `security.user` warn」；T097·走查「§4 包含規則」 |  |
+| E20#3 該 warn 日誌不含角色差集 | 有斷言 | T037·測試「輸出不含任一角色 id 差集字面」；T097·走查「§4 包含規則」 |  |
+| E20#4 不新增觀測序列 | 有斷言 | T037·測試「render 文字零序列（不新增觀測序列）」 |  |
+| E21#1 管理員踢除＝`admin_kick`、`7777`＋ | 有斷言 | T052·測試「三向各臂一案（含未知字面落 `8888`）」；T053·測試「測試：被踢者兩會話下一次請求皆 `7777`＋」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T058·測試「revoked 腿三向各臂」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」；T097·走查「§5 斷權」 |  |
+| E21#2 單一會話頂替＝`kicked`、`7777`＋`auth.session.kicked` | 有斷言 | T052·測試「三向各臂一案（含未知字面落 `8888`）」；既有·既有測試；既有·既有測試；T097·走查「§5 斷權」 | `enforce_mw_denylist_kicked_7777_counts_redis_source`、`refresh_revoked_row_with_kicked_denylist_returns_7777_modal` |
+| E21#3 撤銷＝`revoked`、`8888` 靜默 | 有斷言 | T043·測試「停用撤票＋事件 `user_disabled`＋名單」；T052·測試「三向各臂一案（含未知字面落 `8888`）」；T054·測試「舊會話 `8888`」；既有·既有測試 | `enforce_mw_denylist_revoked_8888_counts_redis_source` |
+| E21#4 管理員踢除與單一會話頂替文案分立 | 有斷言 | T050·測試「「`ModalLogoutByAdmin` 與」；T076·機器守「`kicked` 之值不含「踢」與「管理員」；」；T099·CDP「踢除流程〔被踢分頁 `7777`＋」；T100·CDP「每頁判無裸鍵、無簡體字、臺灣用語、頂替／踢除語意四項」 |  |
+| E21#5 三者不互換（島 C） | 有斷言 | T050·測試「「`ModalLogoutByAdmin` 與」；T052·測試「三向各臂一案（含未知字面落 `8888`）」；T058·測試「revoked 腿三向各臂」 |  |
+| E22#1 失效名單為盡力型：commit 後寫入失敗只記警告（不改回應） | 有斷言 | T041·測試「`finish_user_write` 三形」；既有·既有測試 | `login_kicked_denylist_write_failure_warns_degraded_and_revocation_still_lands` |
+| E22#2 資料庫為權威（換發鎖內重驗兜底） | 有斷言 | T058·測試「測試：停用、軟刪、查無列三形拒（零寫、事件與名單不動）」；既有·既有測試 | `refresh_revoked_row_without_denylist_is_silent_8888_with_no_fake_reuse` |
+| E23#1 換發重驗：帳號列已不存在＝不活 | 有斷言 | T058·測試「測試：停用、軟刪、查無列三形拒（零寫、事件與名單不動）」 |  |
+| E23#2 重驗讀不取 advisory | 有斷言 | T058·測試「`handler/auth/refresh.rs` 生產面」 |  |
+| E23#3 重驗讀不改換發鎖序 | 有斷言 | T058·測試「`_for_update(` 恰一處（」 |  |
+| E24#1 會話政策改為 single 不即時踢除 | 有斷言 | T055·測試「改 `single` 不即時踢」；T097·走查「§5 斷權」 |  |
+| E24#2 下次登入才生效 | 有斷言 | 既有·既有測試；T097·走查「§5 斷權」 | `login_per_user_single_policy_kicks_even_when_global_default_is_off` |
+| E25#1 自助改密成功撤本人其他會話 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| E25#2 保留當前會話 | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；既有·既有測試；T097·走查「§6 密碼面」 | `revoke_others_of_user_keeps_kept_chain_rotated_rows_and_other_users` |
+| E25#3 （身分帶會話 id） | 有斷言 | T064·測試「撤他保留當前（當前裝置續通、他裝置 `8888`）」；T097·走查「§6 密碼面」 |  |
+| E26#1 角色寫端之停用角色不連動撤會話 | 有斷言 | T105·機器守「⑩ 樣式擴間接撤會話路徑」 |  |
+| E26#2 角色寫端之改角色授權不連動撤會話 | 有斷言 | T105·機器守「⑩ 樣式擴間接撤會話路徑」 |  |
+| E26#3 ADR-00043 決定 8 失效條件記「已核未觸發」 | 非測試承載 | T002·文件「ADR-00074 proposed→accepted」；T105·文件「結果記 commit 訊息與收單事件註記之備料」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「三失效條件已核未觸發（①角色寫端不撤會話」 |  |
+| E27#1 冷卻設 0 停用 | 有斷言 | T054·測試「冷卻 0＝停用」；T097·走查「§6 密碼面」 |  |
+| E27#2 剩餘秒數＝冷卻秒數扣除已過整秒數（已過秒數下取整） | 有斷言 | T031·測試「剩餘秒數換算抽為不讀牆鐘之純函式」；T054·測試「`1 ≤ remainingSeconds ≤ 冷卻`」；T057·測試「data `1 ≤ remainingSeconds ≤ 60`」 |  |
+| E27#3 剩餘秒數下限 1 | 有斷言 | T031·測試「剩餘秒數換算抽為不讀牆鐘之純函式」；T054·測試「`1 ≤ remainingSeconds ≤ 冷卻`」 |  |
+| E27#4 剩餘秒數上限冷卻秒數（時鐘回撥） | 有斷言 | T031·測試「剩餘秒數換算抽為不讀牆鐘之純函式」；T054·測試「`1 ≤ remainingSeconds ≤ 冷卻`」 |  |
+| E27#5 ＝照提示秒數重試必過 | 有斷言 | T031·測試「照提示重試必過性質案」 |  |
+| E27#6 （rev5 HEAD 同形） | 非測試承載 | research.md·文件「`rev5` HEAD 形補上限」 |  |
+| E27#7 不同操作者互不影響 | 有斷言 | T054·測試「不同操作者互不影響」；T097·走查「§6 密碼面」 |  |
+| E27#8 經手表只做 upsert | 有斷言 | T029·測試「`touch` 同對兩次」；T042·測試「經手表一列」；T054·測試「冷卻邊界（`1 ≤ remainingSeconds ≤ 冷卻`」；T097·走查「§6 密碼面」 |  |
+| E27#9 經手表不做「自改即全刪」 | 有斷言 | T064·測試「植 (uid, Super) 經手列後本人改密成功」 |  |
+| E28#1 改密節流計數存放處不可用時放行（不計數、不拒） | 有斷言 | T062·測試「名冊→發射端＝以 `test_kit::bad_cache()`」；T064·測試「fail-open＋」 |  |
+| E28#2 並計入節流降級計數之新來源 | 有斷言 | T062·測試「」；T064·測試「fail-open＋」 |  |
+| E28#3 成功改密即清 | 有斷言 | T064·測試「成功即清（commit 後）」；T097·走查「§6 密碼面」 |  |
+| E28#4 無解鎖端點 | 有斷言 | T064·測試「`change_pwd::clear(` 生產呼叫點源碼掃描案」；T012·機器守「」；T014·機器守「coverage 雙向閘 61＝61」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」；T108·走查「」 |  |
+| E28#5 （窗自癒） | 有斷言 | T062·測試「待其過期後 `precheck` 放行（窗自癒）」；T097·走查「§6 密碼面」 |  |
+| E28#6 與登入節流之鍵分離 | 有斷言 | T064·測試「鍵分離」；T097·走查「§6 密碼面」 |  |
+| E29#1 政策矛盾（最小長度＞最大長度）：設密全拒 | 有斷言 | T031·測試「政策矛盾（`min_length` 20／」；T097·走查「§6 密碼面」；T101·走查「對自建帳號設密一次＝」 |  |
+| E29#2 ＋設定異常告警 | 有斷言 | T031·測試「`obs.rs` 測試：預註冊顯式 0、每呼一次恰 +1、」；T097·走查「§6 密碼面」；T101·走查「兩個評估週期內 Grafana」 |  |
+| E29#3 設定寫端照舊不守 | 有斷言 | T097·走查「§6 密碼面」；T101·走查「經系統設定寫端設 `password_min_length` 2」 |  |
+| E29#4 登入不受影響 | 有斷言 | T031·機器守「登入路徑零政策之源碼掃描案（」；T097·走查「§6 密碼面」 |  |
+| E29#5 與島 E「整組退回預設」方向相反＝跨島註入憲 | 非測試承載 | T002·文件「跨島註補句、跨島總則依 X-b〔決定二〕」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「與 E 的節流設定鍵矛盾組合整組退常數方向相反」 |  |
+| E30#1 政策鍵只在消費當下讀現值（不快取） | 有斷言 | T097·走查「§6 密碼面」 |  |
+| E30#2 密碼明文與雜湊不洩：回應 | 有斷言 | T038·測試「多帶一欄與 `password` 類鍵不出現之反例」；T044·測試「`passwordPolicy` 斷言 data 恰」；T054·測試「成功回應本體逐位元」；T070·測試「任何讀端型帶 `password`／`passwordHash`」；T097·走查「§2 讀端」 |  |
+| E30#3 密碼明文與雜湊不洩：稽核 | 有斷言 | T041·測試「負向 `password`／`sessionId` 兩鍵不存在、」；T042·測試「稽核快照不含密碼」；T054·測試「`reset_password` 稽核列」；T097·走查「§3 使用者寫端」 |  |
+| E30#4 密碼明文與雜湊不洩：日誌 | 有斷言 | T033·測試「`{:?}` 不含任一樣本」；T042·測試「手寫遮蔽密碼欄〔恆印 `<redacted>`〕＋一案」；T070·測試「反序列化後之 `Debug` 輸出不含密碼原文」；T097·走查「§6 密碼面」 |  |
+| E31#1 雜湊於交易內計算 | 有斷言 | T042·機器守「只在 handler 之 `begin()` 與內層首句之間、」；T054·機器守「源碼掃描案名冊之呼叫點涵蓋本支」；T064·機器守「`model/password.rs` 源碼掃描案名冊擴」 |  |
+| E31#2 雜湊不持列鎖時計算 | 有斷言 | T042·機器守「只在 handler 之 `begin()` 與內層首句之間、」；T054·機器守「源碼掃描案名冊之呼叫點涵蓋本支」；T064·機器守「`model/password.rs` 源碼掃描案名冊擴」 |  |
+| E31#3 （島 I5 釐清） | 非測試承載 | T002·文件「§I.7 島 I 段置於島 H 之後、跨島註之前〔決定一〕」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「密碼雜湊之**生成**（hash）MUST NOT 於持有列鎖期」 |  |
+| E32#1 使用者頁七碼逐鈕（user:add／edit／delete／restore／kick／rese… | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T086·機器守「其餘同 T081 之 U17 出口斷言」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| E32#2 角色頁依既有 add／edit／delete 碼（role:add／role:edit／rol… | 有斷言 | T088·機器守「`ANCHORS` 補角色頁與選單頁兩錨（四頁齊」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| E32#3 選單頁依既有 add／edit／delete 碼（menu:add 含新增子選單／menu:e… | 有斷言 | T088·機器守「`ANCHORS` 補角色頁與選單頁兩錨（四頁齊」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| E32#4 被授角色頁可見性之 Admin 只見所持碼之鈕 | 有斷言 | T099·CDP「結構清單逐項全等、任一不等即紅」 |  |
+| E33#1 非超管之會話政策欄停用＋提示 | 有斷言 | T099·CDP「新增與編輯抽屜〔灰色保留選項、本人列停用、會話政策非超管停用＋提」 |  |
+| E33#2 前端不預判包含規則（角色下拉全列含 R_SUPER、列級鈕只依按鈕碼顯隱） | 有斷言 | T099·CDP「列級鈕只依按鈕碼、不預判包含規則」 |  |
+| E33#3 被拒走 `5003` 提示（前端不擋、交後端包含規則拒） | 有斷言 | T036·測試「違者 `AppError::PermissionDenied`＝」；T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T057·測試「包含規則三支各兩負一正」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
+| E34#1 錯誤明細轉譯 `biz.user.passwordPolicy` 之違規清單（逐條人話） | 有斷言 | T044·測試「`passwordPolicy` 斷言 data 恰」；T092·機器守「＋自測（拔請求層一處字面即 rc 1）」；T099·CDP「重設與產密浮層」 |  |
+| E34#2 錯誤明細轉譯 `biz.user.pwdSetTooFrequent` 之剩餘秒數 | 有斷言 | T057·測試「data `1 ≤ remainingSeconds ≤ 60`」；T092·機器守「」；T099·CDP「重設與產密浮層」 |  |
+| E34#3 只轉譯此兩鍵；其餘錯誤仍純 key 提示 | 有斷言 | T032·測試「」；T092·機器守「」；T105·機器守「`FRONTEND_MSG_CONSUMERS` 恰 3」；T099·CDP「重設與產密浮層」 |  |
+| E35#1 搜尋卡手機欄接受部分字串（不擋格式、可部分比對） | 有斷言 | T038·測試「六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使」；T099·CDP「逐面對照（使用者清單、搜尋卡、新增與編輯抽屜」；T097·走查「§3 使用者寫端」 |  |
+| E35#2 搜尋卡信箱欄接受部分字串（不擋格式、可部分比對） | 有斷言 | T038·測試「六欄過濾各一案（自建帳號、名與信箱帶段標記；掛 tests 側使」；T099·CDP「逐面對照（使用者清單、搜尋卡、新增與編輯抽屜」；T097·走查「§3 使用者寫端」 |  |
+| E35#3 新增抽屜之手機照舊不驗格式 | 有斷言 | T081·機器守「新增抽屜手機照舊不驗格式」；T097·走查「§3 使用者寫端」 |  |
+| E36#1 已知態：使用者詳情頁續為佔位 | 有斷言 | T105·機器守「`contracts/code-gates.md` §1.4 變」；T099·文件「spec Edge Cases 已知態」 |  |
+| E36#2 seed-view-gate 對賬、佔位檔不可刪 | 有斷言 | T081·機器守「」；T105·機器守「`contracts/code-gates.md` §1.4 變」；T108·機器守「`seed-view-gate`」 |  |
+| E36#3 已知態：個人中心其餘卡位留白 | 有斷言 | T099·CDP「IP 規則頁解鎖、個人中心」；T089·文件「只掛新檔、其餘卡位留白」 |  |
+| E36#4 三顆快速登入鈕刀期必留（BL-00049） | 有斷言 | T099·CDP「登入頁複雜密碼可登入」 |  |
+| E36#5 已知態：系統設定與稽核兩頁仍為死項（008、CDP 排除清單） | 非測試承載 | T099·文件「008 刀兩頁死項」 |  |
+| E37#1 R_SUPER 名下角色與選單六碼受保護（m0003 起 protected） | 有斷言 | T024·測試「斷言與 doc 句（20, 0）→（21, 6）」；T018·機器守「①～④ 以 `rows_affected()` 比恰等值、不符回」；T108·機器守「`schema-gate`〔含 m0003 合成〕」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| E37#2 六碼撤不掉（按鈕權限彈窗撤銷整批拒） | 有斷言 | T024·測試「Super 以 updateRoleButton 對 R_SUP」；既有·既有測試 | `protected_revokes_reject_the_whole_batch_with_zero_writes_in_both_dimensions` |
+| E37#3 其餘碼（`user:*`、`ipRule:*` 等）仍可撤 | 有斷言 | T024·測試「斷言與 doc 句（20, 0）→（21, 6）」；既有·既有測試；T018·機器守「」；T097·走查「§8 自鎖防護與 m0003」 | `update_role_button_applies_revoke_grant_and_keep_with_one_summary_audit_and_one_sync` |
+| E37#4 誤撤可經角色頁加回（`role:edit` 已受保護） | 有斷言 | T024·測試「Super 以 updateRoleButton 對 R_SUP」；既有·既有測試；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 | `update_role_button_applies_revoke_grant_and_keep_with_one_summary_audit_and_one_sync` |
+| E38#1 選單編輯移除按鈕碼而該碼尚有受保護授權列 → 整筆拒 | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T021·測試「段末復核選單列與授權列不變、歸檔表與稽核表於守衛水位窗內零新列」；T024·測試「對 `manage_role`（選單 id 4）送移除」；T099·CDP「選單刪碼守門〔32080 單邊〕」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| E38#2 改碼＝移除舊碼（同受刪碼守門整筆拒） | 有斷言 | T020·測試「移除與改碼兩形皆拒且零變更」；T024·測試「對 `manage_role`（選單 id 4）送移除」 |  |
+| E38#3 刪除角色管理頁或選單管理頁之選單本身已由受保護選單守門擋下 | 有斷言 | 既有·既有測試；T108·機器守「`schema-gate`〔含 m0003 合成〕」 | `delete_menu_gates_run_protected_then_live_children_and_refusals_write_nothing` |
+| E39#1 受保護旗標之設定與解除經一般管理介面永不提供 | 有斷言 | 既有·既有測試；既有·既有測試；既有·既有測試；既有·既有測試 | `role_menu_request_types_match_signature_pins_and_judge_field_by_field`、`set_role_endpoints_revokes_grants_and_keeps_in_one_full_replace`、`granted_rows_carry_the_governance_columns_and_land_in_sorted_key_order`、`protected_revokes_reject_the_whole_batch_with_zero_writes_in_both_dimensions` |
+| E39#2 受保護集之變更屬 seed 基線層級決策（島 G 之 G2） | 非測試承載 | constitution.md·文件「受保護集之變更屬 seed 基線層級決策」；ADR-00085-seed-migration-m0003-button-protected-rows.md·文件「本 migration 即「受保護集之變更」之合法形」 |  |
+| E39#3 ＝m0003 直接改列（列 58～63 受保護、刪 44、增 164、選單 78 增碼） | 有斷言 | T024·測試「」；T023·機器守「」；T097·走查「§8 自鎖防護與 m0003、§9 解鎖兩入口之 API 面逐條」 |  |
+| E39#4 （m0003）不走執行期撤銷歸檔（列 44 不入歸檔表） | 有斷言 | T023·機器守「」；T107·走查「」 |  |
+| E39#5 （m0003）不走操作稽核 | 有斷言 | T023·走查「`sys_operation_log` 列數＝0」 |  |
+| E40#1 m0003 對 dev 庫：序號可能已因走查前進——新列 id＝164 顯式 | 有斷言 | T023·走查「序號已前進實證」；T097·走查「§8 自鎖防護與 m0003、§9 解鎖兩入口之 API 面逐條」 |  |
+| E40#2 各句以影響列數斷言前置條件 | 有斷言 | T023·走查「前置斷言實證」 |  |
+| E40#3 不符即整支失敗回滾 | 有斷言 | T023·走查「migrate 非零退出、`seaql_migrations` 」 |  |
+| E40#4 遷移帳不記 | 有斷言 | T023·走查「`seaql_migrations` 無 m0003 列」 |  |
+| E40#5 可安全重跑（research R13） | 有斷言 | T023·走查「失敗後可安全重跑」 |  |
+| E40#6 Day-1 登記第 3 步以全新庫（pristine）驗 | 有斷言 | T107·走查「容器內 migration up（m0001～m0003）→」 |  |
+| E40#7 dev 庫手動跑遷移後須重啟 rust-api 使判定面載入新值 | 非測試承載 | T023·文件「重起 stack（一次性 migrate 服務套 m0003、r」；ADR-00085-seed-migration-m0003-button-protected-rows.md·文件「MUST 重啟 rust-api 使判定面載入新值」；quickstart.md·文件「dc run --rm migrate（RUNBOOK §10 」 |  |
+| E40#8 compose 啟動序已保證全新啟動之次序 | 非測試承載 | docker-compose.yml·文件「condition: service_completed_suc」 |  |
+| E41#1 按鈕維受保護列不入封死集（封死謂詞只取 HTTP 方法列） | 有斷言 | T024·測試「」；既有·既有測試；既有·既有測試 | `protected_endpoint_set_pins_the_seal_predicate`、`dimension_markers_are_fixed_and_disjoint_from_the_method_whitelist` |
+| E41#2 端點維授予判定不受 m0003 影響 | 有斷言 | T057·測試「Super 票打 updateRoleEndpoints、對 R」；既有·既有測試；既有·既有測試；T023·機器守「」；T097·走查「§8 自鎖防護與 m0003、§9 解鎖兩入口之 API 面逐條」 | `governance_endpoint_grants_real_seed`、`seed_reads_and_the_seal_set_match_the_seed_facts` |
+| E42#1 首次開啟預設繁中 | 有斷言 | T099·CDP「語言下拉）——結構清單逐項全等、任一不等即紅」；T100·CDP「首訪預設繁中（`removeItem('SOY_lang')` 」 |  |
+| E42#2 選過之語言照記 | 有斷言 | T099·CDP「」 |  |
+| E42#3 首開即同步頁面根元素之語言屬性 | 有斷言 | T100·CDP「首訪 `<html lang>` 同步」 |  |
+| E42#4 （同步）落 `src/locales/index.ts` 初始化；I18N (iii) 檔集內 | 有斷言 | T075·機器守「§1.4 變更檔集斷言」；T105·機器守「`contracts/code-gates.md` §1.4 變」 |  |
+| E42#5 CDP 對照之步驟於 22080、32080（及 22089）一律顯式設簡中（rev6 未選過… | 非測試承載 | T099·文件「三側一律先以 `evalJs` 對該 origin 執行」 |  |
+| E42#6 繁中畫面另走 GR5 | 非測試承載 | T100·文件「繁中 GR5 驗收（quickstart §11；spec SC」 |  |
+| E43#1 開發期根元件驗證器以「是否簡中」判提示語言＝繁中下落英文；屬開發期提示＝已知態（researc… | 非測試承載 | ADR-00084-zh-tw-runtime-and-default-locale.md·文件「`src/main.ts` 不改——zh-TW 下開發期根元件驗」 |  |
+| E43#2 plan 期定為不改（`src/main.ts` 零 diff；外掛只有中英兩語、近 12 月… | 有斷言 | T075·機器守「§1.4 變更檔集斷言」；T105·機器守「零 diff 斷言各檔」 |  |
+| E44#1 繁中缺鍵由型別檢查攔截 | 有斷言 | T075·機器守「^const local: App.I18n.Schema = 」 |  |
+| E44#2 退路語言設定不變 | 有斷言 | T075·機器守「vue-i18n 退路語言不變」 |  |
+| E45#1 pro-naive-ui 只內建簡中與英文：繁中下五支 pro-naive 範例頁之擴充元件內… | 非測試承載 | ADR-00084-zh-tw-runtime-and-default-locale.md·文件「pro-naive-ui 退 `enUS`＝該類示範頁之元件內建」；spec.md·文件「pro-naive 範例頁（五支）之擴充元件內建字」 |  |
+| E45#2 「表單 基本」頁寫死簡中語系、繁中下仍簡體＝已知態 | 非測試承載 | spec.md·文件「繁中下退英文（元件庫無繁中；「表單 基本」頁寫死簡中仍簡體）＝已」 |  |
+| E45#3 `src/views/pro-naive/ConfigProvider.vue` 零 diff | 有斷言 | T075·機器守「§1.4 變更檔集斷言」；T105·機器守「M ⊆ #1～#17、#19 ∪ upstream 不存在之檔」 |  |
+| E45#4 不擴授權檔集 | 有斷言 | T105·機器守「`contracts/code-gates.md` §1.4 變」；ADR-00084-zh-tw-runtime-and-default-locale.md·文件「定案＝記已知態、該檔零 diff、入 spec 刻意分岔登記」 |  |
+| E45#5 GR5 逐頁審讀與 CDP 對照排除其元件內建字 | 非測試承載 | T099·文件「排除清單＝凍結之刻意分岔表＋ADR-00081／ADR-0008」；T100·文件「upstream 範例頁元件庫內建字與 pro-naive 已知」 |  |
+| E46#1 殘列不連坐之具名排除：seed 帳號之角色指派被改（BL-00136 形②）與 seed 帳號… | 非測試承載 | T008·文件「具名排除兩形與「走查寫入一律對自建帳號」」；code-gates.md·文件「具名排除兩形（seed 帳號角色指派被改＝BL-00136 形②」 |  |
+| E46#2 走查之寫入一律對自建帳號 | 非測試承載 | T102·走查「」；T097·文件「寫入一律對自建帳號與自建角色」；T098·文件「只經 API 對自建帳號產殘列」；quickstart.md·文件「★寫入步驟一律對**走查自建**之帳號、角色與選單」；tasks.md·文件「其餘單元之測試寫入受清理守衛、對自建帳號；走查與演練只經 API」 |  |
+| E46#3 測試之寫入一律對自建帳號 | 非測試承載 | T108·走查「」；T010·文件「一律「自建列代 seed 列」形、直改 seed 列做拆腿或反序」；tasks.md·文件「其餘單元之測試寫入受清理守衛、對自建帳號；走查與演練只經 API」 |  |
+| E46#4 非改 seed 帳號不可之觀察限於觀察窗 | 非測試承載 | T101·文件「以自建帳號持自建角色觀察」；quickstart.md·文件「seed 帳號欄值或指派若於觀察中被改（本檔無此步；BL-001」 |  |
+| E46#5 （須改 seed 帳號之觀察後）全量測試前先還原 | 有斷言 | T097·走查「§4 包含規則」；T098·走查「全量前（含 T097 所跑 quickstart §12 全量步」；T102·走查「」 |  |
+| E47#1 使用者表與角色指派表不在 schema-gate 執行期附加收窄集 ⇒ gate2 逐列全等 | 有斷言 | 既有·既有測試；T004·機器守「」；T044·機器守「容器內全量 serial 綠；」；T049·機器守「容器內全量 serial 綠；」；T102·走查「」 | `TestConstantsPinned.test_runtime_append_tables_pinned` |
+| E47#2 新增帳號走序列 → 測試須還原序列值 | 有斷言 | T010·測試「①嵌套 `UserRowsGuard`（外 arm→nextva」；T011·測試「tests 側守衛各一正一反自證（同 T010 形、自建列代 s」；T044·機器守「容器內全量 serial 綠；」 |  |
+| E47#3 新增帳號走序列 → 走查須還原序列值 | 有斷言 | T006·測試「`sys_user` 出上界名冊」；T102·走查「`casbin_rule_id_seq`＝(164, true)」 |  |
+| E48#1 006 刀終態基準屬舊檔形、先由檔形版本檢查拒跑 | 有斷言 | T005·測試「v3 檔 rc 2 檔形訊息」；既有·既有測試；T009·走查「T001 之 v3 起手檔 `diff` → rc 2 檔形訊息」 | `TestSnapshotV3.test_v2_baseline_is_refused_rc2_naming_resnapshot_with_zero_docker_calls` |
+| E48#2 工具只刪上界以上之列、只補消失之列、不改既有列欄值（射程界） | 有斷言 | T006·機器守「⑨寫句逐字釘」；T008·文件「射程界改寫」；code-gates.md·文件「其餘欄之就地改寫與他表 `id ≤` 上界列之被刪不還原」 |  |
+| E48#3 照跑會刪列 164、補回列 44、序號撥回 163，而列 58～63 之受保護旗標與選單 78… | 非測試承載 | code-gates.md·文件「舊基準照跑＝反做該遷移之增刪列而不還原其欄值改動、遷移帳仍記已跑」 |  |
+| E48#4 遷移帳仍記 m0003＝不重跑 | 非測試承載 | code-gates.md·文件「舊基準照跑＝反做該遷移之增刪列而不還原其欄值改動、遷移帳仍記已跑」 |  |
+| E48#5 收尾比對 rc 1 時寫入已提交、且無工具修路 | 非測試承載 | T006·文件「走查已發生而無同遷移狀態之基準＝改跑」；T008·文件「(a)(b) 兩條拒跑與補救」；code-gates.md·文件「舊基準照跑＝反做該遷移之增刪列而不還原其欄值改動、遷移帳仍記已跑」 |  |
+| E48#6 ⇒ 以 m0003 之前拍的走查基準還原時，寫入前以遷移帳拒跑（FR-057） | 有斷言 | T006·測試「暫拆遷移帳前置呼叫 → ②紅」 |  |
+| E49#1 compose 之一次性 migrate 服務於每次 stack 啟動自動套用未跑之 migr… | 非測試承載 | T008·文件「m0003 進 dev 庫之時機隱性與「套用後即重拍」」；T023·文件「重起 stack（一次性 migrate 服務套 m0003、r」；tasks.md·文件「m0003 一落工作樹、任一次起動即由一次性 migrate 服」 |  |
+| E49#2 遷移帳前置須早於撰寫 m0003 之單元 | 非測試承載 | T009·文件「此 v4 基準供 U2～U4 期間使用、U4 套 m0003 後」；tasks.md·文件「U1（走查還原工具 v4＋schema 閘序號合成）MUST 早」 |  |
+| E49#3 m0003 套用後即重拍基準 | 非測試承載 | T008·文件「m0003 進 dev 庫之時機隱性與「套用後即重拍」」；T023·文件「即重拍本刀基準」 |  |
+| E50#1 m0003 登記演進帳後，seed 模式不再拒跑 | 有斷言 | T007·測試「既有釘案翻轉（`system_settings` 與角色／選單域」 |  |
+| E50#2 seed 模式改以合成目標還原 | 有斷言 | T007·測試「暫改合成為只讀凍結段 → ③⑤紅」 |  |
+| E50#3 系統設定日後有演進登記時，兩模式之系統設定比對以合成值為準 | 有斷言 | T007·測試「暫改合成為只讀凍結段 → ③⑤紅」；既有·既有測試 | `TestRestore.test_settings_value_drift_fails_loud_by_name_and_writes_nothing` |
+| E50#4 系統設定有演進登記時，兩模式不再拒跑 | 有斷言 | T007·測試「既有釘案翻轉（`system_settings` 與角色／選單域」 |  |
+| E50#5 合成所涉之表有登記而 repo 與 dev 庫遷移不同步時拒跑 | 有斷言 | T007·測試「暫拆 repo↔現庫前置 → ④紅」 |  |
+| E51#1 仍拒跑①：migration 往清理面各表（會話三表、IP 規則、操作紀錄，本刀起含經手表）塞… | 有斷言 | T006·測試「⑥清理面登記照舊拒跑（含 `sys_pwd_custody`）」；既有·既有測試 | `TestRestore.test_seed_mode_preconditions_refuse_before_any_write` |
+| E51#2 清理面之還原方式為整表清空、以 seed 恆零列為前提；屆時須另擴工具 | 非測試承載 | T007·文件「★仍拒跑之演進形恰兩種（R16 決定 5：清理面各表之」；T008·文件「仍拒跑之演進形兩種」 |  |
+| E51#3 仍拒跑②：合成面表之結構演進屬 schema 閘合成未內建之形（如帶預設值或非空之加欄）＝走查… | 有斷言 | T007·測試「兩工具同時拒跑」；既有·既有測試；T004·機器守「」 | `TestSeedSynthesis.test_add_column_with_default_fail_loud` |
+| E51#4 走查工具共用 schema 閘之合成鏈 | 有斷言 | T007·測試「⑦合成語意對賬案」 |  |
+| E51#5 於 schema 閘同一擴充點補齊即兩者同時恢復，不須另擴走查工具 | 非測試承載 | T007·文件「不自持第二份合成碼」；T008·文件「仍拒跑之演進形兩種」 |  |
+| E52#1 rev5 側唯讀：一切讀取對凍結 worktree | 非測試承載 | T001·機器守「`bash tools/bootstrap.sh` 綠（含 re」；tasks.md·文件「」 |  |
+| E52#2 rev5 側不寫入 | 有斷言 | T001·機器守「`bash tools/bootstrap.sh` 綠（含 re」；T108·機器守「rev5 唯讀復核」；T097·走查「§12 工具與閘逐條」 |  |
+| E52#3 rev5 側不動其 stack | 非測試承載 | T096·文件「只 up／stop／ps」；T099·文件「22080 登入後即掛非 GET 請求攔截、開抽屜或彈窗後按取消」；tasks.md·文件「22080 全程唯讀、一律 127.0.0.1」 |  |
 
 **帳本 → 承載**：`backlog_done` 8＝BL-00031（T031 T035 T101；ADR-00079）｜BL-00047（T003 T004；ADR-00087）｜BL-00048（T037；ADR-00075）｜BL-00065（T058 T059；島 I2）｜BL-00091（T069 T084 T085）｜BL-00124（T062；ADR-00078 四面比較）｜BL-00136（T005 T006 T007 T010 T011 T098）｜BL-00138（①T073 T074 T075；②移交 BL-00141＝T094）；反向確認 3＝BL-00108（T071 T105）｜BL-00043（T105）｜BL-00133（T105）；`backlog_add` 3＝BL-00140／BL-00141／BL-00142（T003）；收刀前條文與現在式引用預清＝T106。
 

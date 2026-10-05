@@ -68,7 +68,7 @@ tags: [i18n, base-web, code-gate, decision-reversal, user-password-admin]
      - ①**簡體殘字腿**：字串值中屬 `SIMPLIFIED_CHARS`（工具常數：簡化字→正體字對照）之字＝紅。
      - ②**字表完備腿**：`zh-tw.ts` 與 `zh-cn.ts` 字串值所用之 CJK 統一表意文字（含擴充區），每字 MUST 屬 `SIMPLIFIED_CHARS` 之鍵或 `APPROVED_CHARS`（工具常數：已審為正體或繁簡同形之字）；未分類＝紅（指名字與首見檔、鍵路徑）。每刀新增譯文之新字由本腿逼出分類；兩表相交＝rc 2（表本身受損）。
      - ③**大陸用語腿**：`zh-tw.ts` 字串值含 `MAINLAND_TERMS`（工具常數：大陸用語→臺灣用語）任一詞＝紅。
-     - ④**會話用語腿**（GR2）：「踢」字只准出現於 `ADMIN_KICK_KEYS`（工具常數：管理員踢除語境之鍵路徑集，至少含 `backend.auth.session.kickedByAdmin` 與使用者頁之踢除相關鍵；頁面鍵路徑依本刀 contracts code-gates §1.2「page 新鍵名冊」照列）；`backend.auth.session.kicked`（單一會話被頂替）之值 MUST NOT 含「踢」與「管理員」；`backend.auth.session.kickedByAdmin` 之值 MUST 含「管理員」、MUST NOT 含「頂替」；`ADMIN_KICK_KEYS` 之 page 鍵 MUST 含「踢除」；全樹不得出現「踢出」「踢掉」「踢下線」「擠下線」「擠掉」「頂掉」（統一為「踢除」「頂替」）。程式內原因值不在射程（GR2）。
+     - ④**會話用語腿**（GR2）：「踢」字只准出現於 `ADMIN_KICK_KEYS`（工具常數：管理員踢除語境之鍵路徑集，至少含 `backend.auth.session.kickedByAdmin` 與使用者頁之踢除相關鍵；頁面鍵路徑依本刀 contracts code-gates §1.2「page 新鍵名冊」照列）；`backend.auth.session.kicked`（單一會話被頂替）之值 MUST 含「頂替」、MUST NOT 含「踢」與「管理員」；`backend.auth.session.kickedByAdmin` 之值 MUST 含「管理員」、MUST NOT 含「頂替」；`ADMIN_KICK_KEYS` 之 page 鍵 MUST 含「踢除」；全樹不得出現「踢出」「踢掉」「踢下線」「擠下線」「擠掉」「頂掉」（統一為「踢除」「頂替」）。程式內原因值不在射程（GR2）。
    - **空值檢查**：`zh-tw.ts` 字串值為空字串＝rc 1（指名鍵路徑；三語 Schema 型別不擋空值）。
    - **具名白名單 `EXEMPT`**（工具常數；逐項＝鍵路徑×字或詞×理由；只對①③生效）：不得取自 args／env／讀檔；幽靈項（該鍵已不存在、或其值已無該字詞）＝紅；項數由自測釘住——增列須同批改自測斷言、於 diff 現形。
    - **表值**：`SIMPLIFIED_CHARS`／`APPROVED_CHARS`／`MAINLAND_TERMS`／`ADMIN_KICK_KEYS` 之初值於繁中閘單元建立（兩字表以兩檔現有用字逐字分類；用語表以臺灣用語為準，例：信息→訊息、默認→預設、設置→設定、菜單→選單、登錄→登入、網絡→網路、視頻→影片、數據→資料、軟件→軟體、屏幕→螢幕、用戶→使用者）；表值屬資料、實作期定（理由：隨全樹譯文量而定，腿②保證字表完備）。
