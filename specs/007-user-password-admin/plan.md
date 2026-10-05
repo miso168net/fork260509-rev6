@@ -28,7 +28,7 @@
 
 **Constraints**: Amendment 硬序（accepted 前 base-web 既有檔零 diff、含 locale backend 鍵）／走查還原工具 v4 早於撰寫 m0003 之單元（spec FR-057 (c)）／測試守衛早於任一寫 seed 帳號或指派之寫端單元／handler 持交易＋`<op>_in_txn`、合併鎖序（advisory(uid)→使用者列→角色列升序→指派；批次先取完全部 advisory）／零每請求活性判定、零使用者域重載／§I.5 rev5 參照紀律（重打字、註解重寫、差異點烤入 prompt）／§III fork-delta 三元組＋Vue 模板屬性行變體／三語同批（型別即機器守）／dev 庫寫入逐步取 user 放行（LL-00053）／review 只讀／rev5 樹與 stack 唯讀／編排全角色 opus[1m]／xhigh
 
-**Scale/Scope**: 61 routes（12 新：GET 3／POST 7／DELETE 2；Policy 35→45、Authed 3→5）／68 msg keys（22 新）／`AppError` 9→11（BizData、ModalLogoutByAdmin）／AuditOperation 5→8／session_event 增 1 事件型＋5 原因／節流降級來源 10→11／新計數族 1＋告警規則 1／m0003 一支（演進帳 9 筆；授權列 163 不變、受保護 19→25、新列 id 164）／base-web：★ 軌道登記 18 列＋新檔 9 支（包裝 2、型別 2、浮層與彈窗 3、改密卡 1、政策 hook 1）／新碼面閘 1（zh-tw-lint）／憲法 +1 島（I）＋用途 (v)～(viii)＋LOGIN-CAPTCHA (ii)＋I18N (i)(iii)／ADR 14＋收刀前 PATCH 1／BACKLOG done 8＋add 3＋反向確認 3／執行單元 24（U0～U23；派發真源＝tasks.md、骨架＝research R23）
+**Scale/Scope**: 61 routes（12 新：GET 3／POST 7／DELETE 2；Policy 35→45、Authed 3→5）／68 msg keys（22 新）／`AppError` 9→11（BizData、ModalLogoutByAdmin）／AuditOperation 5→8／session_event 增 1 事件型＋5 原因／節流降級來源 10→11／新計數族 1＋告警規則 1／m0003 一支（演進帳 9 筆；授權列 163 不變、受保護 19→25、新列 id 164）／base-web：★ 軌道登記 19 列＋新檔 9 支（包裝 2、型別 2、浮層與彈窗 3、改密卡 1、政策 hook 1）／新碼面閘 1（zh-tw-lint）／憲法 +1 島（I）＋用途 (v)～(viii)＋LOGIN-CAPTCHA (ii)＋I18N (i)(iii)／ADR 14＋收刀前 PATCH 1／BACKLOG done 8＋add 3＋反向確認 3／執行單元 24（U0～U23；派發真源＝tasks.md、骨架＝research R23）
 
 ## Constitution Check
 
@@ -42,7 +42,7 @@
 | 4 | wire 對齊 §I.3？ | **PASS** | 信封三欄／`code` string／業務錯誤 HTTP 200／分頁 `PageRes` 不變／逐欄 id 型（i64 欄掛 2^53 守衛）／`msg` 載穩定 key（`MSG_KEYS` 46→68）；13 碼矩陣零觸碰（`admin_kick` 共用 `7777`、明細兩鍵共用 `2222`）；錯誤信封 `data` 於兩鍵攜明細物件——該約束住 §III.2 I18N (i) 列與 002 wire 契約、非 §I.3 本文，由 ADR-00074（I18N (i) 改寫）與 ADR-00076（明細通道）承載；清單型偏離 upstream 宣告型＝偏離帳（ADR-00083、漂移即紅）；驗收錨＝contracts 兩支 wire＋`msg-keys.md`＋data-model wire 映射節 |
 | 5 | 拷貝前代 code？ | **否（重打字）** | rust／vue／python 全程重打字、註解 rev6 語境（rev5 出處 `rev5:`）；翻案不帶回四項（使用者域寫端之授權重載、`[rev5-inline]` 標記字面、rev5 測試守衛名、`rev5-` 前綴之包裝與型別檔）與本刀差異點烤入 prompt（research R5）；rev5 碼註之已知錯誤不照抄 |
 | 6 | 抵觸 §II 拍板？ | **否** | 未知標頭忽略、動態選單、`/api` 前綴皆不動；accepted ADR 之續行（ADR-00012／ADR-00039／ADR-00047／ADR-00068／ADR-00069）一律以新 ADR 承接（accepted 同顆補 supersedes） |
-| 7 | 觸及 §III ★ 軌道？ | **涉及——授權以 Amendment 先行取得** | 既有軌道加用途＝新能力（新接線、跨多檔）非補完；i18n 三檔與 `app.d.ts` 仍最熱（spec ★ 軌道登記表 18 列、風險判準可覆算）；範圍欄以預估填列、各前端單元出口逐檔斷言、收刀前 PATCH 實數化 |
+| 7 | 觸及 §III ★ 軌道？ | **涉及——授權以 Amendment 先行取得** | 既有軌道加用途＝新能力（新接線、跨多檔）非補完；i18n 三檔與 `app.d.ts` 仍最熱（spec ★ 軌道登記表 19 列、風險判準可覆算）；範圍欄以預估填列、各前端單元出口逐檔斷言、收刀前 PATCH 實數化 |
 | 8 | 新建業務表含 §I.6 六審計欄？ | **不適用（零新表）** | 一支 seed-only migration `m0003`（零 DDL、不建表；改 `casbin_rule` 列 58～63 受保護旗標、刪列 44、增列 164、改 `sys_menu` 列 78 按鈕清單）；消費之表皆 001 基線既有（`sys_user` 變體 A 含審計欄與成對軟刪欄；`sys_user_role` join 表；`sys_pwd_custody` 經手表；`session_event`／`sys_token`／`sys_operation_log` append 形）；schema-definition 留 001 基線、差額只登演進帳（ADR-00087）；收刀前跑 Day-1 登記三步（RUNBOOK §10；第 3 步以全新庫驗） |
 | 9 | 觸及 §I.7 行為島？ | **涉及——授權以 Amendment 先行取得** | 島 I 隨本刀 MINOR 入憲（I1～I5、I7；I6 留空並寫明原因；`rev5:007` 島 I 字面為底、rev6 座標改寫；I1 角色列鎖句、I2 換發重驗與不加每請求判定、I5 釐清句、I7 具名 R_SUPER 與否於 U0 親決）；島 B「踢除」改述為「頂替」、島 C reason 含 `admin_kick`；密碼政策壞值「設密全拒」與島 E「整組退回預設」方向相反之跨島註；島 G 之 G5 末句轉非 vacuous（指派寫端納角色列鎖序）；島 H 之 H2 補句與否於 U0 親決；state-machine 鏡頭＝data-model §2（帳號生命週期、會話撤銷三型、設密冷卻、改密節流桶、政策載入與壞值）＋§3 寫端固定序；方向性反轉自此 MAJOR（射程九島） |
 

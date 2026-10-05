@@ -156,7 +156,7 @@ tags: [constitution, amendment, behavior-island, user-domain, password, fork-del
 
 > | **★BASE-WEB-I18N-WIRING** | (iii) Schema 型節與繁中 runtime | `src/typings/app.d.ts`（預估 1 處修改型＋1 塊新增型）／`src/locales/locale.ts`（預估 0 塊，新增型：匯入與對映皆單行形）／`src/locales/naive.ts`（預估 0 塊，新增型：獨立匯入行與兩表各一項皆單行形）／`src/locales/dayjs.ts`（預估 2 處，修改型：預設參數與退路；匯入與對映皆單行形）／`src/locales/index.ts`（預估 1 處，修改型）／`src/store/modules/app/index.ts`（預估 2 處，修改型：預設值與既有標籤；繁中選項為單行形） | 補 `App.I18n.Schema` 之 `backend` **必填**型節；`LangType` 擴 `'zh-TW'`；locale、元件庫（繁中語系與日期語系）、日期庫（`zh-tw`）三處註冊 zh-TW；未選過語言之預設改 zh-TW（`locales/index.ts`、`store/modules/app/index.ts`、`locales/dayjs.ts` 三處；選過者照記）、首次載入即以現行語言同步 `<html lang>`；語言下拉恰三項「简体中文／繁體中文／English」；退路語言不變；零新依賴；`src/main.ts` 本用途零 diff（開發期根元件驗證器之語言判斷不改）；`src/views/pro-naive/ConfigProvider.vue` 本用途零 diff（擴充元件庫只內建簡中與英文兩語，zh-TW 下 pro-naive 示範頁之擴充元件文案退其英文預設＝已知態）。本表所稱「兩語 locale」＝範圍欄所列 upstream 既有之 `en-us`／`zh-cn` 兩檔；`src/locales/langs/zh-tw.ts` 為 rev6 自有檔（檔頭一行標記、不入本表），以完整 `App.I18n.Schema` 標型＝三語鍵集之型別機器守、各樹隨各用途同批補齊（臺灣用語） |
 
-（N-b 紀律欄之 `ConfigProvider.vue` 零 diff＋已知態＝user 2026-10-05 plan 期親決〔AskUserQuestion〕；入 spec 刻意分岔登記、ADR-00084 決定 10 候選乙同結論。）
+（N-b 紀律欄之 `ConfigProvider.vue` 零 diff＋已知態＝user 2026-10-05 plan 期親決〔AskUserQuestion〕；入 spec 刻意分岔登記、ADR-00084 決定 10 乙同結論。）
 
 **MANAGE 既有列各一句**：
 - (i) 列（M-a）：「解鎖按鈕與其包裝**不在本次授權**（使用者管理頁刀）」→「帳號維解鎖入口屬本軌道用途 (v)、來源 IP 解鎖入口屬用途 (vii)，皆不入本用途」。①（建議）同顆改寫；② 刪句（失去「解鎖不入 (i)」之邊界）；③ 不動（留已兌現之預告）。
@@ -183,9 +183,9 @@ tags: [constitution, amendment, behavior-island, user-domain, password, fork-del
 - **版本**：版本行改 **1.8.0**、`Last Amended` 改親決日。版本級＝**MINOR**——§V.3「行為島隨刀進場」（島 I＋跨島註新項）、「軌道授權邊界擴展」（MANAGE (v)～(viii)、LOGIN-CAPTCHA (ii)、I18N (i) 新範圍與明細轉譯、I18N (iii) 五檔）、「已入憲 invariant 細項調整」（島 C 第三 reason；H-a 取甲時 H2 補句；鍵集句改三語＝紀律加嚴）三款；島 B 用語、MANAGE (i)(iii) 一句、跨島總則補例、承襲指針尾註、MAJOR 射程計數＝PATCH 級隨批；非 MAJOR——零入憲不變式方向反轉、零 ★ 軌道授權撤銷（I18N (i)「data 恆 null」改兩鍵例外＝授權擴展）。
 - **Amendment log 加 1.8.0 列**（形沿 1.7.0 列）：①島 I 入憲（I1～I5、I7；I6 刻意空缺；rev5 v1.10.0 字面為底、座標改寫依本 ADR 決定一附表）、跨島註補句〔跨島總則依 X-b〕、承襲指針 I 列尾註、MAJOR 射程九島、跨島重審結論要點（I6 隨島 I、J2 待島 J、改密節流與島 E 同向、G5 ★句轉非 vacuous、G2／G6 與 I7 正交）②島 B 用語、島 C 三 reason〔、H2 補句〕③§III.2 新增 MANAGE (v)～(viii)、LOGIN-CAPTCHA (ii)（(i) 延後句同批刪）、I18N (i)(iii) 改寫、MANAGE (i)(iii) 各一句、四處鍵集句改三語、範圍欄預估、收刀前 PATCH 實數化；版本級句同上；末句記 ADR-00074 同 commit accepted（§V.2 步 4）＋user 親決日期與所在任務。
 - **README**：不改——README 已不設憲法版本鏡像（只指 `docs/generated/STATE.md`；現算版本字面 0 處）。
-- **本刀 U0 順序**：①前置體檢——本 ADR 所引「現行」原文逐段對憲法現況、不符先改本 ADR；所引單元（首個觸及 base-web 既有檔之單元、繁中 runtime 單元、治理單元、收刀前承載體檢單元）對 tasks 定稿核對；`git -C base-web status --porcelain` 空且 HEAD＝pin；`python3 tools/docsync errata <詞>` 現算後果段種子 ②同一親決輪先定被 I18N (i) 列指向之 ADR-00076 決定款（兩鍵射程與受眾），再呈本 ADR 各題 ③user 逐款親決（一題一問；依賴題先問：I-c→I-d6、T-a→N-b、P-a→P-d1～P-d4／M-a／M-b；P-b 已於 plan 期親決） ④本 ADR 轉 accepted（同顆補親決紀錄）＋Amendment commit ⑤施工前提 ADR 另顆 accepted ⑥其餘施工。ADR-00076 被指向之決定款於其 accepted 前 MUST NOT 改動（確需改動＝停手升級、該指針另走 §V.2）。
+- **本刀 U0 順序**：①前置體檢——本 ADR 所引「現行」原文逐段對憲法現況、不符先改本 ADR；所引單元（首個觸及 base-web 既有檔之單元、繁中 runtime 單元、文件單元、收刀前承載體檢單元）對 tasks 定稿核對；`git -C base-web status --porcelain` 空且 HEAD＝pin；`python3 tools/docsync errata <詞>` 現算後果段種子 ②同一親決輪先定被 I18N (i) 列指向之 ADR-00076 決定款（兩鍵射程與受眾），再呈本 ADR 各題 ③user 逐款親決（一題一問；依賴題先問：I-c→I-d6、T-a→N-b、P-a→P-d1～P-d4／M-a／M-b；P-b 已於 plan 期親決） ④本 ADR 轉 accepted（同顆補親決紀錄）＋Amendment commit ⑤施工前提 ADR 另顆 accepted ⑥其餘施工。ADR-00076 被指向之決定款於其 accepted 前 MUST NOT 改動（確需改動＝停手升級、該指針另走 §V.2）。
 - **Amendment commit**：獨立一顆、訊息 `docs(constitution): amend §I.7 島 I＋島 B／C／H 連動＋§III.2 MANAGE-PAGE (v)～(viii)＋LOGIN-CAPTCHA (ii)＋I18N (i)(iii)（1.7.1→1.8.0）`；內容恰為憲法、本 ADR、活書狀態句（S-a）與 generate 產物（DECISIONS-INDEX、STATE；S-a 取①時連同 rev5-blueprint-map）。落地前主線親跑 `python3 tools/fork-delta-lint.py` rc 0 與 `python3 tools/route-artifact-gate.py check` rc 0，關鍵行寫進 commit 訊息；名冊載入新列之變異自證（暫改 (v) 列任一反引號路徑為不含 `/` 之 token → rc 2〔`load_roster` 非路徑 token 斷言；plan 期以合成憲法實跑已見此紅〕→ 存原文寫回）於首個觸及 base-web 既有檔之單元派發前由主線親跑、記入該單元收尾紀錄（SC-012；ADR-00042 決定七前例）。
-- **活書狀態句（S-a）**：收錄判準＝活書家族中本 Amendment 一落地即成假述之現在式句；碼註（`auth/enforce.rs` 掛點 doc、`app.d.ts` backend 型節註、`pwd-login.vue` 軟區圈界註、`zh-tw.ts` 檔頭）歸各承載單元、as-built 補寫歸治理單元。①（建議）同顆改：08 frontmatter `rev5_blueprint` 授權慣例值與 §8.3 之「no-escalation 本體＝島 I 承襲指針」兩處改「no-escalation 本體＝憲法 §I.7 島 I7」；10 §10.2 導言「已入憲行為島 A～H（未入憲之島 I／J 目前無情境」改「已入憲行為島 A～I（島 I 情境目前無；未入憲之島 J 目前無情境」、10 frontmatter `§10 品質要求` 值「情境逐已入憲行為島一則」改「情境逐已入憲行為島一則（島 I 情境目前無）」；12 frontmatter `§12 名詞表` 值與收尾句之「屬未入憲之島 I」兩處改「屬島 I」。② 延至治理單元——期間持假述。
+- **活書狀態句（S-a）**：收錄判準＝活書家族中本 Amendment 一落地即成假述之現在式句；碼註（`auth/enforce.rs` 掛點 doc、`app.d.ts` backend 型節註、`pwd-login.vue` 軟區圈界註、`zh-tw.ts` 檔頭）歸各承載單元、as-built 補寫歸文件單元。①（建議）同顆改：08 frontmatter `rev5_blueprint` 授權慣例值與 §8.3 之「no-escalation 本體＝島 I 承襲指針」兩處改「no-escalation 本體＝憲法 §I.7 島 I7」；10 §10.2 導言「已入憲行為島 A～H（未入憲之島 I／J 目前無情境」改「已入憲行為島 A～I（島 I 情境目前無；未入憲之島 J 目前無情境」、10 frontmatter `§10 品質要求` 值「情境逐已入憲行為島一則」改「情境逐已入憲行為島一則（島 I 情境目前無）」；12 frontmatter `§12 名詞表` 值與收尾句之「屬未入憲之島 I」兩處改「屬島 I」。② 延至文件單元——期間持假述。
 - **硬閘**：本顆落地前 base-web 既有檔 MUST 零 diff（git 史可證）；純新增檔本不受閘。
 - **親決題索引**（一題一問、首選為建議）：
 
@@ -212,7 +212,7 @@ tags: [constitution, amendment, behavior-island, user-domain, password, fork-del
 | T-a 「兩語」逐處判讀 | 四 | ①鍵集句四處改三語＋定義句 | ②八處全改／③不補定義句 |
 | Y-a MAJOR 射程句 | 五 | 「九島」 | 改字 |
 | Y-b 承襲指針 I 列尾註 | 五 | 照候選字面 | 改字 |
-| S-a 活書狀態句 | 五 | ①同顆改 | ②延治理單元 |
+| S-a 活書狀態句 | 五 | ①同顆改 | ②延文件單元 |
 
 ## 後果
 
@@ -223,7 +223,7 @@ tags: [constitution, amendment, behavior-island, user-domain, password, fork-del
 - **硬閘解除點**：本顆落地即解除；新列計數由 P-c 程序承擔至收刀前 PATCH。
 - **回填義務**：新增與改寫各列之預估值於收刀前承載體檢單元以 PATCH Amendment 實數化（配號＝當下下一號；前例 ADR-00072；RL-0015）。
 - **帳本**：I6 空缺之承載＝BL-00140；BL-00065 題 b 由 I2 兌現、BL-00091 由 (v)(vii) 授權、BL-00138① 由 I18N (iii) 授權，依 spec FR-060 於收刀 `backlog_done`。
-- **errata 面**（U0 以 `python3 tools/docsync errata <詞>` 現算、逐處分流本顆改／他單元改／史料與 accepted 不動／BACKLOG 收刀刪列；種子＝「八島」「未入憲」「承襲指針」「島 I」「兩語」「門在頁級」「頁級」「不在本次授權」「不在授權內」「延改密端點刀」「延前端 UI 刀」「使用者管理頁刀」「恆 null」「兩 reason」「踢除」「1.7.1」）：憲法自身本顆改（MAJOR 句「八島」、島 B「踢除」、島 C「兩 reason」、§III.2 延後句與「恆 null」「門在頁級」；1.7.0 log「八島」、§IV 第 9 題「未入憲」通則、§I.7 進場規則「踢人雙通道分離」泛指例示皆不動）；活書狀態句本顆改（S-a）；活書 as-built 歸治理單元（06／10 新增島 I 情境並補 frontmatter、島列舉改「A～I」〔收回 10 導言之 S-a 暫改句〕、06 島 C 情境「兩 reason」、06 與 08 之「三鈕不接按鈕權限碼（門在頁級）」、12 使用者域詞組與「頂替」「踢除」消歧）；碼註歸各承載單元——`menu/index.vue` 用途 (ii) 標記之「門是頁級」與 `role-operate-drawer.vue` 用途 (iii) 圈界註之「門在頁級」（角色與選單頁按鈕碼單元）、`pwd-login.vue` 圈界註之「(ii) formRules 放寬不在授權內」（登入表單單元）；BACKLOG「延前端 UI 刀」「使用者管理頁刀」各一處屬 BL-00138／BL-00091 本文、收刀刪列。
+- **errata 面**（U0 以 `python3 tools/docsync errata <詞>` 現算、逐處分流本顆改／他單元改／史料與 accepted 不動／BACKLOG 收刀刪列；種子＝「八島」「未入憲」「承襲指針」「島 I」「兩語」「門在頁級」「頁級」「不在本次授權」「不在授權內」「延改密端點刀」「延前端 UI 刀」「使用者管理頁刀」「恆 null」「兩 reason」「踢除」「1.7.1」）：憲法自身本顆改（MAJOR 句「八島」、島 B「踢除」、島 C「兩 reason」、§III.2 延後句與「恆 null」「門在頁級」；1.7.0 log「八島」、§IV 第 9 題「未入憲」通則、§I.7 進場規則「踢人雙通道分離」泛指例示皆不動）；活書狀態句本顆改（S-a）；活書 as-built 歸文件單元（06／10 新增島 I 情境並補 frontmatter、島列舉改「A～I」〔收回 10 導言之 S-a 暫改句〕、06 島 C 情境「兩 reason」、06 與 08 之「三鈕不接按鈕權限碼（門在頁級）」、12 使用者域詞組與「頂替」「踢除」消歧）；碼註歸各承載單元——`menu/index.vue` 用途 (ii) 標記之「門是頁級」與 `role-operate-drawer.vue` 用途 (iii) 圈界註之「門在頁級」（角色與選單頁按鈕碼單元）、`pwd-login.vue` 圈界註之「(ii) formRules 放寬不在授權內」（登入表單單元）；BACKLOG「延前端 UI 刀」「使用者管理頁刀」各一處屬 BL-00138／BL-00091 本文、收刀刪列。
 - **跨島**：島 J 仍未入憲；承襲指針表 J 列與表尾句、§I.7 段首括號句不動。
 
 ## 翻案觸發器

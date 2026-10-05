@@ -84,7 +84,7 @@ tags: [i18n, base-web, code-gate, decision-reversal, user-password-admin]
    - **碼面閘不佔 GT 名額**：不入 GATES.md、治理閘數維持 12。
    - **一正一反自證（RL-0080）**：正＝真 repo `check` rc 0；反（合成）＝四腿各一紅案、空值紅案、白名單生效綠與幽靈紅、兩表相交 rc 2、掃描面空 rc 2、物件根兩形各一綠案、白名單項數恆定斷言；反（真檔暫改）＝於 `zh-tw.ts` 一個字串值植入一個簡化字 → `check` rc 1 且指名該鍵與字 → 以原檔寫回還原 → `git -C base-web status --porcelain` 回基準態（RL-0005）。變異打在判準上（拆掉腿①之比對 ⇒ 合成紅案轉綠＝自測紅），紅證以 rc 與指名字面為準。
 8. **繁中驗收（GR5）與 CDP 對照**：繁中畫面之驗收＝本閘綠＋前端型別檢查綠（三語 Schema）＋AI 逐頁審讀紀錄涵蓋全部接真頁面＋user 抽查並記錄（SC-009）；繁中畫面無 rev5 基準、屬刻意分岔（spec 刻意分岔登記表兩列）。CDP 三方對照之步驟兩側一律顯式設簡中（22080 側為 spec 明文；32080 側同設＝提示文案逐項對照之前提；`tools/orchestration/cdp.mjs` 現無語言設定、由走查腳本寫入 `lang` 儲存值）。
-9. **已知態：開發期根元件驗證器**：`src/main.ts` 不改——zh-TW 下開發期根元件驗證器之提示語言落英文；該檔不入 ★ 軌道登記表（spec 該候選列刪除、登記表 19 列→18 列）。理由見替代案 8。
+9. **已知態：開發期根元件驗證器**：`src/main.ts` 不改——zh-TW 下開發期根元件驗證器之提示語言落英文；該檔不入 ★ 軌道登記表（spec 該候選列刪除）。理由見替代案 8。
 10. **首開語言之兩面（plan 期定案）**：
     - **甲 首次載入之 `<html lang>`（plan 期主線定案＝同步）**：未選過語言之瀏覽器首開為繁中，但 `<html lang>` 仍為 `index.html` 之靜態 `zh-CN`（執行期只在 `setLocale` 切換語言時改寫）；瀏覽器依此屬性為 CJK 字形選字型（例：Windows 上簡中字型與繁中字型字面不同）。定案＝`src/locales/index.ts`（已屬 I18N (iii) 檔集）之 `setupI18n` 內以現行語言同步 `<html lang>` 一行（單行形新增型、不入範圍欄計數；spec Edge Cases「首開即同步」）。
     - **乙 pro-naive 示範頁（user 2026-10-05 plan 期親決＝記已知態、不改）**：`src/views/pro-naive/ConfigProvider.vue` 於 zh-TW 下取 `undefined`、pro-naive-ui 退 `enUS`＝該類示範頁之元件內建字串為英文、頁面其餘文字為繁中；pro-naive-ui 3.2.2 無繁中語系。定案＝記已知態、該檔零 diff、入 spec 刻意分岔登記；GR5 逐頁審讀與 CDP 排除其元件內建字（改為對映簡中＝繁中畫面出現簡體字、違 GR5；自建繁中語系物件＝新譯文面、不在 spec 範圍）。
@@ -107,6 +107,6 @@ tags: [i18n, base-web, code-gate, decision-reversal, user-password-admin]
 - 第四語系進場、或 `LangType` 改由設定產生 ⇒ 複核決定 1～3 與本閘之掃描面。
 - 譯文改由外部翻譯平台管理（locale 檔成為產物）⇒ 權威移轉、以新 ADR 定（沿 ADR-00039 翻案觸發器）。
 - 繁中閘四腿之任一實際漏網一次（以 AI 審讀或 user 抽查抓到之簡體字、大陸用語或會話用語混用為證）⇒ 複核決定 7 之判準與表之分類紀律。
-- pro-naive-ui 升版帶繁中語系 ⇒ 複核候選乙之定案。
+- pro-naive-ui 升版帶繁中語系 ⇒ 複核決定 10 乙之定案。
 - upstream 改寫根元件驗證器之語言判斷或外掛增繁中 ⇒ 複核決定 9。
 - `zh-cn.ts` 新字未分類之紅成為常態阻擋（連續三刀以上各有一次以上）⇒ 複核腿②之讀面是否收窄至 `zh-tw.ts`。

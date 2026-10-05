@@ -14,9 +14,9 @@
 - **名冊載入變異自證**（首個觸及 base-web 既有檔之單元順做；ADR-00074 決定款）：§III.2 表中本刀新開或範圍欄改寫之每一列逐列一發——暫把該列範圍欄任一反引號路徑之反引號內字面改為不含 `/` 之 token → `python3 tools/fork-delta-lint.py` 當場 rc 2（`load_roster` 路徑形斷言 die）→ 以存原文寫回（RL-0019）→ `git diff --name-only` 零殘留；逐列單獨跑、不疊加（RL-0005）。
 - Amendment 顆同批改寫之現在式面（RL-0011 種子）：I18N (iii) 列「★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構不在本次授權，延前端 UI 刀」、LOGIN-CAPTCHA (i) 列尾「★用途 (ii)（`formRules` 放寬）不在本次授權，延改密端點刀」、MANAGE (i) 列尾「解鎖按鈕與其包裝不在本次授權（使用者管理頁刀）」、(ii)(iii) 列「三鈕不做按鈕碼 gating（門在頁級）」、I18N (i) 列「錯誤信封 `data` 恆 null、無明細通道 ⇒ 不建 `translateDetailValue`」、各列「兩語鍵集 MUST 相等」。種子字面：「延前端 UI 刀」「延改密端點刀」「使用者管理頁刀」「門在頁級」「兩語」；`pwd-login.vue` 之「★(ii) formRules 放寬不在授權內」碼註不含上列任一詞、另以「(ii) formRules」為種子。
 
-### 1.2 ★ 軌道逐處登記表 18 列之紀律與出口應有值
+### 1.2 ★ 軌道逐處登記表 19 列之紀律與出口應有值
 
-spec「★ 軌道逐處登記」表扣除 `src/main.ts` 候選列（plan 期主線定案：根元件驗證器不改、zh-TW 下開發期提示為英文＝已知態；該檔零 diff）＝18 列。現值欄＝`grep -c ' START]' <檔>`／`grep -c '原行:' <檔>`（2026-10-05 現算、base-web `fb4dac2`）；出口應有值＝現值＋ADR-00074 範圍欄所載本刀增量（預估項見通則⑥）。
+spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 期刪除——主線定案：根元件驗證器不改、zh-TW 下開發期提示為英文＝已知態；該檔零 diff；#19 碼註列為 plan 期補入、附表尾以免既有編號位移）。現值欄＝`grep -c ' START]' <檔>`／`grep -c '原行:' <檔>`（2026-10-05 現算、base-web `fb4dac2`）；出口應有值＝現值＋ADR-00074 範圍欄所載本刀增量（預估項見通則⑥）。
 
 | # | 檔（`base-web/` 下） | 軌道·用途 | 紀律 | 現值 |
 |---|---|---|---|---|
@@ -38,6 +38,7 @@ spec「★ 軌道逐處登記」表扣除 `src/main.ts` 候選列（plan 期主�
 | 16 | `src/store/modules/app/index.ts` | I18N (iii) 修改型 | 預設 `'zh-CN'`→`'zh-TW'`、`label: '中文'`→`'简体中文'`＝修改型；插入之 `{ label: '繁體中文', key: 'zh-TW' }` 選項＝單行形新增型（不入範圍欄計數、由活書 08 §8.4 分列）；範圍欄預估 2 處修改型（ADR-00074 決定四） | 0／0 |
 | 17 | `src/typings/components.d.ts` | §III 生成檔紀律（不入用途名單） | 預期變動：`src/components/custom/pwd-gen-modal.vue` 經 unplugin 自動註冊之一行宣告＋新用 naive 元件之宣告行；只許工具重算形、與引入之檔同 commit | —— |
 | 18 | `src/locales/langs/zh-tw.ts` | I18N (iii)（rev6 自有檔、不入名冊） | 改為 `App.I18n.Schema` 標型之完整全樹（臺灣用語）；檔頭單行標記之軌道名與進場刀名保留、理由句改寫為現在式（「治理錨點孤立檔」「不接 runtime」「延前端 UI 刀」為 RL-0011 種子）；`backend: {` 錨 MUST 仍為檔內首個獨佔一行之命中（msg-key-gate `RE_BACKEND_ANCHOR` 取首個命中）；`tools/zh-tw-lint.py` 射程（§2.1） | `rev6-inline` 恰 1 行 |
+| 19 | `src/views/manage/role/modules/role-operate-drawer.vue` | MANAGE (viii)（只觸 (iii) 既有圈界內碼註） | 既有 (iii) 圈界首行碼註改述：三鈕不掛碼之理由改為「其讀寫端點屬封死集、非超管連現況都載不出」（RL-0011「門在頁級」種子）；只動碼註、不增減標記、抽屜三鈕續不設碼（spec FR-048、US4 AS10） | 7／6 |
 
 **通則**（凡觸及上表任一檔之單元）：
 
@@ -82,7 +83,7 @@ spec「★ 軌道逐處登記」表扣除 `src/main.ts` 候選列（plan 期主�
 
 ### 1.4 變更檔集機器斷言（檔級硬邊界之機器半邊；base-web 各單元出口＋收刀全量閘復跑）
 
-- `git -C base-web diff --name-only --diff-filter=M fb4dac2..HEAD` ⊆ §1.2 之 #1～#17 ∪ {upstream `example` 基線 `8be6f9ba` 不存在之檔}（後者以 `git -C fork260509-soybean-admin-base cat-file -e 8be6f9ba:<路徑>` rc 非 0 判；`zh-tw.ts`、IP 規則頁各檔屬之）——全集機器可判、不設人工指名之追加集。
+- `git -C base-web diff --name-only --diff-filter=M fb4dac2..HEAD` ⊆ §1.2 之 #1～#17、#19 ∪ {upstream `example` 基線 `8be6f9ba` 不存在之檔}（後者以 `git -C fork260509-soybean-admin-base cat-file -e 8be6f9ba:<路徑>` rc 非 0 判；`zh-tw.ts`、IP 規則頁各檔屬之）——全集機器可判、不設人工指名之追加集。
 - `--diff-filter=A` 恰為 §1.3 九檔；`--diff-filter=DR` 為空。
 - 零 diff 斷言（各一行 `git -C base-web diff fb4dac2..HEAD -- <路徑>` 零輸出）：路由外掛產物四檔 `src/router/elegant/{imports,routes,transform}.ts`＋`src/typings/elegant-router.d.ts`（spec FR-054）；`src/constants/reg.ts`（FR-050）；`src/main.ts`（plan 期主線定案）；`src/views/manage/user-detail/[id].vue`（續留佔位、seed-view-gate 對賬）；`src/service/api/index.ts` 與 `src/service/api/system-manage.ts`（BASE-WEB-WRAPPER：不改既有 service 檔）；`src/components/advanced/table-header-operation.vue`（兩布林 prop 已在、零改）；`src/views/plugin/excel/index.vue`（檔級名單外）。
 - ★本節斷言一律排在 base-web 子庫 commit（六步序④）之後、外層 commit（⑥）之前跑——`A..HEAD` 形只見已 commit 之改動。
@@ -158,7 +159,7 @@ spec「★ 軌道逐處登記」表扣除 `src/main.ts` 候選列（plan 期主�
 - **自測**：①id 大於期望序號 → 推進、合成綠 ②id＝M＋1 推進、id ≤ M 不動 ③多欄 pk 不推進 ④pk 值非整數 rc 2 ⑤反：拆掉推進 → 合成之 setval 行仍為舊值、與合成實庫 dump 不等＝紅；既有 negative 五類（結構／欄序／seed 值／sequence 落值／假 delta 登記）照綠。
 - **真庫變異自證**（spec US6 場景 2、SC-007）：全新庫依序跑 m0001～m0003 → `python3 tools/schema-gate.py check --container <pristine 容器>` rc 0 → 暫拆推進 → rc 1 指名 `casbin_rule_id_seq`（163 對 164）→ 寫回 → rc 0；於 m0003 單元（U4）出口與收刀前 Day-1 第 3 步各跑一次。
 - **不動面**：`len(tables) != 14` 斷言維持（基線恆真＝ADR-00087；BL-00047 收）；`doccheck` 之 §9 序列落值對 001 刀基線（`casbin_rule_id_seq` 163）不變（schema-definition 不前進）。
-- **同批文件面**：工具 docstring 之 gate2 seed 合成句；`docs/ops/reference-src/schema-gates.md` §2 之「seed 演進同樣合成後才比對」句補序號推進；RUNBOOK §10；`docs/ops/reference-src/schema-definition.md` 檔頭「本檔隨每支帶 migration 的刀前進」句改寫為「留 001 刀基線、差額只登演進帳」（ADR-00087；spec FR-045）。
+- **同批文件面**：工具 docstring 之 gate2 seed 合成句；`docs/ops/reference-src/schema-gates.md` §2 之「seed 演進同樣合成後才比對」句補序號推進；RUNBOOK §10（`docs/ops/reference-src/schema-definition.md` 檔頭「本檔隨每支帶 migration 的刀前進」句之改寫已於 U0 施工前提顆隨 ADR-00087 accepted 同顆完成〔research R21、R22；tasks T003〕、本單元只復核其現在式；spec FR-045）。
 - **時序**：工具單元（U1），早於撰寫 m0003 之單元（U4）。
 
 ## §3 既有閘與名冊擴充
@@ -308,7 +309,7 @@ spec「★ 軌道逐處登記」表扣除 `src/main.ts` 候選列（plan 期主�
 
 ### 7.1 政策壞值計數與告警（ADR-00079；spec FR-034、BL-00031）
 
-- **計數族**：`password_policy_invalid_total`（無 label）；`obs::pre_register_metrics` 預註冊為 0；發射出口 `obs::password_policy_invalid()`（只計數、不發 log）恰一處呼叫＝`model/password.rs` 之政策載入判出 min > max 之分支（凡經該載入之消費皆計；計數語意＝讀到矛盾組合之載入次數）；★MUST NOT 併入 `throttle_degraded_total`（非節流降級）。
+- **計數族**：`password_policy_invalid_total`（無 label）；`obs::pre_register_metrics` 預註冊為 0；發射出口 `obs::password_policy_invalid()`（只計數、不發 log）恰一處呼叫＝`model/password.rs` 之單一驗證件 `validate_against_policy` 判出 min > max 之腿（三設密入口共經；getPasswordPolicy 只經載入件 `load_policy`、不經驗證件＝不計；計數語意＝矛盾期間之設密驗證次數、每次設密驗證至多一格；ADR-00079 決定 5）；★MUST NOT 併入 `throttle_degraded_total`（非節流降級）。
 - **機器守**：`obs.rs` 測試模組增預註冊顯式 0 案（形同 `pre_register_renders_ipgate_blocked_explicit_zero`）、出口每呼一次恰 +1 案、出口恰一處生產呼叫點之靜態掃描案 `password_policy_invalid_outlet_is_called_from_exactly_one_production_site`（形同 `ipgate_blocked_outlet_is_called_from_exactly_one_production_site`；RL-0026 處數由測試釘；掃描輔件與阻擋出口共用或提升依 `handler/common.rs` 檔頭之收攏紀律判定、research 記判定）；行為面＝政策矛盾下三設密入口各回拒＋計數增一（spec SC-006）。
 - **warn 日誌**：一則結構化 warn（target 與欄名依 research R11；含 min、max 現值、不含任何密碼字面）。
 - **告警規則**（`deploy/grafana-provisioning/alerting/rules.yml`；組號 ③e、段錨註解寫事件錨與承載 ADR）：uid `obs016-password-policy-invalid`、title `password-policy-invalid`、`condition: C`、`for: 0s`、`noDataState: OK`（預註冊 0＝無增量即健康）、`execErrState: Alerting`、`labels.severity: warning`；評估鏈 A（prometheus instant：`sum(increase(password_policy_invalid_total[5m]))`、`relativeTimeRange` 300 秒）→ B（reduce last）→ C（threshold `gt 0`）；annotation `summary` 只帶規則名與 `$values.B`（annotation 契約：零 log 行、零個資），文面例「password-policy-invalid：密碼政策設定矛盾（最小長度大於最大長度、設密一律被拒；5m 增量 {{ $values.B }}、判準 > 0）」。檔頭「現況＝告警五組 12 條」改 13 條（組數不變）。

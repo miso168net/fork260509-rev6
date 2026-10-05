@@ -139,7 +139,7 @@
 5. **Given** 演進帳已登記 m0003 九筆、dev 庫已套 m0003 且留有走查殘列（工具自測合成案），**When** 跑 seed 模式還原，**Then** 目標態＝凍結 seed ⊕ 演進登記（列 44 不在、列 164 在、列 58～63 受保護、序號 164）、殘列清除且收尾比對 rc 0；**When** 拆掉合成，**Then** 自測轉紅（變異自證）。
 6. **Given** repo 已含 m0003 與其演進登記而 dev 庫尚未套用（工具自測合成案），**When** 跑 seed 模式還原，**Then** 拒跑 rc 2、零寫入，訊息指名未套用之遷移。
 7. **Given** 演進帳有 `system_settings` 之 `seed_*` 登記（增鍵、改值、刪鍵各一）且 dev 庫已套用其遷移（工具自測合成案），**When** 以基準檔模式與 seed 模式各跑一次走查還原，**Then** 兩模式之系統設定比對皆以凍結 seed ⊕ 演進登記為左源、值等於合成值者不報差且不拒跑；**When** 拆掉合成，**Then** 自測轉紅（變異自證）。
-8. **Given** 收刀，**When** append `feature_close` 事件，**Then** `backlog_done` 8 條與 FR-060 相符；BL-00140／BL-00141 之 `backlog_add` 已由本刀第一筆事件帶入。
+8. **Given** 收刀，**When** append `feature_close` 事件，**Then** `backlog_done` 8 條與 FR-060 相符；BL-00140／BL-00141／BL-00142 之 `backlog_add` 已由本刀第一筆事件帶入。
 
 ---
 
@@ -453,7 +453,7 @@ i18n 三檔仍是基線最熱之檔；緩解＝一律新增型圈界、不與 up
 - **SC-011**: 前端與 fork-delta 全綠——前端型別檢查綠；修改型標記只出現於授權檔、base-web 變更檔集 ⊆ 授權檔集＋新增檔（機器斷言）；範圍欄對賬腿綠且變異自證；路由產物零重算（冪等）；seed-view-gate 綠；各新增圈界塊拔標記必紅。
 - **SC-012**: 治理面全綠——憲法 1.8.0（收刀前 PATCH 實數化範圍欄後為 1.8.x）且 accepted 前 base-web 既有檔零 diff（git 史可證）；新用途列被名冊載入器讀進（變異自證）；docsync lint 零錯誤。
 - **SC-013**: 交付鏈全綠（FR-066）——後端全量測試容器內 serial 全綠、SC-011 所列前端面與其餘全部閘零紅、手動端到端走查（入口 `http://127.0.0.1:32080`）全數通過、走查後 diff rc 0。
-- **SC-014**（★收刀面子句於簿記 commit 後驗）: 治理帳本結清——plan 期 ADR 與收刀前 PATCH Amendment 全數 accepted 且 `feature_close.adrs` 列全；`backlog_done` 8 條與 FR-060 相符；BL-00140／BL-00141 之 `backlog_add` 在事件帳；NOTES 下一步指 008；活書各節現在式更新、機器枚舉之假述零殘留。
+- **SC-014**（★收刀面子句於簿記 commit 後驗）: 治理帳本結清——plan 期 ADR 與收刀前 PATCH Amendment 全數 accepted 且 `feature_close.adrs` 列全；`backlog_done` 8 條與 FR-060 相符；BL-00140／BL-00141／BL-00142 之 `backlog_add` 在事件帳；NOTES 下一步指 008；活書各節現在式更新、機器枚舉之假述零殘留。
 
 ## Assumptions
 
