@@ -1,4 +1,4 @@
-<!-- next: BL-00142 -->
+<!-- next: BL-00143 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -20,3 +20,4 @@
 - BL-00138｜product｜003 刀 spec Out of Scope 延至「前端 UI 刀」之兩項在刀序表無落點、現在式帳本零承載：①`LangType` 擴充與 zh-TW 語系註冊、`zh-tw.ts` 標型重構（憲法 §III.2 ★BASE-WEB-I18N-WIRING (iii) 明文「不在本次授權，延前端 UI 刀」；`rev5:R3-15`）②自助頁手機驗證從零建頁（第四流程只 stub；承 `rev5:B-022` 半消化形）；刀序（001 刀 brainstorm Q1）001～008 無「前端 UI 刀」、開刀前只掃觸發欄者結構上掃不到（006 authz-governance brainstorm 探勘揭出；user 2026-10-01 裁合併立條）｜觸發＝007 user-password-admin brainstorm 起手前（重評：定歸屬刀或立 won't-fix ADR）
 - BL-00139｜product｜Grafana dashboard `deploy/grafana-provisioning/dashboards/json/rust-api.json` 三面板查詢之 metric 於 rust-api 零發射點、面板恆無資料（maint-readout-errata 勘誤掃描新揭；創世隨 deploy 目錄遷入、現在式帳本零承載、無任何工具讀該 JSON）：「本窗受壓制 distinct 帳號數（HLL）」與「本窗受壓制 distinct 來源 IP 數（HLL）」查 `throttle_hll_distinct`（HLL 廣度估計＝rev4 物件、rev5 起即不搬、rev6 004 刀定案不帶）；「設定讀取頻次」查 `enforce_settings_select_total`（rev4 之 TTL 快取觀測，rev5／rev6 皆無發射點）。處置候選三擇一：刪面板、接上真 metric、或於 description 註明現況（比照 `deploy/grafana-provisioning/alerting/rules.yml` 對無事件源告警之現況註記）｜觸發＝008 brainstorm 起手前，或任一支改動該 dashboard JSON 之面板查詢（targets／expr）或增刪面板之批或刀（先到者）
 - BL-00140｜product｜首登強制改密（管理員所設密碼〔新增帳號之初始密碼、重設密碼〕於本人下次登入時須先改）不做、續延：003 刀 spec Out of Scope 排給 007 之項，007 user-password-admin brainstorm Q1 user 2026-10-05 拍板再延（同 `rev5:007` Q02 不做、`rev5:B-134` 同題）；兌現時須登入回應帶旗標、前端路由守衛攔截與強制改密頁（base-web 新修憲用途），判定可零 migration 以 `sys_pwd_custody` 之「他人所設且晚於本人自設」推得或另加欄；seed 三帳號被重設後三顆快速登入鈕將被攔（BL-00049 連動）；島 I 之 I6 位刻意空缺待本條兌現回填｜觸發＝008 audit-settings-pages brainstorm 起手前（重評：排入、續延或移滯後卷），或出現首登強制改密之實際需求（先到者）
+- BL-00142｜governance｜碼面閘名冊之 ADR-00032 翻案觸發器①（碼面閘 ≥8 支＝另立生成檔並翻案）已成立未處置：007 刀前碼面閘表 9 支、007 刀增 `tools/zh-tw-lint.py` 後 10 支；處置二擇一——另立生成檔（工具 docstring 機器抽取「守什麼／觸發時機」、入 GENERATED_FILES）並翻案 ADR-00032，或立新 ADR 續行人寫表並重設觸發條件（成員集已由 GT-12 雙向機器守）｜下一支治理維護批起手前，或碼面閘再增一支時（先到者）
