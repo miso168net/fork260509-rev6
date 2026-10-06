@@ -1030,7 +1030,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | FR-055#18 ⑤範圍欄初值 MUST 依表外宣告 1 例外路徑預估或「不預估」 | 有斷言 | T002·機器守「主線親跑 `python3 tools/fork-delta-lint.py`」 |  |
 | FR-055#19 ⑤收刀前 MUST PATCH 實數化範圍欄（前例 ADR-00051／ADR-00072） | 有斷言 | T104·機器守「**DoD：lint 全綠；對賬腿對本刀各列實數綠**」；T108·走查「→ 憲法 1.8.1」；T109·走查「②★範圍欄對賬腿變異」 |  |
 | FR-055#20 Amendment accepted 前 base-web 既有檔 MUST 零 diff | 有斷言 | T002·機器守「此 commit 之 `git ls-tree <本顆> base-web`」；T017·機器守「斷言 T002 已落地、`git -C base-web status --porcelain`」；T105·機器守「⑥Amendment 顆（T002）之 `git ls-tree <該顆> base-web`」 |  |
-| FR-056#1 ADR MUST 於 plan 期起草（feature branch 內、序號接續） | 非測試承載 | ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「status: proposed」；tasks.md·文件「ADR 十四支 ADR-00074～ADR-00087 皆 pr」 |  |
+| FR-056#1 ADR MUST 於 plan 期起草（feature branch 內、序號接續） | 非測試承載 | ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「draft 於 plan 期落 feature branch」；tasks.md·文件「ADR 十四支 ADR-00074～ADR-00087 皆 pr」 |  |
 | FR-056#2 proposed 期 MUST NOT 宣告 supersedes、accepted 同顆補 | 非測試承載 | T003·文件「續行型三支同顆補 supersedes：ADR-00080 `supersedes: [ADR-00047]`」；T103·文件「兩支 proposed→accepted＋`supersedes: [ADR-00068]`」 |  |
 | FR-056#3 收刀前 PATCH Amendment ADR 一支（配號＝當下下一號、plan 期不起草） | 非測試承載 | T104·文件「新立 PATCH Amendment ADR（配號＝屆時下一號」 |  |
 | FR-056#4 ①島 I 入憲 Amendment（provenance `rev5:ADR 0063`＋ | 非測試承載 | T002·文件「ADR-00074 proposed→accepted（補親決紀」；ADR-00074-constitution-1-8-0-island-i-and-manage-page-uses-v-viii.md·文件「憲法 Amendment 1.7.1→1.8.0——§I.7 島」 |  |
