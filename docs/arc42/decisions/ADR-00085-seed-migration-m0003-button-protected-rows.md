@@ -2,7 +2,7 @@
 id: "ADR-00085"
 title: seed-only migration m0003（rev6 首支 delta）——R_SUPER 名下角色與選單六碼改受保護（按鈕維受保護列首例）、刪 R_ADMIN `user:edit`（列 44）、增 R_SUPER `ipRule:unlock`（列 164）與 `manage_ip-rule` 按鈕清單一碼；seed 基線層直接改列、單一交易五句逐句斷言、前置不符整支回滾（fail-loud）；演進帳九筆＋schema 閘 seed_add 序號合成；走查還原工具之遷移帳前置與 seed 合成（兩模式之系統設定比對、清理面 seed 列照舊拒跑）；ADR-00064 背景「按鈕維受保護 0 列」之讀法
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-041（m0003 逐列改動表與遷移後期望）、FR-042（六碼受保護之撤銷拒、按鈕維受保護列不入封死集、ADR-00064 背景註記）、FR-044（Admin 不再持 `user:edit`）、FR-045（演進帳九筆、seed_add 序號合成、Day-1 登記三步）、FR-046（seed 錨定測試與現在式文件改對）、FR-057 (a)(b)(c)（走查還原工具遷移帳前置與 seed 合成；(b) 之範圍＝user 2026-10-05 裁定本刀做、同日納入系統設定）、FR-062、US6 AS2／AS4～AS7、SC-007、SC-008、Edge Cases「自鎖防護與 seed 基線」「測試與走查基建」、一次性遷移三欄表（m0003）、刻意分岔登記表「R_SUPER 角色與選單六碼」「Admin 預設之使用者頁」兩列；brainstorm §0 GR1／GR1a（六碼受保護；非建議項）／GR4（`ipRule:unlock`；非建議項）／GR7（刪列 44）／GR8（schema-definition 不前進）／GR9（seed_add 序號合成）、主線工程判斷⑰（seed 基線層讀法：島 G 之 G2 末句「受保護集之變更屬 seed 基線層級決策」）、§3 §4 風險 R10／R11；plan 期主線定案（m0003 檔名與單一交易五句形、新列顯式 id 164 與冪等形定義、`ipRule:unlock` 說明字面、演進帳九筆之形、序號合成之語意、走查還原工具清理面擴入經手表）；ADR-00008（migration 短號四碼）、ADR-00010 決定 1（第一支 delta 自 m0003 起編）／決定 2（凍結面永不改寫）、ADR-00009（m0001／m0002 屬憲法 §I.5 例外②）、ADR-00064 背景與決定 1／4／5、ADR-00065 決定 1（`button_revoke` 不可復原）、ADR-00071 翻案觸發器首款；契約＝`docs/ops/reference-src/schema-evolution-contract.md` §1～§3、`docs/ops/reference-src/schema-gates.md` §2／§5；前代無藍本（`rev5:007` 零 migration、rev5 無 delta migration）；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research R21（ADR 配號與親決時點表）"
@@ -55,8 +55,6 @@ tags: [schema, migration, seed, casbin, governance, walkthrough, user-password-a
 
 ## 決定
 
-（草稿；user 親決於 U0 施工前提顆；親決輪後依結果改寫本節並補親決紀錄。）
-
 1. **檔與形**：`rust-api/migration/src/m0003_seed_button_governance.rs`（`seaql_migrations.version`＝檔名主幹；`Migrator::migrations()` 向量依序 append 為第三支）；seed-only、零 DDL、不建表。rev6 新寫碼（不屬憲法 §I.5 例外②之 17 檔）＝一般 rustfmt 紀律、無 rev5 對應檔。
 2. **up＝單一遷移交易內五句、依序執行**（遷移框架之交易包覆＝失敗零殘留，與 m0002 模組文件所述「框架交易保證失敗零殘留」同一前提；U4 以 pristine 庫之強制失敗演練佐證、含遷移帳未記一項）：
    - ①`UPDATE casbin_rule SET protected = TRUE`，WHERE 帶 `id IN (58,59,60,61,62,63)`、`ptype='p'`、`v0='R_SUPER'`、`v1` 屬六碼、`v2='button'`、`protected = FALSE` ⇒ 影響列數 MUST＝6。
@@ -95,6 +93,8 @@ tags: [schema, migration, seed, casbin, governance, walkthrough, user-password-a
     - 撤回 m0003 本身（拍板翻案）⇒ down 遷移＋演進帳以反向四類追加修正筆（契約 §3 append-only：寫錯＝新 entry 修正）＋FR-046 錨測試與文件回退。
     - 工具擴面回退 ⇒ 還原工具與 RUNBOOK §9c 同批回退（seed 模式回到拒跑形）。
 12. **連動與收尾**：seed 錨定測試與現在式文件同單元改對（FR-046：受保護 19→25、新列 id 164、R_ADMIN 按鈕集去 `user:edit`、seed 三帳號之帳號資訊按鈕集）；收刀前跑 RUNBOOK §10 Day-1 登記三步，第 3 步以全新庫（`--container`）驗；schema-definition 不前進（ADR-00087）。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——本輪逐款一題一問呈決定 1～12、皆照文定稿；零非建議項 ⇒ 決定節免改寫；原決定節首之草稿標記改由本紀錄承載。
 
 ## 後果
 

@@ -2,7 +2,7 @@
 id: "ADR-00077"
 title: 自助路由白名單為碼內常數 `SELF_SERVICE_ROUTES`、於 casbin 過濾之後恆併入 getUserRoutes——以「業務 menu 射程＋`hide_in_menu` seed 實值」二支柱對憲法 §I.2 立論、只收受眾＝本人之自助頁；身分注入形增 `sid`（ADR-00014 後果段「注入形不變」句自本刀起不再成立）；003 刀與 005 刀照帶之「不帶回」前提翻轉
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-039（恆併入、只收自助頁、seed 政策列保留、兩向案、§I.2 關係、路由讀端歸因勘誤、005 照帶前提翻轉）、FR-036（身分帶會話 id、保留當前會話）、FR-049（個人中心入口與零角色可達）、US3 AS8、Edge Cases「零角色帳號」；brainstorm §0 Q11（程式內自助白名單）、§1「自助路由白名單」「changePassword 流程」兩列；plan 期主線定案（`Identity { uid, user_name, sid }`、注入點與消費者）；藍本＝rev5:ADR 0065（二支柱、併入次序、擴充紀律、seed 列保留）與其 as-built rev5:server/src/handler/route.rs（`SELF_SERVICE_ROUTES`）、起源＝rev4:ADR 0065（rev4:014-user-center）、`rev5:B-140`（前代收刀後以 `Identity.sid` 取代 handler 內重驗章取會話 id）；rev6 既有件＝`handler::route::get_user_routes`／`resolve_home`、`sys_menu::visible_menu_routes`／`list_active`／`build_user_route_tree`、`sys_role::home_of_roles`、`auth::Identity`、`auth::enforce::enforce_mw`、`auth::jwt::Claims` 之 `sid`、`sys_token::revoke_others_of_user`；seed 事實＝rust-api/migration/src/m0002_baseline_seeds.rs 之 `sys_menu` 列 16（`user-center`、`hide_in_menu=TRUE`、頂層、非受保護）與 `casbin_rule` 列 123（`p|R_SUPER|user-center|menu`；2026-10-05 核）；照帶前提出處＝rust-api/server/src/handler/route.rs 檔頭（003 刀 U5）、specs/005-role-menu-crud/research.md R3 防回歸清單；上游＝憲法 §I.2（規則句、含義第一條、釋義②）、ADR-00014 後果段；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -53,6 +53,8 @@ tags: [routing, authz, self-service, constitution-check, user-password-admin]
 5. **身分注入形**：`Identity { uid, user_name, sid }`——`enforce_mw` 於驗章、denylist 判定皆放行之後自 `Claims.sid` 注入；消費者＝changePassword（撤本人其他有效票、以 `sid` 為保留鍵保留當前會話）。ADR-00014 後果段「`Identity{uid, user_name}` 注入形不變」句為 003 刀接真 session 之預告、已兌現；本刀之變更由本款承載，該句自本刀起不再成立。ADR-00014 不翻案（決定 1～6 不受影響）。
 6. **照帶前提翻轉**：`handler/route.rs` 檔頭「不帶」句改為帶回之現在式並勘誤歸因（起源＝`rev4:014`〔rev4:ADR 0065〕、前代帶回＝`rev5:007` U4〔rev5:ADR 0065〕）；005 刀 research R3 照帶之「`SELF_SERVICE_ROUTES` 不帶回」防回歸項之前提隨本刀消失——該 research 屬凍結存證不改，本刀 research R5 之防回歸清單不再列此項。
 7. **測試**：「零選單政策角色仍得自助路由」與「白名單外路由不受影響」兩向案（spec FR-039）；併入次序以零選單政策角色案釘住（超管案照過、不足以證）；`sid` 注入以「改密後當前會話續用、其他會話 `8888`」端到端案釘住（FR-036、SC-005）；首頁兜底落點另一案：首頁不在可見樹且可見葉皆排序在 `user-center`（seed order 999）之後之角色，登入落點＝個人中心。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——本輪逐款一題一問呈決定 1～7、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

@@ -2,7 +2,7 @@
 id: "ADR-00075"
 title: 包含規則（島 I7）與射程分工——判定＝handler 鎖內具名純函式、9 個消費點（使用者寫端八支＋unlockLogin 帳號維）共用單一包裝；中介層 no-escalation 掛點續恆放行為路徑級上限位、簽章與呼叫點不動；角色域、IP 域與授權回收桶復原不掛；ADR-00064 翻案觸發器首條與次條之複核結論；BL-00048 兌現
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-021～FR-025（US4 AS1～AS5、AS8、AS9、SC-004、Edge Cases「包含規則與委派」段）、FR-010（寫端固定序第④步）、FR-040（unlockLogin 帳號維掛點位次）、FR-060（BL-00048 backlog_done）；brainstorm §0 Q6（可下放＋包含規則入憲）／Q7（射程只限使用者域＋解鎖帳號維）、主線工程判斷①（ADR-00014 照 user 2026-09-07「走 BL 對沖、不翻案」；BL-00048 以兌現連動面收）；plan 期主線定案（純函式模組與 handler 包裝之命名與落點、`ActorScope` 以角色 id 為比對單位、enforce.rs 掛點續恆放行、呼叫點名冊閘合一為 `NO_ESCALATION_CALL_FILES`）；藍本＝rev5:ADR 0063 款三（兩實作位分工）與其 as-built rev5:server/src/auth/no_escalation.rs、rev5:server/src/handler/user.rs 之 `guard_no_escalation`（含全集短路）、rev5:server/src/handler/throttle.rs 之帳號維前置段、rev5:server/tests/authz_entrypoint_lint.rs 之兩張名冊；rev6 既有件＝`auth::enforce::no_escalation_check`、`sys_role::SUPER_ROLE_CODE`、`sys_user::advisory_lock_user`／`find_by_user_name`、seed 政策列 17～20／68／148／151／152／154 與 33／54／57／71 之受保護旗標（rust-api/migration/src/m0002_baseline_seeds.rs，2026-10-05 逐列核）；上游觸發＝ADR-00064 決定 7 與翻案觸發器首條／次條、ADR-00063 翻案觸發器之島 I 入憲條、ADR-00068 款 9；對沖條目＝BL-00048；島 I7 條文字面由 ADR-00074 於本刀 U0 親決；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -79,6 +79,8 @@ tags: [authz, user-domain, no-escalation, behavior-island, user-password-admin]
    - 純函式表驅動：全集、子集、同級、T＝∅ 四正例與 T 違規、N 違規兩負例；另以「只 T 違規」「只 N 違規」兩最小案證兩條合取各自必要。
    - 每個消費點（spec FR-025，plan 期修補後字面）：負向兩案（被授權之非超管對持 R_SUPER 之標的仍 `5003`；帶指派之消費點〔addUser／updateUser〕另配指派超出自身角色集仍 `5003`、其餘消費點另配標的持操作者未持之角色仍 `5003`，restoreUser 以合成「已刪列仍掛指派」態構造〔生產恆 T＝∅〕；授權以資料列直種、測後清理）＋正向（Super 只持 R_SUPER 而對持其未持角色之標的成功＝A 全集非 vacuous）＋停用角色計入 T 一案；拆掉任一消費點之判定呼叫必有測試轉紅；unlockLogin 帳號維套、來源維不套各一案（spec FR-025、SC-004）。
 9. **前端不預判**（spec FR-024）：角色下拉全列（含 R_SUPER）、列級鈕只依按鈕碼顯隱；被拒走共用攔截層之 `5003` 提示。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——決定 1／3／4／6 已於 T002 Amendment 顆之同一親決輪先定（照文；被島 I7 條文重述或倚賴之款）；本輪逐款一題一問呈決定 2／5／7／8／9、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

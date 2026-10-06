@@ -2,8 +2,8 @@
 id: "ADR-00087"
 title: schema 定稿權威留 001 基線（續行並 supersede ADR-00012）——`schema-definition.md` 各節不隨刀前進、其後刀之結構與 seed 變更只登演進帳、現況看實庫照相；表數斷言改屬基線恆真（BL-00047 收）；新表歸屬直接登記 `archetype-map.json`（§1 留基線 15 表）；其餘決定原文續行
 date: 2026-10-05
-status: proposed
-supersedes: []
+status: accepted
+supersedes: ["ADR-00012"]
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-045（schema-definition 不前進、留 001 基線、差額只登演進帳、現況看實庫照相檔；檔頭句同批改寫；表數常數維持＝基線恆真 ⇒ BL-00047 收；ADR⑮ 整支續行並 supersede ADR-00012：決定 2 改為定稿各節留 001 基線、決定 6 之表數斷言改屬基線恆真、其餘決定原文續行、新表之 §1 歸屬登記形與 docsync 缺歸屬訊息同 ADR 寫明）、FR-046（schema-definition 屬 001 基線之「19」等字面不改）、FR-059（schema-definition 檔頭前進句之假述掃除）、FR-060（`backlog_done` 含 BL-00047）、US6 AS2、Key Entities「演進帳與 seed 基線」、Out of Scope「schema-definition 前進、任何 DDL 與新表」；brainstorm §0 GR8（user 拍板：schema-definition 留 001 基線、差額只登演進帳；ADR-00011 決定 5＝rev6 無部分翻案）、§2 BACKLOG 處置（BL-00047 本刀收）、§3 §1 ADR 待立⑮；被續行面＝ADR-00012 決定 1～6 與後果；BL-00047（觸發＝首支帶任何 delta migration 之刀開寫前；本刀 m0003＝首支 delta，ADR-00085）；ADR-00010 決定 1／2／6／7、ADR-00041（跨刀活體契約抽至 reference-src 之同型處置）；rev6 現行件＝`tools/schema-gate.py` 之 `parse_data_model_five`（`len(tables) != 14` 解析自檢）／`compare_column_order`／`cmd_doccheck`／`apply_seed_entries`／audit 表清單守門 finding、`tools/docsync/snapshot.py` 之缺表歸屬 `SnapshotError`、`docs/ops/reference-src/archetype-map.json` 之 `lineage`／`usage`；前代無對應：rev5 之 schema 定稿住 `rev5:specs/001-schema-baseline/data-model.md` 且全代零 delta migration、無基線與演進帳二分之先例；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research R21（ADR 配號與親決時點表）；accepted 同顆於 supersedes 補 ADR-00012 並改 ADR-00012 狀態"
 tags: [governance, schema, materials, decision-reversal, user-password-admin]
@@ -42,8 +42,6 @@ tags: [governance, schema, materials, decision-reversal, user-password-admin]
 
 ## 決定
 
-（草稿；user 親決於 U0 施工前提顆；親決輪後依結果改寫本節並補親決紀錄。）
-
 1. **整顆續行並 supersede ADR-00012**（ADR-00011 決定 5）：ADR-00012 決定 1～6 之逐條處置見本 ADR 決定 2～6；新表登記形、檔頭句、不改面與 ADR-00012 後果段之讀法見決定 7～10。
 2. **ADR-00012 決定 1 原文續行**（讀法：本檔仍是 rev6 現行之人寫左源；其內容固定為 001 基線定稿；現況＝左源 ⊕ 演進帳＝右源 `schema-snapshot.json`；歸屬面另居 `archetype-map.json`）。
 3. **ADR-00012 決定 2 改寫**：十節編號照舊齊全（`## N.` 節邊界解析不變）；§1／§2／§5／§6／§7／§8／§9 抄實體並**留 001 基線、不隨刀前進**；§3／§4／§10 之指針形不變；其後各刀之結構與 seed 變更一律只登演進帳（RUNBOOK §10 Day-1 登記三步）。
@@ -56,6 +54,8 @@ tags: [governance, schema, materials, decision-reversal, user-password-admin]
 8. **schema-definition 檔頭句改寫**（FR-045、FR-059）：「本檔隨每支帶 migration 的刀前進」改為「本檔各節留 001 基線、不隨刀前進；其後各刀之結構與 seed 變更只登演進帳（`m0003` 起）；現況看 `schema-snapshot.json`（人讀鏡像 `docs/generated/reference/schema.md`）」。基線字面（§2 欄數、§6 總計、§8 之 266 列與 `casbin true×19`、§9 之落值）MUST NOT 改（FR-046）。
 9. **不改面**：schema 三閘與 doccheck 之比對架構（seed_add 序號合成屬 ADR-00085 決定 7、與本 ADR 正交）；凍結 fixtures；ADR-00010（其決定 7「與 data-model §1 對賬」讀為基線 15 表之對賬，後刀新表以 `archetype-map.json` 為唯一家）。
 10. **ADR-00012 後果段之讀法**：「002 起新表先補定稿 §1 再登記 map」由決定 7 取代；「定稿內容在兩處各有一份」續真（兩處皆基線）；「凍結存證無機器守門」之已知殘留不變。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——本輪逐款一題一問呈決定 1～10、皆照文定稿；零非建議項 ⇒ 決定節免改寫；原決定節首之草稿標記改由本紀錄承載；`supersedes` 與 ADR-00012 之 status 依決定 1 於本顆補改。
 
 ## 後果
 

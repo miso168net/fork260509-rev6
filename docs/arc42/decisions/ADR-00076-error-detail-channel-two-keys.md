@@ -2,7 +2,7 @@
 id: "ADR-00076"
 title: 錯誤明細通道射程恰兩鍵——`biz.user.passwordPolicy` 攜違規碼清單、`biz.user.pwdSetTooFrequent` 攜剩餘秒數，經新變體 `AppError::BizData` 與信封之獨立攜明細出口上 wire；受眾判準＝明細是否只是操作者自陳輸入之評估結果；`5003` 與改密節流等其餘拒因恆純 key；違規子鍵譯文落 page 樹單一命名空間
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-004（唯二例外、變體 9→11）、FR-033（違規碼八枚、page 樹單一共用命名空間）、FR-035（剩餘秒數下取整）、FR-051（請求層明細轉譯只限兩鍵；I18N (i) 由 Amendment 改寫；002 wire 契約對應條與錯誤信封釘案同批改寫；msg-key-gate 同批擴）、FR-064（明細信封入 wire 裁判）；brainstorm §0 Q18、§1「BizData 明細通道」列、主線工程判斷①（ADR-00014 決定 1 只管 5003、密碼違規明細 2222 不在射程）；spec Assumptions 所記 clarify 步主線工程判斷（FR-033 單一共用命名空間）；plan 期主線定案（變體名與碼映射、兩鍵明細形、違規子鍵之 page 樹路徑與圈界歸屬、msg-key-gate 斷言 2 擴認）；藍本＝rev5:ADR 0064（射程二鍵、受眾判準、`from_err` 出口分離）與其 as-built rev5:server/src/error.rs（`BizData`）、rev5:server/src/envelope.rs（`from_err_with_data`）、rev5:server/src/handler/user.rs（`password_policy_err`／`pwd_set_too_frequent_err`）；`rev5:B-139`（明細鍵名與前端佔位分岔、明細靜默消失）；rev6 既有件＝rust-api/server/src/error.rs（九變體、`MSG_KEYS`）、rust-api/server/src/envelope.rs（`Res::from_err`、釘案 `error_envelope_data_null_not_omitted`、compile_fail doctest）、rust-api/server/tests/contract.rs（`assert_error_envelope`、`msg_roster_every_key_has_an_emitter`）、tools/msg-key-gate.py 斷言 1～3、base-web/src/service/request/index.ts 之 `translateBackendMsg`；上游約束＝憲法 §I.3、§III.2 `BASE-WEB-I18N-WIRING` (i)(ii)（I18N (i) 改寫字面由 ADR-00074 於本刀 U0 親決）、ADR-00014 決定 1 與翻案觸發器首條、ADR-00039（譯文之家三檔）、specs/002-system-settings/contracts/wire-settings.md §3 第 3 條；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -66,6 +66,8 @@ tags: [wire, error, i18n, password, user-password-admin]
    - `tools/msg-key-gate.py` 斷言 2 擴認 `AppError::BizData(` 構造點（現行樣式只認 `Biz(`、`BizData(` 在射程外）：鍵須 `Cow::Borrowed` 字面或 `msg_key` 常數、解出鍵 ∈ 名冊、動態構造＝紅；另加射程守分階段四句（閘常數 `BIZ_DATA_KEYS`＝本 ADR 兩鍵→其明細型名）——①BizData 構造點之鍵 ⊆ `BIZ_DATA_KEYS`（他鍵＝射程未經本 ADR 擴張）②`BIZ_DATA_KEYS` 中已入 `MSG_KEYS` 之鍵於生產區恰一處構造點（零處＝構造點蒸發、多處＝分岔）③未入 `MSG_KEYS` 之鍵構造點數為 0 ④射程鍵以 `AppError::Biz(` 純 key 形構造＝紅（明細靜默消失）；②③隨兩鍵分批入名冊逐鍵生效（U6 只落變體與出口、生產區零構造點即綠）；佔位符對賬——三檔 locale 兩鍵譯文之佔位符集恰等於明細型序列化後之欄名集（`{violations}`／`{remainingSeconds}`）、其餘鍵譯文零佔位符（`rev5:B-139` 之機器守；形見本刀 contracts msg-keys §5、code-gates §2.3）；各腿一正一反自證（RL-0080）。斷言 3 之 `FRONTEND_MSG_CONSUMERS` 依請求層明細轉譯之 wire 形字面消費點同批登記。
    - contract：兩鍵各至少一案實際發出、斷言 `data` 形（鍵名、型別、`remainingSeconds ≥ 1`）；既有 `assert_error_envelope`（data 恆 null）續用於其餘拒因；名冊雙向閘照舊。
    - wire 裁判：明細信封之 wire 型（型名見本刀 contracts wire-user-center §3）入受審名冊、配正向＋反例（spec FR-064）＝前後端明細鍵名分岔之機器守。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——決定 1／2 已於 T002 Amendment 顆之同一親決輪先定（照文；被 I18N (i) 條文重述或倚賴之款）；本輪逐款一題一問呈決定 3～7、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

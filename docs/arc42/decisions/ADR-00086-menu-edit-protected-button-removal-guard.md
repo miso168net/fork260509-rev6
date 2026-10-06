@@ -2,7 +2,7 @@
 id: "ADR-00086"
 title: 選單編輯不得移除尚有受保護授權之按鈕碼——判定集＝本次移除集（含改碼之舊碼）∩ 持有受保護按鈕維授權列之碼、不問持有者；位次＝按鈕碼清單形制之後、絕版碼歸檔之前（⑨′）；違者整筆拒 `biz.menu.protectedButtonRemove`（純 key）、零變更零歸檔零稽核零同步；與受保護選單守門並列、拒因分鍵（承島 G 之 G2：受保護集只在 seed 基線層變更）
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-043（選單刪碼守門：整筆拒、零變更零稽核零判定面同步、新拒因鍵三語、判定於歸檔之前、與受保護選單守門並列、正負向測與變異自證）、FR-004（純 key、一因一鍵；新鍵隨首個發出它的單元落地）、FR-055③（島 H 之 H2 補句與否於親決輪定）、FR-063、US4 AS11、SC-007、Edge Cases「自鎖防護與 seed 基線」、刻意分岔登記表「選單編輯移除按鈕碼」列；brainstorm §0 GR1b（整筆拒）、§3 §2 選單刪碼守門條、§3 §4 風險 R10（第二條自鎖路）；plan 期主線定案（拒因鍵名 `biz.menu.protectedButtonRemove`；判定於歸檔之前、與受保護選單守門並列）；島 G 之 G2 末句、G3；島 H 之 H1（序列化域、lock-then-redecide）／H2（編輯致全域絕版之連動歸檔）／H3（受保護選單不可刪、不可停用、不可改父）；ADR-00044 決定 3、ADR-00064 決定 1／4②、ADR-00065 決定 1（`menu_button_removed` 不可復原）、ADR-00066 決定 3（按鈕維候選＝治理域按鈕碼聯集）、ADR-00043 決定 6／7（同步之門＝實際歸檔列數）、ADR-00085（m0003：R_SUPER 名下角色與選單六碼受保護）；rev6 現行件＝`rust-api/server/src/handler/menu.rs` 之 `update_menu_in_txn` 固定序與 `rust-api/server/src/model/facade/sys_menu.rs` 之 `obsolete_codes`／`button_codes_of`；前代無對應：`rev5:server/src/handler/menu.rs` 之 updateMenu 照常移除按鈕碼並以 `menu_button_removed` 連動歸檔（含 R_SUPER 列）、無本守門；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research R21（ADR 配號與親決時點表）"
@@ -42,15 +42,13 @@ tags: [authz, casbin, menu-domain, governance, behavior-island, user-password-ad
 
 ## 決定
 
-（草稿；user 親決於 U0 施工前提顆；親決輪後依結果改寫本節並補親決紀錄。）
-
 1. **判定集與時點**：updateMenu 請求之 `buttons` 欄出現時，於 ⑨（按鈕碼清單形制）之後、⑩（絕版碼歸檔）之前（記為 ⑨′）判：移除集＝標的寫前之碼 − 請求之碼（`button_codes_of` 之去重形；`buttons` 為 null＝寫後無碼、舊碼全數入移除集；改碼＝舊碼入移除集）；移除集 ∩「持有受保護按鈕維授權列之碼」≠ ∅ ⇒ 整筆拒。
    - 「持有受保護按鈕維授權列之碼」＝`casbin_rule` 中 `ptype='p' ∧ v2='button' ∧ protected=TRUE ∧ v1 ∈ 移除集` 之 `v1` 集；不問 `v0`、不濾角色狀態（同 ADR-00064 決定 1 不問 `v0` 之理：誰持有不影響「該碼受保護」）。單次查詢、不另取鎖（域內、標的列鎖之後；受保護列交易期間結構上不變，見反例末條）。
    - 承載件：移除集算法自 `sys_menu::obsolete_codes` 抽出為純函式 `sys_menu::removed_codes`（`obsolete_codes` 改呼之、兩處同一移除集定義）；查詢件新建 `sys_casbin_policy::protected_button_codes`（`casbin_rule` 讀面之家、與 `protected_endpoint_set` 同檔；以參數收碼集）。不新增名冊閘腿（呼叫點由測試承載、決定 7 之變異自證）。
 2. **拒因與效果**：`2222`＋`biz.menu.protectedButtonRemove`（純 key、`data` null、不指出是哪個碼；FR-004）；判定在任何寫入之前 ⇒ handler 收場 rollback ⇒ 零變更（選單列、授權表、授權歸檔表）、零稽核、零判定面同步（未 commit、未達歸檔）。前端走既有錯誤提示（純 key toast、無明細）。
 3. **位次與不互吞**：固定序變為 ③入域 → 鎖列 → ④不可變欄 → ⑤受保護選單 → ⑥父與防環 → ⑦常量父鏈 → ⑧href → ⑨按鈕碼形制 → ⑨′本守門 → ⑩絕版碼歸檔 → ⑪寫列 → 稽核；多重違規取先序腿。「與受保護選單守門並列」＝兩支獨立守門、拒因分鍵：⑤管受保護選單列本身之停用與改父，⑨′管任一選單之按鈕碼移除是否觸及受保護授權（標的不限受保護選單）。
 4. **射程**：只掛 updateMenu。addMenu 只增碼、restoreMenu 不減碼（復原不回灌，H5）、刪除家族之受保護選單已由 ⑤同族守門擋刪、角色域撤銷由 G2 之 `biz.role.protectedRevoke` 擋——皆不另掛。
-5. **與憲法之關係**：本守門承島 G 之 G2 末句（受保護集只在 seed 基線層變更）、為島 H2「編輯致全域絕版即歸檔」之前置守門；島 H2 是否補「選單編輯移除之按鈕碼尚有受保護授權＝整筆拒」一句由 ADR-00074 親決輪定——補句＝本守門升為入憲不變式（反轉＝MAJOR），不補＝本 ADR 為唯一承載；兩種結果下本 ADR 決定 1～4 不變。
+5. **與憲法之關係**：本守門承島 G 之 G2 末句（受保護集只在 seed 基線層變更）、為島 H2「編輯致全域絕版即歸檔」之前置守門；島 H2 已由 ADR-00074 親決補「選單編輯之按鈕代碼移除集（改碼＝移除舊碼）含尚有受保護授權列之代碼者 MUST 整筆拒、零變更」一句（憲法 1.8.0）⇒ 本守門為入憲不變式（反轉＝MAJOR），本 ADR 決定 1～4 為其判定集、拒因、位次與射程之承載。
 6. **前提與已知態**：
    - 前提＝凡持有受保護按鈕維授權列之碼，皆在至少一列受保護選單之按鈕清單內（m0003 後：`role:*`⊂`manage_role`、`menu:*`⊂`manage_menu`）——使選單刪除家族之「獨有碼」歸檔恆不及受保護列。
    - 已知態：受保護碼若被加到某非受保護選單 M2 之清單，此後無法以編輯把它自 M2 移除（⑨′照判移除集、整筆拒）；只能刪 M2（該碼仍在受保護選單內、不歸檔）。屬本守門取「移除集」而非「絕版集」之刻意代價（替代案 1）。
@@ -61,6 +59,8 @@ tags: [authz, casbin, menu-domain, governance, behavior-island, user-password-ad
    - 位次一案：同一請求兼具受保護選單之停用與受保護碼移除 ⇒ 回 `biz.menu.protectedMenu`。
    - 變異自證：拆掉 ⑨′ 之呼叫或改其判定集 ⇒ 負向案轉紅（紅證印 skipped=0）⇒ 還原 ⇒ 綠。
 8. **msg 鍵同批面**：`msg_key::BIZ_MENU_PROTECTED_BUTTON_REMOVE`＝`"biz.menu.protectedButtonRemove"`、`MSG_KEYS` 名冊、三檔 locale backend 子樹、`app.d.ts` backend 型節同單元落地（U4）；契約測試之真 seed 應用面實際發出（名冊雙向閘）；三語譯文措辭由本刀 contracts（msg-keys）定（繁中依 ADR-00084 之 zh-tw-lint）。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——決定 1～4 已於 T002 Amendment 顆之同一親決輪先定（照文；被島 H2 條文指向之款）；本輪逐款一題一問呈決定 5～8：決定 5 採建議改字——原條件句（島 H2 是否補句由 ADR-00074 親決輪定）依 T002 結果（H2 已補句、憲法 1.8.0）改為已決形；翻案觸發器之 H2 行同輪另一題、採建議改為只留「其後被反轉」；決定 6～8 照文定稿；零非建議項；原決定節首之草稿標記改由本紀錄承載。
 
 ## 後果
 
@@ -77,4 +77,4 @@ tags: [authz, casbin, menu-domain, governance, behavior-island, user-password-ad
 - 受保護旗標開放管理介面（島 G2 反轉＝MAJOR）⇒ 本 ADR 隨 G2 複核。
 - 決定 6 之已知態成為實際問題（受保護碼誤加他選單而無法移除）⇒ 評估改採「絕版集＋刪除家族同掛」（替代案 1 之補全形）。
 - 新增會移除按鈕碼之寫端（例：批次按鈕編輯、選單匯入覆蓋）⇒ MUST 掛同一判定（`sys_menu::removed_codes`＋`sys_casbin_policy::protected_button_codes`）並以新 ADR 更新決定 4。
-- 島 H2 Amendment 採補句或其後被反轉 ⇒ 依決定 5 同步本 ADR 之承載定位。
+- 島 H2 所補之句（憲法 1.8.0）其後被反轉 ⇒ 依決定 5 同步本 ADR 之承載定位。

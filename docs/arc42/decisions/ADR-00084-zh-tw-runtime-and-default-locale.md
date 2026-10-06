@@ -2,8 +2,8 @@
 id: "ADR-00084"
 title: 繁中介面接上 runtime 並預設繁中——`LangType` 擴 `zh-TW`、locale／元件庫／日期庫三處註冊、未選過語言預設 zh-TW、語言下拉三語、`zh-tw.ts` 由治理錨點孤立檔改為 `App.I18n.Schema` 標型之完整 locale（續行並 supersede ADR-00039：譯文之家三檔不變）；ADR-00050 決定 1「zh-tw 不在對照面」之前提改述；繁中機器檢查之載體＝新碼面閘 `tools/zh-tw-lint.py`（四腿、讀面 (a)）；開發期根元件驗證器不改＝已知態；候選兩款未定案
 date: 2026-10-05
-status: proposed
-supersedes: []
+status: accepted
+supersedes: ["ADR-00039"]
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-052（繁中 runtime）、FR-054（fork-delta 檔集）、FR-056⑪、FR-059（「zh-tw 不接 runtime／孤立檔」與憲法「兩語」之假述掃除）、FR-060（BL-00138①由本刀兌現）、FR-065（CDP 對照顯式設簡中、繁中畫面驗收依 GR5）、US5 AS1～AS5、SC-009、Edge Cases「繁中介面」、★ 軌道逐處登記表之 `BASE-WEB-I18N-WIRING(iii)` 各列與 `zh-tw.ts` 列、刻意分岔登記表「預設語言與語言下拉」「繁中畫面」兩列；brainstorm §0 Q4（007 接上繁中；非建議項）／Q4a（預設改為繁中）／GR2（「頂替」與「踢除」用語）／GR5（機器檢查＋AI 逐頁審讀＋user 抽查）、主線工程判斷⑩⑯、§3 §3 前端節繁中 runtime 條；plan 期主線定案（開發期根元件驗證器不改＝已知態、★ 軌道登記表刪該候選列；繁中機器檢查之載體＝新碼面閘）；被續行面＝ADR-00039（其決定 1 續行之 ADR-00029 決定 5「`zh-tw.ts` 為治理錨點孤立檔」即本 ADR 改寫之款；rev6 無部分翻案機制＝ADR-00011 決定 5，整顆續行）；改述面＝ADR-00050 決定 1（所續行之 ADR-00049 決定 1 末句）；BL-00138①；ADR-00055 決定 3（新讀子庫工作樹之碼面閘同刀標讀面型）、ADR-00019 決定 3／決定 4（hook 段零條件判斷、tracked 面缺席方向不類推）、ADR-00041 決定 2（跨刀活體契約收錄判準）、ADR-00071 決定 6②（碼面閘 `check` 不連帶跑自測之一派）；前代無藍本——`rev5:` 終態 `LangType` 為兩語、`zh-tw.ts` 只有 backend 樹（`rev5:R3-15` 之延後未兌現）；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research R21（ADR 配號與親決時點表）；accepted 同顆於 supersedes 補 ADR-00039 並改 ADR-00039 狀態"
 tags: [i18n, base-web, code-gate, decision-reversal, user-password-admin]
@@ -50,8 +50,6 @@ tags: [i18n, base-web, code-gate, decision-reversal, user-password-admin]
 
 ## 決定
 
-（草稿；user 親決於 U0 施工前提顆；親決輪後依結果改寫本節並補親決紀錄。決定 10 兩面已於 plan 期定案：甲＝主線定案、乙＝user 2026-10-05 親決。）
-
 1. **語系型別與三處註冊**：`App.I18n.LangType`＝`'en-US' | 'zh-CN' | 'zh-TW'`（修改型）；`locale.ts` 註冊 `'zh-TW': zhTW`（`./langs/zh-tw`）、`naive.ts` 註冊 naive-ui `zhTW` 與 `dateZhTW`、`dayjs.ts` 匯入 `dayjs/locale/zh-tw` 並對映 `'zh-TW': 'zh-tw'`（皆新增型）。三處之 `Record<App.I18n.LangType, T>` 形標型即註冊完整性之機器守，不另立閘。零新依賴（版本見背景）。
 2. **未選過語言預設 zh-TW**：前述三處之 `zh-CN` 預設與退路一律改 `zh-TW`（修改型、各逐行 `原行:`）；已選過者照 `lang` 儲存值（`localStg`）；`fallbackLocale` 不變（spec Edge Cases「退路語言設定不變」）。
 3. **語言下拉三語**：`localeOptions`＝`[{label:'简体中文',key:'zh-CN'},{label:'繁體中文',key:'zh-TW'},{label:'English',key:'en-US'}]`（項序即此；`中文` 標籤改寫屬修改型）。
@@ -89,6 +87,8 @@ tags: [i18n, base-web, code-gate, decision-reversal, user-password-admin]
     - **甲 首次載入之 `<html lang>`（plan 期主線定案＝同步）**：未選過語言之瀏覽器首開為繁中，但 `<html lang>` 仍為 `index.html` 之靜態 `zh-CN`（執行期只在 `setLocale` 切換語言時改寫）；瀏覽器依此屬性為 CJK 字形選字型（例：Windows 上簡中字型與繁中字型字面不同）。定案＝`src/locales/index.ts`（已屬 I18N (iii) 檔集）之 `setupI18n` 內以現行語言同步 `<html lang>` 一行（單行形新增型、不入範圍欄計數；spec Edge Cases「首開即同步」）。
     - **乙 pro-naive 示範頁（user 2026-10-05 plan 期親決＝記已知態、不改）**：`src/views/pro-naive/ConfigProvider.vue` 於 zh-TW 下取 `undefined`、pro-naive-ui 退 `enUS`＝該類示範頁之元件內建字串為英文、頁面其餘文字為繁中；pro-naive-ui 3.2.2 無繁中語系。定案＝記已知態、該檔零 diff、入 spec 刻意分岔登記；GR5 逐頁審讀與 CDP 排除其元件內建字（改為對映簡中＝繁中畫面出現簡體字、違 GR5；自建繁中語系物件＝新譯文面、不在 spec 範圍）。
 11. **憲法連動與時序**：本 ADR 之 base-web 施工以 ADR-00074（Amendment：I18N (iii) 新用途、各列「兩語」改三語）accepted 為前提；本 ADR 不承載條文字面。本刀起每刀三語同批（`page:`／`route:`／backend 三樹三檔同 commit）；BL-00138① 由本 ADR 兌現、② 移交 BL-00141。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——決定 1～4／9 已於 T002 Amendment 顆之同一親決輪先定（照文；被 I18N (iii) 條文重述或倚賴之款）；本輪逐款一題一問呈決定 5～8／11、皆照文定稿；決定 10 兩面已於 plan 期定案（甲＝主線定案、乙＝user 2026-10-05 親決），本輪重申一題、照文定稿；零非建議項 ⇒ 決定節免改寫；原決定節首之草稿標記改由本紀錄承載；`supersedes` 與 ADR-00039 之 status 依決定 5 於本顆補改。
 
 ## 後果
 

@@ -2,7 +2,7 @@
 id: "ADR-00079"
 title: 密碼政策壞值方向——長度上下界矛盾（`password_min_length` ＞ `password_max_length`）時三個設密入口一律拒（安全側、不整組退預設），並以專屬計數族 `password_policy_invalid_total`＋告警規則 `obs016-password-policy-invalid`＋結構化 warn 為出口；設定寫端不加跨鍵守門；登入不受影響；與島 E「整組退」方向刻意相反之跨島理由（BL-00031）
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-034（設密全拒、告警出口三件、不併入節流降級計數、寫端不守、登入不受影響、跨島註）、FR-032（單一驗證點、消費當下讀現值、登入不驗）、FR-038（政策讀端投影）、FR-060（BL-00031 backlog_done）、FR-063（政策矛盾全拒＋告警之自證）、US3 AS3、SC-006、Edge Cases「密碼面」段；brainstorm §0 Q19、§1「min>max 安全側恆拒」與「密碼政策整套」兩列；spec Assumptions 所記 clarify 步主線工程判斷（FR-034 專屬計數族＋新告警規則）；plan 期主線定案（計數族名、預註冊、發射出口與恰一處、告警規則 uid／title／expr／門檻、warn 一則）；藍本＝rev5:server/src/model/password.rs（`validate_against_policy` 之「min > max 安全側恆拒」、`policy_from_pairs` 逐欄 fail-default、`PasswordPolicy` 之 Default＝seed 值；前代無告警）；rev6 前例＝ADR-00038 決定 4（節流設定矛盾整組退常數＋告警、寫端不守）、憲法島 E 設定壞值句與既有跨島註（`session_idle_timeout` fail-loud 對島 E fail-open）、`obs::ipgate_blocked`（無 label 計數族、預註冊、發射點恰一處之形）、deploy/grafana-provisioning/alerting/rules.yml 之 `obs016-*` 命名；設定界值權威＝`validation::REGISTRY`（ADR-00054；`password_min_length` [1,128]、`password_max_length` [1,256]、seed 8／64）；對沖條目＝BL-00031；跨島註條文字面由 ADR-00074 於本刀 U0 親決；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -52,6 +52,8 @@ tags: [password, settings, observability, behavior-island, user-password-admin]
    - 機器守比照 `obs::ipgate_blocked`：預註冊 0 一案、發射點恰一處之靜態掃描、序列名字面只住 obs 兩處（預註冊與出口）；矛盾時三入口各拒一案、計數＋warn 一案、登入照常一案（spec FR-063）。
 6. **跨島理由**（條文字面由 ADR-00074 之跨島註承載）：島 E 設定壞值整組退常數、密碼政策長度矛盾設密全拒——方向刻意相反：①失效面不同：島 E 若改拒即把全體使用者擋在登入之外，密碼政策全拒只擋設密三入口（登入不驗政策）、恢復＝改正設定鍵；②猜錯之後果不同：島 E 退常數猜錯只影響阻力強度、且隨設定改正即消失，密碼政策退預設猜錯即以寬於管理員意圖之政策放行密碼、而放行之密碼落庫後不隨設定改正而失效（後果殘留）；③可見性：全拒即時以違規明細與告警現形。記之以免日後被「統一」。
 7. **政策讀端**：getPasswordPolicy 照回載入件之七鍵投影（矛盾值照回；單鍵異常者為決定 4 之退值）、不另加旗標、不推計數；前端即時規則依投影呈現（矛盾期間提示不可同時滿足）、後端仍為唯一裁判。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——決定 1／3／5 已於 T002 Amendment 顆之同一親決輪先定（照文；被跨島註方向句重述或倚賴之款）；本輪逐款一題一問呈決定 2／4／6／7、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

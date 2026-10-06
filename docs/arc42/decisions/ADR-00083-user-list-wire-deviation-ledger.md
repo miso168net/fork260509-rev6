@@ -2,7 +2,7 @@
 id: "ADR-00083"
 title: 使用者清單之 upstream 同 URL 型偏離帳——upstream `Api.SystemManage.User` 對 `Api.UserAdmin.UserRecord` 之欄差集由 wire 裁判自快照機器導出、釘值、漂移即紅（ADR-00044 決定 9 形、偏離帳第三列）；使用者管理頁改線 rev6 包裝、excel 示範頁為殘存消費面（所讀六欄皆共有欄）
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-005、FR-007、FR-008、FR-047、FR-053、FR-054、FR-064、SC-002、SC-011；brainstorm §0 Q14（記偏離帳、沿 rev6 欄名）／Q13（清單列帶持有角色之 id、代碼與名稱）／Q17（後端六欄過濾）、§3 §1 ADR 待立⑩、§3 §3「API 包裝與型別」；憲法 §I.3（typings 為 wire 唯一權威、每筆顯式偏離＝拍板、立 ADR）；形制前例＝ADR-00044 決定 9（角色與選單兩列偏離帳）與其機器形（`rust-api/server/tests/wire_schema.rs` 之 `DEVIATION_LEDGER`／`field_deviation`）；前代出處＝rev5:src/typings/api/rev5-user-admin.d.ts（`Api.UserAdmin` 獨立命名空間之理由：upstream 同名家族住凍結之 system-manage.d.ts、併入即須逐支改名閃避）——rev5 未立同 URL 型偏離帳、本帳為 rev6 新形；rev5:src/views/plugin/excel/index.vue 與 upstream 逐位元相同（excel 示範頁經 upstream 函式消費真端點之前代同形）；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -49,6 +49,8 @@ tags: [wire, typings, upstream-deviation, user-password-admin]
    - ★**excel 示範頁為殘存消費面（不改）**：`src/views/plugin/excel/index.vue` 續經 upstream `fetchGetUserList` 以 upstream 型消費 rev6 wire。其所讀六欄皆為兩型共有欄、同名同義；差異限於：暱稱、手機、信箱可為 null（表格與匯出該格空白）；`userGender` 之宣告型窄於 wire 寬字串（決定 1④；寫端只產 `'1'`／`'2'`／null）；`size: 999` 經伺服端收斂為上界 100＝至多顯示與匯出依 id 升冪之前 100 列。上述皆與 rev5 HEAD 同形＝CDP 零差。
    - upstream `fetchGetAllRoles` 自本刀起零畫面消費（其型 `AllRole` 與 rev6 零偏離、不入本帳）；`service-alova` 之同名 `fetchGetUserList` 維持零畫面消費。
 4. **查詢參數型不立偏離列**：upstream `Api.SystemManage.UserSearchParams` 之六過濾欄（`userName`／`userGender`／`nickName`／`userPhone`／`userEmail`／`status`）與分頁兩欄（`current`／`size`）即 rev6 後端所收之六欄過濾與分頁參數（spec FR-007；§I.1 後端補齊前端已有之功能）——前提＝本刀契約之過濾參數名與之同名同義；前提不成立（rev6 查詢參數與 upstream 出現欄差）＝新增偏離列、以新 ADR 擴本帳。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——本輪逐款一題一問呈決定 1～4、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

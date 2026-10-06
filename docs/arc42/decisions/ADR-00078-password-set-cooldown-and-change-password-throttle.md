@@ -2,7 +2,7 @@
 id: "ADR-00078"
 title: 設密冷卻與改密舊密節流刻意分家——冷卻走設定鍵、維度（標的, 操作者）、借經手表時戳、零豁免；節流走碼內常數 5 次／900 秒、redis 計數桶 `cpwd:{uid}`、舊密比對之前拒、fail-open 並計入節流降級第十一源 `redis_change_pwd`；ADR-00038 射程限登入節流；通用節流 seam 以 rev6 形重做四面比較後不建（BL-00124）
 date: 2026-10-05
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-035（冷卻）、FR-036（改密步序）、FR-037（改密節流、降級源 10→11、ADR-00038 射程釐清、BL-00124 四面比較）、FR-031（ADR-00037 觸發器反向確認）、US3 AS5／AS6、SC-006、Edge Cases「密碼面」段；brainstorm §0 Q20、§1「設密冷卻」「改密舊密節流」兩列、主線工程判斷③（載體 redis `cpwd:{uid}`、fail-open、降級源 10→11、ADR-00038 射程釐清）與⑨（ADR-00037 觸發器反向確認）；plan 期主線定案（鍵前綴獨立不置於 `throttle:` 下、門檻為碼內常數、降級源字面與名冊雙向守、`throttle/change_pwd.rs` 與 `cache` 鍵 builder 之落點與命名）；藍本＝rev5:ADR 0066（二機制分家、門檻判準、fail-open、四面比較、seam won't-fix）與其 as-built rev5:server/src/throttle/change_pwd.rs、rev5:server/src/cache/mod.rs（`incr_with_window`、`cpwd:` 前綴）、rev5:server/src/model/facade/sys_pwd_custody.rs；冷卻拍板之更早藍本＝rev4:015-pwd-custody（只借冷卻、經手判定不帶回）；rev6 既有件＝`sys_pwd_custody`（001 基線、複合主鍵 (user_id, created_by)）、`validation::REGISTRY` 之 `password_change_min_interval`（[0, 86400]、seed 60）、`sys_login_attempt`（無用途欄）、`obs::THROTTLE_DEGRADED_SOURCES`、`throttle::warn_degraded`、告警規則 `obs016-throttle-degraded`（不設 source 篩選）；上游＝ADR-00038 決定 1～6、憲法島 E（「redis 於本島只承載…」）、ADR-00069 款 5、ADR-00037 翻案觸發器首條；對沖條目＝BL-00124；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
@@ -66,6 +66,8 @@ tags: [password, throttle, cooldown, observability, user-password-admin]
    抽一個同時容納三區與兩態、PG 真源與 redis 真源之 seam＝為兩個不同形之消費者硬造抽象（`throttle::precheck` 之簽章將被迫長出「要不要驗證碼」「真源在哪」之參數）。共通者只有觀測序列（同名冊、同出口；決定 3），不構成 seam。004 刀 spec Out of Scope 首條之通用化 seam 判 won't-fix；翻案觸發＝出現第三個消費者且與既有兩者之一同形。
 5. **ADR-00038 射程釐清**（不翻案、不 supersede）：該 ADR 為登入節流判定面（標題與 provenance 皆指 004 刀之登入兩維）；其決定 2「redis 在節流面只承載兩種鍵」之「節流面」讀作登入節流面，決定 1「PG 定案、無負快取」亦只對登入兩維。改密節流桶屬島 I 之常數面（前代島 I 常數列即含「改密節流之窗與次數」；rev6 條文字面由 ADR-00074 親決）、不屬島 E；憲法島 E「redis 於本島只承載…」之「本島」已自限、續真。改密桶是計數真源、不是負快取（沒有第二份會落後的真相）。
 6. **不觸發者**（複核結論）：ADR-00069 款 5 之翻案觸發「新增不可自癒之 redis 狀態」不成立——改密桶遺失＝窗提前自癒；ADR-00037 翻案觸發器首條不成立——changePassword 為 Authed、判定鍵為 uid、不讀來源位址（spec FR-031）。
+
+- **親決紀錄**：user 親決 2026-10-06（007 刀 tasks T003 施工前提顆）——本輪逐款一題一問呈決定 1～6、皆照文定稿；零非建議項 ⇒ 決定節免改寫。
 
 ## 後果
 

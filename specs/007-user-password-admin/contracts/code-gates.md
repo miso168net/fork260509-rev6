@@ -7,12 +7,12 @@
 
 ### 1.1 授權來源與硬序
 
-- 授權來源＝U0 之 Amendment（ADR-00074 決定款）：`★BASE-WEB-MANAGE-PAGE-WIRING` 新開 (v) 使用者管理頁、(vi) 個人中心改密卡、(vii) IP 規則頁來源 IP 解鎖入口、(viii) 角色與選單頁按鈕碼顯隱；`★BASE-WEB-LOGIN-CAPTCHA-WIRING` (ii) 開立；`★BASE-WEB-I18N-WIRING` (i) 改寫（明細通道）、(iii) 開立（語系型別擴 `zh-TW`、三處註冊、`zh-tw.ts` 標型、預設 zh-TW）。用途號、範圍欄注記值與 (vii) 之 i18n 鍵落點依 U0 親決；本節依建議形書寫——(vii) 之 page 鍵與型節以巢狀 (vii) 新增型圈界一塊（兩語 locale 與 `app.d.ts` 各 1）落 MANAGE (i) 列既有 `page.manage.ipRule` 圈界塊內（(i) 塊首尾與理由句不動＝research R18 決定 6），U0 取非建議項者同批改本節。
+- 授權來源＝U0 之 Amendment（ADR-00074 決定款）：`★BASE-WEB-MANAGE-PAGE-WIRING` 新開 (v) 使用者管理頁、(vi) 個人中心改密卡、(vii) IP 規則頁來源 IP 解鎖入口、(viii) 角色與選單頁按鈕碼顯隱；`★BASE-WEB-LOGIN-CAPTCHA-WIRING` (ii) 開立；`★BASE-WEB-I18N-WIRING` (i) 改寫（明細通道）、(iii) 開立（語系型別擴 `zh-TW`、三處註冊、`zh-tw.ts` 標型、預設 zh-TW）。用途號、範圍欄注記值與 (vii) 之 i18n 鍵落點依 U0 親決；本節依建議形書寫——(vii) 之 page 鍵與型節以巢狀 (vii) 新增型圈界一塊（`en-us`／`zh-cn` 兩檔 locale 與 `app.d.ts` 各 1）落 MANAGE (i) 列既有 `page.manage.ipRule` 圈界塊內（(i) 塊首尾與理由句不動＝research R18 決定 6）；U0 取之非建議項於本節之連動（T-a②：「兩語 locale」簡稱改兩檔明寫＝憲法 1.8.0 同形）已於 T003 同批改。
 - ★硬閘（spec FR-055⑤／SC-012）：Amendment 顆落地前 base-web 既有檔零 diff。機器斷言（U0 出口與收刀前承載體檢單元各一次）：`git ls-tree <Amendment 顆> base-web` 之 gitlink＝`fb4dac2`。純新增檔依表外宣告 3 不受此閘，本刀單元序亦使其落在 Amendment 之後。
 - Amendment 顆落地前主線親跑 `python3 tools/fork-delta-lint.py` rc 0（新列入名冊、範圍欄注記無 rc 2；輸出之對賬項數與跳過項數入 commit 訊息）與 `python3 tools/route-artifact-gate.py check` rc 0（base-web 容器在場；該工具 `TRACK, PURPOSE` 寫死只讀 (i) 列、新列不干擾其產物檔組；具名跳過不算驗收）。
 - ★範圍欄注記數量段為閉集（`tools/fork-delta-lint.py` 之 `classify_range_note`）：「N 處，修改型」／「各 N 處，修改型」／「N 處修改型＋M 塊新增型」／「N 塊，新增型」／「各 N 塊，新增型」，可冠「預估」或「各預估」，或注記含「不預估」。`rev5:` 憲法 (v)(vi) 列之「（兩支＝修改型，逐行 原行:）」類寫法不在閉集＝當場 rc 2；多檔共用一數而未寫「各」亦 rc 2。
 - **名冊載入變異自證**（首個觸及 base-web 既有檔之單元順做；ADR-00074 決定款）：§III.2 表中本刀新開或範圍欄改寫之每一列逐列一發——暫把該列範圍欄任一反引號路徑之反引號內字面改為不含 `/` 之 token → `python3 tools/fork-delta-lint.py` 當場 rc 2（`load_roster` 路徑形斷言 die）→ 以存原文寫回（RL-0019）→ `git diff --name-only` 零殘留；逐列單獨跑、不疊加（RL-0005）。
-- Amendment 顆同批改寫之現在式面（RL-0011 種子）：I18N (iii) 列「★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構不在本次授權，延前端 UI 刀」、LOGIN-CAPTCHA (i) 列尾「★用途 (ii)（`formRules` 放寬）不在本次授權，延改密端點刀」、MANAGE (i) 列尾「解鎖按鈕與其包裝不在本次授權（使用者管理頁刀）」、(ii)(iii) 列「三鈕不做按鈕碼 gating（門在頁級）」、I18N (i) 列「錯誤信封 `data` 恆 null、無明細通道 ⇒ 不建 `translateDetailValue`」、各列「兩語鍵集 MUST 相等」。種子字面：「延前端 UI 刀」「延改密端點刀」「使用者管理頁刀」「門在頁級」「兩語」；`pwd-login.vue` 之「★(ii) formRules 放寬不在授權內」碼註不含上列任一詞、另以「(ii) formRules」為種子。
+- Amendment 顆同批改寫之現在式面（RL-0011 種子）：I18N (iii) 列「★`LangType` 擴充／locale 註冊／`zh-tw.ts` 標型重構不在本次授權，延前端 UI 刀」、LOGIN-CAPTCHA (i) 列尾「★用途 (ii)（`formRules` 放寬）不在本次授權，延改密端點刀」、MANAGE (i) 列尾「解鎖按鈕與其包裝不在本次授權（使用者管理頁刀）」、(ii)(iii) 列「三鈕不做按鈕碼 gating（門在頁級）」、I18N (i) 列「錯誤信封 `data` 恆 null、無明細通道 ⇒ 不建 `translateDetailValue`」、各列「兩語鍵集 MUST 相等」（改三語）與指稱 upstream 兩檔之「兩語 locale」句（改 `en-us`／`zh-cn` 兩檔明寫；U0 取 T-a②＝表內八處全改、I18N (iii) 列不設定義句＝N-b）。種子字面：「延前端 UI 刀」「延改密端點刀」「使用者管理頁刀」「門在頁級」「兩語」；`pwd-login.vue` 之「★(ii) formRules 放寬不在授權內」碼註不含上列任一詞、另以「(ii) formRules」為種子。
 
 ### 1.2 ★ 軌道逐處登記表 19 列之紀律與出口應有值
 
