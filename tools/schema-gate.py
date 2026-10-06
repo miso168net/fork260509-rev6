@@ -11,8 +11,8 @@
         在伺服器側（不符＝rc 2）。預設對 dev stack（compose exec postgres）；
         `--container` 指向一次性 pristine 容器（fixtures 產製／演進帳往返驗證場景）。
   test  跑自帶測試（unittest、離線、零 docker）——含 SC-003 五類 negative 注入
-        （結構／欄序／seed 值／sequence 落值／假 delta 登記合成）與登記檔壞形自測。
-  doccheck  活體定稿 docs/ops/reference-src/schema-definition.md 文件面（§2 欄五元組＋§6 索引約束＋§9 sequences 落值；左源座標＝ADR-00012）vs 凍結
+        （結構／欄序／seed 值／sequence 落值／假 delta 登記合成）、seed_add 序號合成與登記檔壞形自測。
+  doccheck  活體定稿 docs/ops/reference-src/schema-definition.md 文件面（§2 欄五元組＋§6 索引約束＋§9 sequences 落值；左源座標＝ADR-00087 決定 5）vs 凍結
         fixtures 機器對賬（承 rev5:B-010；離線零 docker、不讀庫；★不入 pre-commit 常跑鏈——
         手動／review 輪跑）。
 
@@ -27,7 +27,7 @@
         （凍結面）⊕ 演進帳合成期望；右源＝實庫照相三節（與 python3 tools/docsync refresh
         同構三查詢、排除 seaql_migrations、確定性排序）；三節逐列全等，未登記差異＝紅
         （指名 section／table／名稱／左右值）、登記超前（登記了實庫沒有）同紅。
-  gate2 欄序——左源＝schema-definition.md §2 逐表欄序（解析「| # | 欄 |」表體；ADR-00012）＋演進帳
+  gate2 欄序——左源＝schema-definition.md §2 逐表欄序（解析「| # | 欄 |」表體；ADR-00087）＋演進帳
         add_column 接末位；右源＝實庫 ordinal；14 親排表逐位全等、casbin_rule 豁免。
   gate2 seed——左源＝fixtures/seed.sql ⊕ seed_* 演進合成；右源＝實庫 pg_dump --data-only；
         兩側同一 normalize（COPY 段整列排序＋setval 原位＋剝除 \\restrict／\\unrestrict
@@ -35,6 +35,12 @@
         **未排序逐列 diff**（含 id 欄）；★禁全檔排序後雜湊（會掩蓋 sequence 落值漂移與
         真差異）。sequence 名冊＝凍結 fixtures/seed.sql 之 setval 行（RE_SETVAL 解析、勿手抄
         名字面；rev5 另讀其 seed 決策 json、rev6 不搬該檔——名冊與凍結 seed 同源）。
+        ★seed_add 序號合成（GR9；ADR-00085 決定 7）：pk 恰單欄且有該表 `<表>_<pk>_seq` 之
+        setval 行者，新 id 高於期望已發最大值（is_called 真取 N、假取 N−1）即把期望推至
+        (新 id, true)、否則不動（登記值非整數＝rc 2）；多筆依帳序逐筆取大；seed_update／
+        seed_delete 不動序列（刪列不回捲）——對應 seed_add migration 之收尾契約 MUST
+        `setval(<序列>, GREATEST(<新 id>, last_value), true)`（is_called 真之序列上兩者等價；
+        未收尾＝實庫序列留舊值、gate2 指名該序列紅）。
         ★rev5:B-065 表級收窄：RUNTIME_APPEND_TABLES 四表（session_event／sys_login_attempt／
         sys_token／sys_operation_log——末者於 rev5:004-ip-trust-anchor 入集）
         兩側再剝其 COPY 資料列（段首欄名行照比＝結構漂移仍紅）＋其 sequence 之
@@ -941,11 +947,38 @@ def _copy_blocks(lines):
     return blocks
 
 
+def _advance_seed_sequence(lines, t, d, eid):
+    """seed_add 序號合成（GR9；ADR-00085 決定 7；就地改 `lines` 之 setval 行）。
+
+    pk 恰單欄 c 且文本有 `<表>_<c>_seq` 之 setval 行（[`RE_SETVAL`]）時：期望已發最大值
+    M＝N（is_called 真）或 N−1（假；未動用形 `1, false` 即 0）；values[c] 非整數＝
+    GateError；values[c] > M ⇒ 該行改寫為 (values[c], true)、≤ M 不動。pk 多欄或無對應
+    setval 行（非序號主鍵）＝不推進。逐筆呼叫＝多筆依 entries 序推進取大。"""
+    if len(d["pk"]) != 1:
+        return
+    c = d["pk"][0]
+    seq = f"{t}_{c}_seq"
+    for k, ln in enumerate(lines):
+        m = RE_SETVAL.match(ln)
+        if not m or m.group(1) != seq:
+            continue
+        v = d["values"][c]
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise GateError(f"演進帳 {eid} seed_add：{t}.{c}＝{v!r} 非整數——序列 {seq} "
+                            "之期望序號無從推進（序號主鍵之登記值須為整數）")
+        issued = int(m.group(2)) if m.group(3) == "true" else int(m.group(2)) - 1
+        if v > issued:
+            lines[k] = f"SELECT pg_catalog.setval('public.{seq}', {v}, true);"
+        return
+
+
 def apply_seed_entries(norm_text, entries):
     """seed 面演進合成到左源（normalize 後施作、段內重排序）。消費四類 entries：
     seed_add＝{pk:[主鍵欄…], values:{欄:值 全欄}}／seed_update＝{pk:{欄:值}, set:{欄:值}}
-    ／seed_delete＝{pk:{欄:值}}；★add_column 亦動 seed 面（pg_dump COPY 段首欄清單隨
-    結構走）——僅支援 nullable 無 default 形（既有列補 \\N）；其它形與 add_table 之
+    ／seed_delete＝{pk:{欄:值}}；★seed_add 另推進該表序號主鍵之 setval 期望行
+    （[`_advance_seed_sequence`]；新 id 高於已發最大值才推、只進不退）——seed_update／
+    seed_delete 不動序列（刪列不回捲＝與 PG 行為一致）；★add_column 亦動 seed 面
+    （pg_dump COPY 段首欄清單隨結構走）——僅支援 nullable 無 default 形（既有列補 \\N）；其它形與 add_table 之
     seed 面合成未內建＝GateError fail-loud（該刀擴充本閘或走基線翻案；gate1 結構面照常）。"""
     seed_kinds = [e for e in entries
                   if e["kind"].startswith("seed_") or e["kind"] in ("add_column",
@@ -1014,6 +1047,7 @@ def apply_seed_entries(norm_text, entries):
                 raise GateError(f"演進帳 {eid} seed_add：values 欄集 ≠ {t} COPY 欄集"
                                 f"（差集 {sorted(set(cols) ^ set(d['values']))}）")
             rows.append("\t".join(copy_literal(d["values"][c]) for c in cols))
+            _advance_seed_sequence(lines, t, d, eid)
         elif kind == "seed_update":
             hits = [i for i, r in enumerate(rows) if _match(r, d["pk"])]
             if len(hits) != 1:
@@ -1200,8 +1234,9 @@ def audit_archetype(map_rows, actual_cols, actual_idxs, actual_cons):
     map_tables = {r["table"] for r in map_rows}
     actual_tables = set(cols_by)
     for t in sorted(actual_tables - map_tables):
-        fnd.append(f"[audit] 表清單守門｜實庫表 {t} 未登記 archetype 歸屬"
-                   "（先補 data-model §1、再登記 archetype-map.json）")
+        fnd.append(f"[audit] 表清單守門｜實庫表 {t} 未登記 archetype 歸屬——"
+                   "於 `archetype-map.json` 登記該表歸屬（新表另登 `add_table`；"
+                   "§1 為 001 基線＝ADR-00087）")
     for t in sorted(map_tables - actual_tables):
         fnd.append(f"[audit] 表清單守門｜map 登記表 {t} 不在實庫")
     for row in sorted(map_rows, key=lambda r: r["table"]):
@@ -1751,7 +1786,8 @@ class TestSelfTest(unittest.TestCase):
 
 class TestNegativeInjection(unittest.TestCase):
     """SC-003 五類假漂移注入、全數必紅（比對器先自證；test 子命令承載面）：①結構②欄序
-    ③seed 值④sequence 落值⑤假 delta 登記合成（對真凍結面、test_5）。"""
+    ③seed 值④sequence 落值⑤假 delta 登記合成（對真凍結面、test_5；seed_add 序號姊妹案
+    ＝test_5b）。"""
 
     def setUp(self):
         self.fix = _st_fixtures()
@@ -1857,6 +1893,36 @@ class TestNegativeInjection(unittest.TestCase):
         # 登記後＝三面皆綠（合成期望值＝注入後實庫）
         self.assertEqual(compare_structure(synth_expected(fx, [entry]), injected), [])
         self.assertEqual(compare_column_order(dm, [entry], injected["columns"]), [])
+        self.assertEqual(compare_seed(apply_seed_entries(frozen_norm, [entry]),
+                                      injected_dump), [])
+
+    def test_5b_fake_seed_add_sequence_synth_real_fixtures(self):
+        """第五案之 seed_add 序號姊妹案（GR9；ADR-00085 決定 7）：對**真凍結 fixtures** 登記
+        一筆假 seed_add（casbin_rule id 164、十一欄 COPY 文字形）——注入後 dump 獨立構造
+        （COPY 列與 setval 行皆手寫、不經合成器）：資料列附入該段＋`casbin_rule_id_seq`
+        由 (163, true) 前進至 (164, true)＝實庫跑 seed_add migration 收尾
+        `setval(…, GREATEST(164, last_value), true)` 之形。未登記＝紅（列與序列兩處皆
+        指名）；登記後合成期望＝注入後 dump（拆掉序號推進＝setval 行留 163 而紅）。"""
+        fx = load_fixtures(REPO_ROOT)
+        frozen_norm = normalize_seed_dump(fx["seed"])
+        old_sv = "SELECT pg_catalog.setval('public.casbin_rule_id_seq', 163, true);"
+        new_sv = "SELECT pg_catalog.setval('public.casbin_rule_id_seq', 164, true);"
+        self.assertIn(old_sv, frozen_norm.splitlines())
+        row = "164\tp\tR_SUPER\tipRule:unlock\tbutton\t\t\t\tf\t2026-08-05 00:00:00+00\t\\N"
+        lines = frozen_norm.splitlines()
+        _cols, _start, end = _copy_blocks(lines)["casbin_rule"]
+        lines.insert(end, row)
+        injected_dump = normalize_seed_dump(
+            "\n".join(new_sv if ln == old_sv else ln for ln in lines) + "\n")
+        entry = _entry(kind="seed_add", table="casbin_rule", detail={
+            "pk": ["id"],
+            "values": {"id": 164, "ptype": "p", "v0": "R_SUPER", "v1": "ipRule:unlock",
+                       "v2": "button", "v3": "", "v4": "", "v5": "", "protected": False,
+                       "created_at": "2026-08-05 00:00:00+00", "created_by": None}})
+        # 未登記＝紅、列與序列兩處皆指名
+        red = compare_seed(frozen_norm, injected_dump)
+        self.assertTrue(red and row in red[0] and new_sv in red[0], msg=red)
+        # 登記後＝綠（合成期望之資料列與序列落值皆＝注入後 dump）
         self.assertEqual(compare_seed(apply_seed_entries(frozen_norm, [entry]),
                                       injected_dump), [])
 
@@ -2137,6 +2203,102 @@ class TestSeedSynthesis(unittest.TestCase):
                                         "nullable": False}]})
         with self.assertRaisesRegex(GateError, "add_table.*seed 面"):
             apply_seed_entries(self.norm, [e])
+
+    # ── seed_add 序號合成（GR9；ADR-00085 決定 7；docs/ops/reference-src/schema-gates.md §2）──
+    # 期望已發最大值 M＝N（is_called 真）或 N−1（假）；新 id > M ⇒ setval 行推至 (新 id, true)。
+
+    @staticmethod
+    def _setval(seq, n, called):
+        return f"SELECT pg_catalog.setval('public.{seq}', {n}, {'true' if called else 'false'});"
+
+    def test_seed_add_advances_sequence_above_issued_max(self):
+        """t_ok 序列 (2, true)＝已發 2；加 id 3（＝M＋1）⇒ 期望推至 (3, true)、舊行不留。"""
+        e = _entry(kind="seed_add", table="t_ok",
+                   detail={"pk": ["id"], "values": {"id": 3, "name": "c"}})
+        out = apply_seed_entries(self.norm, [e])
+        self.assertIn(self._setval("t_ok_id_seq", 3, True), out.splitlines())
+        self.assertNotIn(self._setval("t_ok_id_seq", 2, True), out.splitlines())
+
+    def test_seed_add_not_above_issued_max_leaves_sequence(self):
+        """新 id ≤ M＝不動（先刪後補 id 2＝M）：①(2, true)＝已發 2 ②(3, false)＝已發 2。"""
+        readd = [_entry(kind="seed_delete", table="t_ok", detail={"pk": {"id": 2}}),
+                 _entry(id="E-002", kind="seed_add", table="t_ok",
+                        detail={"pk": ["id"], "values": {"id": 2, "name": "c"}})]
+        out = apply_seed_entries(self.norm, readd)
+        self.assertIn("2\tc", out)
+        self.assertIn(self._setval("t_ok_id_seq", 2, True), out.splitlines())
+        uncalled = self.norm.replace(self._setval("t_ok_id_seq", 2, True),
+                                     self._setval("t_ok_id_seq", 3, False))
+        out = apply_seed_entries(uncalled, readd)
+        self.assertIn(self._setval("t_ok_id_seq", 3, False), out.splitlines())
+
+    def test_seed_add_is_called_false_real_seed_sys_ip_rule(self):
+        """真凍結 seed 之 sys_ip_rule_id_seq＝(1, false)＝未動用、已發 0；加 id 1 ⇒ (1, true)；
+        他序列行逐字不動。"""
+        frozen = normalize_seed_dump(load_fixtures(REPO_ROOT)["seed"])
+        self.assertIn(self._setval("sys_ip_rule_id_seq", 1, False), frozen.splitlines())
+        values = {"id": 1, "created_at": "2026-08-05 00:00:00+00", "created_by": None,
+                  "updated_at": None, "updated_by": None, "deleted_at": None,
+                  "deleted_by": None, "order": 1, "wbip_type": 1,
+                  "wbip_cidr": "192.0.2.0/24", "wbip_memo": None}
+        e = _entry(kind="seed_add", table="sys_ip_rule",
+                   detail={"pk": ["id"], "values": values})
+        out = apply_seed_entries(frozen, [e])
+        self.assertIn(self._setval("sys_ip_rule_id_seq", 1, True), out.splitlines())
+
+        def others(txt):
+            return [ln for ln in txt.splitlines()
+                    if RE_SETVAL.match(ln) and "sys_ip_rule_id_seq" not in ln]
+        self.assertEqual(others(out), others(frozen))
+        self.assertEqual(len(others(frozen)), len(sequence_roster(frozen)) - 1)
+
+    def test_seed_add_table_without_sequence_line_untouched(self):
+        """無 `<表>_<pk>_seq` 之 setval 行（非序號主鍵，如文字 pk）＝不推進、不補行、不驗整數。"""
+        norm = normalize_seed_dump(_ST_DUMP.replace(
+            "SELECT pg_catalog.setval",
+            "COPY public.t_kv (k, v) FROM stdin;\nk1\tx\n\\.\n\nSELECT pg_catalog.setval"))
+        e = _entry(kind="seed_add", table="t_kv",
+                   detail={"pk": ["k"], "values": {"k": "k2", "v": "y"}})
+        out = apply_seed_entries(norm, [e])
+        self.assertIn("k2\ty", out)
+        setvals = [ln for ln in out.splitlines() if "setval" in ln]
+        self.assertEqual(setvals, [self._setval("t_ok_id_seq", 2, True)])
+
+    def test_seed_add_multi_column_pk_no_advance(self):
+        """pk 多欄＝不推進（即使首欄恰有同名序列行）。"""
+        e = _entry(kind="seed_add", table="t_ok",
+                   detail={"pk": ["id", "name"], "values": {"id": 9, "name": "z"}})
+        out = apply_seed_entries(self.norm, [e])
+        self.assertIn("9\tz", out)
+        self.assertIn(self._setval("t_ok_id_seq", 2, True), out.splitlines())
+
+    def test_seed_add_non_integer_pk_value_fail_loud(self):
+        """有序列行而 pk 值非整數（字串、布林、浮點）＝GateError（呼叫端 rc 2）。"""
+        for bad in ("3", True, 3.0):
+            e = _entry(kind="seed_add", table="t_ok",
+                       detail={"pk": ["id"], "values": {"id": bad, "name": "c"}})
+            with self.subTest(value=bad):
+                with self.assertRaisesRegex(GateError, r"t_ok\.id.*非整數.*t_ok_id_seq"):
+                    apply_seed_entries(self.norm, [e])
+
+    def test_seed_add_multiple_entries_advance_in_order_take_max(self):
+        """多筆依 entries 序逐筆推進取大：[5, 4]＝(5, true)（後筆較小不倒退）；[3, 4]＝(4, true)。"""
+        def add(eid, i):
+            return _entry(id=eid, kind="seed_add", table="t_ok",
+                          detail={"pk": ["id"], "values": {"id": i, "name": f"n{i}"}})
+        out = apply_seed_entries(self.norm, [add("E-001", 5), add("E-002", 4)])
+        self.assertIn(self._setval("t_ok_id_seq", 5, True), out.splitlines())
+        out = apply_seed_entries(self.norm, [add("E-001", 3), add("E-002", 4)])
+        self.assertIn(self._setval("t_ok_id_seq", 4, True), out.splitlines())
+
+    def test_seed_update_delete_leave_sequence(self):
+        """seed_update／seed_delete 不動序列（刪列不回捲＝與 PG 行為一致）。"""
+        for e in (_entry(kind="seed_delete", table="t_ok", detail={"pk": {"id": 2}}),
+                  _entry(kind="seed_update", table="t_ok",
+                         detail={"pk": {"id": 2}, "set": {"id": 7}})):
+            with self.subTest(kind=e["kind"]):
+                out = apply_seed_entries(self.norm, [e])
+                self.assertIn(self._setval("t_ok_id_seq", 2, True), out.splitlines())
 
 
 class TestRuntimeAppendNarrow(unittest.TestCase):
@@ -2726,6 +2888,9 @@ class TestAuditEngine(unittest.TestCase):
                  "type": "bigint", "nullable": False, "default": None}]
         f = audit_archetype(amap, cols, [], [])
         self.assertTrue(any("t_other 未登記" in x for x in f))
+        # 補救指向歸屬帳＋演進帳 add_table（schema-definition §1 留 001 基線＝ADR-00087 決定 7）
+        self.assertTrue(any("t_other 未登記" in x and "archetype-map.json" in x
+                            and "add_table" in x and "ADR-00087" in x for x in f), f)
         self.assertTrue(any("t_biz 不在實庫" in x for x in f))
 
     def test_created_by_nn_roster_enforced(self):

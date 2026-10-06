@@ -4,7 +4,7 @@
 > 凍結存證＝`specs/001-schema-baseline/contracts/schema-evolution.md`（該刀收刀當下的定稿、不再前進；兩者自 ADR-00041 之日起分岔，分岔由本檔與 git 史解釋）。
 > 形制承 ADR-00012（schema 定稿自 spec 目錄抽出至 reference-src 的同型處置）。
 > 檔＝`docs/ops/reference-src/schema-evolution.json`（單一登記檔、與快照同家——specs/
-> 下屬凍結史料、放彼處違時態語意）。消費者＝tools/schema-gate.py（gate1／gate2 合成）。
+> 下屬凍結史料、放彼處違時態語意）。消費者＝tools/schema-gate.py（gate1／gate2 合成）、tools/walkthrough-baseline.py（restore 之 seed 左源經 schema-gate 同一合成鏈；清理面各表之 `seed_*` 登記拒跑）、tools/docsync/snapshot.py（帳號快照之 seed 投影對賬）。
 > lineage：spec FR-008、brainstorm §7、ADR-00010；承 `rev5:contracts/schema-evolution.md`、形零改（research R7）。
 
 ## 1. 形（schema）
@@ -30,6 +30,11 @@
   `add_constraint`／`seed_add`／`seed_update`／`seed_delete`。
 - `detail` 形依 kind 而異，MUST 足以讓 gate 機器合成期望值（add_table＝全欄清單；
   add_index／add_constraint＝name＋definition；seed_*＝table＋pk＋逐欄值）。
+- `seed_add` 新列之序號：gate2 seed 合成於 `pk` 恰單欄且期望 seed 有該表 `<表>_<pk>_seq` 之 setval 行時，新列 id
+  （須為整數、否則 rc 2）高於期望已發最大值（is_called 真取 N、假取 N−1）即把期望推至（新 id, true）、否則不動
+  （判準全文＝`docs/ops/reference-src/schema-gates.md` §2；ADR-00085 決定 7）⇒ 對應 migration MUST 收尾
+  `setval(<序列>, GREATEST(<新 id>, last_value), true)`（序列只進不退；is_called 真之序列上與閘之推進等價）——
+  未收尾＝實庫序列留舊值、gate2 指名該序列紅；`seed_update`／`seed_delete` 不動序列（刪列不回捲）。
 - **基線初始態**＝`{"next_id": 1, "entries": []}`（001 刀落地即此形；凍結面即全部期望）。
 
 ## 2. 啟動斷言（gate 每跑必驗；任一敗＝rc 2 fail-loud、絕不靜默放行）
