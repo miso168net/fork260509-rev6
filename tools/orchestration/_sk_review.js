@@ -176,14 +176,14 @@ function renderAnswers(key, r) {
 }
 function who(role, key) { return '你是 ' + FEATURE + ' 之 **' + UNIT + '** review 輪的 **' + role + '（' + key + '）**（唯讀）。' }
 function lensPrompt(l) {
-  return [DEEP_THINK, who('探索 lens', l.key), '', CONTEXT, '', READONLY_BLOCK, '', EVIDENCE_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '', '=== 本 lens 任務 ===', l.task, '', FINDINGS_OUT, '', RULES_REVIEW].join('\n')
+  return [who('探索 lens', l.key), '', CONTEXT, '', READONLY_BLOCK, '', EVIDENCE_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '', '=== 本 lens 任務 ===', l.task, '', FINDINGS_OUT, '', RULES_REVIEW].join('\n')
 }
 function probePrompt(p) {
   // 冷啟動探針：刻意不烤 CONTEXT（模擬只有 repo 內容的新 session）；task 自帶身分、冒煙 token、zh-TW 與題目。
-  return [DEEP_THINK, p.task, '', READONLY_BLOCK, '', PROBE_OUT, '', RULES_REVIEW].join('\n')
+  return [p.task, '', READONLY_BLOCK, '', PROBE_OUT, '', RULES_REVIEW].join('\n')
 }
 function mirrorRealPrompt(key, text) {
-  return [DEEP_THINK, who('對抗驗證 agent、R-real 鏡', key), '', CONTEXT, '', READONLY_BLOCK, '',
+  return [who('對抗驗證 agent、R-real 鏡', key), '', CONTEXT, '', READONLY_BLOCK, '',
     '=== 任務：R-real 鏡——逐筆重現證據、只看真偽 ===',
     '對每筆獨立判：1. 在本工作樹重跑 evidence.command（只准唯讀形；含寫入形則改等價唯讀命令並註明）；輸出是否與 evidence.output 相符？',
     '2. file／locator 指對否；summary 的斷言是否被證據**充分**支持（要「就是這樣」、不是「有點像」）；嚴重度是否誇大或低估（blocker＝會讓新 session 做錯事或閘宣稱守而未守；major＝事實錯／無家／失效引用／鏡像含可漂移值；minor＝可讀性、風格）。',
@@ -192,7 +192,7 @@ function mirrorRealPrompt(key, text) {
     '', '=== 本批 findings ===', text, '', VERDICT_OUT, '', RULES_REVIEW].join('\n')
 }
 function mirrorDecidedPrompt(key, text) {
-  return [DEEP_THINK, who('對抗驗證 agent、R-decided 鏡', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
+  return [who('對抗驗證 agent、R-decided 鏡', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
     '=== 任務：R-decided 鏡——逐筆查拍板紀錄與處置合規、不重跑證據 ===',
     '對每筆獨立判：1. 現況是否為某拍板的結果（含刻意的設計取捨）？逐筆查拍板紀錄；找到→票「駁回」並填 already_decided_by（檔＋節＋一句）；若文件與該拍板相矛盾→票「確認」並 contradicts_decision=true。',
     '2. proposed.disposition 是否合規（見上段處置合規）；不合規→disposition_override 填正確桶（修／BL／ADR／none）並在 reason 說明。',
@@ -200,7 +200,7 @@ function mirrorDecidedPrompt(key, text) {
     '', '=== 本批 findings ===', text, '', VERDICT_OUT, '', RULES_REVIEW].join('\n')
 }
 function graderPrompt(key, answersText) {
-  return [DEEP_THINK, who('探針評分 grader', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
+  return [who('探針評分 grader', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
     '=== 任務：探針評分 ===',
     '以下是一支「只有 repo 內容」的新 session（探針）對數題的作答紀錄。對每題：1. 你自己獨立找真相（唯讀），記你的最短路徑 truth_path（依序開檔）與 min_hops（開檔次數）；',
     '2. 判 verdict：找得到（探針 ≤3 跳且答對）／繞路（>3 跳但答對；★探針多走的跳若帶來與題目相關的額外查獲＝增益跳、不計入繞路判定，只算沒帶來新資訊的開檔；跳數一律以開檔口徑計）／找不到（探針 found=false 或答不出）／答錯（答案與真相不符；說明哪裡錯）；',
@@ -208,14 +208,14 @@ function graderPrompt(key, answersText) {
     '', answersText, '', GRADE_OUT, '', RULES_REVIEW].join('\n')
 }
 function refutePrompt(key, text) {
-  return [DEEP_THINK, who('對抗驗證 agent、R-decided 鏡（探針衍生）', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
+  return [who('對抗驗證 agent、R-decided 鏡（探針衍生）', key), '', CONTEXT, '', READONLY_BLOCK, '', DECIDED_RULE_BLOCK, DECISIONS_BLOCK, '',
     '=== 任務：探針衍生 findings 反證 ===',
     '以下 findings 由探針評分 grader 提出。對每筆獨立判：1. 是否已有拍板／既有入口覆蓋（例：README 表已有列但探針沒看到＝探針失誤、非文件缺口→駁回並填 already_decided_by 或既有入口位置）；',
     '2. 證據命令重跑一次（唯讀）確認「缺列／矛盾」為真；3. 處置合規；不合規→disposition_override。票：確認／駁回／不確定，逐筆都要。',
     '', '=== 本批 findings ===', text, '', VERDICT_OUT, '', RULES_REVIEW].join('\n')
 }
 function criticPrompt(scope, prior, lines) {
-  return [DEEP_THINK, who('完整性 critic', 'critic'), '', CONTEXT, '', READONLY_BLOCK, '',
+  return [who('完整性 critic', 'critic'), '', CONTEXT, '', READONLY_BLOCK, '',
     '=== 任務：找「還漏了什麼」===',
     '你不重審個別 finding，只回答：①範圍內從未被任何 lens 讀過的檔（掃描面 vs 各 lens coverage.files_read 聯集）；②仍未被證據覆蓋的宣稱；③該補哪些 lens（各給一句任務提示）。',
     '', '=== 範圍與前次結果 ===', scope, '', prior, '', '=== 本 run 驗證結果（批｜鍵｜real 票｜decided 票｜三態）===', lines.join('\n'), '', CRITIC_OUT, '', RULES_REVIEW].join('\n')

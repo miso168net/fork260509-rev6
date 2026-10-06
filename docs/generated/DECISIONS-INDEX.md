@@ -90,3 +90,4 @@
 | ADR-00085 | proposed | 2026-10-05 | seed-only migration m0003（rev6 首支 delta）——R_SUPER 名下角色與選單六碼改受保護（按鈕維受保護列首例）、刪 R_ADMIN `user:edit`（列 44）、增 R_SUPER `ipRule:unlock`（列 164）與 `manage_ip-rule` 按鈕清單一碼；seed 基線層直接改列、單一交易五句逐句斷言、前置不符整支回滾（fail-loud）；演進帳九筆＋schema 閘 seed_add 序號合成；走查還原工具之遷移帳前置與 seed 合成（兩模式之系統設定比對、清理面 seed 列照舊拒跑）；ADR-00064 背景「按鈕維受保護 0 列」之讀法 | — | — | — |
 | ADR-00086 | proposed | 2026-10-05 | 選單編輯不得移除尚有受保護授權之按鈕碼——判定集＝本次移除集（含改碼之舊碼）∩ 持有受保護按鈕維授權列之碼、不問持有者；位次＝按鈕碼清單形制之後、絕版碼歸檔之前（⑨′）；違者整筆拒 `biz.menu.protectedButtonRemove`（純 key）、零變更零歸檔零稽核零同步；與受保護選單守門並列、拒因分鍵（承島 G 之 G2：受保護集只在 seed 基線層變更） | — | — | — |
 | ADR-00087 | proposed | 2026-10-05 | schema 定稿權威留 001 基線（續行並 supersede ADR-00012）——`schema-definition.md` 各節不隨刀前進、其後刀之結構與 seed 變更只登演進帳、現況看實庫照相；表數斷言改屬基線恆真（BL-00047 收）；新表歸屬直接登記 `archetype-map.json`（§1 留基線 15 表）；其餘決定原文續行 | — | — | — |
+| ADR-00088 | accepted | 2026-10-06 | 組裝形 workflow 的 agent prompt 不帶深思關鍵詞——思考深度只由 effort 承載，兩支 harness 以寫死字面守 | — | — | — |
