@@ -628,4 +628,4 @@ SQL "SELECT string_agg(DISTINCT operation, ',' ORDER BY operation) FROM sys_oper
 | ADR⑦ 並行編輯已知態 | Super 於兩分頁開同一自建帳號之編輯抽屜 → 分頁乙改暱稱並確定 → 分頁甲（未重開）只改手機並確定 ⇒ 暱稱回到開啟時舊值（文字欄後送出者為準）；甲之 updateUser body 無 `status`／`roleIds` 鍵（狀態與角色只在改動時送、不把他人剛停用之帳號啟用回來） |
 | spec 已知態 | 使用者詳情頁續為佔位（seed-view-gate 對賬、佔位檔不可刪）；個人中心其餘卡位留白；三顆快速登入鈕仍在（BL-00049）；系統設定與稽核兩頁仍為死項（008 刀；CDP 排除）；會話政策改 single 不即時踢除（§5） |
 
-- 新發現之已知態併入 ADR⑧／ADR⑨ 草稿，交治理單元由 user 逐款定案後 accepted（spec FR-056 親決時點）；ADR⑧⑨ accepted 前不得以本段推論代替觀察。
+- 新發現之已知態併入 ADR⑧／ADR⑨ 草稿，交治理單元依親決分類（RL-0086）經 user 親決後 accepted（spec FR-056 親決時點）；ADR⑧⑨ accepted 前不得以本段推論代替觀察。

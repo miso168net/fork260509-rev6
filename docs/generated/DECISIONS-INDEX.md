@@ -91,3 +91,4 @@
 | ADR-00086 | accepted | 2026-10-05 | 選單編輯不得移除尚有受保護授權之按鈕碼——判定集＝本次移除集（含改碼之舊碼）∩ 持有受保護按鈕維授權列之碼、不問持有者；位次＝按鈕碼清單形制之後、絕版碼歸檔之前（⑨′）；違者整筆拒 `biz.menu.protectedButtonRemove`（純 key）、零變更零歸檔零稽核零同步；與受保護選單守門並列、拒因分鍵（承島 G 之 G2：受保護集只在 seed 基線層變更） | — | — | — |
 | ADR-00087 | accepted | 2026-10-05 | schema 定稿權威留 001 基線（續行並 supersede ADR-00012）——`schema-definition.md` 各節不隨刀前進、其後刀之結構與 seed 變更只登演進帳、現況看實庫照相；表數斷言改屬基線恆真（BL-00047 收）；新表歸屬直接登記 `archetype-map.json`（§1 留基線 15 表）；其餘決定原文續行 | — | ADR-00012 | — |
 | ADR-00088 | accepted | 2026-10-06 | 組裝形 workflow 的 agent prompt 不帶深思關鍵詞——思考深度只由 effort 承載，兩支 harness 以寫死字面守 | — | — | — |
+| ADR-00089 | accepted | 2026-10-06 | SDD 刀 plan 期 ADR 之親決分類——待決一題一問、承決與工程不逐款問，轉 accepted 前以對照表一題收尾 | — | — | — |

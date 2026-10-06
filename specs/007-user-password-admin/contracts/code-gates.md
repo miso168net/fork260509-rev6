@@ -348,7 +348,7 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 | ADR-00078 | 設密冷卻＋改密節流 | 同上 | —— |
 | ADR-00079 | 政策壞值方向與告警出口 | 同上 | —— |
 | ADR-00080 | ADR-00047 續行（使用者域寫端語意） | 同上 | `supersedes: [ADR-00047]`、ADR-00047 status→superseded |
-| ADR-00081 | ADR-00068 續行 v3 | 治理單元（CDP 三方對照與已知態實測之後；U22）user 逐款親決 | `supersedes: [ADR-00068]`、ADR-00068 status→superseded |
+| ADR-00081 | ADR-00068 續行 v3 | 治理單元（CDP 三方對照與已知態實測之後；U22）依親決分類（RL-0086）經 user 親決 | `supersedes: [ADR-00068]`、ADR-00068 status→superseded |
 | ADR-00082 | ADR-00069 續行 | 同上 | `supersedes: [ADR-00069]`、ADR-00069 status→superseded |
 | ADR-00083 | 清單 wire 偏離帳 | U0 施工前提顆 | —— |
 | ADR-00084 | 繁中 runtime、預設 zh-TW、zh-tw-lint 閘 | 同上（不晚於 zh-tw-lint 接線單元同顆之要求自動滿足） | `supersedes: [ADR-00039]`、ADR-00039 status→superseded |
