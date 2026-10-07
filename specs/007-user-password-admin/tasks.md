@@ -86,11 +86,11 @@ description: "Task list for 007-user-password-admin"
 
 ### U3 骨架（research R6；`contracts/wire-user-admin.md` 與 `contracts/wire-user-center.md` 端點總表、授權態矩陣；`contracts/code-gates.md` §3「ROUTES 釘值」「`tests/contract.rs`」「以本刀端點未註冊為前提之既有測試」三列；FR-001／FR-002／FR-061）
 
-- [ ] T012 `rust-api/server/src/router.rs`：ROUTES 表尾接十二列（路徑與動詞逐字對齊 seed 政策列 1／2〔getUserList〕、155、17、18、19、20、152、154、151、68 與兩支 Authed；相對序依 `rev5:server/src/router.rs`＝getUserList、getDeletedUsers、addUser、updateUser、deleteUser、batchDeleteUser、restoreUser、kickUser、resetUserPassword、updateUserSessionPolicy、getPasswordPolicy、changePassword；管理面十條 `Protection::Policy`〔GET 2／POST 6／DELETE 2〕、個人中心兩條 `Protection::Authed`；case_key＝`get-user-list`、`get-deleted-users`、`add-user`、`update-user`、`delete-user`、`batch-delete-user`、`restore-user`、`kick-user`、`reset-user-password`、`update-user-session-policy`、`user-center-get-password-policy`、`user-center-change-password`；rev5 之 `user-get-list` 等形不帶回）＋`ROUTES_COUNT` 49→61＋ROUTES doc「現行四十九條」與逐條 bullet 補十二條＋`routes_block_literal_form_and_pinned_rows` 逐列斷言與斷言訊息之「四十九」改現值＋`policy_endpoints_is_the_policy_projection_in_registration_order` 之 `POLICY_ROUTE_COUNT` 35→45＋`Protection` doc 之 Policy／Authed 成員句（「三條 Authed」→五條；research R22）；★T012 與 T013 互為編譯前提（ROUTES 列指向 T013 之空殼）＝同一 implementer 一併落地後才判紅綠。**DoD：ROUTES 條目書寫形仍過 docsync 生成器契約；政策保護 45（GET 17／POST 21／DELETE 7）、Authed 5、Public 11 以解析 ROUTES 區塊現算**
-- [ ] T013 handler 空殼（research R6 第 1 款）：新建 `rust-api/server/src/handler/user.rs`（模組 doc＝域職責〔使用者管理面十支；新域 target `security.user`；交易形以 `handler/role.rs` 模組 doc「寫端不變式」為準〕、rev5 出處帶 `rev5:`；十支 `pub async fn` 空殼〔get_user_list／get_deleted_users／add_user／update_user／delete_user／batch_delete_user／restore_user／kick_user／reset_user_password／update_user_session_policy〕每支暫回 `AppError::Internal`、各帶唯一碼註字面 `佔位：U7～U12 替換`〔U23 以此字面計數驗零殘留〕；本檔測試模組 MUST 居檔尾＝`test_module_tail_lint`）＋新建 `rust-api/server/src/handler/user_center.rs`（模組 doc＝個人中心兩支、新域 target `security.user_center`、標的恆＝`Identity.uid`、不掛包含規則；get_password_policy／change_password 兩支空殼、同碼註字面）＋`rust-api/server/src/handler/mod.rs` 宣告 `pub mod user;`、`pub mod user_center;`（ASCII 升冪 `throttle` < `user` < `user_center`）、「業務 handler 九域」→「十一域」與宣告行升冪句（research R22「九域」種子）；★同檔「跨 handler 共用件恰一支＝`common`」句於立殼時續真（空殼無 `pub(super)` 件）＝改述延至首個 `pub(super)` 件落地之 U7（research R22 預排 U3；改述時點以句真為準）、`throttle` 域句「帳號維套包含規則、交易化」延 U13
-- [ ] T014 `rust-api/server/tests/contract.rs` registry 與授權態矩陣（`contracts/code-gates.md` §3「`tests/contract.rs`」列）：registry +12 case（序＝ROUTES 宣告序；共用驗證函式反查 case_key 綁定擋殭屍）——管理面十支各經 policy 驗證函式（形同 `verify_role_menu_policy`；未認證三形 `8888`）、個人中心兩支經 `verify_authed_unauthenticated_8888` 形；★授權態矩陣新建一表（形同 `GOVERNANCE_AUTHZ`；SC-001）：真 seed 判定面下 Super 十二條皆到達 handler（非 `5003`、非 `8888`；空殼期之回碼不入斷言、U7～U12 逐支收緊）、Admin 對 getUserList 到達 handler／其餘九條 `5003`、User 對管理面十條 `5003`、三帳號對個人中心兩條皆到達 handler；★changePassword 之矩陣與他案 body 一律送兩次輸入不一致之形（第一步即拒、不觸舊密比對與節流桶＝research R15 第 5 款①）；動詞不符 `4040` 取 `GET /systemManage/deleteUser` 與 `GET /userCenter/changePassword` 各一案；coverage 雙向閘 61＝61；模組 doc 與 `registry` doc「四十九」→「六十一」、「三條 Authed」全集語→五條（指 003 刀三支未認證案者留）
-- [ ] T015 以「本刀端點未註冊」為前提之既有測試四支（spec FR-061；`contracts/code-gates.md` §3 該列；定位＝`git -C rust-api grep -n '列 68\|seed 列 2 屬候選外'`）：①`rust-api/server/src/handler/role.rs` 之 `super_reads_leave_off_candidate_seed_grants_in_the_table_and_out_of_the_response`（列 68 候選外前提）②`rust-api/server/src/model/facade/sys_casbin_policy.rs` 之 `seed_reads_and_the_seal_set_match_the_seed_facts`（列 68 候選外前提＋端點維讀回 35 鍵／受保護 14 之實數；research R22「35 鍵」種子）③`rust-api/server/tests/contract.rs` 之 `governance_endpoint_grants_real_seed`（列 68 候選外＋R_SUPER 端點維 seed 列 50／候選外 15）④同檔 `governance_reads_real_seed`（列 2 候選外＋35／14 與 R_ADMIN 端點維 seed 列恰兩項）——路由註冊後列 68 與列 2 轉入候選集：候選外前提改植合成探針列（形同 `sys_casbin_policy.rs` 之 ghost-guarded 合成案；號段依「表×檔」登記 `test_kit::ID_RANGES`、tests 側自持同值）、實數改以獨立 SQL 現算（不寫死 45／15 等新值）；doc 同改。**DoD：四支先依新路由轉紅、改後綠；全量 serial 綠**
-- [ ] T016 [P] 外層 `tools/docsync/tests/test_references.py` `TestRoutes::test_real_repo_pinned_rows` 之**兩份**釘值表（元組表與渲染行表）各 +12 列與其註解（RL-0022；research R22「四十九」「十九列」種子；與 U3 rust-api 同顆外層 commit——pre-commit 只在 staged 含 `tools/docsync/` 時才跑 docsync 自測、不同批即靜默紅＝LL-00060）＋`python3 -B tools/docsync test` 綠（`docs/generated/reference/routes.md` 61 列由主線六步序⑤ generate 重算）
+- [x] T012 `rust-api/server/src/router.rs`：ROUTES 表尾接十二列（路徑與動詞逐字對齊 seed 政策列 1／2〔getUserList〕、155、17、18、19、20、152、154、151、68 與兩支 Authed；相對序依 `rev5:server/src/router.rs`＝getUserList、getDeletedUsers、addUser、updateUser、deleteUser、batchDeleteUser、restoreUser、kickUser、resetUserPassword、updateUserSessionPolicy、getPasswordPolicy、changePassword；管理面十條 `Protection::Policy`〔GET 2／POST 6／DELETE 2〕、個人中心兩條 `Protection::Authed`；case_key＝`get-user-list`、`get-deleted-users`、`add-user`、`update-user`、`delete-user`、`batch-delete-user`、`restore-user`、`kick-user`、`reset-user-password`、`update-user-session-policy`、`user-center-get-password-policy`、`user-center-change-password`；rev5 之 `user-get-list` 等形不帶回）＋`ROUTES_COUNT` 49→61＋ROUTES doc「現行四十九條」與逐條 bullet 補十二條＋`routes_block_literal_form_and_pinned_rows` 逐列斷言與斷言訊息之「四十九」改現值＋`policy_endpoints_is_the_policy_projection_in_registration_order` 之 `POLICY_ROUTE_COUNT` 35→45＋`Protection` doc 之 Policy／Authed 成員句（「三條 Authed」→五條；research R22）；★T012 與 T013 互為編譯前提（ROUTES 列指向 T013 之空殼）＝同一 implementer 一併落地後才判紅綠。**DoD：ROUTES 條目書寫形仍過 docsync 生成器契約；政策保護 45（GET 17／POST 21／DELETE 7）、Authed 5、Public 11 以解析 ROUTES 區塊現算**
+- [x] T013 handler 空殼（research R6 第 1 款）：新建 `rust-api/server/src/handler/user.rs`（模組 doc＝域職責〔使用者管理面十支；新域 target `security.user`；交易形以 `handler/role.rs` 模組 doc「寫端不變式」為準〕、rev5 出處帶 `rev5:`；十支 `pub async fn` 空殼〔get_user_list／get_deleted_users／add_user／update_user／delete_user／batch_delete_user／restore_user／kick_user／reset_user_password／update_user_session_policy〕每支暫回 `AppError::Internal`、各帶唯一碼註字面 `佔位：U7～U12 替換`〔U23 以此字面計數驗零殘留〕；本檔測試模組 MUST 居檔尾＝`test_module_tail_lint`）＋新建 `rust-api/server/src/handler/user_center.rs`（模組 doc＝個人中心兩支、新域 target `security.user_center`、標的恆＝`Identity.uid`、不掛包含規則；get_password_policy／change_password 兩支空殼、同碼註字面）＋`rust-api/server/src/handler/mod.rs` 宣告 `pub mod user;`、`pub mod user_center;`（ASCII 升冪 `throttle` < `user` < `user_center`）、「業務 handler 九域」→「十一域」與宣告行升冪句（research R22「九域」種子）；★同檔「跨 handler 共用件恰一支＝`common`」句於立殼時續真（空殼無 `pub(super)` 件）＝改述延至首個 `pub(super)` 件落地之 U7（research R22 預排 U3；改述時點以句真為準）、`throttle` 域句「帳號維套包含規則、交易化」延 U13
+- [x] T014 `rust-api/server/tests/contract.rs` registry 與授權態矩陣（`contracts/code-gates.md` §3「`tests/contract.rs`」列）：registry +12 case（序＝ROUTES 宣告序；共用驗證函式反查 case_key 綁定擋殭屍）——管理面十支各經 policy 驗證函式（形同 `verify_role_menu_policy`；未認證三形 `8888`）、個人中心兩支經 `verify_authed_unauthenticated_8888` 形；★授權態矩陣新建一表（形同 `GOVERNANCE_AUTHZ`；SC-001）：真 seed 判定面下 Super 十二條皆到達 handler（非 `5003`、非 `8888`；空殼期之回碼不入斷言、U7～U12 逐支收緊）、Admin 對 getUserList 到達 handler／其餘九條 `5003`、User 對管理面十條 `5003`、三帳號對個人中心兩條皆到達 handler；★changePassword 之矩陣與他案 body 一律送兩次輸入不一致之形（第一步即拒、不觸舊密比對與節流桶＝research R15 第 5 款①）；動詞不符 `4040` 取 `GET /systemManage/deleteUser` 與 `GET /userCenter/changePassword` 各一案；coverage 雙向閘 61＝61；模組 doc 與 `registry` doc「四十九」→「六十一」、「三條 Authed」全集語→五條（指 003 刀三支未認證案者留）
+- [x] T015 以「本刀端點未註冊」為前提之既有測試四支（spec FR-061；`contracts/code-gates.md` §3 該列；定位＝`git -C rust-api grep -n '列 68\|seed 列 2 屬候選外'`）：①`rust-api/server/src/handler/role.rs` 之 `super_reads_leave_off_candidate_seed_grants_in_the_table_and_out_of_the_response`（列 68 候選外前提）②`rust-api/server/src/model/facade/sys_casbin_policy.rs` 之 `seed_reads_and_the_seal_set_match_the_seed_facts`（列 68 候選外前提＋端點維讀回 35 鍵／受保護 14 之實數；research R22「35 鍵」種子）③`rust-api/server/tests/contract.rs` 之 `governance_endpoint_grants_real_seed`（列 68 候選外＋R_SUPER 端點維 seed 列 50／候選外 15）④同檔 `governance_reads_real_seed`（列 2 候選外＋35／14 與 R_ADMIN 端點維 seed 列恰兩項）——路由註冊後列 68 與列 2 轉入候選集：候選外前提改植合成探針列（形同 `sys_casbin_policy.rs` 之 ghost-guarded 合成案；號段依「表×檔」登記 `test_kit::ID_RANGES`、tests 側自持同值）、實數改以獨立 SQL 現算（不寫死 45／15 等新值）；doc 同改。**DoD：四支先依新路由轉紅、改後綠；全量 serial 綠**
+- [x] T016 [P] 外層 `tools/docsync/tests/test_references.py` `TestRoutes::test_real_repo_pinned_rows` 之**兩份**釘值表（元組表與渲染行表）各 +12 列與其註解（RL-0022；research R22「四十九」「十九列」種子；與 U3 rust-api 同顆外層 commit——pre-commit 只在 staged 含 `tools/docsync/` 時才跑 docsync 自測、不同批即靜默紅＝LL-00060）＋`python3 -B tools/docsync test` 綠（`docs/generated/reference/routes.md` 61 列由主線六步序⑤ generate 重算）
 
 **Checkpoint（U3）**: ROUTES 61（Policy 45／Authed 5）、contract 61＝61、授權態矩陣綠、四支前提改植；rust-api commit → 外層 pin bump＋test_references 同顆＋generate；收尾②另跑 `python3 -B tools/docsync test`（LL-00060）
 
@@ -484,22 +484,22 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 
 | 子句 | 判定 | 承載錨（task·類別「該 task 行內逐字錨」） | 測試名 |
 |---|---|---|---|
-| FR-001#1 ROUTES MUST 由 49 條擴為 61 條 | 有斷言 | T012·測試「`routes_block_literal_form_and_pinned_rows`」；T014·測試「coverage 雙向閘 61＝61」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」 |  |
+| FR-001#1 ROUTES MUST 由 49 條擴為 61 條 | 有斷言 | T012·測試「`routes_block_literal_form_and_pinned_rows`」；T014·測試「coverage 雙向閘 61＝61」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」 | `routes_block_literal_form_and_pinned_rows`、`coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route` |
 | FR-001#2 路由條數常數同 commit bump | 有斷言 | T012·測試「`ROUTES_COUNT` 49→61」；既有·既有測試 | `routes_block_literal_form_and_pinned_rows` |
-| FR-001#3 新增管理面 10 條：路徑與動詞逐字對齊 001 凍結 seed 之政策列（getUserLi… | 有斷言 | T012·測試「路徑與動詞逐字對齊 seed 政策列 1／2〔getUserLi」；T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T016·測試「`TestRoutes::test_real_repo_pinned_rows`」 |  |
-| FR-001#4 個人中心 2 條——/userCenter/getPasswordPolicy（GET）、/u… | 有斷言 | T012·測試「路徑與動詞逐字對齊 seed 政策列 1／2〔getUserLi」；T014·測試「動詞不符 `4040` 取 `GET /systemManage/deleteUser`」；T016·測試「`TestRoutes::test_real_repo_pinned_rows`」 |  |
-| FR-001#5 個人中心兩條授權態＝登入即可用（零政策列） | 有斷言 | T012·測試「管理面十條 `Protection::Policy`〔GET 2」；T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」 |  |
-| FR-001#6 政策保護端點數 35→45 | 有斷言 | T012·測試「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「`docs/generated/reference/routes.md`」 |  |
-| FR-001#7 contract case 登記表之 case 集 MUST 與 ROUTES 恰等（61＝6… | 有斷言 | T014·測試「coverage 雙向閘 61＝61」；T072·測試「registry 61＝61」；既有·既有測試；既有·既有測試；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route` |
+| FR-001#3 新增管理面 10 條：路徑與動詞逐字對齊 001 凍結 seed 之政策列（getUserLi… | 有斷言 | T012·測試「路徑與動詞逐字對齊 seed 政策列 1／2〔getUserLi」；T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T016·測試「`TestRoutes::test_real_repo_pinned_rows`」 | `routes_block_literal_form_and_pinned_rows`、`user_domain_authz_matrix_real_seed`、`TestRoutes.test_real_repo_pinned_rows` |
+| FR-001#4 個人中心 2 條——/userCenter/getPasswordPolicy（GET）、/u… | 有斷言 | T012·測試「路徑與動詞逐字對齊 seed 政策列 1／2〔getUserLi」；T014·測試「動詞不符 `4040` 取 `GET /systemManage/deleteUser`」；T016·測試「`TestRoutes::test_real_repo_pinned_rows`」 | `routes_block_literal_form_and_pinned_rows`、`change_password_verb_mismatch_is_4040_outside_authn`、`TestRoutes.test_real_repo_pinned_rows` |
+| FR-001#5 個人中心兩條授權態＝登入即可用（零政策列） | 有斷言 | T012·測試「管理面十條 `Protection::Policy`〔GET 2」；T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」 | `routes_block_literal_form_and_pinned_rows`、`user_domain_authz_matrix_real_seed` |
+| FR-001#6 政策保護端點數 35→45 | 有斷言 | T012·測試「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「`docs/generated/reference/routes.md`」 | `policy_endpoints_is_the_policy_projection_in_registration_order` |
+| FR-001#7 contract case 登記表之 case 集 MUST 與 ROUTES 恰等（61＝6… | 有斷言 | T014·測試「coverage 雙向閘 61＝61」；T072·測試「registry 61＝61」；既有·既有測試；既有·既有測試；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route`、`registry_order_follows_routes_declaration_order` |
 | FR-001#8 routes 生成表由 generate 重算 | 有斷言 | T097·走查「§1 路由與授權態」；T108·走查「`python3 -B tools/docsync test`、」 |  |
-| FR-001#9 外層 routes 生成器之真 repo 釘值測 MUST 同批 +12 列 | 有斷言 | T016·測試「`TestRoutes::test_real_repo_pinned_rows`」 |  |
+| FR-001#9 外層 routes 生成器之真 repo 釘值測 MUST 同批 +12 列 | 有斷言 | T016·測試「`TestRoutes::test_real_repo_pinned_rows`」 | `TestRoutes.test_real_repo_pinned_rows` |
 | FR-001#10 ROUTES 改動之單元另跑 docsync 自測 | 非測試承載 | T016·文件「＋`python3 -B tools/docsync test`」 |  |
-| FR-002#1 授權態 MUST 逐列照 seed（含 m0003）：管理面 10 條只授 R_SUPER | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「授權態矩陣十二條全數收緊為終值」；T097·走查「§1 路由與授權態」 |  |
-| FR-002#2 唯 getUserList 另授 R_ADMIN | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T038·測試「授權態矩陣兩支收緊（getUserList：Super／Admi」 |  |
+| FR-002#1 授權態 MUST 逐列照 seed（含 m0003）：管理面 10 條只授 R_SUPER | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「授權態矩陣十二條全數收緊為終值」；T097·走查「§1 路由與授權態」 | `user_domain_authz_matrix_real_seed` |
+| FR-002#2 唯 getUserList 另授 R_ADMIN | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T038·測試「授權態矩陣兩支收緊（getUserList：Super／Admi」 | `user_domain_authz_matrix_real_seed` |
 | FR-002#3 updateUserSessionPolicy 之政策列受保護＝屬封死集（島 G 之 G6）、… | 有斷言 | T057·測試「R_ADMIN 名下授權列逐欄不動（零變更」 |  |
 | FR-002#4 既有 unlockLogin 本刀接 UI | 有斷言 | T099·CDP「IP 規則頁解鎖、個人中心」；T097·走查「§9 解鎖兩入口之 API 面逐條實得對照期望」 |  |
 | FR-002#5 unlockLogin 端點本體不改（帳號維加掛包含規則＝FR-021） | 有斷言 | T067·測試「來源維不套、未鎖帳號回成功並落稽核（GR3）」；T068·測試「既有 unlockLogin case 照綠」；既有·既有測試 | `unlocking_a_target_that_is_not_locked_still_audits_and_marks` |
-| FR-002#6 動詞不符 → 4040 | 有斷言 | T014·測試「動詞不符 `4040` 取 `GET /systemManage/deleteUser`」；既有·既有測試 | `verb_mismatch_returns_4040_envelope_without_existence_leak` |
+| FR-002#6 動詞不符 → 4040 | 有斷言 | T014·測試「動詞不符 `4040` 取 `GET /systemManage/deleteUser`」；既有·既有測試 | `verb_mismatch_returns_4040_envelope_without_existence_leak`、`delete_user_verb_mismatch_is_4040_outside_authn`、`change_password_verb_mismatch_is_4040_outside_authn` |
 | FR-003#1 使用者鍵 MUST 一律為 id | 有斷言 | T038·測試「seed 下 id 1 列形逐欄（含 `roles` 與 `createdBy: null`」；T070·測試「`id` 為字串、時間偏移非 `+00:00`、`createdBy`」 |  |
 | FR-003#2 標的與操作者皆以 id 識別 | 有斷言 | T043·測試「測試：①～⑤ 各格負向」；T049·測試「以資料列指派 R_SUPER 予自建帳號、以其票 deleteU」；T057·測試「`cannotKickSelf`（kickUser `{id:1}`」 |  |
 | FR-003#3 changePassword 之標的恆＝登入者本人（不信任 body 中之 id） | 有斷言 | T064·測試「body 另帶 `"id":<自建帳號 B 之 id>`」；T070·機器守「請求型逐欄簽名一表釘值＋逐欄反例＋合法形反序列化進 rust D」 |  |
@@ -552,7 +552,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | FR-009#2 寫端請求 body 壞形 MUST 以同一共用件收斂為預設值 | 有斷言 | 既有·既有測試；T041·機器守「body 以 `common::json_or_default(`」；T097·走查「§1 路由與授權態」 | `json_or_default_reads_valid_bodies_and_collapses_every_rejection` |
 | FR-009#3 收斂後走既有拒因早拒（標的不存在 → `biz.user.notFound`） | 有斷言 | T044·測試「授權態矩陣收緊：Super 空 body addUser＝`2222 biz.user.userNameInvalid`」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「授權態矩陣收緊（Super 空 body：三支皆 `notFound`」 |  |
 | FR-009#4 body 缺席或壞形之請求零變更 | 有斷言 | T044·測試「updateUser＝`2222 biz.user.notFound`」；T049·測試「授權態矩陣收緊（Super 空 body：deleteUser／」；T057·測試「三支皆 `notFound`、零變更」 |  |
-| FR-009#5 授權中介層 MUST NOT 讀 body | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T044·測試「十一鍵各一發（觸發形逐鍵依 `contracts/msg-keys.md`」；T097·走查「§1 路由與授權態」 |  |
+| FR-009#5 授權中介層 MUST NOT 讀 body | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T044·測試「十一鍵各一發（觸發形逐鍵依 `contracts/msg-keys.md`」；T097·走查「§1 路由與授權態」 | `user_domain_authz_matrix_real_seed` |
 | FR-009#6 MUST NOT 為 body 缺席或壞形新增錯誤碼 | 有斷言 | T039·測試「`msg_keys_roster_is_pinned_and_unique`」；既有·既有測試；既有·既有測試 | `code_mod_matches_frozen_13_matrix`、`issuable_nine_and_no_variant_four` |
 | FR-010#1 八支使用者寫端 MUST 依固定序 ①活性標的鎖讀→②seed 保護→③本人規則→④包含規則→… | 有斷言 | T043·測試「多重違規取先序五案」；T044·測試「十一鍵各一發（觸發形逐鍵依 `contracts/msg-keys.md`」；T047·測試「多重違規取先序相位」；T053·測試「先序一案＝操作者自身另持一停用自建角色」；T054·測試「對本人 resetUserPassword＝`cannotResetSelfPassword`」 |  |
 | FR-010#2 任一拒＝整筆 rollback、零變更 | 有斷言 | T043·測試「①～⑤ 各格負向案（含 ④ `5003`）逐案斷言標的 `sys_user`」；T044·測試「段末復核零寫入」；T047·測試「整批 rollback（任一違規＝全批零變更）」；T048·測試「各格負向案逐案斷言零變更與水位窗零稽核（同 T043 形）」；T053·測試「各格負向案逐案斷言零變更（票仍 active、零會話事件、名單零」；T054·測試「各格負向案逐案斷言零變更（密碼雜湊、經手表、票面不動、零會話事件」；T055·測試「各格負向案逐案斷言零變更」；T057·測試「三支皆 `notFound`、零變更」；T097·走查「§4 包含規則」 |  |
@@ -786,7 +786,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | FR-030#4 島 C「`kicked` 與 `revoked` 兩 reason」改含 | 非測試承載 | T002·文件「島 B 第三點、島 C 第三點」 |  |
 | FR-030#5 程式內之原因值 MUST NOT 改 | 有斷言 | T028·測試「＋值集案、欄寬案（最長 16 字元 ≤ `reason` var」；T052·測試「reason 二值互異案擴三值」；既有·既有測試；既有·既有測試 | `constants_match_data_model`、`vocabularies_are_exactly_the_data_model_literals` |
 | FR-031#1 ADR-00037 觸發器 MUST 反向確認（工程判斷⑨） | 非測試承載 | T003·文件「`docs/arc42/decisions/ADR-00078-password-set-cooldown-and-change-password-throttle.md`」；ADR-00078-password-set-cooldown-and-change-password-throttle.md·文件「ADR-00037 翻案觸發器首條不成立——changePass」 |  |
-| FR-031#2 改密為登入即可用 | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「changePassword：四類身分皆過授權門」 |  |
+| FR-031#2 改密為登入即可用 | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「changePassword：四類身分皆過授權門」 | `user_domain_authz_matrix_real_seed` |
 | FR-031#3 改密依使用者 id 節流 | 有斷言 | T062·測試「`precheck(cache, uid) -> Result<(), Throttled>`」；T064·測試「第 6 次於比對前拒」；T066·測試「`changePasswordThrottled`＝先將該帳號節」；T097·走查「§5 斷權、§6 密碼面」 |  |
 | FR-031#4 改密 MUST NOT 新增存取軌跡寫入面（BL-00043 反向確認） | 有斷言 | T105·機器守「②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（`git -C rust-api grep -n 'sys_access_log' -- server/src`」 |  |
 | FR-031#5 踢除 MUST NOT 新增存取軌跡寫入面（BL-00043 反向確認） | 有斷言 | T105·機器守「②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（`git -C rust-api grep -n 'sys_access_log' -- server/src`」 |  |
@@ -1111,10 +1111,10 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | FR-060#14 `arch_impact` 以收刀時 diff 現算之活書節號為準 | 非測試承載 | tasks.md·文件「`arch_impact` 以 `git diff --stat <merge-base>..HEAD -- docs/arc42/`」 |  |
 | FR-060#15 NOTES 下一步於 specify 起手後改 007 進行中 | 非測試承載 | T003·文件「`docs/ops/NOTES.md`「下一步」改為「現在＝00」；NOTES.md·文件「**進行中＝007 user-password-admin**（」 |  |
 | FR-060#16 收刀時 NOTES 下一步改 008（008 起每刀三語同批） | 非測試承載 | tasks.md·文件「同顆逐項核 SC-014 之簿記後驗子句」 |  |
-| FR-061#1 每支新端點（十二支）MUST 配 contract case | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」 |  |
+| FR-061#1 每支新端點（十二支）MUST 配 contract case | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」 | `all_registered_contract_cases_pass`、`coverage_gate_every_route_has_case` |
 | FR-061#2 覆蓋閘雙向（每路由有案、每案有路由） | 有斷言 | 既有·既有測試；既有·既有測試；T014·機器守「coverage 雙向閘 61＝61」；T072·機器守「registry 61＝61」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route` |
-| FR-061#3 case_key 綁定（反查擋殭屍） | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」；既有·既有測試；T012·文件「case_key＝`get-user-list`、`get-deleted-users`」 | `contract_case_key_binding_detects_mismatched_verify` |
-| FR-061#4 授權態矩陣對照 seed 政策列（含 m0003 後之 seed） | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「registry 61＝61、授權態矩陣十二條全數收緊為終值」 |  |
+| FR-061#3 case_key 綁定（反查擋殭屍） | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」；既有·既有測試；T012·文件「case_key＝`get-user-list`、`get-deleted-users`」 | `contract_case_key_binding_detects_mismatched_verify`、`user_domain_case_key_binding_detects_a_sibling_route` |
+| FR-061#4 授權態矩陣對照 seed 政策列（含 m0003 後之 seed） | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「registry 61＝61、授權態矩陣十二條全數收緊為終值」 | `user_domain_authz_matrix_real_seed` |
 | FR-061#5 判定只呼單一進入點 | 有斷言 | 既有·既有測試；T071·機器守「主案（紅訊息附「包含規則由 handler 鎖內單一進入點判、擴」 | `decision_calls_converge_on_single_entrypoint` |
 | FR-061#6 handler 層零 path-root `entity::` token | 有斷言 | 既有·既有測試 | `src_tree_outside_facade_has_zero_path_root_entity_access` |
 | FR-061#7 名冊閘（判定面）全綠：建構與載入、封死查詢與授權表寫入各腿，含本刀新增腿⑦包含規則呼叫點 | 有斷言 | T071·測試「植入自證三發（名冊外 handler 生產面植一處＝紅；同植於測」；既有·既有測試；既有·既有測試；既有·既有測試 | `seal_query_call_sites_match_roster`、`policy_insert_writers_match_roster`、`build_and_load_tokens_live_only_in_home` |
@@ -1122,7 +1122,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | FR-061#9 名冊閘（同步呼叫點）全綠 | 有斷言 | 既有·既有測試 | `reload_call_sites_match_roster` |
 | FR-061#10 使用者域寫端零授權重載（工程判斷④） | 有斷言 | T043·測試「行為面以 `casbin_reload_total` 區域 re」；既有·既有測試 | `reload_call_sites_match_roster` |
 | FR-061#11 同步呼叫點名冊零擴列並配反向確認測試 | 有斷言 | T043·測試「`planting_reload_use_turns_leg_one_red_outside_exempt_faces`」；T109·走查「`reload_enforcer` 植 `handler/user.rs`」 |  |
-| FR-061#12 四支以「本刀端點未註冊」為前提之既有測試 MUST 改植合成探針列或依新路由現算改值 | 有斷言 | T015·測試「四支先依新路由轉紅、改後綠」 |  |
+| FR-061#12 四支以「本刀端點未註冊」為前提之既有測試 MUST 改植合成探針列或依新路由現算改值 | 有斷言 | T015·測試「四支先依新路由轉紅、改後綠」 | `super_reads_leave_off_candidate_seed_grants_in_the_table_and_out_of_the_response`、`seed_reads_and_the_seal_set_match_the_seed_facts`、`governance_endpoint_grants_real_seed`、`governance_reads_real_seed` |
 | FR-062#1 真表測試配使用者列清理守衛：帶界水位＋arm 當下現讀之序列值還原 | 有斷言 | T010·測試「變異＝暫拔 setval → 紅」；T011·測試「帶界水位〔表, 序列〕常數之逐字對賬案四組→五組」 | `nested_user_rows_guards_clear_rows_above_each_arm_and_restore_sequence`、`user_write_guard_nested_clears_rows_above_each_arm_and_restores_sequence`、`role_menu_domain_restore_plans_pin_statements_order_and_subject` |
 | FR-062#2 角色指派清理守衛（擴使用者帶界腿與 seed 指派回補） | 有斷言 | T010·測試「變異＝暫拔回補步 → 紅」；T011·測試「tests 側守衛各一正一反自證」 | `user_role_rows_guard_backfills_revoked_pair_and_clears_synthetic_assignment_first`、`user_role_write_guard_backfills_revoked_pair_and_clears_synthetic_assignment_first`、`user_rows_guard_declared_after_user_role_guard_hits_fk_restrict_on_drop`、`user_write_guard_declared_after_user_role_write_guard_hits_fk_restrict_on_drop` |
 | FR-062#3 經手表清理守衛 | 有斷言 | T010·測試「④`PwdCustodyRowsGuard`（arm〔track」 | `pwd_custody_rows_guard_clears_tracked_and_above_watermark_rows_only`、`pwd_custody_write_guard_clears_tracked_and_above_watermark_rows_only` |
@@ -1323,10 +1323,10 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | US3-AS6#2 拒因 biz.user.changePasswordThrottled、純 key | 有斷言 | T066·測試「`changePasswordThrottled`＝先將該帳號節」；T034·機器守「①構造點之鍵 ⊆ `BIZ_DATA_KEYS`」 |  |
 | US3-AS6#3 改密成功即清零 | 有斷言 | T062·測試「`clear`〔`DEL`〕」；T064·測試「C1～C7 各負向、第 6 次於比對前拒、其餘拒因不推進、成功即」；T097·走查「§6 密碼面」 |  |
 | US3-AS6#4 窗自癒（自最後一次失敗起 15 分鐘到期、每次失敗刷新） | 有斷言 | T062·測試「`CHANGE_PWD_WINDOW_SECS`＝900」；T097·走查「§6 密碼面」 |  |
-| US3-AS6#5 無解鎖端點 | 有斷言 | T012·機器守「ROUTES_COUNT」；ADR-00078-password-set-cooldown-and-change-password-throttle.md·文件「窗自癒、無解鎖端點」 |  |
+| US3-AS6#5 無解鎖端點 | 有斷言 | T012·機器守「ROUTES_COUNT」；ADR-00078-password-set-cooldown-and-change-password-throttle.md·文件「窗自癒、無解鎖端點」 | `routes_block_literal_form_and_pinned_rows` |
 | US3-AS6#6 計數存放處不可用時放行 | 有斷言 | T062·測試「三支 redis `Err` 一律放行」；T064·測試「fail-open＋`throttle_degraded_total{source="redis_change_pwd"}`」 |  |
 | US3-AS6#7 並計入節流降級計數 | 有斷言 | T062·測試「名冊→發射端＝以 `test_kit::bad_cache()`」；T064·測試「fail-open＋`throttle_degraded_total{source="redis_change_pwd"}`」 |  |
-| US3-AS7#1 Given 任一登入者，When 讀取密碼政策——登入即可讀（含零角色帳號；Authed 層） | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」；T097·走查「§7 個人中心與自助白名單」 |  |
+| US3-AS7#1 Given 任一登入者，When 讀取密碼政策——登入即可讀（含零角色帳號；Authed 層） | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」；T097·走查「§7 個人中心與自助白名單」 | `user_domain_authz_matrix_real_seed` |
 | US3-AS7#2 Then 回七鍵投影（不含冷卻秒數） | 有斷言 | T064·測試「`getPasswordPolicy` seed 例逐位元」；T070·機器守「`PasswordPolicyView` 恰七鍵、帶冷卻鍵即紅」；T097·走查「§6 密碼面」 |  |
 | US3-AS7#3 個人中心改密卡據以即時提示 | 有斷言 | T099·CDP「個人中心」 |  |
 | US3-AS7#4 重設密碼浮層據以即時提示 | 有斷言 | T099·CDP「重設與產密浮層」 |  |
@@ -1359,7 +1359,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | US4-AS6#3 但停用並提示「僅超級管理員可改」 | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
 | US4-AS6#4 不發出必敗呼叫 | 有斷言 | T099·CDP「會話政策非超管停用＋提示」 |  |
 | US4-AS7#1 Given 某角色被授按鈕碼而未被授對應端點，When 持該角色者於使用者頁，Then 鈕可見 | 有斷言 | T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
-| US4-AS7#2 按下得 `5003`（誠實） | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 |  |
+| US4-AS7#2 按下得 `5003`（誠實） | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 | `user_domain_authz_matrix_real_seed` |
 | US4-AS7#3 Given 反之端點有、碼無，When 持該角色者開使用者頁，Then 鈕不見 | 有斷言 | T081·機器守「`hasAuth('user:` 碼集 grep 集合相等（本單」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」 |  |
 | US4-AS7#4 API 可達 | 有斷言 | T068·測試「以資料列授 `unlockLogin` 予自建角色、持該角色之自」；T097·走查「§4 包含規則」 |  |
 | US4-AS7#5 （兩鍵各自獨立、由超管一併治理） | 非測試承載 | spec.md·文件「按鈕碼與端點授權各自獨立：碼有端點無＝鈕見而 `5003`；端點」 |  |
@@ -1433,14 +1433,14 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | US6-AS7#3 When 拆掉合成，Then 自測轉紅（變異自證） | 有斷言 | T007·測試「暫改合成為只讀凍結段 → ③⑤紅」 | `TestRestore.test_system_settings_seed_entries_are_synthesized_in_both_modes_and_synthesized_values_pass` |
 | US6-AS8#1 收刀 append feature_close 事件：backlog_done 8 條與 FR… | 非測試承載 | CLAUDE.md·文件「同顆逐項核 spec 標「收刀面於簿記 commit 後驗」之 」；T106·文件「`backlog_done` 8 條（BL-00031／BL-0」；code-gates.md·文件「**收刀 `feature_close`**：`backlog_done`」；spec.md·文件「`backlog_done` 8 條與 FR-060 相符；BL」 |  |
 | US6-AS8#2 BL-00140／BL-00141／BL-00142 之 backlog_add 已由本刀第一… | 有斷言 | T003·機器守「lint 全綠且 GT-03 零警告」 |  |
-| SC-001#1 路由表恰 61 條 | 有斷言 | T012·機器守「`ROUTES_COUNT` 49→61」；T014·機器守「coverage 雙向閘 61＝61」；T016·機器守「`TestRoutes::test_real_repo_pinned_rows`」；T108·走查「`docs/generated/reference/routes.md`」 |  |
-| SC-001#2 政策保護端點恰 45 | 有斷言 | T012·機器守「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「`docs/generated/reference/routes.md`」 |  |
-| SC-001#3 與 seed 政策列路徑×動詞逐字對齊 | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T015·測試「路由註冊後列 68 與列 2 轉入候選集」；既有·既有測試 | `seed_reads_and_the_seal_set_match_the_seed_facts` |
-| SC-001#4 契約覆蓋閘無缺案 | 有斷言 | T014·機器守「coverage 雙向閘 61＝61」；T072·機器守「registry 61＝61」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 |  |
-| SC-001#5 契約覆蓋閘無殭屍案 | 有斷言 | T014·機器守「共用驗證函式反查 case_key 綁定擋殭屍」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 |  |
-| SC-001#6 授權態矩陣逐端點實測：Super 對 12 條皆通 | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「授權態矩陣十二條全數收緊為終值」 |  |
-| SC-001#7 Admin 對管理面除 getUserList 外 9 條皆 `5003`（getUserLi… | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」 |  |
-| SC-001#8 個人中心 2 條對三個 seed 帳號皆通 | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」 |  |
+| SC-001#1 路由表恰 61 條 | 有斷言 | T012·機器守「`ROUTES_COUNT` 49→61」；T014·機器守「coverage 雙向閘 61＝61」；T016·機器守「`TestRoutes::test_real_repo_pinned_rows`」；T108·走查「`docs/generated/reference/routes.md`」 | `routes_block_literal_form_and_pinned_rows`、`coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route`、`TestRoutes.test_real_repo_pinned_rows` |
+| SC-001#2 政策保護端點恰 45 | 有斷言 | T012·機器守「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「`docs/generated/reference/routes.md`」 | `policy_endpoints_is_the_policy_projection_in_registration_order` |
+| SC-001#3 與 seed 政策列路徑×動詞逐字對齊 | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T015·測試「路由註冊後列 68 與列 2 轉入候選集」；既有·既有測試 | `seed_reads_and_the_seal_set_match_the_seed_facts`、`user_domain_authz_matrix_real_seed`、`governance_reads_real_seed` |
+| SC-001#4 契約覆蓋閘無缺案 | 有斷言 | T014·機器守「coverage 雙向閘 61＝61」；T072·機器守「registry 61＝61」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_route_has_case` |
+| SC-001#5 契約覆蓋閘無殭屍案 | 有斷言 | T014·機器守「共用驗證函式反查 case_key 綁定擋殭屍」；T109·走查「①contract 覆蓋閘＝抽一 case 紅、殭屍 case 」 | `coverage_gate_every_case_has_route`、`contract_case_key_binding_detects_mismatched_verify`、`user_domain_case_key_binding_detects_a_sibling_route` |
+| SC-001#6 授權態矩陣逐端點實測：Super 對 12 條皆通 | 有斷言 | T014·測試「真 seed 判定面下 Super 十二條皆到達 handler」；T072·測試「授權態矩陣十二條全數收緊為終值」 | `user_domain_authz_matrix_real_seed` |
+| SC-001#7 Admin 對管理面除 getUserList 外 9 條皆 `5003`（getUserLi… | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」 | `user_domain_authz_matrix_real_seed` |
+| SC-001#8 個人中心 2 條對三個 seed 帳號皆通 | 有斷言 | T014·測試「三帳號對個人中心兩條皆到達 handler」；T066·測試「getPasswordPolicy：三 seed 帳號＋零角色自」 | `user_domain_authz_matrix_real_seed` |
 | SC-002#1 每支新鍵（22）各至少一案實際發出 | 有斷言 | T021·測試「`biz.menu.protectedButtonRemove`」；T044·測試「十一鍵各一發」；T049·測試「`user_msgs_real_db` 補 `cannotDeleteSelf`」；T057·測試「`observed_msgs_real_db` 於既有被踢腿旁增」；T066·測試「四鍵各一發」；既有·既有測試 | `msg_roster_every_key_has_an_emitter` |
 | SC-002#2 名冊雙向閘綠 | 有斷言 | 既有·既有測試；T022·機器守「`python3 tools/msg-key-gate.py check`」；T108·走查「contract 61 case、22 新鍵實發點、名冊雙向閘、」 | `msg_roster_every_key_has_an_emitter` |
 | SC-002#3 13 碼矩陣不變 | 有斷言 | T032·測試「13 碼矩陣與可發碼集九碼不變」；既有·既有測試 | `code_mod_matches_frozen_13_matrix` |
@@ -1635,7 +1635,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | E17#2 碼有端點無＝按下得 `5003`（後端只依端點授權） | 有斷言 | T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 |  |
 | E17#3 端點有碼無＝鈕不見 | 有斷言 | T099·CDP「按鈕碼單碼探針」 |  |
 | E17#4 端點有碼無＝API 可達 | 有斷言 | T044·測試「包含規則每消費點兩負一正（被授權之非超管對持 R_SUPER 之」；T068·測試「持該角色之自建帳號對 `Super` 帳號名解鎖＝`5003`、」；T097·走查「§4 包含規則」 |  |
-| E18#1 Admin 於 seed 預設態只見使用者清單（m0003 後無任何操作鈕；GR7） | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T038·測試「getUserList：Super／Admin `0000`、U」；T072·測試「授權態矩陣十二條全數收緊為終值」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§8 自鎖防護與 m0003」 |  |
+| E18#1 Admin 於 seed 預設態只見使用者清單（m0003 後無任何操作鈕；GR7） | 有斷言 | T014·測試「Admin 對 getUserList 到達 handler／其」；T038·測試「getUserList：Super／Admin `0000`、U」；T072·測試「授權態矩陣十二條全數收緊為終值」；T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§8 自鎖防護與 m0003」 | `user_domain_authz_matrix_real_seed` |
 | E18#2 m0003 刪 R_ADMIN 之 `user:edit`（列 44） | 有斷言 | T023·機器守「`python3 tools/schema-gate.py check --container <pristine 容器>`」；T024·機器守「**DoD：容器內全量 serial 綠；`python3 tools/schema-gate.py check`」；T097·走查「§8 自鎖防護與 m0003」 |  |
 | E18#3 要讓 Admin 能編輯＝超管於角色頁同授端點與碼 | 有斷言 | T099·CDP「三頁按鈕顯隱〔Super／Admin／`R_QS_CDP`〕」；T097·走查「§4 包含規則」 |  |
 | E18#4 （同授後之編輯）由包含規則兜底 | 有斷言 | T044·測試「拆 `guard_no_escalation` 呼叫即轉紅之變異」；T109·走查「⑤包含規則判定恆過 → 各消費點負向案紅（零 skip）」 |  |
@@ -1676,7 +1676,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | E28#1 改密節流計數存放處不可用時放行（不計數、不拒） | 有斷言 | T062·測試「名冊→發射端＝以 `test_kit::bad_cache()`」；T064·測試「fail-open＋`throttle_degraded_total{source="redis_change_pwd"}`」 |  |
 | E28#2 並計入節流降級計數之新來源 | 有斷言 | T062·測試「`warn_degraded_increments_each_of_the_ten_sources`」；T064·測試「fail-open＋`throttle_degraded_total{source="redis_change_pwd"}`」 |  |
 | E28#3 成功改密即清 | 有斷言 | T064·測試「成功即清（commit 後）」；T097·走查「§6 密碼面」 |  |
-| E28#4 無解鎖端點 | 有斷言 | T064·測試「`change_pwd::clear(` 生產呼叫點源碼掃描案」；T012·機器守「`routes_block_literal_form_and_pinned_rows`」；T014·機器守「coverage 雙向閘 61＝61」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」；T108·走查「`docs/generated/reference/routes.md`」 |  |
+| E28#4 無解鎖端點 | 有斷言 | T064·測試「`change_pwd::clear(` 生產呼叫點源碼掃描案」；T012·機器守「`routes_block_literal_form_and_pinned_rows`」；T014·機器守「coverage 雙向閘 61＝61」；T105·機器守「⑨`ROUTES` 61（Policy 45／Authed 5）」；T108·走查「`docs/generated/reference/routes.md`」 | `routes_block_literal_form_and_pinned_rows`、`coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route` |
 | E28#5 （窗自癒） | 有斷言 | T062·測試「待其過期後 `precheck` 放行（窗自癒）」；T097·走查「§6 密碼面」 |  |
 | E28#6 與登入節流之鍵分離 | 有斷言 | T064·測試「鍵分離」；T097·走查「§6 密碼面」 |  |
 | E29#1 政策矛盾（最小長度＞最大長度）：設密全拒 | 有斷言 | T031·測試「政策矛盾（`min_length` 20／`max_length`」；T097·走查「§6 密碼面」；T101·走查「對自建帳號設密一次＝`2222 biz.user.passwordPolicy`」 |  |

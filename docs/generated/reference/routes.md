@@ -54,3 +54,15 @@
 | /systemManage/getAllPages | GET | Policy | get-all-pages | 否 |
 | /systemManage/getAllButtons | GET | Policy | get-all-buttons | 否 |
 | /systemManage/getAllEndpoints | GET | Policy | get-all-endpoints | 否 |
+| /systemManage/getUserList | GET | Policy | get-user-list | 否 |
+| /systemManage/getDeletedUsers | GET | Policy | get-deleted-users | 否 |
+| /systemManage/addUser | POST | Policy | add-user | 否 |
+| /systemManage/updateUser | POST | Policy | update-user | 否 |
+| /systemManage/deleteUser | DELETE | Policy | delete-user | 否 |
+| /systemManage/batchDeleteUser | DELETE | Policy | batch-delete-user | 否 |
+| /systemManage/restoreUser | POST | Policy | restore-user | 否 |
+| /systemManage/kickUser | POST | Policy | kick-user | 否 |
+| /systemManage/resetUserPassword | POST | Policy | reset-user-password | 否 |
+| /systemManage/updateUserSessionPolicy | POST | Policy | update-user-session-policy | 否 |
+| /userCenter/getPasswordPolicy | GET | Authed | user-center-get-password-policy | 否 |
+| /userCenter/changePassword | POST | Authed | user-center-change-password | 否 |
