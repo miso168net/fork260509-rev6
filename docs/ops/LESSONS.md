@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00072 -->
+<!-- next: LL-00073 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -77,3 +77,4 @@
 | LL-00069 | 改某一端點的案數時，勘誤種子用了帶前綴的長片語——「分頁四案」改成「五案」了，同一端點另一種寫法「app 面四案」卻漏掃（maint-readout-errata 補；2026-10-05） | RL-0011 | none | [LL-00069-count-word-errata-seeded-with-prefixed-phrase-missed-same-subject.md](LESSONS/LL-00069-count-word-errata-seeded-with-prefixed-phrase-missed-same-subject.md) |
 | LL-00070 | NOTES「下一步」的 ADR 指針照抄 agent 寫的體檢底稿、沒有打開 ADR 核對節名——「ADR-00044 後果兩款」實際住在該 ADR 的「翻案觸發器」節（maint-readout-errata 補；2026-10-05） | none：CLAUDE.md §5「不採信 agent 或自己的回報：一律 grep／實跑取證」已涵蓋；本坑＝把體檢底稿的指針搬進 NOTES 時沒有照做 | none | [LL-00070-notes-pointer-copied-from-triage-draft-without-opening-adr.md](LESSONS/LL-00070-notes-pointer-copied-from-triage-draft-without-opening-adr.md) |
 | LL-00071 | analyze 報需求覆蓋 100％，逐子句稽核卻揭出 253 個子句只有部分斷言或零斷言——task 層追溯表只證「有掛 task」、不證「task 行內有斷言」（007 刀 SDD 後、實作前；2026-10-06） | none：子句層追溯是否擴為 RULES 通則，留 007 刀收刀前（T110）由 user 裁定 | none | [LL-00071-task-level-trace-table-hid-clause-assertion-gaps.md](LESSONS/LL-00071-task-level-trace-table-hid-clause-assertion-gaps.md) |
+| LL-00072 | LL-00055 的守法只寫「寫進後續單元定義」，主線組 007 刀 U5 單元定義時漏烤——同機制再犯兩發：讀者交易持列鎖時斷言 panic、並發案對手任務持鎖期間 panic，守衛 Drop 互鎖卡死而不轉紅（007 刀 U5） | none：守法改由單元定義常駐段承載（主線組裝每支單元定義必烤）；是否升 RULES（implementer／review 範圍）屬調規，留 007 刀收刀前提請 user 裁定 | none | [LL-00072-lesson-guard-left-to-manual-unitdef-baking-panic-in-open-txn-recurs.md](LESSONS/LL-00072-lesson-guard-left-to-manual-unitdef-baking-panic-in-open-txn-recurs.md) |
