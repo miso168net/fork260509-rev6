@@ -43,7 +43,7 @@
 | `forbidUsername` | boolean | `password_forbid_username` | 與帳號名不分大小寫**相等**即違規（子串不算） |
 
 - **不下發**：冷卻秒數 `password_change_min_interval`（端點固有規則、下發即成可繞過之提示）、位元組上界 512（碼內常數 `throttle::LOGIN_PASSWORD_MAX_BYTES`）、其餘設定鍵（投影型欄集即結構性答案）。
-- **與驗證點同源**（FR-032／FR-038）：與三個設密入口讀同一支載入件 `model::password::load_policy`（消費當下現讀、不快取），投影只經 `impl From<PasswordPolicy> for PasswordPolicyView` 一條路徑、逐欄零轉換。單鍵缺列或不可解析之處置（逐鍵退碼內預設＝seed 值，`rev5:007` HEAD 形）＝research R11；矛盾組合（min ＞ max）照原值投影、本端點不拒（前端規則使任何輸入皆不合＝與後端設密全拒同向）。
+- **與驗證點同源**（FR-032／FR-038）：與三個設密入口讀同一支載入件 `model::password::load_password_policy`（消費當下現讀、不快取），投影只經 `impl From<PasswordPolicy> for PasswordPolicyView` 一條路徑、逐欄零轉換。單鍵缺列或不可解析之處置（逐鍵退碼內預設＝seed 值，`rev5:007` HEAD 形）＝research R11；矛盾組合（min ＞ max）照原值投影、本端點不拒（前端規則使任何輸入皆不合＝與後端設密全拒同向）。
 - 唯讀：零鎖、零交易、零稽核；錯誤集只有 `8888` 與 `5000`。登入路徑 MUST NOT 驗政策（seed 三帳號之 6 字元密碼照常登入）。
 
 seed 例：`{"data":{"minLength":8,"maxLength":64,"requireDigit":false,"requireLowercase":false,"requireUppercase":false,"requireSpecial":false,"forbidUsername":false},"code":"0000","msg":"common.success"}`。
@@ -151,7 +151,7 @@ Applied（同一交易）：UPDATE `password`＋`updated_*`（＝本人）→ `s
 ### 3.6 envelope 釘案改寫要點
 
 - `envelope.rs` 檔頭「錯誤時 data 為 null 且不省略」改述為「data 恆在場不省略、其值除 `BizData` 外恆 null」；`Res::from_err` doc 補「不因變體而變」。
-- 既有 `error_envelope_data_null_not_omitted` 續綠不改；新增三案：①`BizData` 經 `from_err` 仍 `data:null` ②`BizData` 經 `IntoResponse` 之本體逐位元＝`{"data":{"violations":["minLength"]},"code":"2222","msg":"biz.user.passwordPolicy"}`、HTTP 200 ③`ModalLogoutByAdmin` 經 `IntoResponse`＝`{"data":null,"code":"7777","msg":"auth.session.kickedByAdmin"}`、HTTP 200。案名實作期定。
+- 既有 `error_envelope_data_null_not_omitted` 名稱保留、改寫為逐變體表驅動（`contracts/code-gates.md` envelope 列）；新增三案：①`BizData` 經 `from_err` 仍 `data:null` ②`BizData` 經 `IntoResponse` 之本體逐位元＝`{"data":{"violations":["minLength"]},"code":"2222","msg":"biz.user.passwordPolicy"}`、HTTP 200 ③`ModalLogoutByAdmin` 經 `IntoResponse`＝`{"data":null,"code":"7777","msg":"auth.session.kickedByAdmin"}`、HTTP 200。案名實作期定。
 - `error.rs` 測試：全變體窮舉見證之 match 增兩臂；「可發碼恰九、無變體碼恰四」續綠；增「`BizData` 與 `Biz` 碼與 HTTP 同、key 取 `.0`」「`ModalLogoutByAdmin` 與 `ModalLogout` 同碼異鍵」兩案。
 - `no_wire_literal_lives_in_envelope_production_code` 之首／中／末三正面錨於新增 impl 後仍涵蓋整個生產區（RL-0051）。
 

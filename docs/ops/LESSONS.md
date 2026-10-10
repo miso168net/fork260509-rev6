@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00073 -->
+<!-- next: LL-00075 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -78,3 +78,5 @@
 | LL-00070 | NOTES「下一步」的 ADR 指針照抄 agent 寫的體檢底稿、沒有打開 ADR 核對節名——「ADR-00044 後果兩款」實際住在該 ADR 的「翻案觸發器」節（maint-readout-errata 補；2026-10-05） | none：CLAUDE.md §5「不採信 agent 或自己的回報：一律 grep／實跑取證」已涵蓋；本坑＝把體檢底稿的指針搬進 NOTES 時沒有照做 | none | [LL-00070-notes-pointer-copied-from-triage-draft-without-opening-adr.md](LESSONS/LL-00070-notes-pointer-copied-from-triage-draft-without-opening-adr.md) |
 | LL-00071 | analyze 報需求覆蓋 100％，逐子句稽核卻揭出 253 個子句只有部分斷言或零斷言——task 層追溯表只證「有掛 task」、不證「task 行內有斷言」（007 刀 SDD 後、實作前；2026-10-06） | none：子句層追溯是否擴為 RULES 通則，留 007 刀收刀前（T110）由 user 裁定 | none | [LL-00071-task-level-trace-table-hid-clause-assertion-gaps.md](LESSONS/LL-00071-task-level-trace-table-hid-clause-assertion-gaps.md) |
 | LL-00072 | LL-00055 的守法只寫「寫進後續單元定義」，主線組 007 刀 U5 單元定義時漏烤——同機制再犯兩發：讀者交易持列鎖時斷言 panic、並發案對手任務持鎖期間 panic，守衛 Drop 互鎖卡死而不轉紅（007 刀 U5） | none：守法改由單元定義常駐段承載（主線組裝每支單元定義必烤）；是否升 RULES（implementer／review 範圍）屬調規，留 007 刀收刀前提請 user 裁定 | none | [LL-00072-lesson-guard-left-to-manual-unitdef-baking-panic-in-open-txn-recurs.md](LESSONS/LL-00072-lesson-guard-left-to-manual-unitdef-baking-panic-in-open-txn-recurs.md) |
+| LL-00073 | 照 rev5 藍本取名的新公開件 `password::load_policy` 撞上 rev6 自有 lint 腿③之 casbin 載入族 token——名字釘在 spec 家族十餘處，三支 implementer 皆升級、審查兩階段各再升級一次，碼品質 fix 才改名（007 刀 U6） | none：命名屬工程判斷（CLAUDE.md §5）已明文；缺的是 plan 期定名查撞與單元定義之裁量句，守法寫於本檔、並由主線烤入後續單元定義 | none | [LL-00073-spec-pinned-fn-name-collided-with-lint-token-family.md](LESSONS/LL-00073-spec-pinned-fn-name-collided-with-lint-token-family.md) |
+| LL-00074 | 冷卻真庫案以固定 ±5 秒斷言「剩約 30」——全量變異期植列與讀取之間停約 8 秒即紅；該餘裕只為牆鐘回撥（LL-00054）而設，未計執行延遲（007 刀 U6） | none：測試斷言寫法——守法句住本檔與受影響測試件之 helper doc，並由主線烤入同形整合案之單元定義 | code | [LL-00074-elapsed-time-assertion-fixed-slack-ignored-execution-lag.md](LESSONS/LL-00074-elapsed-time-assertion-fixed-slack-ignored-execution-lag.md) |

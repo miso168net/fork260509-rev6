@@ -145,7 +145,7 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 | 有列 `t0`、`Δ = now − t0 < I` | 設密 | `2222`＋`biz.user.pwdSetTooFrequent`＋`{"remainingSeconds": min(max(I − ⌊Δ⌋, 1), I)}`；零寫、不 touch |
 | 有列 `t0`、`Δ ≥ I` | 設密 | 過；成功後 touch（`created_at`＝now） |
 
-- `now` 與 `t0` 同取 `now_ts()`；判定以 `Δ`＜`I` 比（不取整）；剩餘秒數＝`I − ⌊Δ⌋`、下限 1、上限 `I`（`Δ`＜0＝時鐘回撥、仍屬未滿）＝照提示秒數重試必過（`rev5` HEAD 形補上限；例：`I`＝60、`Δ`＝30.0→30、`Δ`＝29.4→31、`Δ`＝59.5→1）。不同操作者互不影響；一體適用、零豁免。
+- `now` 與 `t0` 同一時鐘（`t0`＝`touch` 經 facade `now_ts()` 寫入；`now`＝`model/password.rs` 取 `Utc::now()`——`now_ts()` 為 facade 私有、本體即同一呼叫）；判定以 `Δ`＜`I` 比（不取整）；剩餘秒數＝`I − ⌊Δ⌋`、下限 1、上限 `I`（`Δ`＜0＝時鐘回撥、仍屬未滿）＝照提示秒數重試必過（`rev5` HEAD 形補上限；例：`I`＝60、`Δ`＝30.0→30、`Δ`＝29.4→31、`Δ`＝59.5→1）。不同操作者互不影響；一體適用、零豁免。
 - 實判點：resetUserPassword（標的, 操作者）、changePassword（本人, 本人）；addUser 之格＝結構恆過（新 id 無經手列）、以寫經手表承載「初始密碼同計入」（同操作者其後於冷卻內重設該帳號＝拒）。
 - 冷卻鍵缺列、軟刪、不可解析或越界＝退 seed 預設 60＋warn 一則（指名該鍵；不推計數族）；讀庫 `DbErr`＝`5000`。經手表只 upsert、不刪他列。
 
@@ -165,14 +165,14 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 
 ### 2.5 政策載入與壞值（ADR-00079）
 
-| 輸入態 | `load_policy` 結果 | 設密（三入口） | getPasswordPolicy | 觀測 |
+| 輸入態 | `load_password_policy` 結果 | 設密（三入口） | getPasswordPolicy | 觀測 |
 |---|---|---|---|---|
 | 七鍵在、可解析、在界、min≤max | 照值 | 照判 | 照值投影 | —— |
 | 某鍵缺列、軟刪、不可解析或越界 | 該欄逐欄 fail-default 至 seed 值（8／64／五開關 off） | 照判 | 該欄＝預設 | warn 一則（指名該鍵；不推計數族） |
 | min＞max（逐欄處理之後） | 照值（不修正、不整組退） | **一律拒**：任一密碼必違反 `minLength` 或 `maxLength`＝`biz.user.passwordPolicy`＋自然違規清單 | 照值投影（後端仍是唯一裁判） | 設密時 `password_policy_invalid_total` +1＋warn（含 min、max、不含密碼）；讀取不計 |
 | `find_all` 讀庫失敗 | `5000` | `5000` | `5000` | 002 刀 facade 已落 log |
 
-- 發射出口 `obs::password_policy_invalid()` 恰一處＝`validate_against_policy` 判得 min＞max 時（只有三設密入口經過；spec FR-034「設密被拒才告警」）；getPasswordPolicy 只經 `load_policy`、不驗、不計（讀端計數會使告警語意擴為「讀到矛盾政策」、warn 量隨開頁放大）。告警規則 `obs016-password-policy-invalid`（`sum(increase(password_policy_invalid_total[5m])) > 0`）；warn 之 target 與欄位住 research R11。不入 `throttle_degraded_total`；登入路徑零呼叫。
+- 發射出口 `obs::password_policy_invalid()` 恰一處＝`validate_against_policy` 判得 min＞max 時（只有三設密入口經過；spec FR-034「設密被拒才告警」）；getPasswordPolicy 只經 `load_password_policy`、不驗、不計（讀端計數會使告警語意擴為「讀到矛盾政策」、warn 量隨開頁放大）。告警規則 `obs016-password-policy-invalid`（`sum(increase(password_policy_invalid_total[5m])) > 0`）；warn 之 target 與欄位住 research R11。不入 `throttle_degraded_total`；登入路徑零呼叫。
 - 方向與島 E「整組退回預設」相反＝刻意（政策是安全下限、退預設即靜默降低要求）；入憲法跨島註（ADR-00074）。
 - `validate_against_policy(pw, user_name, &policy)` 一次收集全部違規、依序 `minLength`→`maxLength`→`maxBytes`→`requireDigit`→`requireLowercase`→`requireUppercase`→`requireSpecial`→`forbidUsername`；長度以 chars 計、位元組以 `len()` 計（＞512）。
 
@@ -190,7 +190,7 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 
 ### 3.1 addUser
 
-`begin` → `prepare(password)` →（①無既有標的、不取 advisory；②③不適用）→ `roleIds` 非空時 N 去重升序逐一 `sys_role::find_active_by_id_for_update` 鎖讀（停用照鎖）→ **④** T＝∅、N＝去重 `roleIds`（成員皆鎖得活性列時；缺席＝∅；含不存在或已軟刪 id＝N＝T＝∅、`roleNotFound` 於 ⑤-d 原位發＝rev5 HEAD 形）〔`5003`〕→ **⑤-a** 帳號名形制〔`userNameInvalid`〕→ **⑤-b** 現役唯一〔`userNameExists`〕→ **⑤-c** 信箱空字串歸 NULL；非 NULL 者簡式格式（無空白與控制字元、恰一 `@`、兩側非空、≤254 chars、不 trim）〔`userEmailInvalid`〕→ 現役唯一（`lower`）〔`userEmailExists`〕→ **⑤-d** N 成員任一未鎖得活性列〔`roleNotFound`〕→ **⑤-e** `load_policy` → `validate_against_policy(明文, userName)`〔`passwordPolicy` BizData〕→ **⑤-f** 冷卻結構恆過 → **寫**：狀態收斂（缺席或值域外＝1）、性別收斂（值域外＝NULL）、空字串＝NULL → `insert`（23505 依索引名→`userNameExists`／`userEmailExists`）→ `replace_roles_of_user(新 id, N)` → `touch(新 id, 操作者)` → 稽核 `add` → commit。回 `0000`（`data` 形住 wire-user-admin §3）；零撤票。
+`begin` → `prepare(password)` →（①無既有標的、不取 advisory；②③不適用）→ `roleIds` 非空時 N 去重升序逐一 `sys_role::find_active_by_id_for_update` 鎖讀（停用照鎖）→ **④** T＝∅、N＝去重 `roleIds`（成員皆鎖得活性列時；缺席＝∅；含不存在或已軟刪 id＝N＝T＝∅、`roleNotFound` 於 ⑤-d 原位發＝rev5 HEAD 形）〔`5003`〕→ **⑤-a** 帳號名形制〔`userNameInvalid`〕→ **⑤-b** 現役唯一〔`userNameExists`〕→ **⑤-c** 信箱空字串歸 NULL；非 NULL 者簡式格式（無空白與控制字元、恰一 `@`、兩側非空、≤254 chars、不 trim）〔`userEmailInvalid`〕→ 現役唯一（`lower`）〔`userEmailExists`〕→ **⑤-d** N 成員任一未鎖得活性列〔`roleNotFound`〕→ **⑤-e** `load_password_policy` → `validate_against_policy(明文, userName)`〔`passwordPolicy` BizData〕→ **⑤-f** 冷卻結構恆過 → **寫**：狀態收斂（缺席或值域外＝1）、性別收斂（值域外＝NULL）、空字串＝NULL → `insert`（23505 依索引名→`userNameExists`／`userEmailExists`）→ `replace_roles_of_user(新 id, N)` → `touch(新 id, 操作者)` → 稽核 `add` → commit。回 `0000`（`data` 形住 wire-user-admin §3）；零撤票。
 
 ### 3.2 updateUser
 
@@ -484,7 +484,7 @@ seed 基線層（島 G 之 G2 末句）：直接改列、不走執行期撤銷�
 | `touch`、`last_set_at` | `model/facade/sys_pwd_custody.rs`（新檔；facade 第十三支） | `pub async fn`；`touch` 只收具型交易 | §1.3；`rev5:` 同名 |
 | `protected_button_codes` | `model/facade/sys_casbin_policy.rs` | `pub async fn (conn, &[String]) -> Result<Vec<String>, DbErr>` | §3.10（rev5 無） |
 | `removed_codes` | `model/facade/sys_menu.rs` | `pub fn`（純函式；既有 `obsolete_codes` 改呼之） | §3.10 移除集（rev5 無） |
-| `hash`、`NewPassword`（`prepare`／`plain`／`phc`；遮蔽 `Debug`）、`PasswordPolicy`、`load_policy`、`validate_against_policy`、`VIOLATION_*` 八枚、`MAX_BYTES`、`cooldown_remaining_secs(conn, target_id, operator_id) -> Result<Option<u64>, AppError>` | `model/password.rs` | `pub` | §2.5；`hash`＝`getrandom::fill` 16 bytes＋`hash_password_with_salt`（`rev5:` `SaltString` 路徑不帶） |
+| `hash`、`NewPassword`（`prepare`／`plain`／`phc`；遮蔽 `Debug`）、`PasswordPolicy`、`load_password_policy`、`validate_against_policy`、`VIOLATION_*` 八枚、`MAX_BYTES`、`cooldown_remaining_secs(conn, target_id, operator_id) -> Result<Option<u64>, AppError>` | `model/password.rs` | `pub` | §2.5；`hash`＝`getrandom::fill` 16 bytes＋`hash_password_with_salt`（`rev5:` `SaltString` 路徑不帶） |
 | `Kick`、`ResetPassword`、`ChangePassword` | `model/audit.rs` | `AuditOperation` 變體 | §7 |
 | `precheck`、`record_failure`、`clear`、`Throttled`、`CHANGE_PWD_MAX_FAILS`、`CHANGE_PWD_WINDOW_SECS` | `throttle/change_pwd.rs`（新檔；`throttle/mod.rs` 增 `pub mod`） | `pub`；三支收 `Option<&SessionCache>` 與 uid | §2.4；`rev5:` 同名 |
 | `CHANGE_PWD_KEY_PREFIX`、`change_pwd_key`、`incr_with_window`、`REASON_ADMIN_KICK` | `cache/mod.rs` | `pub` | `rev5:` 同名（鍵 builder 名 `change_pwd_fail_key`） |

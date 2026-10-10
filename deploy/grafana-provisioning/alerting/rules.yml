@@ -1,6 +1,7 @@
 # rev4:016-observability rev4:T011 起造：告警 as-code（契約＝specs/rev4:016-observability/contracts/alerting-delivery.md）。
-# 現況＝告警五組 12 條（組號①③④⑤⑥；②空號、不回收）：rev4:016 四組 10 條＋rev4:017-audit-retention rev4:T010
-# 一組 2 條（⑥/⑥b 新增、⑤/⑤b expr 收斂 reaper_job matcher；契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
+# 現況＝告警五組 13 條（組號①③④⑤⑥；②空號、不回收）：rev4:016 四組 10 條＋rev4:017-audit-retention rev4:T010
+# 一組 2 條（⑥/⑥b 新增、⑤/⑤b expr 收斂 reaper_job matcher；契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）
+# ＋007 刀 U6 於③組增 ③e 一條（password-policy-invalid；ADR-00079 決定 5）。
 # 母版＝rev3 as-built baseline 三條（rustapi-down／exporter-down／high-5xx）＋rev4:016 新增八條之七
 # （其②節流壓制規則不在本檔：rev6 節流鏈路沒有壓制量級事件的發射點、規則掛著也永不觸發）。
 #
@@ -387,6 +388,63 @@ groups:
               editorMode: code
               expr: 'sum(count_over_time({service="rust-api", compose_project="rev6-admin"} | json | __error__="" | target="audit.access_log" | fields_degraded="access_log_write" [5m]))'
               queryType: instant
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 0
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                    params: []
+                  type: query
+
+      # ══ ③e password-policy-invalid：password_policy_invalid_total 增長＝密碼政策長度上下界矛盾期間有設密被拒（ADR-00079）══
+      # 事件錨＝rust-api/server/src/obs.rs 之 password_policy_invalid 出口（無 label、預註冊 0）；唯一生產呼叫點＝
+      #   rust-api/server/src/model/password.rs 之 validate_against_policy 判出 min_length > max_length 之腿（三個設密入口共經；
+      #   政策讀端只經 load_password_policy、不計）。每次設密驗證至多一格＝矛盾期間之設密驗證次數。
+      # ★本計數非節流降級、不入 throttle_degraded_total（③a 不涵蓋）；判讀與處置＝RUNBOOK §11.3。
+      - uid: obs016-password-policy-invalid
+        title: password-policy-invalid
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: 'password-policy-invalid：密碼政策設定矛盾（最小長度大於最大長度、設密一律被拒；5m 增量 {{ $values.B }}、判準 > 0）'
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              expr: sum(increase(password_policy_invalid_total[5m]))
               instant: true
               range: false
               intervalMs: 1000

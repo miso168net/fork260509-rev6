@@ -104,7 +104,7 @@ rust-api/                                        # worktree（rev6-admin-rust-ap
     │   │   ├── mod.rs(改)                       # Identity 增 sid
     │   │   └── enforce.rs(改)                   # 三向分派；no_escalation_check 掛點續恆放行、模組註與 doc 勘誤
     │   ├── model/
-    │   │   ├── password.rs(擴)                  # hash／NewPassword::prepare／PasswordPolicy／load_policy／validate_against_policy（政策壞值告警發射點）／VIOLATION_* 八枚／cooldown_remaining_secs
+    │   │   ├── password.rs(擴)                  # hash／NewPassword::prepare／PasswordPolicy／load_password_policy／validate_against_policy（政策壞值告警發射點）／VIOLATION_* 八枚／cooldown_remaining_secs
     │   │   ├── audit.rs(擴)                     # AuditOperation 5→8
     │   │   └── facade/
     │   │       ├── sys_user.rs(擴)              # 鎖讀兩支、清單兩支、寫端諸件；advisory_lock_user 收窄為交易型

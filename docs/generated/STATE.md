@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=8c8bf5f｜rust-api=163d1a4
+- pins：base-web=8c8bf5f｜rust-api=2eadd13
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -15,7 +15,7 @@
 - ADR：89（proposed 2、accepted 75、superseded 12）
 - RULES：86 條／上限 92（implementer 44/48、review 16/18、fix 18/19、主線 51/52、人 10/12）
 - BACKLOG 開放：16｜滯後：4
-- LESSONS：72 筆
+- LESSONS：74 筆
 - events：123 筆（erratum 2、feature_close 6、misc 47、perf 59、review 9）
 - CLAUDE.md 行數：164（只報表、不擋）
 
