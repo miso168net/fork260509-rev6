@@ -264,7 +264,7 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 - 純函式 `assert_no_escalation(&ActorScope, &T, &N)`：`All` 恆過；`Roles(a)` 時 T⊆a ∧ N⊆a 才過、否則 `PermissionDenied`（`5003`、不洩差集）。`actor_scope_of(現役角色清單)` 只依代碼判全集。
 - 包裝 `guard_no_escalation(txn, 操作者, 標的: Option<i64>, N: Option<&BTreeSet<i64>>, 端點標籤)`：取 A、T（`None`＝∅）、N（`None`＝T）→ 判 → 拒時 warn 一則（target `security.user`；欄＝操作者 id、標的 id、端點；不含差集）、不新增觀測序列。
 - 位次＝第④、先於業務守門；N 含不存在或已軟刪 id 時 ④ 只判 T⊆A、⑤ 得 `roleNotFound`（rev5 HEAD 形：抽屜候選列全部活性角色＝無實質存在性 oracle、過期選取得準確拒因；research R5 #50）。與撤銷拒、封死拒（角色域端點）不互吞。
-- 九消費點：addUser（T＝∅、N＝`roleIds`；非恆過）、updateUser（T、N＝`roleIds` 或 T）、deleteUser（T、N＝∅）、batchDeleteUser（逐筆 Tᵢ、N＝∅；整批拒）、restoreUser（T 生產恆 ∅、N＝∅；恆過仍掛）、kickUser／resetUserPassword（T、N＝T）、updateUserSessionPolicy（T、N＝T；封死集端點、生產恆過）、unlockLogin 帳號維（同名活性帳號之 T、查無＝∅；來源維不套）。生產呼叫點檔集＝`handler/throttle.rs`、`handler/user.rs`（`NO_ESCALATION_CALL_FILES`、路徑字典序；裸 token 三形兩向恰等）；enforce.rs 之 `no_escalation_check` 掛點續恆放行、簽章不動。
+- 九消費點：addUser（T＝∅、N＝`roleIds`；非恆過）、updateUser（T、N＝`roleIds` 或 T）、deleteUser（T、N＝∅）、batchDeleteUser（逐筆 Tᵢ⊆A、A 讀一次＝包裝恰呼叫一次：單筆＝（標的、N＝∅），多筆＝（`None`、N＝∪Tᵢ）——T＝∅ 且 ∪Tᵢ⊆A ⇔ 逐筆 Tᵢ⊆A、判定等價；整批拒、不指筆，多筆拒時 warn 之標的欄為空）、restoreUser（T 生產恆 ∅、N＝∅；恆過仍掛）、kickUser／resetUserPassword（T、N＝T）、updateUserSessionPolicy（T、N＝T；封死集端點、生產恆過）、unlockLogin 帳號維（同名活性帳號之 T、查無＝∅；來源維不套）。生產呼叫點檔集＝`handler/throttle.rs`、`handler/user.rs`（`NO_ESCALATION_CALL_FILES`、路徑字典序；裸 token 三形兩向恰等）；enforce.rs 之 `no_escalation_check` 掛點續恆放行、簽章不動。
 - 已知形：同級互管允許；前超管復原 T＝∅ ⇒ 任何被授復原者可復原、復原後零角色。
 
 ## §5 鎖序（FR-011、島 G 之 G5、ADR-00043 決定 8 重核；論證全文住 research R7）
