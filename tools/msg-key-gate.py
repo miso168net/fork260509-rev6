@@ -5,14 +5,14 @@
   python3 tools/msg-key-gate.py [check] [--rust <error.rs>] [--locales <dir>] [--src <dir>]   左源 ⇔ 三檔 backend 子樹逐檔雙向全等＋Biz／BizData 構造點守衛（含明細通道射程守與佔位符對賬）＋前端 msg 字面消費點名冊
   python3 tools/msg-key-gate.py test                                                           離線 self-test（契約案＋判準補強案＋真 repo 左源綠案＋斷言 3 案＋斷言 2 明細通道案；案數以本命令輸出為準；零 docker）
 左源（`--rust`，預設 rust-api/server/src/error.rs）兩段解析——實碼形＝常數表＋常數引用陣列、零第二份字面：
-  ①`pub mod msg_key { pub const NAME: &str = "字面"; … }` 建 名稱→字面 映射；
+  ①`pub mod msg_key { pub const NAME: &str = "字面"; … }` 建 名稱→字面 映射（`:`／`=` 前後與 `;` 前容空白與斷行＝rustfmt 逾寬於 `=` 後拆行之形）；
   ②`pub const MSG_KEYS: [&str; N] = [ msg_key::NAME, … ];` 逐元素經映射解回字面（亦容直寫 "字面"）；元素數≠N、任一元素解不出（含常數表缺該名）＝rc 2。
 右源（`--locales`，預設 base-web/src/locales/langs）＝ en-us.ts／zh-cn.ts／zh-tw.ts 各自的 `backend: {` 區塊：錨＝獨佔一行（允許前置空白）、
   brace 配對取塊；剝 `//`／`/* */` 註解與字串值後，巢狀鍵以 `.` 串接攤平（`backend.common.success` ⇒ `common.success`）；
   譯文字面另以只剝註解之同長視圖同位移讀出（斷言 2 佔位符對賬用）。
 斷言 1：三檔各自 set(backend) == set(MSG_KEYS)（逐檔、雙向）；不等＝rc 1、逐檔指名「缺：…」「多：…」。
 斷言 2（Biz／BizData 構造點守衛）：`<error.rs 所在目錄>/**/*.rs` 生產區間——`#[cfg(test)]` 所附項目（mod／impl／fn…）以 brace 配對整段排除——
-  每處 Biz 構造點（`AppError::Biz(`／`Self::Biz(`／經 use 匯入之裸 `Biz(`；`::` 與 `(` 之間容空白）MUST 緊接 `Cow::Borrowed(` 且引數為 ①字串字面 或 ②`msg_key::NAME`（經映射解回），解出之鍵 ∈ MSG_KEYS；
+  每處 Biz 構造點（`AppError::Biz(`／`Self::Biz(`／經 use 匯入之裸 `Biz(`；`::` 與 `(` 之間容空白）MUST 緊接 `Cow::Borrowed(` 且引數為 ①字串字面 或 ②`msg_key::NAME`（經映射解回；引數後容 rustfmt 斷行之尾逗號），解出之鍵 ∈ MSG_KEYS；
   動態構造（變數／`format!`／函式回傳；函式值形 `AppError::Biz`／`Self::Biz` 不帶括號者亦是、`use` 行除外）＝rc 1 指名檔:行。
   `enum AppError { … }` 本體內之變體宣告非構造、不計。match 樣式（`AppError::Biz(_) =>`／`AppError::Biz(k) =>`／`… if`／`= …`）
   非構造、不計。生產區間內 Biz 構造點零處＝比對面為空（rc 2）——排除過度或掃描根有誤時不得回綠。
@@ -55,7 +55,7 @@ TAG = "[msg-key-gate]"
 USAGE = "用法：tools/msg-key-gate.py [check|test] [--rust <error.rs>] [--locales <dir>] [--src <dir>]"
 RC_OK, RC_VIOLATION, RC_STRUCT, RC_USAGE = 0, 1, 2, 64
 
-RE_CONST = re.compile(r'pub const (\w+): &str = "([^"]+)";')
+RE_CONST = re.compile(r'pub const (\w+)\s*:\s*&str\s*=\s*"([^"]+)"\s*;')
 RE_MSG_KEYS = re.compile(r"pub const MSG_KEYS:\s*\[&str;\s*(\d+)\]\s*=\s*\[(.*?)\];", re.S)
 RE_ELEM_CONST = re.compile(r"^msg_key::(\w+)$")
 RE_ELEM_LIT = re.compile(r'^"([^"]+)"$')
@@ -92,7 +92,7 @@ SERDE_RENAME_RULES = {
     "camelCase": lambda f: _pascal(f)[:1].lower() + _pascal(f)[1:],
 }
 RE_ENUM_APPERROR = re.compile(r"\benum\s+AppError\b[^{;]*\{")
-RE_BORROWED = re.compile(r'^\s*Cow::Borrowed\(\s*(?:"([^"]+)"|msg_key::(\w+))\s*\)\s*$')
+RE_BORROWED = re.compile(r'^\s*Cow::Borrowed\(\s*(?:"([^"]+)"|msg_key::(\w+))\s*,?\s*\)\s*$')
 RE_CFG_TEST = re.compile(r"#\[cfg\(test\)\]")
 RE_RAW_STR = re.compile(r'r(#*)"')
 RE_WIRE_LITERAL = re.compile(r"(['\"`])([A-Za-z_$][\w$]*(?:\.[\w$]+)+)\1")
@@ -826,8 +826,10 @@ def check(rust_path, locales_dir, src_dir):
 SYN_CONSTS = (("A", "common.success"), ("B", "system.internal"), ("C", "biz.auth.locked"))
 
 
-def write_rust(d, elems, declared=None, biz=True, extra_rs=None):
-    consts = "".join(f'    pub const {n}: &str = "{v}";\n' for n, v in SYN_CONSTS)
+def write_rust(d, elems, declared=None, biz=True, extra_rs=None, split=False):
+    # `split`＝末一常數取 rustfmt 逾寬拆行形（`=` 後斷行、字面獨佔次行）。
+    consts = "".join(f'    pub const {n}: &str =\n        "{v}";\n' if split and n == SYN_CONSTS[-1][0]
+                     else f'    pub const {n}: &str = "{v}";\n' for n, v in SYN_CONSTS)
     body = ",\n".join(f"    {e}" for e in elems)
     n = len(elems) if declared is None else declared
     # 合法構造點一處＝斷言 2 的比對面（`biz=False` 造「比對面為空」反例、`declared` 造宣告數≠元素數反例）。
@@ -1027,16 +1029,17 @@ def marker_line(text, marker):
 
 def self_test():
     """契約七案（code-gates.md §2 self-test 列）＋判準補強案（斷言 2 比對面為空／同義構造形／`MSG_KEYS` 宣告數≠元素數／
-    Biz 構造鍵之名冊歸屬兩分支）＋真 repo 左源綠案＋斷言 3 案（綠／鍵改名／未登記／名冊項消失／次數不等／註解與 i18n 不誤紅／
+    Biz 構造鍵之名冊歸屬兩分支／rustfmt 斷行形）＋真 repo 左源兩案（綠案＋零佔位符右源反例）＋斷言 3 案（綠／鍵改名／未登記／名冊項消失／次數不等／註解與 i18n 不誤紅／
     安全前綴隨 locale 頂層鍵變動／比對面為空）＋斷言 2 明細通道十一案（007 刀 U6；合法形綠／動態構造／射程外鍵／同鍵兩處／
     已入名冊零構造點／未入名冊有構造點／射程鍵走 `Biz(`／明細型缺 rename_all／明細型欄名改名〔含查無明細型 rc 2〕／純 key 鍵譯文含
     佔位符／樣式與宣告不計；射程守四句與佔位符對賬各有專案、拔掉任一判準即對應案紅）；任一案敗＝rc 2、指名案號。"""
     all_keys = [v for _, v in SYN_CONSTS]
     cases = []
     with tempfile.TemporaryDirectory() as tmp:
-        def scenario(tag, elems, per_file, backend=True, extra_rs=None, biz=True, declared=None, src=None, roster=None, tail=LOCALE_TAIL):
+        def scenario(tag, elems, per_file, backend=True, extra_rs=None, biz=True, declared=None, src=None, roster=None, tail=LOCALE_TAIL,
+                     split=False):
             base = os.path.join(tmp, tag)
-            rust = write_rust(os.path.join(base, "src"), elems, declared=declared, biz=biz, extra_rs=extra_rs)
+            rust = write_rust(os.path.join(base, "src"), elems, declared=declared, biz=biz, extra_rs=extra_rs, split=split)
             write_locales(os.path.join(base, "langs"), per_file, backend, tail=tail)
             web = write_src(os.path.join(base, "web"), SYN_SRC if src is None else src)
             return run_check(rust, os.path.join(base, "langs"), web, SYN_ROSTER if roster is None else roster)
@@ -1079,6 +1082,14 @@ def self_test():
                and any("handler.rs:7" in ln for ln in flagged))
         cases.append(("⑦動態 Biz 構造 rc 1（L6 format!／L7 變數；L3／L4 合法、L8 樣式與測試區不計；"
                       "L5 欄位形屬性不吞其後生產函式、L9 參數逗號不提前收界）", ok7, rc, out))
+        # rustfmt 逾寬斷行形（007 刀 U8 長鍵名）：常數於 `=` 後拆行（拿掉常數判準之跨行空白容許＝常數表缺該名 rc 2）；構造式之
+        # `Cow::Borrowed(` 內層引數獨佔一行並帶尾逗號（拿掉尾逗號容許＝誤判動態構造 rc 1）。兩形皆仍是常數形、不放寬鍵的歸屬判準。
+        wrapped = ("use std::borrow::Cow;\nuse crate::error::{AppError, msg_key};\n"
+                   "pub fn long_key() -> Result<(), AppError> {\n"
+                   "    return Err(AppError::Biz(Cow::Borrowed(\n        msg_key::C,\n    )));\n}\n")
+        rc, out = scenario("c7b", [f"msg_key::{n}" for n, _ in SYN_CONSTS], {"*": all_keys}, extra_rs=wrapped, split=True)
+        cases.append(("⑦b rustfmt 斷行形綠（常數 `=` 後拆行解得出；構造點 `Cow::Borrowed(` 內層引數帶尾逗號屬常數形；構造點 2 處）",
+                      rc == RC_OK and any("Biz／BizData 構造點 2 處" in ln for ln in out), rc, out))
         rc, out = scenario("c8", lit, {"*": all_keys}, biz=False)
         cases.append(("⑧斷言 2 比對面為空 rc 2（生產區間零 Biz 構造點）",
                       rc == RC_STRUCT and any("比對面為空" in ln for ln in out), rc, out))
@@ -1115,21 +1126,40 @@ def self_test():
                  and all(any(f"handler.rs:{n}：" in ln for ln in flagged) for n in (4, 5, 6, 7)))
         cases.append(("⑩b 斷言 2 同義構造形 rc 1（L4 裸 Biz(／L5 Self::Biz(／L6 夾空白／L7 函式值形；L3 use 行、L8 合法常數形、"
                       "L9 enum 變體宣告不計）", ok10b, rc, out))
-        # 真 repo 左源綠案：現行 error.rs 常數形解得出、Biz 構造點皆常數／字面形；右源以解出鍵集合成（三檔實體＝check 的事、pre-commit 段跑）。
+        # 真 repo 左源綠案：現行 error.rs 常數形解得出、Biz 構造點皆常數／字面形；右源以解出鍵集合成（三檔實體＝check 的事、pre-commit 段跑）
+        # ——已入名冊之攜參鍵，其譯文佔位符取本閘對真明細型之解析（`detail_serialized_keys`；不抄譯文、不與 BD_VALUES 共變），其餘鍵取
+        # LEAF_VALUE（零佔位符）。⑪b＝同一真左源配全零佔位符右源：攜參鍵三檔逐檔指名 rc 1（佔位符對賬於真左源確實生效、非恆綠；攜參鍵
+        # 自 007 刀 U8 起恆非空＝`biz.user.passwordPolicy`、ADR-00076）。
         real_rust = os.path.join(ROOT, DEFAULT_RUST)
-        ok_real, rc, out, keys, bd_real = False, None, [], [], []
+        ok_real, rc, out, keys, bd_real, carried = False, None, [], [], [], {}
+        ok_real_b, rc_b, out_b = False, None, []
         if os.path.isfile(real_rust):
             with open(real_rust, encoding="utf-8") as fh:
                 real_const, keys = parse_left(fh.read())
-            write_locales(os.path.join(tmp, "real", "langs"), {"*": keys})
+            label = DETAIL_HOME.replace(os.sep, "/")
+            try:
+                with open(os.path.join(os.path.dirname(real_rust), DETAIL_HOME), encoding="utf-8") as fh:
+                    home_text = fh.read()
+                carried = {k: detail_serialized_keys(home_text, t, label) for k, t in BIZ_DATA_KEYS.items() if k in keys}
+            except (OSError, StructuralError):
+                carried = {}  # 明細型之家或明細型取不到＝下方 check 自報 rc 2、本案紅
+            values = {k: "'明細 " + " ".join(f"{{{f}}}" for f in sorted(fs)) + "'" for k, fs in carried.items()}
+            write_locales(os.path.join(tmp, "real", "langs"), {"*": keys}, values={"*": values})
+            write_locales(os.path.join(tmp, "real_b", "langs"), {"*": keys})
             # 前端面以「真鍵集中任一 biz.* 鍵」合成單一消費點（本案只驗左源；三檔實體與真前端面＝check 的事）
             real_key = next((k for k in keys if k.startswith("biz.")), keys[0] if keys else "biz.none")
             web_real = write_src(os.path.join(tmp, "real", "web"), {"views/x.ts": f"export const K = '{real_key}';\n"})
             rc, out = run_check(real_rust, os.path.join(tmp, "real", "langs"), web_real, {("views/x.ts", real_key): 1})
+            rc_b, out_b = run_check(real_rust, os.path.join(tmp, "real_b", "langs"), web_real, {("views/x.ts", real_key): 1})
             _f, points, _fd, bd_real = scan_biz(os.path.dirname(real_rust), real_const, set(keys))
-            ok_real = rc == RC_OK and len(keys) == len(set(keys)) and points >= 1
-        cases.append((f"⑪真 repo 左源綠案（error.rs 解出 {len(keys)} 鍵、Biz／BizData 構造點皆常數形；"
-                      f"其中 BizData {len(bd_real)} 處）", ok_real, rc, out))
+            ok_real = rc == RC_OK and len(keys) == len(set(keys)) and points >= 1 and all(carried.values())
+            ok_real_b = (rc_b == RC_VIOLATION and bool(carried)
+                         and all(any(f"{name}：佔位符對賬——攜參鍵 `{k}` 譯文佔位符 （無）" in ln for ln in out_b)
+                                 for name in LOCALE_FILES for k in carried))
+        cases.append((f"⑪真 repo 左源綠案（error.rs 解出 {len(keys)} 鍵、Biz／BizData 構造點皆常數形；其中 BizData {len(bd_real)} 處；"
+                      f"攜參鍵 {len(carried)} 鍵之譯文佔位符取自真明細型解析）", ok_real, rc, out))
+        cases.append((f"⑪b 真 repo 左源配零佔位符右源 rc 1（攜參鍵 {sorted(carried)} 三檔逐檔指名＝佔位符對賬於真左源生效）",
+                      ok_real_b, rc_b, out_b))
 
         # ── 斷言 3：前端 msg 字面消費點名冊（誘餌與真消費點見 SYN_SRC 上方註）──
         rc, out = scenario("c12", lit, {"*": all_keys})
@@ -1225,7 +1255,7 @@ def self_test():
                       and not any("pwdSetTooFrequent" in ln and "射程守②" in ln for ln in out), rc, out))
         rc_a, out_a = bd_scenario("c25a", ["A", "C"], BD_HEAD + BD_PP_TYPE + BD_FQ_TYPE + BD_PP_SITE)
         rc_b, out_b = bd_scenario("c25b", ["A", "C"], BD_HEAD + BD_PP_TYPE + BD_FQ_TYPE)
-        cases.append(("㉕未入名冊之射程鍵有構造點 rc 1（射程守③）；零構造點綠（射程二鍵皆未入名冊＝007 刀 U6 至首發單元前之現況形）",
+        cases.append(("㉕未入名冊之射程鍵有構造點 rc 1（射程守③）；零構造點綠（射程二鍵皆未入名冊之形）",
                       rc_a == RC_VIOLATION and any("射程守③" in ln and "`biz.user.passwordPolicy`" in ln and "實得 1 處" in ln for ln in out_a)
                       and rc_b == RC_OK and any("其中 BizData 0 處" in ln for ln in out_b), rc_a, out_a + out_b))
         degrade = (BD_USER_RS
