@@ -879,6 +879,6 @@ rev5 路徑相對 `base-web/`、rev6 落點相對 `base-web/`；標記處數為 
 - `incr_with_window` 原子形與 `cpwd:` TTL 設置形＝U12（契約＝R11）；守衛水位常數與自證案數＝U2（形＝R15）；m0003 錯誤訊息字面與 down 句形＝U4（R13）；選單刪碼守門之查詢件＝U4（拒因與位次已定）。
 - `zh-tw-lint` 用語表與白名單初版＝U16 依 U15 審讀定；AI 逐頁審讀與 user 抽查紀錄＝U22 收單 commit 訊息與 tasks 註記（不寫本機工作區路徑）。
 - 分岔表凍結時點＝U22 起手；ADR⑧ 款號與實測結果、ADR⑨ 八詞落字＝U22；活書島 I 情境字面＝U21；`wire-schema.json` 重抽實數＝U14；Day-1 第 3 步命令＝RUNBOOK §10 既有形。
-- errata 處數施工時現算；`arch_impact` 收刀時以 `git diff --stat <merge-base>..HEAD -- docs/arc42/` 現算；淨流量本窗 −5（刪 8、新記 3：BL-00140／BL-00141／BL-00142）。
+- errata 處數施工時現算；`arch_impact` 收刀時以 `git diff --stat <merge-base>..HEAD -- docs/arc42/` 現算；淨流量本窗 −5（刪 9、新記 4：BL-00140／BL-00141／BL-00142／BL-00143〔本刀 U10 誕生、user 2026-10-11 裁定本刀內修〕）。
 - Technical Context 零 NEEDS CLARIFICATION。
 - **plan 期 spec 字面修補**（2026-10-05；主線工程判斷＋user 親決兩題；修補清單之家＝本段）：E1 ★ 軌道表刪 `src/main.ts` 候選列與 Edge Cases 定案句；E2 清理面「五表」→「各表（本刀起含經手表）」三處；E3 FR-056 ⑫ 與摘要＝併入分岔表、不另立；E4 FR-041 `ipRule:unlock` 說明字面；E5＋E12 並行編輯落點＝ADR⑦、恆送欄集；E6 m0003 新列 id 與冪等形；E7 FR-008 excel 示範頁＝殘存消費面（user 親決）；E8 FR-021 與 Key Entities 之 T 濾已軟刪；E9 FR-025 負向案形；E10 FR-061 四支；E11 FR-051 之 002 契約原檔不改（ADR-00041 決定 3）；E13 同值 no-op 句與 FR-018 會話政策必填；E14 US6 場景 4 與兩處「含 006 刀終態基準」（v3 檔形先拒）；E15 仍拒跑之演進形兩種；E16 FR-035 與冷卻邊界之剩餘秒數；E17 FR-037 與 Key Entities 之計數窗；E18 FR-015／US1 場景 7 撞名撞信箱之鍵；E19 ★ 登記表四列改述與 role-operate-drawer 碼註列（19 列）；E20 FR-055④ (iii) 改寫並擴範圍與 (iii) 列門在頁級句；E21 Edge 值域狀態讀寫兩向；E22 FR-006 unlockLogin 處理序；E23 FR-065、SC-010、Edge 繁中介面之 CDP 三側顯式簡中與 `<html lang>` 首開同步；E24 刻意分岔表與 Edge 繁中介面之 pro-naive 已知態（user 親決）；E25 FR-060 補 BL-00142。檢核表 16／16 不變。

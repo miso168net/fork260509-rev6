@@ -364,7 +364,7 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 ### 8.2 帳本
 
 - **本刀第一筆 events 事件**：`backlog_add`＝BL-00140／BL-00141／BL-00142（前兩條已於 brainstorm 顆入 `docs/ops/BACKLOG.md`／`docs/ops/BACKLOG-DEFERRED.md`、BL-00142 於 plan 顆入 `docs/ops/BACKLOG.md`；事件帳現 0 筆；spec FR-060）。
-- **收刀 `feature_close`**：`backlog_done` 8＝BL-00031（spec FR-034）／BL-00047（FR-045）／BL-00048（FR-022）／BL-00065（FR-028、FR-029）／BL-00091（FR-040）／BL-00124（FR-037）／BL-00136（FR-057、FR-058）／BL-00138（①由 FR-052 兌現、②移交 BL-00141）；`backlog_add` 零（已由第一筆事件帶；GT-03 唯一性腳＝不得重記）；`adrs`＝ADR-00074～ADR-00087（十四支）＋收刀前 PATCH ADR 一支；`arch_impact` 以收刀時 diff 現算之活書節號為準；收單事件註明反向確認三條之結果。
+- **收刀 `feature_close`**：`backlog_done` 9＝BL-00031（spec FR-034）／BL-00047（FR-045）／BL-00048（FR-022）／BL-00065（FR-028、FR-029）／BL-00091（FR-040）／BL-00124（FR-037）／BL-00136（FR-057、FR-058）／BL-00138（①由 FR-052 兌現、②移交 BL-00141）／BL-00143（spec FR-032 日誌面；T111）；`backlog_add` 一＝BL-00143（本刀 U10 誕生、晚於第一筆事件；BL-00140～BL-00142 已由第一筆事件帶，GT-03 唯一性腳＝不得重記）；`adrs`＝ADR-00074～ADR-00087（十四支）＋收刀前 PATCH ADR 一支；`arch_impact` 以收刀時 diff 現算之活書節號為準；收單事件註明反向確認三條之結果。
 - **刪列前掃現在式引用**（RL-0050）：BL-00136 之現在式引用除 BACKLOG 本條外另有 `rust-api/server/tests/contract.rs`、`docs/ops/NOTES.md`、LESSONS 一檔；其餘七條逐條以 `python3 tools/docsync errata BL-NNNNN` 現量。
 - **NOTES**：下一步收刀後改 008 刀（008 刀起每刀三語同批）；不記推送狀態、只記 SHA。
 - **活書與 RUNBOOK**（spec FR-059；feature branch 內改為現在式 as-built）：06（島 I 情境、§6.1 島 G 情境之 no-escalation 句）、08（§8.1 記事欄句、§8.3 掛點句、§8.4 新用途逐用途一句碼上實作〔含單行形新增型分列〕、i18n 三語）、10（島 I 情境）、11（已知態摘要改指 ADR-00081）、12（使用者域詞組、「頂替」「踢除」、「撤銷三型」消歧）、05（`tools/zh-tw-lint.py`、新 handler 與 facade 成員句）；RUNBOOK §9（解鎖兩入口取代「無 UI 按鈕」句）、§9c（§6）、§10（Day-1 與 m0003）、§11（§7.4）、§12（§2.1、§2.3、§6 各列）、§13。C4-L2 拓樸不變（零新容器）。
