@@ -30,7 +30,7 @@
 | 15 | `biz.user.cannotResetSelfPassword` | 2222 | resetUserPassword ③（本人改密走個人中心） | U10 | 请到个人中心修改自己的密码 | Change your own password in the user center | 請至個人中心修改您自己的密碼 |
 | 16 | `biz.user.sessionPolicyInvalid` | 2222 | updateUserSessionPolicy ⑤三值（`inherit`／`single`／`multi`）以外 | U10 | 会话策略无效 | Invalid session policy | 工作階段政策不合法 |
 | 17 | `biz.user.pwdSetTooFrequent`（攜參） | 2222 | resetUserPassword ⑤設密冷卻未滿（政策之後）；changePassword 之冷卻步（政策之後）；data＝§2.2 | U10 | 密码设置过于频繁，请 {remainingSeconds} 秒后再试 | Password was set too recently, retry in {remainingSeconds}s | 密碼設定過於頻繁，請於 {remainingSeconds} 秒後再試 |
-| 18 | `auth.session.kickedByAdmin` | 7777 | `AppError::ModalLogoutByAdmin` 之固定鍵：授權判定之失效名單命中 reason `admin_kick`（U10）；換發 revoked 腿之失效名單 reason `admin_kick`（U11 接）＝三向分派（spec FR-027） | U10 | 此会话已被管理员结束，请重新登录 | This session was ended by an administrator, please sign in again | 此工作階段已被管理員結束，請重新登入 |
+| 18 | `auth.session.kickedByAdmin` | 7777 | `AppError::ModalLogoutByAdmin` 之固定鍵：授權判定之失效名單命中 reason `admin_kick`（U10）；換發 revoked 腿之失效名單 reason `admin_kick`（U11）＝三向分派（spec FR-027） | U10 | 此会话已被管理员结束，请重新登录 | This session was ended by an administrator, please sign in again | 此工作階段已被管理員結束，請重新登入 |
 | 19 | `biz.user.passwordConfirmMismatch` | 2222 | changePassword 首步（兩次輸入不一致） | U12（個人中心兩端點） | 两次输入的密码不一致 | Passwords do not match | 兩次輸入的密碼不一致 |
 | 20 | `biz.user.changePasswordThrottled` | 2222 | changePassword 兩次一致之後、舊密雜湊比對之前之節流 precheck（每使用者 5 次／900 秒、第 6 次起） | U12 | 尝试次数过多，请稍后再试 | Too many attempts, please try again later | 嘗試次數過多，請稍後再試 |
 | 21 | `biz.user.oldPasswordMismatch` | 2222 | changePassword 舊密不符（計入節流桶） | U12 | 旧密码不正确 | Old password is incorrect | 舊密碼不正確 |

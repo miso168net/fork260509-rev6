@@ -445,7 +445,7 @@ seed 基線層（島 G 之 G2 末句）：直接改列、不走執行期撤銷�
 | `biz.user.cannotResetSelfPassword` | `BIZ_USER_CANNOT_RESET_SELF_PASSWORD` | 2222 | resetUserPassword③ | U10 |
 | `biz.user.pwdSetTooFrequent` | `BIZ_USER_PWD_SET_TOO_FREQUENT` | 2222 BizData | resetUserPassword⑤-b；changePassword C7 | U10 |
 | `biz.user.sessionPolicyInvalid` | `BIZ_USER_SESSION_POLICY_INVALID` | 2222 | updateUserSessionPolicy⑤-a | U10 |
-| `auth.session.kickedByAdmin` | `AUTH_SESSION_KICKED_BY_ADMIN` | 7777 | enforce_mw 名單命中 `admin_kick`（`ModalLogoutByAdmin`）；換發 `revoked` 腿（U11 接） | U10 |
+| `auth.session.kickedByAdmin` | `AUTH_SESSION_KICKED_BY_ADMIN` | 7777 | enforce_mw 名單命中 `admin_kick`（`ModalLogoutByAdmin`）；換發 `revoked` 腿（U11） | U10 |
 | `biz.user.passwordConfirmMismatch` | `BIZ_USER_PASSWORD_CONFIRM_MISMATCH` | 2222 | changePassword C2 | U12 |
 | `biz.user.changePasswordThrottled` | `BIZ_USER_CHANGE_PASSWORD_THROTTLED` | 2222 | changePassword C3 | U12 |
 | `biz.user.oldPasswordMismatch` | `BIZ_USER_OLD_PASSWORD_MISMATCH` | 2222 | changePassword C4 | U12 |
