@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00076 -->
+<!-- next: LL-00077 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -81,3 +81,4 @@
 | LL-00073 | 照 rev5 藍本取名的新公開件 `password::load_policy` 撞上 rev6 自有 lint 腿③之 casbin 載入族 token——名字釘在 spec 家族十餘處，三支 implementer 皆升級、審查兩階段各再升級一次，碼品質 fix 才改名（007 刀 U6） | none：命名屬工程判斷（CLAUDE.md §5）已明文；缺的是 plan 期定名查撞與單元定義之裁量句，守法寫於本檔、並由主線烤入後續單元定義 | none | [LL-00073-spec-pinned-fn-name-collided-with-lint-token-family.md](LESSONS/LL-00073-spec-pinned-fn-name-collided-with-lint-token-family.md) |
 | LL-00074 | 冷卻真庫案以固定 ±5 秒斷言「剩約 30」——全量變異期植列與讀取之間停約 8 秒即紅；該餘裕只為牆鐘回撥（LL-00054）而設，未計執行延遲（007 刀 U6） | none：測試斷言寫法——守法句住本檔與受影響測試件之 helper doc，並由主線烤入同形整合案之單元定義 | code | [LL-00074-elapsed-time-assertion-fixed-slack-ignored-execution-lag.md](LESSONS/LL-00074-elapsed-time-assertion-fixed-slack-ignored-execution-lag.md) |
 | LL-00075 | 測試模組新增跨檔掃描腿（`include_str!` 他檔）後，test_module_tail_lint 對該被切檔誤紅：同檔既有三形切法會傳染給新名冊檔，被切檔改切在首個 item 級門控（007 刀 U11） | none：碼面閘判準之連帶面（test_module_tail_lint 對名冊檔取到達各形之最早切點）——守法句住本檔，並由主線烤入新增跨檔掃描腿之單元定義 | none | [LL-00075-cross-file-scan-roster-inherits-earliest-cut-form-tail-lint-misreds-target.md](LESSONS/LL-00075-cross-file-scan-roster-inherits-earliest-cut-form-tail-lint-misreds-target.md) |
+| LL-00076 | 源碼掃描案之 doc 以全稱句宣稱射程（「…皆因此報」）而實作判不出——審查七輪逐輪以規避形打穿，fix 每輪擴實作也擴宣稱；LL-00036 之守法句「doc 宣稱須有案實證」未烤入 007 刀單元定義（007 刀 U12a） | RL-0080 | none | [LL-00076-scanner-doc-universal-scope-claims-escalate-review-rounds.md](LESSONS/LL-00076-scanner-doc-universal-scope-claims-escalate-review-rounds.md) |
