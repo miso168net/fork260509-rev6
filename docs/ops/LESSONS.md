@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00078 -->
+<!-- next: LL-00080 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -83,3 +83,5 @@
 | LL-00075 | 測試模組新增跨檔掃描腿（`include_str!` 他檔）後，test_module_tail_lint 對該被切檔誤紅：同檔既有三形切法會傳染給新名冊檔，被切檔改切在首個 item 級門控（007 刀 U11） | none：碼面閘判準之連帶面（test_module_tail_lint 對名冊檔取到達各形之最早切點）——守法句住本檔，並由主線烤入新增跨檔掃描腿之單元定義 | none | [LL-00075-cross-file-scan-roster-inherits-earliest-cut-form-tail-lint-misreds-target.md](LESSONS/LL-00075-cross-file-scan-roster-inherits-earliest-cut-form-tail-lint-misreds-target.md) |
 | LL-00076 | 源碼掃描案之 doc 以全稱句宣稱射程（「…皆因此報」）而實作判不出——審查七輪逐輪以規避形打穿，fix 每輪擴實作也擴宣稱；LL-00036 之守法句「doc 宣稱須有案實證」未烤入 007 刀單元定義（007 刀 U12a） | RL-0080 | none | [LL-00076-scanner-doc-universal-scope-claims-escalate-review-rounds.md](LESSONS/LL-00076-scanner-doc-universal-scope-claims-escalate-review-rounds.md) |
 | LL-00077 | 容器副本之變異植入命令帶無效旗標（`docker compose cp -q`）整句報錯、未核 rc，後三支變異全跑在前一支之上而同樣紅——RL-0085 之「見 `Compiling`」只證重編、不證所編為本變異（007 刀 U12） | RL-0085 | none | [LL-00077-container-copy-mutant-not-placed-compiling-proves-rebuild-not-mutant.md](LESSONS/LL-00077-container-copy-mutant-not-placed-compiling-proves-rebuild-not-mutant.md) |
+| LL-00078 | 源碼次序釘之射程外段把某形歸給他案承載卻未以變異實證，加上區段取到生產區尾、處數只數被包件內的字面——LL-00076 守法句已烤入單元定義，碼品質審查仍三輪逐形打穿（007 刀 U13） | RL-0080 | none | [LL-00078-source-order-pin-carrier-attribution-and-region-bound-unproven.md](LESSONS/LL-00078-source-order-pin-carrier-attribution-and-region-bound-unproven.md) |
+| LL-00079 | 時間換算斷言沿用既有 helper 未體檢下界：U13 新案沿用 004 刀解鎖標記 TTL helper（下界固定 −10 秒、不計實耗），同刀 U12 新寫之快取 TTL helper 下界在實耗之外另扣 10 秒固定餘裕——LL-00074 守法句已烤入仍半合（007 刀 U13） | none：測試斷言寫法——守法句住受影響 helper 之 doc，並由主線烤入同形整合案之單元定義 | code | [LL-00079-reused-ttl-helper-lower-bound-not-audited-against-lag-rule.md](LESSONS/LL-00079-reused-ttl-helper-lower-bound-not-audited-against-lag-rule.md) |

@@ -54,7 +54,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。
 
-管理員解鎖登入節流（`POST /systemManage/unlockLogin`；API-only；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後無帳號維守門＝ADR-00068 款 9〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥，無 UI 按鈕＝ADR-00069 款 1）。先以超管帳號登入取票，再擇一維度：
+管理員解鎖登入節流（`POST /systemManage/unlockLogin`；API-only；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後：帳號維受包含規則〔007 刀 U13〕、來源維無守門＝ADR-00068 款 9 之續存半〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥，無 UI 按鈕＝ADR-00069 款 1）。先以超管帳號登入取票，再擇一維度：
 
 ```bash
 BASE=http://127.0.0.1:32080/api

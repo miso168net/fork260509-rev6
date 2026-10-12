@@ -233,7 +233,7 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 
 ### 3.11 unlockLogin 帳號維（交易化＋包含規則；帳號維守門＝ADR-00068 款 9 部分解除〔ADR-00081〕；兩處 UI 解鎖入口＝ADR-00069 款 1 解除〔ADR-00082〕）
 
-1 `resolve_unlock_target`〔`biz.throttle.invalidUnlockTarget`；畸形先於一切〕→ 2 操作者〔`5000`〕→ 帳號維：3 `begin` → 4 `find_by_user_name(txn, 原文)`：查無或已軟刪＝T＝∅ 恆過、不取 advisory（不以異碼洩漏帳號存在性）；命中＝`advisory_lock_user(uid)` → `guard_no_escalation(txn, 操作者, Some(uid), N＝T, "throttle.unlock")`〔`5003`；零稽核、零標記〕→ 5 `write_in_txn`（`unlock`；列形不變）→ 6 commit → 7 快取在場 → `set_ex` 標記〔失敗＝`5000`、稽核已落、可重試〕→ `0000`。
+1 `resolve_unlock_target`〔`biz.throttle.invalidUnlockTarget`；畸形先於一切〕→ 2 操作者〔`5000`〕→ 帳號維：3 `begin` → 4 `find_by_user_name(txn, 原文)`：查無或已軟刪＝T＝∅ 恆過、不取 advisory（不以異碼洩漏帳號存在性）；命中＝`advisory_lock_user(uid)` → `guard_no_escalation(txn, 操作者, Some(uid), N＝T, "unlockLogin")`〔`5003`；零稽核、零標記〕→ 5 `write_in_txn`（`unlock`；列形不變）→ 6 commit → 7 快取在場 → `set_ex` 標記〔失敗＝`5000`、稽核已落、可重試〕→ `0000`。
 
 - 來源維不變（004 刀形）：解析 → 操作者 → 裸連線 `sys_operation_log::write` → 寫標記、不套包含規則（plan 期主線定案；spec FR-040 端點本體不變）。對未鎖帳號照回成功並落稽核（GR3）。源碼次序釘改為兩維各一序：帳號維「解析 → 操作者 → begin → 帳號維判定 → 稽核 → commit → 寫標記」、來源維既有序不變。
 
