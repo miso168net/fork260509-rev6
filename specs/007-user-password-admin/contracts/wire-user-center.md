@@ -166,7 +166,7 @@ Applied（同一交易）：UPDATE `password`＋`updated_*`（＝本人）→ `s
 | getPasswordPolicy | `0000` | `0000` | `0000` | `0000` | `8888` |
 | changePassword | 通（下） | 通 | 通 | 通 | `8888` |
 
-changePassword 以空 body 打＝三欄空字串＝②過→④`2222 biz.user.oldPasswordMismatch`、零寫入，★並推進該帳號之節流桶一格：contract case 須以 tests 側 `CacheKeysGuard` 登記該帳號之 `cpwd:{uid}` 鍵（鍵經 `server::cache` 公開 builder `change_pwd_key`；`contracts/code-gates.md` §5）。動詞不符＝`4040`。contract case 集與 ROUTES 恰等（61＝61）。
+changePassword 一律送兩次輸入不一致之 body＝②拒 `2222 biz.user.passwordConfirmMismatch`、零寫入、不觸舊密比對亦不推進節流桶（空 body 之兩欄皆空串而相等＝②過→④舊密不符、逐跑推進 `cpwd:` 桶，15 分鐘內第 6 跑起轉 `changePasswordThrottled`＝跨跑連坐；research R15 第 5 款①）。各打 changePassword 之帳號其 `cpwd:{uid}` 鍵仍先以 tests 側 `CacheKeysGuard` 登記、案末驗缺席（推進腿被改壞那一發之還原網；鍵經 `server::cache` 公開 builder `change_pwd_key`；`contracts/code-gates.md` §5）。動詞不符＝`4040`。contract case 集與 ROUTES 恰等（61＝61）。
 
 ## 與 rev5 wire 逐欄比對
 

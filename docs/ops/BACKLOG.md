@@ -1,4 +1,4 @@
-<!-- next: BL-00144 -->
+<!-- next: BL-00145 -->
 # BACKLOG — 待辦
 
 條目形 `- BL-NNNNN｜<product／governance>｜<一句話>｜<觸發條件（必填、須可到期）>`；配號取檔頭 next 後 bump、號碼永不回收；完成即刪列、git 即史（RL-0050）。
@@ -22,3 +22,4 @@
 - BL-00140｜product｜首登強制改密（管理員所設密碼〔新增帳號之初始密碼、重設密碼〕於本人下次登入時須先改）不做、續延：003 刀 spec Out of Scope 排給 007 之項，007 user-password-admin brainstorm Q1 user 2026-10-05 拍板再延（同 `rev5:007` Q02 不做、`rev5:B-134` 同題）；兌現時須登入回應帶旗標、前端路由守衛攔截與強制改密頁（base-web 新修憲用途），判定可零 migration 以 `sys_pwd_custody` 之「他人所設且晚於本人自設」推得或另加欄；seed 三帳號被重設後三顆快速登入鈕將被攔（BL-00049 連動）；島 I 之 I6 位刻意空缺待本條兌現回填｜觸發＝008 audit-settings-pages brainstorm 起手前（重評：排入、續延或移滯後卷），或出現首登強制改密之實際需求（先到者）
 - BL-00142｜governance｜碼面閘名冊之 ADR-00032 翻案觸發器①（碼面閘 ≥8 支＝另立生成檔並翻案）已成立未處置：007 刀前碼面閘表 9 支、007 刀增 `tools/zh-tw-lint.py` 後 10 支；處置二擇一——另立生成檔（工具 docstring 機器抽取「守什麼／觸發時機」、入 GENERATED_FILES）並翻案 ADR-00032，或立新 ADR 續行人寫表並重設觸發條件（成員集已由 GT-12 雙向機器守）｜下一支治理維護批起手前，或碼面閘再增一支時（先到者）
 - BL-00143｜security｜寫端 body 收斂件 `handler/common.rs` 之 `json_or_default` 遇 rejection 時以 debug 級記其原文（`rejection = %rejection`）：serde 型別不符之訊息會帶出該欄之值——密碼欄（addUser／resetUserPassword；007 刀 U12 之 changePassword 三欄同經此件）若以非字串型別送出（如數字），其值即入該則 debug 事件，與 007 刀 spec Edge Cases「密碼明文與雜湊三重不洩（回應、稽核、日誌）」之日誌面相牴；compose 兩處 `RUST_LOG` 皆 info 級、預設不出，調至 debug 才見（007 刀 U10 碼品質審查觀察；六域共用件、同一則事件）。處置候選：事件改記 rejection 變體名與狀態碼、不帶原文（代價＝除錯時看不出哪一欄壞形），並補 debug 級之捕捉案（`test_kit::capture` 之全域 subscriber 為 INFO 級、捕不到本則）｜觸發＝007 刀 final holistic review，或下一支改動 `json_or_default` 可執行碼之刀或維護批（先到者）
+- BL-00144｜security｜改密節流（`cpwd:` 桶；007 刀 U12、ADR-00078）之單窗上界在同帳號並發下非嚴格：預檢於開交易之前純讀、推進於 rollback 之後（007 刀 data-model §3.9「次序即契約」），同一帳號之並發請求可在任何推進落地前全數通過預檢、再於帳號鎖後逐一比對舊密——單窗可猜次數受同時在途請求數（連線池與取連線逾時）左右、可遠超 5；前提＝攻擊者已持該帳號有效 access token，每次嘗試另付兩次 argon2（新密雜湊＋舊密驗證）。收斂須改次序（如帳號鎖內重讀桶並於放鎖前推進、或預約式計數）＝ADR-00078 與 data-model §3.9 翻案級。另：桶值不可解析時 `INCR` 於 EXEC 內失敗而 `EXPIRE` 照刷，壞值鍵在持續猜測下不到期、該帳號節流形同停用（只人工寫入方生；每次計降級、告警即紅），同批可收（007 刀 U12 碼品質審查觀察）｜觸發＝008 brainstorm 起手前（重評：排入、續延或立 won't-fix ADR），或任一刀改動改密節流之判定次序（先到者）
