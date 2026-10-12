@@ -1,6 +1,6 @@
 # Contract — 機器守、治理面與帳本（007 刀）
 
-> 本檔凍結本刀新增或擴充之機器守之施工面、名冊守恆、測試基建與走查還原工具契約、觀測面與 ADR／帳本兌現面。決定本體住 ADR（Amendment＝ADR-00074、包含規則＝ADR-00075、明細通道＝ADR-00076、設密冷卻與改密節流＝ADR-00078、政策壞值告警＝ADR-00079、清單 wire 偏離帳＝ADR-00083、繁中 runtime 與 zh-TW 閘＝ADR-00084、m0003 與走查還原工具遷移帳前置與合成＝ADR-00085 等），本檔只寫施工；理由與替代案見 research（R13、R15、R16、R17、R19），端點行為見 `contracts/wire-user-admin.md`／`contracts/wire-user-center.md`，鍵名見 `contracts/msg-keys.md`。
+> 本檔凍結本刀新增或擴充之機器守之施工面、名冊守恆、測試基建與走查還原工具契約、觀測面與 ADR／帳本兌現面。決定本體住 ADR（Amendment＝ADR-00074、包含規則＝ADR-00075、明細通道＝ADR-00076、設密冷卻與改密節流＝ADR-00090（續行 ADR-00078）、政策壞值告警＝ADR-00079、清單 wire 偏離帳＝ADR-00083、繁中 runtime 與 zh-TW 閘＝ADR-00084、m0003 與走查還原工具遷移帳前置與合成＝ADR-00085 等），本檔只寫施工；理由與替代案見 research（R13、R15、R16、R17、R19），端點行為見 `contracts/wire-user-admin.md`／`contracts/wire-user-center.md`，鍵名見 `contracts/msg-keys.md`。
 > 基線座標：base-web 本刀起點 pin `fb4dac2`（upstream `example` 基線 `8be6f9ba`）、rust-api pin `6f74d20`、憲法 1.7.1→1.8.0（收刀前 PATCH 實數化後 1.8.x＝§8.1）。本檔以描述指稱單元並附 research R23 之單元號（U0～U23；派發真源＝tasks，tasks 改號時以 tasks 為準）。
 
 ## §1 fork-delta：管理頁軌道新用途 (v)～(viii)、LOGIN-CAPTCHA (ii)、I18N (i) 改寫與 (iii) 開立
@@ -315,7 +315,7 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 - **告警規則**（`deploy/grafana-provisioning/alerting/rules.yml`；組號 ③e、段錨註解寫事件錨與承載 ADR）：uid `obs016-password-policy-invalid`、title `password-policy-invalid`、`condition: C`、`for: 0s`、`noDataState: OK`（預註冊 0＝無增量即健康）、`execErrState: Alerting`、`labels.severity: warning`；評估鏈 A（prometheus instant：`sum(increase(password_policy_invalid_total[5m]))`、`relativeTimeRange` 300 秒）→ B（reduce last）→ C（threshold `gt 0`）；annotation `summary` 只帶規則名與 `$values.B`（annotation 契約：零 log 行、零個資），文面例「password-policy-invalid：密碼政策設定矛盾（最小長度大於最大長度、設密一律被拒；5m 增量 {{ $values.B }}、判準 > 0）」。檔頭「現況＝告警五組 12 條」改 13 條（組數不變）。
 - **零新容器、零新 scrape 目標**：`deploy/prometheus/prometheus.yml` 不動（rust-api `/metrics` 既在 scrape 面）。
 
-### 7.2 改密節流降級源（ADR-00078；spec FR-037）
+### 7.2 改密節流降級源（ADR-00090 決定 3〔照錄 ADR-00078〕；spec FR-037）
 
 - `obs::THROTTLE_DEGRADED_SOURCES` 增 `redis_change_pwd`（10→11、序接尾）；發射經既有 `throttle::warn_degraded("redis_change_pwd")`（target `security.throttle`、`degraded` 欄＝source）；預註冊與名冊雙向守（`degraded_emit_literals_across_src_stay_within_roster` 之全樹掃描自動涵蓋 `throttle/change_pwd.rs`）。
 - 同改：常數 doc「★恰十」→恰十一並補該值說明、常數 doc「本常數逐字照抄」與測試訊息「十源名冊須逐字＝data-model §5 表」改述為「前十值＝004 刀 data-model §5 逐字、第十一值 007 刀增」；`lib.rs` crate doc「降級十源」改十一源；`obs.rs` 之 `pre_register_renders_throttle_degraded_ten_sources_explicit_zero` 與 `throttle/mod.rs` 之 `warn_degraded_increments_each_of_the_ten_sources` 兩案之名、期望值與訊息「恰十」「十源」同改；`obs.rs` 檔頭「十值」句與 004 刀 U9 歸因句補本刀。告警 `obs016-throttle-degraded` 不設 source selector＝新值自動涵蓋、規則零改。
@@ -337,7 +337,7 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 
 ## §8 ADR 與帳本
 
-### 8.1 ADR 之 accepted 時點（plan 期十四支＋收刀前 PATCH ADR 一支；詳表＝research R21）
+### 8.1 ADR 之 accepted 時點（plan 期十四支＋實作期翻案一支＋收刀前 PATCH ADR 一支；plan 期詳表＝research R21）
 
 | ADR | 主題 | accepted 時點約束 | accepted 同顆 |
 |---|---|---|---|
@@ -345,7 +345,7 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 | ADR-00075 | 包含規則與射程分工 | U0 施工前提顆（Amendment 顆之後另一顆） | —— |
 | ADR-00076 | 明細通道射程與受眾 | 同上 | —— |
 | ADR-00077 | 自助路由白名單 | 同上 | —— |
-| ADR-00078 | 設密冷卻＋改密節流 | 同上 | —— |
+| ADR-00078 | 設密冷卻＋改密節流（本刀 U13 期間由 ADR-00090 續行並 supersede） | 同上 | —— |
 | ADR-00079 | 政策壞值方向與告警出口 | 同上 | —— |
 | ADR-00080 | ADR-00047 續行（使用者域寫端語意） | 同上 | `supersedes: [ADR-00047]`、ADR-00047 status→superseded |
 | ADR-00081 | ADR-00068 續行 v3 | 治理單元（CDP 三方對照與已知態實測之後；U22）依親決分類（RL-0086）經 user 親決 | `supersedes: [ADR-00068]`、ADR-00068 status→superseded |
@@ -355,6 +355,7 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 | ADR-00085 | m0003、按鈕維受保護列首例、GR9 序號合成、走查還原工具遷移帳前置與合成 | 同上（MUST 早於工具單元 U1） | —— |
 | ADR-00086 | 選單編輯移除受保護授權碼之守門 | 同上 | —— |
 | ADR-00087 | ADR-00012 整支續行（schema-definition 留 001 刀基線） | 同上 | `supersedes: [ADR-00012]`、ADR-00012 status→superseded |
+| ADR-00090 | ADR-00078 續行（改密節流判讀與推進入帳號鎖、壞值自癒；BL-00144） | 本刀 U13 期間之計畫增補顆（user 2026-10-12 裁定本刀內修；修法屬主線工程判斷、隨顆報備） | `supersedes: [ADR-00078]`、ADR-00078 status→superseded |
 | 收刀前 PATCH ADR（配號＝屆時下一號；plan 期不起草） | 範圍欄預估值實數化（表外宣告 1 例外路徑；前例 ADR-00051／ADR-00072） | 收刀前承載體檢單元（U23）：user 親決後 accepted、與 Amendment 同一顆獨立 `docs(constitution): amend` commit | 憲法 1.8.0→1.8.x、Amendment log、generate |
 
 - proposed 期 `supersedes: []`；續行型 accepted 那一顆補 supersedes 並改被續行者 status、`superseded_by` 由 `python3 tools/docsync generate` 回填，generate 後再 `git add docs/arc42/decisions`（LL-00044）；新 ADR 檔先 `git add` 再跑 lint（GT-05 只掃 tracked）。
@@ -364,8 +365,8 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 ### 8.2 帳本
 
 - **本刀第一筆 events 事件**：`backlog_add`＝BL-00140／BL-00141／BL-00142（前兩條已於 brainstorm 顆入 `docs/ops/BACKLOG.md`／`docs/ops/BACKLOG-DEFERRED.md`、BL-00142 於 plan 顆入 `docs/ops/BACKLOG.md`；事件帳現 0 筆；spec FR-060）。
-- **收刀 `feature_close`**：`backlog_done` 9＝BL-00031（spec FR-034）／BL-00047（FR-045）／BL-00048（FR-022）／BL-00065（FR-028、FR-029）／BL-00091（FR-040）／BL-00124（FR-037）／BL-00136（FR-057、FR-058）／BL-00138（①由 FR-052 兌現、②移交 BL-00141）／BL-00143（spec FR-032 日誌面；T111）；`backlog_add` 一＝BL-00143（本刀 U10 誕生、晚於第一筆事件；BL-00140～BL-00142 已由第一筆事件帶，GT-03 唯一性腳＝不得重記）；`adrs`＝ADR-00074～ADR-00087（十四支）＋收刀前 PATCH ADR 一支；`arch_impact` 以收刀時 diff 現算之活書節號為準；收單事件註明反向確認三條之結果。
-- **刪列前掃現在式引用**（RL-0050）：BL-00136 之現在式引用除 BACKLOG 本條外另有 `rust-api/server/tests/contract.rs`、`docs/ops/NOTES.md`、LESSONS 一檔；其餘七條逐條以 `python3 tools/docsync errata BL-NNNNN` 現量。
+- **收刀 `feature_close`**：`backlog_done` 10＝BL-00031（spec FR-034）／BL-00047（FR-045）／BL-00048（FR-022）／BL-00065（FR-028、FR-029）／BL-00091（FR-040）／BL-00124（FR-037）／BL-00136（FR-057、FR-058）／BL-00138（①由 FR-052 兌現、②移交 BL-00141）／BL-00143（spec FR-032 日誌面；T111）／BL-00144（spec FR-037 並發上界與壞值自癒；T112）；`backlog_add` 三＝BL-00143（本刀 U10 誕生）／BL-00144（本刀 U12 誕生）／BL-00145（本刀 U13 期間誕生、不收）（皆晚於第一筆事件；BL-00140～BL-00142 已由第一筆事件帶，GT-03 唯一性腳＝不得重記）；`adrs`＝ADR-00074～ADR-00087（十四支）＋ADR-00090（實作期翻案）＋收刀前 PATCH ADR 一支；`arch_impact` 以收刀時 diff 現算之活書節號為準；收單事件註明反向確認三條之結果。
+- **刪列前掃現在式引用**（RL-0050）：BL-00136 之現在式引用除 BACKLOG 本條外另有 `rust-api/server/tests/contract.rs`、`docs/ops/NOTES.md`、LESSONS 一檔；其餘九條逐條以 `python3 tools/docsync errata BL-NNNNN` 現量。
 - **NOTES**：下一步收刀後改 008 刀（008 刀起每刀三語同批）；不記推送狀態、只記 SHA。
 - **活書與 RUNBOOK**（spec FR-059；feature branch 內改為現在式 as-built）：06（島 I 情境、§6.1 島 G 情境之 no-escalation 句）、08（§8.1 記事欄句、§8.3 掛點句、§8.4 新用途逐用途一句碼上實作〔含單行形新增型分列〕、i18n 三語）、10（島 I 情境）、11（已知態摘要改指 ADR-00081）、12（使用者域詞組、「頂替」「踢除」、「撤銷三型」消歧）、05（`tools/zh-tw-lint.py`、新 handler 與 facade 成員句）；RUNBOOK §9（解鎖兩入口取代「無 UI 按鈕」句）、§9c（§6）、§10（Day-1 與 m0003）、§11（§7.4）、§12（§2.1、§2.3、§6 各列）、§13。C4-L2 拓樸不變（零新容器）。
 

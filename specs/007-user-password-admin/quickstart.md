@@ -407,7 +407,7 @@ LOGINJ qs_henry "${QP}%Complex-pass_long*" | jq -r .code         # 0000（登入
 sleep 0.3; LOGINJ User 123456 | jq -r .code                          # 0000（6 字短於下限照登）
 ```
 
-- 改密節流窗自癒（15 分鐘）、無解鎖端點；載體不可用之放行與 `redis_change_pwd` 增一＝整合測試面（停 redis 牽動全面、不入走查）；§13 restore 清 `cpwd:`。
+- 改密節流窗自癒（15 分鐘）、無解鎖端點；載體不可用之放行與 `redis_change_pwd` 增一＝整合測試面（停 redis 牽動全面、不入走查）；同帳號並發上界、壞值自癒與鎖內快取往返 1 秒上界＝整合測試面（本刀 U13 期間增補＝T112）；§13 restore 清 `cpwd:`。
 - 三重不洩之日誌面：`dc logs --since 30m rust-api | grep -c -F "$QP"` 印 0（零命中 rc 1 屬正常）；回應面＝§2、稽核面＝§3。
 
 ## 7. 個人中心與自助白名單（US3 AS7／AS8、FR-038／FR-039）
@@ -566,8 +566,8 @@ git -C base-web diff --name-only --diff-filter=DR fb4dac2..HEAD   # 空
 
 - 新增圈界塊「拔標記必紅」（SC-011）：各塊之紅證以落地單元紀錄為證（塊名冊與做法＝`contracts/code-gates.md` §1）；走查時可任取一塊重跑——暫拔其 START／END 標記 → `python3 tools/fork-delta-lint.py` 紅（報未圈界新增）→ 以存原文寫回（RL-0019）→ `git -C base-web status --porcelain` 回基準（逐塊單獨跑、不疊加＝RL-0005；不與 CDP 走查並行）。路由產物零重算（不新增 view 目錄）＝`route-artifact-gate.py check` 綠；`components.d.ts` 若有變化只許工具重算形。
 - 憲法 Amendment 先行（SC-012、US6 AS1）：`B0=$(git merge-base rev6-admin-root HEAD)` → `git log --format='%h %s' "$B0"..HEAD -- .specify/memory/constitution.md` 見 1.7.1→1.8.0 之 Amendment 顆（ADR-00074；另見收刀前 PATCH 顆）→ 機器斷言＝`git ls-tree <Amendment 顆> base-web` 之 gitlink＝`fb4dac2`（本刀起手 pin；本刀單元序使純新增檔亦落在 Amendment 之後）。
-- ADR：plan 期十四支（ADR-00074～ADR-00087；⑫ 不另立）＋收刀前 PATCH Amendment 一支（配號＝當下下一號）於收刀前皆 `status: accepted`——`for n in $(seq 74 87); do grep -m1 '^status:' docs/arc42/decisions/ADR-000$n-*.md; done | sort | uniq -c` 印 `14 status: accepted`；supersede 宣告以各 ADR accepted 顆為準（spec 明定者＝ADR⑪ supersede ADR-00039、ADR⑮ supersede ADR-00012）；親決時點＝research R21。
-- 整合測試承擔面（走查不構造）：SC-003 seed 結構保護與 FR-010 逐格；SC-004 每消費點全量；SC-005 換發重驗三形與失效名單寫入失敗注入；SC-006 載體不可用放行；SC-007 R_SUPER 六碼撤銷拒；FR-063 之併發三案與 ADR-00044 觸發器②；`advisory_lock_user` 收窄之 compile_fail doctest、零重載反向確認、`NO_ESCALATION_CALL_FILES` 一正一反（`contracts/code-gates.md` §2～§5）。守門變異自證（拆 → 紅 → 還原 → 綠、skipped=0）以單元紀錄為證；判準變異不得拆真庫守衛（LL-00053）。
+- ADR：plan 期十四支（ADR-00074～ADR-00087；⑫ 不另立）＋實作期翻案一支（ADR-00090；本刀 U13 期間增補、supersede ADR-00078）＋收刀前 PATCH Amendment 一支（配號＝當下下一號）於收刀前皆 `status: accepted`（ADR-00078 轉 `superseded`）——`for n in $(seq 74 87); do grep -m1 '^status:' docs/arc42/decisions/ADR-000$n-*.md; done | sort | uniq -c` 印 `13 status: accepted` 與 `1 status: superseded`（ADR-00078）、`grep -m1 '^status:' docs/arc42/decisions/ADR-00090-*.md` 印 `status: accepted`；supersede 宣告以各 ADR accepted 顆為準（spec 明定者＝ADR⑪ supersede ADR-00039、ADR⑮ supersede ADR-00012；實作期＝ADR-00090 supersede ADR-00078）；親決時點＝research R21（ADR-00090＝user 2026-10-12 裁定）。
+- 整合測試承擔面（走查不構造）：SC-003 seed 結構保護與 FR-010 逐格；SC-004 每消費點全量；SC-005 換發重驗三形與失效名單寫入失敗注入；SC-006 載體不可用放行；SC-007 R_SUPER 六碼撤銷拒；FR-063 之併發四案（含本刀 U13 期間增補之改密節流並發上界＝T112）與 ADR-00044 觸發器②；`advisory_lock_user` 收窄之 compile_fail doctest、零重載反向確認、`NO_ESCALATION_CALL_FILES` 一正一反（`contracts/code-gates.md` §2～§5）。守門變異自證（拆 → 紅 → 還原 → 綠、skipped=0）以單元紀錄為證；判準變異不得拆真庫守衛（LL-00053）。
 - 現在式假述掃除（SC-014、FR-059；RL-0011 四形種子）：以 `python3 tools/docsync errata <詞>` 逐詞現量——種子例：「使用者域刀」「使用者角色指派寫端」「007 刀」「屬後刀域、不帶」「不產 hash」「恰十」「恰九」「門在頁級」「不接 runtime」「孤立檔」「兩語」「無 UI 按鈕」「零 migration」「隨每支帶 migration 的刀前進」「五詞」「四十六」「四十九」「三十五」，與阿拉伯數字形並掃；受保護列數「19」之現在式面（schema-definition 屬 001 基線者除外）與指單會話被擠掉之「踢除」句逐處判讀；命中只餘史料面、accepted ADR body 與事件源；處數以現量為準、不寫死。
 - `bash tools/bootstrap.sh`（舊機重跑＝純體檢；含新碼面閘 `tools/zh-tw-lint.py` 自測之名冊推導）rc 0。
 

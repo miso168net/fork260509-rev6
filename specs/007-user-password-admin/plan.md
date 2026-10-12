@@ -8,7 +8,7 @@
 
 把使用者管理頁與個人中心改密卡自 demo 殼接成真：12 支端點（管理面 10 支住新建 `handler/user.rs`、個人中心 2 支住新建 `handler/user_center.rs`；ROUTES 49→61、政策保護端點 35→45），前後端同刀、CDP 對照 rev5 HEAD 驗收。語意核心六件：①**使用者寫端八支**依固定序判定（活性標的鎖讀→seed 保護→本人規則→包含規則→業務守門）、使用者域同值不寫不記、空字串＝清空 ②**包含規則**（T⊆A∧N⊆A、持 R_SUPER 者 A＝全集）以具名純函式單點實作、9 個消費點於鎖內呼叫、中介層掛點續恆放行 ③**斷權兩層**（停用／刪除／重設／自助改密同交易撤全部有效票＋換發鎖內活性重驗；管理員踢除另立 `admin_kick` 與專屬文案；不做每請求活性判定）④**密碼政策單一驗證點**（七鍵、違規碼八枚、只限兩鍵之攜參明細通道）＋設密冷卻＋改密舊密節流（`cpwd:{uid}`）＋政策壞值設密全拒並告警 ⑤**委派治理與自鎖防護**（三頁按鈕碼顯隱、兩處解鎖入口；R_SUPER 名下角色與選單六碼受保護、選單編輯不得移除尚有受保護授權之碼）⑥**繁中介面接上 runtime、預設繁中**。
 一支 seed-only migration `m0003`（零 DDL：六列改受保護、刪 R_ADMIN `user:edit`、增 R_SUPER `ipRule:unlock` 與選單 78 之按鈕碼）＋schema 閘 seed_add 序號合成；走查還原工具升檔形 v4（遷移帳前置、演進登記合成、使用者域面）。憲法一次 MINOR 1.7.1→1.8.0（島 I 入憲、§III.2 管理頁軌道新用途 (v)～(viii)、LOGIN-CAPTCHA (ii)、I18N (i) 改寫與 (iii) 開立、島 B／C 用語、九島）；`MSG_KEYS` 46→68；`AppError` 9→11；**零新依賴**。
-技術路徑＝高度參照 rev5 HEAD 形（research R2～R5 之 rev5 對應碼清單與差異點）；BACKLOG 收 9、記 4（BL-00140／BL-00141／BL-00142／BL-00143；本窗淨 −5）、反向確認 3；ADR 十四支（ADR-00074～ADR-00087；spec FR-056 之 ⑫ 併入 spec 刻意分岔表、不另立）已於本 plan 落 draft（`proposed`）；收刀前另立 PATCH Amendment ADR 一支（配號屆時）。
+技術路徑＝高度參照 rev5 HEAD 形（research R2～R5 之 rev5 對應碼清單與差異點）；BACKLOG 收 10、記 6（BL-00140～BL-00145；本窗淨 −4）、反向確認 3；ADR 十四支（ADR-00074～ADR-00087；spec FR-056 之 ⑫ 併入 spec 刻意分岔表、不另立）已於本 plan 落 draft（`proposed`）；實作期另立翻案 ADR-00090（續行並 supersede ADR-00078；BL-00144 本刀內修）；收刀前另立 PATCH Amendment ADR 一支（配號屆時）。
 
 ## Technical Context
 

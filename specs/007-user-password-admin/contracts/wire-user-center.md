@@ -58,11 +58,11 @@ Req `ChangePasswordReq`。後端 `#[derive(Default, Deserialize)]`＋`#[serde(de
 | 步 | 判定 | 拒因 | 備註 |
 |---|---|---|---|
 | 0 | 操作者上下文 | `5000` | 先於一切 |
-| 前置 | 節流桶 precheck（純讀 `cpwd:{uid}`）於 begin 之前；begin 之後、①取鎖之前 `password::NewPassword::prepare`（交易內、不持任何鎖＝spec FR-012） | 雜湊失敗＝`5000`（實務不可達） | precheck 結果於③就位判定 |
+| 前置 | begin 之後、①取鎖之前 `password::NewPassword::prepare`（交易內、不持任何鎖＝spec FR-012）；開交易之前不讀節流桶 | 雜湊失敗＝`5000`（實務不可達） | 節流桶之判讀在③、推進在④（皆於帳號鎖內＝ADR-00090 決定 2） |
 | ① | advisory(uid) → 本人現役列 `FOR UPDATE` | `2222 biz.user.notFound` | 會話存續期間被軟刪時可達；停用照過 |
 | ② | `confirmPassword` 與 `newPassword` 逐字相等 | `2222 biz.user.passwordConfirmMismatch` | |
-| ③ | 改密節流：計數 ≥ 5 | `2222 biz.user.changePasswordThrottled` | ★於舊密比對之前；純 key、不攜剩餘時間 |
-| ④ | 舊密比對（鎖內列之雜湊；鎖內重驗＝島 I1） | `2222 biz.user.oldPasswordMismatch` | rollback 後推進節流計數一格（唯一推進腿） |
+| ③ | 改密節流：帳號鎖內現讀 `cpwd:{uid}`、計數 ≥ 5 | `2222 biz.user.changePasswordThrottled` | ★於舊密比對之前；純 key、不攜剩餘時間 |
+| ④ | 舊密比對（鎖內列之雜湊；鎖內重驗＝島 I1） | `2222 biz.user.oldPasswordMismatch` | 不符＝帳號鎖仍持有、rollback 之前推進節流計數一格（唯一推進腿），再 rollback |
 | ⑤ | 新≠舊（舊密已於④驗真 ⇒ 明文相等即同密、零額外 argon2） | `2222 biz.user.passwordSameAsOld` | 端點固有規則、不入政策單點 |
 | ⑥ | 密碼政策（`forbidUsername` 比本人帳號名） | `2222 biz.user.passwordPolicy`＋`{violations}` | §3.2 |
 | ⑦ | 設密冷卻（（本人, 本人）） | `2222 biz.user.pwdSetTooFrequent`＋`{remainingSeconds}` | 一體適用、零豁免（FR-035） |
@@ -70,16 +70,18 @@ Req `ChangePasswordReq`。後端 `#[derive(Default, Deserialize)]`＋`#[serde(de
 Applied（同一交易）：UPDATE `password`＋`updated_*`（＝本人）→ `sys_pwd_custody::touch(uid, uid)`（只 upsert、不刪他人經手列）→ 撤本人**其他**有效票（`handler::user::revoke_sessions_in_txn`〔keep＝`identity.sid`〕→ `sys_token::revoke_others_of_user(uid, &identity.sid)`——與 `revoke_all_of_user` 共用私有底座 `revoke_sids_of_user`；當前會話之鏈與其後續輪替保留、已輪替列不動）→ 逐 sid 會話事件 `revoked`／`password_changed`（非 `password_reset`）→ 稽核 `change_password`（`sys_user`、本人 uid、payload 不含密碼）→ commit → `finish_user_write` 逐 sid 盡力寫失效名單 `revoked`（零重載）→ **commit 之後**清空節流桶。
 200：`data: null`。其他裝置下一次請求 `8888`（換發亦拒）；當前裝置不受影響（`Identity.sid` 自 claims 注入；FR-036）。
 
-**改密節流**（FR-037；ADR-00078）：
+**改密節流**（FR-037；ADR-00090〔續行 ADR-00078〕）：
 
 | 面 | 契約 |
 |---|---|
 | 鍵 | redis `cpwd:{uid}`（獨立前綴、不在 `throttle:` 之下：維度為 uid、與登入節流之帳號名／IP 維分離；批次清登入節流鍵時不誤清） |
 | 門檻 | 碼內常數 `CHANGE_PWD_MAX_FAILS = 5`、`CHANGE_PWD_WINDOW_SECS = 900` |
-| 計數 | 只有④推進：INCR 與 EXPIRE 900 同一原子管線、存活自最近一次失敗起算（本刀「15 分鐘滑動窗」之落地形）；其餘拒因不推進 |
+| 計數 | 只有④推進（帳號鎖內、rollback 之前）：INCR 與 EXPIRE 900 於伺服器端同一原子單位、存活自最近一次失敗起算（本刀「15 分鐘滑動窗」之落地形）；其餘拒因不推進 |
+| 並發 | 判讀（③）與推進（④）皆在帳號鎖持有期內：同一帳號之並發請求於①排成單列、後到者讀得到先到者已落地之推進 ⇒ 窗內舊密比對失敗合計至多 5 次（ADR-00090 決定 2） |
+| 壞值 | 判讀：非整數字串＝視同 0；非字串型別＝讀取錯誤、照降級放行（計一格）；可解析整數照計數（≥ 5 即拒）。推進：遭伺服器以型別不符、非整數、遞增溢位三類錯誤拒者，於同一原子單位內除去壞值後遞增（＝1）並刷窗、warn 一則、自癒不計降級；其餘伺服器錯誤與連線故障不觸發、照降級 |
 | 拒／解除 | 計數達 5 後第 6 次起於③拒；成功改密（commit 後）即清、否則鍵自然過期＝窗自癒；無解鎖端點（ADR-00069 款 5 不觸發） |
-| 降級 | redis 讀寫錯誤＝放行（precheck 不拒、推進與清空略過）並計 `throttle_degraded_total{source="redis_change_pwd"}` 一格（來源 10→11）；快取自始缺席（`AppState.cache` 為 None＝測試專用形）＝放行、不計（沿 `throttle::precheck` 既有取態） |
-| 射程 | ADR-00038「redis 在節流面只承載兩種鍵」限登入節流（島 E）、改密節流不在其內＝ADR-00078 明文 |
+| 降級 | redis 讀寫錯誤或逾時（帳號鎖內之讀桶與推進各 1 秒上界＝`CHANGE_PWD_CACHE_TIMEOUT`；user 2026-10-12 裁定）＝放行（precheck 不拒、推進與清空略過）並計 `throttle_degraded_total{source="redis_change_pwd"}` 一格（來源 10→11）；快取自始缺席（`AppState.cache` 為 None＝測試專用形）＝放行、不計（沿 `throttle::precheck` 既有取態） |
+| 射程 | ADR-00038「redis 在節流面只承載兩種鍵」限登入節流（島 E）、改密節流不在其內＝ADR-00090 決定 5 明文（照錄 ADR-00078） |
 
 例（seed 政策；明文一律佔位、RL-0054）：
 - `{"oldPassword":"<舊密碼>","newPassword":"<合政策之新密碼 A>","confirmPassword":"<同上>"}` ⇒ `0000`；alice 另一瀏覽器下一次請求 `8888`。

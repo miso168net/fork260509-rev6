@@ -136,7 +136,7 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 - **換發活性重驗**（FR-028）：active 腿於票列 `FOR UPDATE` 與 idle 判定之後、取角色與簽發之前，以 `sys_user::find_by_id`（plain、不 `FOR UPDATE`、不取 advisory）讀帳號；查無列、`status≠Some(1)` 或已軟刪＝rollback＋`8888`、零寫。`rotated` 腿之 grace 命中（30 秒窗）不重驗＝已知殘窗（其 refresh 半下次換發即 `8888`）。
 - **兩層兜底**（FR-029）：①同交易撤票（權威＝`sys_token.status`）＋commit 後盡力寫名單 ②換發鎖內重驗；enforce_mw、getUserInfo 不判帳號狀態。
 
-### 2.3 設密冷卻（經手表一對＝（標的, 操作者）；ADR-00078）
+### 2.3 設密冷卻（經手表一對＝（標的, 操作者）；ADR-00090 決定 1〔照錄 ADR-00078〕）
 
 | 該對現態 | 事件 | 結果 |
 |---|---|---|
@@ -149,19 +149,20 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 - 實判點：resetUserPassword（標的, 操作者）、changePassword（本人, 本人）；addUser 之格＝結構恆過（新 id 無經手列）、以寫經手表承載「初始密碼同計入」（同操作者其後於冷卻內重設該帳號＝拒）。
 - 冷卻鍵缺列、軟刪、不可解析或越界＝退 seed 預設 60＋warn 一則（指名該鍵；不推計數族）；讀庫 `DbErr`＝`5000`。經手表只 upsert、不刪他列。
 
-### 2.4 改密節流桶（redis `cpwd:{uid}`；ADR-00078）
+### 2.4 改密節流桶（redis `cpwd:{uid}`；ADR-00090 決定 2〔續行並改寫 ADR-00078〕）
 
 | 現態 | 事件 | 結果 |
 |---|---|---|
-| 無鍵／計 n＜5 | 舊密比對失敗（已 rollback） | `INCR`＋`EXPIRE 900` 同一 MULTI（`cache::incr_with_window`）→ 計 n+1、窗刷滿 900 秒 |
-| 計 ≥5 | 任何改密請求 | 舊密比對之前拒 `biz.user.changePasswordThrottled`（純 key）；不推進、零稽核 |
+| 無鍵／計 n＜5 | 舊密比對失敗（帳號鎖內、rollback 之前） | `INCR`＋`EXPIRE 900` 同一原子單位（`cache::incr_with_window`）→ 計 n+1、窗刷滿 900 秒 |
+| 桶值非整數字串或非字串型別 | 舊密比對失敗（帳號鎖內、rollback 之前） | 同一原子單位內除去壞值後遞增 → 計 1、窗刷滿 900 秒；warn 一則（target `security.throttle`）、自癒不計降級（非字串型別於判讀時讀取即錯誤＝照降級放行、計一格；遞增溢位之自癒只在寫入原語面——可解析之大整數於 C3 即拒） |
+| 計 ≥5 | 任何改密請求 | 帳號鎖內現讀、舊密比對之前拒 `biz.user.changePasswordThrottled`（純 key）；不推進、零稽核 |
 | 計 n | 最後一次失敗後滿 900 秒 | 鍵到期（窗自癒；無解鎖端點＝ADR-00069 款 5 不觸發） |
 | 計 n | 改密成功且 commit 落定 | `DEL`（清在 commit 之後） |
 | 任意 | 其他拒因 | 不推進 |
-| 任意 | redis 讀寫失敗 | fail-open 放行：先落一則結構化 error（`step`、`error`）再經 `throttle::warn_degraded("redis_change_pwd")`＝`throttle_degraded_total{source="redis_change_pwd"}` +1＋warn |
+| 任意 | redis 讀寫失敗或逾時（帳號鎖內之讀桶與推進各 1 秒上界＝`CHANGE_PWD_CACHE_TIMEOUT`；user 2026-10-12 裁定） | fail-open 放行：先落一則結構化 error（`step`、`error`）再經 `throttle::warn_degraded("redis_change_pwd")`＝`throttle_degraded_total{source="redis_change_pwd"}` +1＋warn |
 | 任意 | 快取自始缺席（測試 seam） | 整層跳過、不計降級 |
 
-- 門檻＝碼內常數 `CHANGE_PWD_MAX_FAILS`＝5、`CHANGE_PWD_WINDOW_SECS`＝900；前綴與登入節流 `throttle:` 分離；桶值不可解析＝視同 0。5 次失敗後第 6 次請求即拒。
+- 門檻＝碼內常數 `CHANGE_PWD_MAX_FAILS`＝5、`CHANGE_PWD_WINDOW_SECS`＝900；前綴與登入節流 `throttle:` 分離；桶值不可解析＝視同 0。5 次失敗後第 6 次請求即拒。判讀（C3）與推進（C4 不符臂）皆在帳號鎖持有期內＝同一帳號之並發請求合計亦受同一上界（ADR-00090 決定 2；本刀 U13 期間增補＝BL-00144）。
 
 ### 2.5 政策載入與壞值（ADR-00079）
 
@@ -222,7 +223,7 @@ PK＝`setting_key`、無序列；界值唯一權威＝`validation.rs` 之 `REGIS
 
 ### 3.9 changePassword（自助；不屬九消費點）
 
-上下文（標的恆＝`identity.uid`、body 無 id）→ body 三欄缺席＝空字串 → `change_pwd::precheck(uid)`（純讀、結果暫持）→ `begin` → `prepare(newPassword)` → **C1** advisory(uid)＋鎖現役列〔`notFound`〕→ **C2** `newPassword ≠ confirmPassword`〔`passwordConfirmMismatch`〕→ **C3** precheck 已達門檻〔`changePasswordThrottled`〕→ **C4** `password::verify(oldPassword, 列.password)` 假（鎖內驗證）〔`oldPasswordMismatch`；rollback 後 `record_failure`〕→ **C5** `newPassword == oldPassword`（舊密已於 C4 驗真 ⇒ 明文相等即同密、零額外 argon2）〔`passwordSameAsOld`〕→ **C6** 政策〔`passwordPolicy`〕→ **C7** 冷卻（本人, 本人）〔`pwdSetTooFrequent`〕→ **寫**：`set_password`（`updated_by`＝本人）→ `touch(uid, uid)` → `handler::user::revoke_sessions_in_txn`（keep＝`identity.sid` → `sys_token::revoke_others_of_user`）＋事件 `password_changed` → 稽核 `change_password` → commit → 他 sid 名單 `revoked` → `change_pwd::clear(uid)`。只 C4 推進節流桶；C3 拒腿零 verify。`identity.sid`＝enforce_mw 自 `claims.sid` 注入。
+上下文（標的恆＝`identity.uid`、body 無 id）→ body 三欄缺席＝空字串 → `begin` → `prepare(newPassword)` → **C1** advisory(uid)＋鎖現役列〔`notFound`〕→ **C2** `newPassword ≠ confirmPassword`〔`passwordConfirmMismatch`〕→ **C3** 帳號鎖內現讀 `change_pwd::precheck(uid)` 已達門檻〔`changePasswordThrottled`〕→ **C4** `password::verify(oldPassword, 列.password)` 假（鎖內驗證）〔`oldPasswordMismatch`；帳號鎖內、rollback 之前 `record_failure`〕→ **C5** `newPassword == oldPassword`（舊密已於 C4 驗真 ⇒ 明文相等即同密、零額外 argon2）〔`passwordSameAsOld`〕→ **C6** 政策〔`passwordPolicy`〕→ **C7** 冷卻（本人, 本人）〔`pwdSetTooFrequent`〕→ **寫**：`set_password`（`updated_by`＝本人）→ `touch(uid, uid)` → `handler::user::revoke_sessions_in_txn`（keep＝`identity.sid` → `sys_token::revoke_others_of_user`）＋事件 `password_changed` → 稽核 `change_password` → commit → 他 sid 名單 `revoked` → `change_pwd::clear(uid)`。只 C4 推進節流桶；C3 拒腿零 verify；開交易之前不讀桶（判讀與推進皆在帳號鎖內＝ADR-00090 決定 2）。`identity.sid`＝enforce_mw 自 `claims.sid` 注入。
 
 ### 3.10 updateMenu 之受保護按鈕碼移除守門（新增一步；ADR-00086）
 

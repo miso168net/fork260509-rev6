@@ -2,9 +2,9 @@
 id: "ADR-00078"
 title: 設密冷卻與改密舊密節流刻意分家——冷卻走設定鍵、維度（標的, 操作者）、借經手表時戳、零豁免；節流走碼內常數 5 次／900 秒、redis 計數桶 `cpwd:{uid}`、舊密比對之前拒、fail-open 並計入節流降級第十一源 `redis_change_pwd`；ADR-00038 射程限登入節流；通用節流 seam 以 rev6 形重做四面比較後不建（BL-00124）
 date: 2026-10-05
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00090]
 provenance: "007-user-password-admin 之 spec FR-035（冷卻）、FR-036（改密步序）、FR-037（改密節流、降級源 10→11、ADR-00038 射程釐清、BL-00124 四面比較）、FR-031（ADR-00037 觸發器反向確認）、US3 AS5／AS6、SC-006、Edge Cases「密碼面」段；brainstorm §0 Q20、§1「設密冷卻」「改密舊密節流」兩列、主線工程判斷③（載體 redis `cpwd:{uid}`、fail-open、降級源 10→11、ADR-00038 射程釐清）與⑨（ADR-00037 觸發器反向確認）；plan 期主線定案（鍵前綴獨立不置於 `throttle:` 下、門檻為碼內常數、降級源字面與名冊雙向守、`throttle/change_pwd.rs` 與 `cache` 鍵 builder 之落點與命名）；藍本＝rev5:ADR 0066（二機制分家、門檻判準、fail-open、四面比較、seam won't-fix）與其 as-built rev5:server/src/throttle/change_pwd.rs、rev5:server/src/cache/mod.rs（`incr_with_window`、`cpwd:` 前綴）、rev5:server/src/model/facade/sys_pwd_custody.rs；冷卻拍板之更早藍本＝rev4:015-pwd-custody（只借冷卻、經手判定不帶回）；rev6 既有件＝`sys_pwd_custody`（001 基線、複合主鍵 (user_id, created_by)）、`validation::REGISTRY` 之 `password_change_min_interval`（[0, 86400]、seed 60）、`sys_login_attempt`（無用途欄）、`obs::THROTTLE_DEGRADED_SOURCES`、`throttle::warn_degraded`、告警規則 `obs016-throttle-degraded`（不設 source 篩選）；上游＝ADR-00038 決定 1～6、憲法島 E（「redis 於本島只承載…」）、ADR-00069 款 5、ADR-00037 翻案觸發器首條；對沖條目＝BL-00124；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
 tags: [password, throttle, cooldown, observability, user-password-admin]
 ---

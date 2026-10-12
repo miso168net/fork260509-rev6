@@ -181,7 +181,7 @@
 - `biz_keys_are_in_roster`：常數迴圈補該單元之 `BIZ_*`（共 21 支：user 二十＋menu 一）、doc 列舉同補；兩攜參鍵另斷言 `AppError::BizData(Cow::Borrowed(k), …)` 之 `key()` 原樣透出。
 - `fixed_variant_keys_are_in_roster`：固定 key 變體補 `AppError::ModalLogoutByAdmin`（「八個固定 key 變體」→九個，U10）。
 - `AppError::key()`：增 `BizData(key, _) => key.as_ref()`、`ModalLogoutByAdmin => msg_key::AUTH_SESSION_KICKED_BY_ADMIN` 兩臂。
-- `pub mod msg_key` doc：固定鍵「八支」→九支（U10）；構造點句「menu 十四鍵之構造點住 `handler::menu`（005 刀 U8 十二鍵、U9 二鍵）」→十五鍵並補「007 刀 U4 一鍵」歸因（U4）；增 user 二十鍵住 `handler::user` 與 `handler::user_center`（`changePasswordThrottled` 之構造點住 `handler::user_center`：節流預檢 `throttle::change_pwd::precheck` 回 `Result<(), Throttled>`、不構造 `AppError`，拒因由 handler 於步序③構造＝research R11 決定 3、ADR-00078 決定 2）；攜參兩鍵之組裝點見 §4.5。
+- `pub mod msg_key` doc：固定鍵「八支」→九支（U10）；構造點句「menu 十四鍵之構造點住 `handler::menu`（005 刀 U8 十二鍵、U9 二鍵）」→十五鍵並補「007 刀 U4 一鍵」歸因（U4）；增 user 二十鍵住 `handler::user` 與 `handler::user_center`（`changePasswordThrottled` 之構造點住 `handler::user_center`：節流預檢 `throttle::change_pwd::precheck` 回 `Result<(), Throttled>`、不構造 `AppError`，拒因由 handler 於步序③構造＝research R11 決定 3、ADR-00090 決定 2）；攜參兩鍵之組裝點見 §4.5。
 - `MSG_KEYS` doc 之批次句同補（刀名形）。
 
 ### 4.4 構造形（純 key）
