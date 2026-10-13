@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00084 -->
+<!-- next: LL-00085 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -89,3 +89,4 @@
 | LL-00081 | 子庫新檔於 commit 前直跑 fork-delta-lint 恆綠：掃描面取 `git diff --name-only <基線>`、看不到未追蹤檔，新檔頭標記之 rc 0 與拔標記自證在此時點皆空轉（007 刀 U14） | RL-0067 | none | [LL-00081-fork-delta-lint-blind-to-untracked-new-files-before-submodule-commit.md](LESSONS/LL-00081-fork-delta-lint-blind-to-untracked-new-files-before-submodule-commit.md) |
 | LL-00082 | DoD 以「`git diff A..HEAD -- <檔> | grep -c <樣式>`＝0」斷言某行未改：被改行在其 3 行內時，預設上下文必帶出該未改行＝子庫 commit 後結構上必紅；commit 前跑則 `A..HEAD` 尚不含改動＝空轉 0（007 刀 U15） | RL-0067 | none | [LL-00082-diff-count-dod-default-context-carries-adjacent-unchanged-line.md](LESSONS/LL-00082-diff-count-dod-default-context-carries-adjacent-unchanged-line.md) |
 | LL-00083 | 單元定義之主線裁定未逐條取證：列舉表值未標是否窮舉、未對齊凍結契約指定之承載者，預期態憑推想未實跑——fix 輪兩輪兩解多耗一輪審查、其後 12 支 agent 之回報皆列此預期差異（007 刀 U16） | RL-0028 | none | [LL-00083-unitdef-ruling-exhaustiveness-and-unverified-expectation.md](LESSONS/LL-00083-unitdef-ruling-exhaustiveness-and-unverified-expectation.md) |
+| LL-00084 | 熱門行不能當 difflib 的錨：在檔內高頻閉合行（如 `</NFormItem>`）與另一段新增之間插入新行，該行即被判為刪除再新增、兩段新增併成一個替換塊，拔掉圈界 lint 照綠——前代「下拉下方另起告知行」之形因而放不進（007 刀 U17） | none：判準住 tools/fork-delta-lint.py（分塊＝difflib 預設 autojunk）與各單元出口之 §1.5 逐塊暫拔斷言；與 LL-00058 同族、守法寫進本檔與後續單元定義，不另立規則 | none | [LL-00084-difflib-popular-line-merges-adjacent-additions-fence-unguarded.md](LESSONS/LL-00084-difflib-popular-line-merges-adjacent-additions-fence-unguarded.md) |

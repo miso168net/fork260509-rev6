@@ -18,7 +18,7 @@ rev5_blueprint:
 
 時間與時區：DB 以 UTC+0 運行——postgres 之 `timezone`／`log_timezone` 由 `docker-compose.yml` 命令列固定為 UTC、compose 各服務明設 `TZ=UTC`（ADR-00059；取代 001 刀「容器預設、不另設定」款），`tools/schema-gate.py check` 先斷言 `SHOW timezone`＝UTC 且其來源在伺服器側（`pg_settings` 之 source 為 client／session＝連線端覆蓋，皆 rc 2）；compose 各服務 `TZ=UTC` 與 postgres 服務環境零 `PGTZ`／`PGOPTIONS` 由 `bash tools/bootstrap.sh` 體檢斷言；應用連線另由 sqlx 以啟動參數 `TimeZone=UTC` 建立。表示瞬間之欄一律 `timestamptz`、禁 `timestamp without time zone`，純日曆日期得用 `date` 並須 spec 具名理由（憲法 §I.6 時間點欄通則、ADR-00060；check 斷言全庫時間欄，`date` 欄須登記於閘內名冊）。migration 與閘不依賴 session 時區——pg_dump 一律帶 `PGTZ=UTC`（`tools/schema-gate.py`、`deploy/backup-db.py`）。wire 與顯示之時間形見 §8.2。
 
-memo 欄家族（`user_memo`／`role_memo`／`menu_memo`／`wbip_memo` 與 `role_desc` 的分工）語意權威＝`docs/ops/reference-src/schema-definition.md` §5；UI 兌現＝管理列表備註欄＋表單輸入：`wbip_memo`＝IP 規則頁、`role_memo`／`menu_memo`＝角色頁與選單頁（§8.4 用途 (ii)；輸入提示語註明僅管理員可見）；`user_memo` 所屬之使用者管理頁未接真、目前無 UI 兌現。
+memo 欄家族（`user_memo`／`role_memo`／`menu_memo`／`wbip_memo` 與 `role_desc` 的分工）語意權威＝`docs/ops/reference-src/schema-definition.md` §5；UI 兌現＝管理列表備註欄＋表單輸入：`wbip_memo`＝IP 規則頁、`role_memo`／`menu_memo`＝角色頁與選單頁（§8.4 用途 (ii)；輸入提示語註明僅管理員可見）；`user_memo`＝使用者頁（清單記事欄純文字插值、新增與編輯抽屜多行輸入；輸入提示語同註明僅管理員可見）。
 
 ORM 關聯與行為層紀律：關聯宣告只映真 DB FK（無 DB FK 之邏輯關聯不建 Relation、需要即手寫 join）、`ActiveModelBehavior` 恆空（審計欄由 model/facade 顯式成對寫、憲法 §I.6 成對條款）——`rust-api/entity/` 已依此宣告，機器錨＝`rust-api/server/tests/entity_behavior_lint.rs`（行為層腿承 rev5 同名形：等式形站點數＝帶 DeriveEntityModel 檔數、空體判定、合成正例必紅；關聯宣告腿為 rev6 自寫：entity `belongs_to` 宣告集 ⊆ migration `ForeignKey::create()` 解出之真 FK 集、兩側字樣數＝解出數之完整性等式、未支援形與原生 SQL FK 形一律紅）。
 
