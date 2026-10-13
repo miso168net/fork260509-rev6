@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00082 -->
+<!-- next: LL-00083 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -87,3 +87,4 @@
 | LL-00079 | 時間換算斷言沿用既有 helper 未體檢下界：U13 新案沿用 004 刀解鎖標記 TTL helper（下界固定 −10 秒、不計實耗），同刀 U12 新寫之快取 TTL helper 下界在實耗之外另扣 10 秒固定餘裕——LL-00074 守法句已烤入仍半合（007 刀 U13） | none：測試斷言寫法——守法句住受影響 helper 之 doc，並由主線烤入同形整合案之單元定義 | code | [LL-00079-reused-ttl-helper-lower-bound-not-audited-against-lag-rule.md](LESSONS/LL-00079-reused-ttl-helper-lower-bound-not-audited-against-lag-rule.md) |
 | LL-00080 | 源碼次序釘與上界案之 doc 宣稱仍逾判準射程；fix 新增判準吞掉既有判準之獨占射程（停用該判準零案轉紅）；行為案以容差區間量常數、容差內改值無逐值釘——LL-00078 守法已烤入，碼品質審查仍跑四輪（007 刀 U12b） | RL-0080 | none | [LL-00080-pin-criteria-subsumed-after-fix-and-tolerance-band-constant-unpinned.md](LESSONS/LL-00080-pin-criteria-subsumed-after-fix-and-tolerance-band-constant-unpinned.md) |
 | LL-00081 | 子庫新檔於 commit 前直跑 fork-delta-lint 恆綠：掃描面取 `git diff --name-only <基線>`、看不到未追蹤檔，新檔頭標記之 rc 0 與拔標記自證在此時點皆空轉（007 刀 U14） | RL-0067 | none | [LL-00081-fork-delta-lint-blind-to-untracked-new-files-before-submodule-commit.md](LESSONS/LL-00081-fork-delta-lint-blind-to-untracked-new-files-before-submodule-commit.md) |
+| LL-00082 | DoD 以「`git diff A..HEAD -- <檔> | grep -c <樣式>`＝0」斷言某行未改：被改行在其 3 行內時，預設上下文必帶出該未改行＝子庫 commit 後結構上必紅；commit 前跑則 `A..HEAD` 尚不含改動＝空轉 0（007 刀 U15） | RL-0067 | none | [LL-00082-diff-count-dod-default-context-carries-adjacent-unchanged-line.md](LESSONS/LL-00082-diff-count-dod-default-context-carries-adjacent-unchanged-line.md) |
