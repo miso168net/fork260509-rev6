@@ -109,6 +109,10 @@ TS_REGEX_PREV_WORDS = frozenset(["return", "typeof", "case", "do", "else", "in",
 FRONTEND_MSG_CONSUMERS = {
     # 登入軟區判斷：同碼 2222 之拒因只靠 msg 分，收到本鍵即顯驗證碼欄並取題（003 刀 U8）
     ("views/_builtin/login/modules/pwd-login.vue", "biz.auth.captchaRequired"): 1,
+    # 請求層明細轉譯白名單兩鍵（ADR-00076）：toast 鏈依 msg 字面認出攜參鍵，違規碼清單逐碼轉人話後插入 `{violations}`（007 刀 U20）
+    ("service/request/index.ts", "biz.user.passwordPolicy"): 1,
+    # 同上：設密冷卻剩餘秒數原值插入 `{remainingSeconds}`（007 刀 U20）
+    ("service/request/index.ts", "biz.user.pwdSetTooFrequent"): 1,
 }
 
 
@@ -1032,7 +1036,8 @@ def self_test():
     Biz 構造鍵之名冊歸屬兩分支／rustfmt 斷行形）＋真 repo 左源兩案（綠案＋零佔位符右源反例）＋斷言 3 案（綠／鍵改名／未登記／名冊項消失／次數不等／註解與 i18n 不誤紅／
     安全前綴隨 locale 頂層鍵變動／比對面為空）＋斷言 2 明細通道十一案（007 刀 U6；合法形綠／動態構造／射程外鍵／同鍵兩處／
     已入名冊零構造點／未入名冊有構造點／射程鍵走 `Biz(`／明細型缺 rename_all／明細型欄名改名〔含查無明細型 rc 2〕／純 key 鍵譯文含
-    佔位符／樣式與宣告不計；射程守四句與佔位符對賬各有專案、拔掉任一判準即對應案紅）；任一案敗＝rc 2、指名案號。"""
+    佔位符／樣式與宣告不計；射程守四句與佔位符對賬各有專案、拔掉任一判準即對應案紅）＋斷言 3 真 repo 請求層案（007 刀 U20；名冊之
+    `service/request/index.ts` 各項 ⇔ 真檔實掃綠、逐項拔真檔一處字面即 rc 1 只指名該項）；任一案敗＝rc 2、指名案號。"""
     all_keys = [v for _, v in SYN_CONSTS]
     cases = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -1297,6 +1302,36 @@ def self_test():
         cases.append(("㉚BizData 樣式與宣告不計（match `(_, _)`／`(k, _)`／`(..)`／`if` 守衛、if-let、`matches!`、enum 變體宣告、"
                       "use 行、測試區構造；總數亦不計＝只剩 error.rs 之 Biz 1 處）",
                       rc == RC_OK and any("Biz／BizData 構造點 1 處（其中 BizData 0 處" in ln for ln in out), rc, out))
+
+        # ── 斷言 3 真 repo 請求層案（007 刀 U20）：名冊中 `service/request/index.ts` 各項（明細轉譯白名單兩鍵）⇔ 真檔實掃逐項全等＝綠；
+        # 再逐項於真檔副本拔該鍵一處字面（取剝註解視圖中該鍵首個消費點之位移、原文同位移改為空字串字面；註解內之同名字面不在視圖、
+        # 拔不到）→ rc 1 且只指名該項＝名冊與請求層白名單分支於真檔上互鎖、非恆綠。左源與右源同⑪（真 error.rs＋合成 locale）；
+        # 比對面只放請求層一檔、他檔之消費點不在本案。名冊無請求層項、真檔缺席或某項於真檔找不到消費點＝本案紅。
+        req_rel = "service/request/index.ts"
+        req_roster = {k: n for k, n in FRONTEND_MSG_CONSUMERS.items() if k[0] == req_rel}
+        real_req = os.path.join(ROOT, DEFAULT_SRC, *req_rel.split("/"))
+        ok_req, rc_r, out_r, pulled = False, None, [], []
+        if os.path.isfile(real_rust) and os.path.isfile(real_req) and req_roster:
+            with open(real_req, encoding="utf-8") as fh:
+                req_text = fh.read()
+            langs = os.path.join(tmp, "real", "langs")
+            rc_r, out_r = run_check(real_rust, langs, write_src(os.path.join(tmp, "req", "web"), {req_rel: req_text}), req_roster)
+            ok_req = rc_r == RC_OK and any(f"前端 msg 字面消費點 {sum(req_roster.values())} 處" in ln for ln in out_r)
+            view = frontend_code_view(req_text, False)
+            for _, key in sorted(req_roster):
+                m = next((m for m in RE_WIRE_LITERAL.finditer(view) if m.group(2) == key), None)
+                if m is None:
+                    ok_req = False
+                    continue
+                mutant = req_text[:m.start()] + "''" + req_text[m.end():]
+                web_m = write_src(os.path.join(tmp, "req", f"web-{len(pulled)}"), {req_rel: mutant})
+                rc_m, out_m = run_check(real_rust, langs, web_m, req_roster)
+                flagged = [ln for ln in out_m if " ✗ " in ln]
+                ok_req = ok_req and rc_m == RC_VIOLATION and len(flagged) == 1 and req_rel in flagged[0] and f"`{key}`" in flagged[0]
+                pulled.append(key)
+                out_r = out_r + out_m
+        cases.append((f"㉛斷言 3 真 repo 請求層：名冊 `{req_rel}` {len(req_roster)} 項 ⇔ 真檔實掃全等綠；逐項拔真檔一處字面即 rc 1、"
+                      f"只指名該項（已拔 {pulled}）", ok_req and len(pulled) == len(req_roster) > 0, rc_r, out_r))
     failed = [c for c in cases if not c[1]]
     for name, ok, rc, out in cases:
         print(f"{TAG} {'✓' if ok else '✗'} self-test {name}（rc={rc}）")
