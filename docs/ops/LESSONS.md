@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00089 -->
+<!-- next: LL-00090 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -94,3 +94,4 @@
 | LL-00086 | 圈界判定只問「新增塊內有沒有標記行」：塊尾 END 本身就是合法標記行，只拔 START、留下 END 時，該塊照樣算有標記，lint 照綠，半套圈界不被攔下（007 刀 U17 揭出，U18b 補成對檢查） | none：判準已晉升為碼面閘本體（tools/fork-delta-lint.py 之 find_unpaired_edges；007 刀 U18b），與 §1.5 逐塊暫拔之出口斷言並守，不另立規則 | gate | [LL-00086-fence-check-counts-end-line-as-marker-half-fence-passes.md](LESSONS/LL-00086-fence-check-counts-end-line-as-marker-half-fence-passes.md) |
 | LL-00087 | 計畫為 fork-delta 修改型指定排版與驗證命令時沒先過工具：「末個 prop 與自閉合符同行」一格式化就被拆回獨行，驗證命令 `pnpm lint` 自帶自動修正、會先改掉被驗的檔（007 刀 U19） | none：同 LL-00082／LL-00085，計畫字面之寫法守在 tasks 撰寫與單元定義審讀，不另立規則 | none | [LL-00087-plan-prescribed-markup-form-and-verify-command-never-run-through-formatter.md](LESSONS/LL-00087-plan-prescribed-markup-form-and-verify-command-never-run-through-formatter.md) |
 | LL-00088 | 「新增圈界塊拔標記必紅」對夾在修改型替換塊裡的新增塊不成立：基線單行 `<script setup lang="ts"></script>` 拆成開閉兩行、新增塊夾其間，START 與 END 同拔時 lint 照綠（007 刀 U20） | none：判準本體已在碼面閘（範圍欄對賬腿＋圈界首尾成對檢查），計畫面之寫法守在 tasks 撰寫與單元定義審讀，不另立規則 | none | [LL-00088-new-fence-block-inside-modification-change-block-survives-pull-check.md](LESSONS/LL-00088-new-fence-block-inside-modification-change-block-survives-pull-check.md) |
+| LL-00089 | 計畫把豁免面最後一個真實例改掉、只交代「語料面不動」：讀真檔斷言「豁免確有實例」的測試隨之轉紅，generate 解不掉（007 刀 U21） | none：零實例之判準本體已在 RL-0067；同 LL-00082／LL-00085／LL-00087／LL-00088，計畫盤點面之寫法守在 tasks 撰寫與單元定義審讀，不另立規則 | none | [LL-00089-plan-retires-last-exempt-instance-real-instance-test-turns-red.md](LESSONS/LL-00089-plan-retires-last-exempt-instance-real-instance-test-turns-red.md) |

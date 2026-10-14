@@ -65,7 +65,7 @@ curl -s "$BASE/systemManage/unlockLogin" -H "authorization: Bearer $TOKEN" -H 'c
 curl -s "$BASE/systemManage/unlockLogin" -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"dimension":"user","userName":"<帳號名>"}' | jq -r .code
 ```
 
-`0000`＝已解鎖、下一次登入嘗試即自該時刻重新計數（未鎖標的亦回 `0000`）；`2222 biz.throttle.invalidUnlockTarget`＝維度或標的畸形（零稽核零狀態）。每次解鎖落一列操作稽核，查核：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust -c "SELECT operation, entity_table, payload_after, real_ip, created_at FROM sys_operation_log WHERE operation='unlock' ORDER BY id DESC LIMIT 5"`。其餘維運端點隨對應刀補實文。
+`0000`＝已解鎖、下一次登入嘗試即自該時刻重新計數（未鎖標的、不存在或已刪之帳號名亦回 `0000`）；`2222 biz.throttle.invalidUnlockTarget`＝維度或標的畸形（零稽核零狀態）；`5003`（限帳號維）＝包含規則拒絕——操作者非持 `R_SUPER` 而標的帳號持有其現役角色集以外之角色（零稽核零標記；改由持有該角色或 `R_SUPER` 者操作；判準＝活書 §6.1「使用者域治理——島 I」⑦）。每次解鎖落一列操作稽核，查核：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust -c "SELECT operation, entity_table, payload_after, real_ip, created_at FROM sys_operation_log WHERE operation='unlock' ORDER BY id DESC LIMIT 5"`。其餘維運端點隨對應刀補實文。
 
 ## 9c. CDP 真登入走查的環境還原契約
 

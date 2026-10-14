@@ -58,7 +58,7 @@ services:
       TZ: UTC  # ADR-00059：容器時區明設 UTC
       # jwt／refresh／redis_url／captcha_secret 四支 secret 檔＋iss／aud 兩支裸 env：003 刀 U1 起由
       # config 六 getter 實讀、main.rs boot 鏈消費（JwtConfig／cache::connect／captcha_secret）；
-      # SMTP／MAIL 群仍為接而不讀、消費歸各自功能刀。
+      # SMTP／MAIL 群仍為接而不讀；郵件面之消費由滯後卷 BL-00141（郵件與個資自助）承載。
       APP_JWT_JWT_SECRET_FILE: /run/secrets/jwt_secret
       APP_JWT_REFRESH_TOKEN_SECRET_FILE: /run/secrets/refresh_token_secret
       APP_DATABASE_URL_FILE: /run/secrets/database_url
