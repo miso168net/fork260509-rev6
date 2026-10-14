@@ -388,6 +388,18 @@ description: "Task list for 007-user-password-admin"
 
 ---
 
+## Phase 15b: User Story 1 — 浮層送出在途關閉後重開之誤關（U18d；★主線一顆；依 U18b；派發排 U19 之後；user 2026-10-14 親決）
+
+**Goal**: 重設密碼浮層、踢除與解鎖登入兩確認對話框、IP 規則頁「解鎖來源 IP」彈窗，於送出在途期間被關閉後重開（改開他列或另一輪）時，舊請求之回應不關此刻開著之浮層（同 T114③ 抽屜之形）；成功提示照常（該次送出已生效）。
+
+**Independent Test**: A 列「重設密碼」送出在途時按 ESC、改開 B 列重設浮層並輸入 ⇒ A 回應落定：成功提示照出、B 之浮層仍開且輸入保留（瀏覽器面併入 U22 CDP、依 spec 刻意分岔登記對照）。
+
+- [x] T117 [US1] ★主線一顆（U18d；user 2026-10-14 親決「修，比照抽屜」；本刀 U18b implementer 升級與規格對照、碼品質兩段審查同列；spec 刻意分岔登記「重設、踢除、解鎖之浮層送出在途關閉後重開」列；依 T114）：`base-web/src/views/manage/user/modules/user-reset-pwd-modal.vue` 與 `base-web/src/views/manage/ip-rule/modules/ip-unlock-modal.vue` 各持開啟序號（可見性由假轉真即遞增）、送出起手記下，成功路徑只在序號未變時關浮層（成功提示與重設浮層之通知掛載端刷新照常）；`base-web/src/views/manage/user/index.vue` 踢除與解鎖登入兩確認對話框之處理器起手記下選取序號（`operateSelectSeq`），回應落定時序號已變＝不關此刻開著之對話框，並回 `false` 擋下對話框自身之關閉（NModal dialog preset 之確定回呼落定且值非 false 即關）；成功提示照常。不新增 i18n 鍵；改點皆在我方新檔與既有 (v) 圈界塊內（零新塊、零修改型）。**DoD：容器內 `pnpm typecheck` rc 0；三檔 `oxfmt --check`／`oxlint` 0 錯 0 警；`python3 tools/fork-delta-lint.py` rc 0；`python3 tools/view-render-guard.py check` rc 0；index.vue 腳本 (v) 塊之 §1.5 三形暫拔（START＋END 同拔、只拔 START、只拔 END）皆紅；四處之序號判定與兩處 `return sameRound` 逐行列入 commit 訊息**
+
+**Checkpoint（U18d）**: 四處浮層只結束送出當輪；base-web commit → 外層一顆（pin bump＋spec／tasks）＋generate
+
+---
+
 ## Phase 16: User Story 3 — 個人中心改密卡、登入表單、請求層明細轉譯（U20；★依 U6、U12、U15、U18；B＋外層工具）
 
 **Goal**: 個人中心改為真頁只掛「修改密碼」卡；登入表單兩欄只驗必填；請求層兩鍵明細轉譯（違規清單逐條人話、冷卻剩餘秒數）。
@@ -476,12 +488,13 @@ description: "Task list for 007-user-password-admin"
 | U18b | T113～T114 | `tools/fork-delta-lint.py`、`README.md`（僅工具樹 fork-delta-lint 列）、`docs/ops/RUNBOOK.md`（僅 §12 兩表之 fork-delta-lint 列）、`docs/ops/reference-src/code-gate-contracts.md`（僅 §4 標記判定句與 rc 句）、`.githooks/pre-commit`（僅 fork-delta 段註解）、`docs/arc42/08-crosscutting-concepts.md`（僅 §8.4 之 fork-delta-lint 機器守兩句）、`base-web/src/views/manage/user/{index.vue,modules/user-operate-drawer.vue,modules/user-reset-pwd-modal.vue}`、`base-web/src/views/manage/ip-rule/modules/ip-unlock-modal.vue` | base-web commit→外層一顆（pin bump＋工具＋文件）＋generate |
 | U18c 主線 | T115 | `base-web/src/views/manage/user/modules/user-operate-drawer.vue`、`docs/arc42/decisions/ADR-00091-user-domain-write-semantics-v2.md`（新、proposed）、`specs/007-user-password-admin/{spec,tasks}.md` | base-web commit→外層一顆（pin bump＋ADR＋spec／tasks）＋generate |
 | U19 | T087～T088、T116 | `base-web/src/views/manage/{role,menu}/index.vue`、`base-web/src/views/manage/role/modules/role-operate-drawer.vue`（僅 (iii) 圈界碼註）、`tools/view-render-guard.py` | base-web commit→外層一顆（pin bump＋工具）＋generate |
+| U18d 主線 | T117 | `base-web/src/views/manage/user/{index.vue,modules/user-reset-pwd-modal.vue}`、`base-web/src/views/manage/ip-rule/modules/ip-unlock-modal.vue`、`specs/007-user-password-admin/{spec,tasks}.md` | base-web commit→外層一顆（pin bump＋spec／tasks）＋generate |
 | U20 | T089～T092 | `base-web/src/views/user-center/index.vue`、`base-web/src/views/user-center/modules/password-card.vue`（新）、`base-web/src/views/_builtin/login/modules/pwd-login.vue`、`base-web/src/service/request/index.ts`、i18n 四處（僅 `page.userCenter` 與其 (vi) 型節）、`tools/msg-key-gate.py`（僅 `FRONTEND_MSG_CONSUMERS` 與自測） | base-web commit→外層一顆（pin bump＋msg-key-gate）＋generate |
 | U21 | T093～T095 | `docs/arc42/{05-building-block-view,06-runtime-view,08-crosscutting-concepts,10-quality-requirements,12-glossary}.md`、`docs/ops/RUNBOOK.md`、`rust-api/server/src/config.rs`（僅註）、`docker-compose.yml`（僅註）、`docs/arc42/decisions/ADR-{00081,00082}-*.md`（草稿）、research R22 現在式面之他檔（僅 errata 判讀為「改」之碼註句；其餘檔命中＝依防呆④升級） | 外層 commit（必要時 rust-api pin bump）＋generate |
 | U22 主線 | T096～T103 | 走查紀錄、腳本與基準檔住工作區；CDP agent 只讀不寫 repo；限定式：dev 庫走查寫入（T102 restore 還原）、rev5 stack 只 up／stop／ps、22080 唯讀；T103：`docs/arc42/decisions/ADR-{00081,00082,00068,00069}-*.md`、`docs/arc42/11-risks-and-technical-debt.md`、`errata ADR-00068`／`ADR-00069` 現算之現在式面、`specs/007-user-password-admin/spec.md`（僅刻意分岔表新增列）、`docs/ops/RUNBOOK.md`（僅 §11 告警查核命令形）、tasks.md | 外層 commit（走查紀錄彙總）＋ADR 顆（必要時子庫碼註改指之 pin bump）＋generate |
 | U23 | T104（主線、先行）；T105～T106（agent）；T107～T110（主線） | T104（主線）：`.specify/memory/constitution.md`、`docs/arc42/decisions/ADR-<PATCH 號>-*.md`（新）；T105：唯讀零寫；T106：`docs/ops/BACKLOG.md`（條文改寫，零刪列）、`server/tests/contract.rs`（僅 BL 引用碼註）、`docs/ops/LESSONS/` 該檔（僅 BL 引用句，如需）；主線（不入 agent 清單）：tasks.md 勾選、`docs/ops/events.jsonl`（perf）；限定式（主線、還原式演練、每項當場還原）：T109 各項所觸之檔與 dev 庫、T107 pristine 容器與條件式 restore | PATCH 顆（憲法 1.8.1 獨立 commit）；收攏顆（tasks 勾選＋體檢與演練紀錄）＋generate |
 
-★**派發序**（依相依）：U0→U1→U2→U3→U4（T017→U4a→T023→U4b）→U5→U6→U7→U8→U9→U10→U11→U12a→U12→U13→U12b→U14→U15→U16→U17→U18→U18b→U18c→U19→U20→U21→U22→U23（T104 先行）。全部施工單元排在 T003 之後；U4 起之 base-web 既有檔改動另受 T002 硬閘（U0 在序列上先於一切觸及者）。
+★**派發序**（依相依）：U0→U1→U2→U3→U4（T017→U4a→T023→U4b）→U5→U6→U7→U8→U9→U10→U11→U12a→U12→U13→U12b→U14→U15→U16→U17→U18→U18b→U18c→U19→U18d→U20→U21→U22→U23（T104 先行）。全部施工單元排在 T003 之後；U4 起之 base-web 既有檔改動另受 T002 硬閘（U0 在序列上先於一切觸及者）。
 ★**單元序不可並發的共用檔**（同檔單元不並發；research R23 ⑥）：`router.rs`／`tests/contract.rs`（U3 立十二 case 後逐單元充實→U14 收口→U23 碼註）、`handler/user.rs`（U3→U7→U8→U9→U10→U12a〔query 事件欄形〕→U12〔`Identity` 構造點〕→U12b〔僅碼註〕→U14〔DTO 可見性〕）、`handler/user_center.rs`（U3 空殼→U12→U12b→U14〔DTO 可見性〕）、`throttle/change_pwd.rs`（U12→U12b）、`error.rs`＋i18n 四處 backend 節（U4 1 鍵→U6 變體→U8 11→U9 1→U10 5→U12 4→U12b 僅碼註；U15 起 i18n 另有 page 樹與型別擴充）、`facade/test_kit.rs`＋`tests/common/mod.rs`（U2 擴面→U3 號段→U4 註→各單元號段→U11 植列→U12a debug 級捕捉件）、`auth/enforce.rs`（U7 doc→U10 三向→U12 `sid`）、`facade/sys_user.rs`（U5→U13 doc）、`tests/authz_entrypoint_lint.rs`（U8 reload 植入→U14 腿⑦）、`model/password.rs`（U6→U8 掃描案→U12 名冊→U12b 碼註）、`cache/mod.rs`（U10→U12→U12b）、`obs.rs`＋`lib.rs`（U6→U10→U12→U12b〔`obs.rs` 碼註〕）、`views/manage/user/index.vue`（U17→U18）、`tools/view-render-guard.py`（U18→U19）、`tools/msg-key-gate.py`（U6→U20）、`docs/ops/RUNBOOK.md`（U0→U1→U6→U8→U12→U16→U18→U21→U22）、`README.md`（U0→U1→U16→U18）、活書 05（U0→U1→U5→U16→U21）、活書 12（U0→U4→U16→U21）。
 ★**每單元邊界主線動作**（六步序、不入 agent 清單）：①復核 report（逐項 grep、`errata` 復掃）→②load-bearing 自驗（容器內 rc＋`docsync lint`；動 ROUTES 者另跑 `python3 -B tools/docsync test`；寫端單元另跑 `python3 tools/schema-gate.py check`）→③落帳（BACKLOG／LESSONS／tasks 勾選／ADR；範圍欄差額記 PATCH 清單）→④子庫 commit→⑤`git add <子庫>`→`generate`→`git add` 生成物→⑥外層 commit（pin bump）→派下一支前逐條問「它 import／呼叫／宣告的東西存在嗎」（RL-0008）。★review 輪空 blockers 先讀 `reason` 與 journal 判該輪審查確有執行（RL-0079）。
 
@@ -506,6 +519,7 @@ description: "Task list for 007-user-password-admin"
 - **Phase 14b（U18b）**：依 U18（使用者頁四浮層、抽屜產密與兩彈窗之現形）＋U17b（搜尋卡 v-show）；T113 → T114（先工具後 base-web：T114 之圈界塊須過成對檢查）；派發排 U19 之前（`user/index.vue` 與 `tools/fork-delta-lint.py` 同檔序）。
 - **Phase 14c（U18c）**：依 U18b（抽屜之送出重入守與開抽屜序號）；T115（主線一顆）。
 - **Phase 15（U19）**：依 U15、U18（view-render-guard (b)）；T087；T088 可分派；T116 依 U18b（回收桶開關停用之形）。
+- **Phase 15b（U18d）**：依 U18b（送出中旗標、選取序號與抽屜之序號分流形）；派發排 U19 之後（U19 不碰使用者頁與 IP 規則頁、同為 base-web 子庫序）；T117（主線一顆）。
 - **Phase 16（U20）**：依 U6、U12、U15、U18（`pwd-policy.ts`、`page.passwordPolicy`）；T089 → T091；T090、T092 可分派。
 - **Phase 17（U21）**：依 U1～U20；T093 → T095；T094 可分派。
 - **Phase 18（U22）**：依 U1（走查工具）＋U15～U21；T096 → T097 → T098 → T099 → T100 → T101 → T102 → T103（同一走查窗、序列）。
