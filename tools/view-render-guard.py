@@ -74,6 +74,10 @@ ANCHORS = {
     os.path.join(SCAN_REL, "ip-rule", "index.vue"): ((":show-add", "hasAuth('ipRule:add')"), (":show-delete", "false")),
     os.path.join(SCAN_REL, "user", "index.vue"): ((":show-add", "!showDeleted && hasAuth('user:add')"),
                                                   (":show-delete", "!showDeleted && hasAuth('user:delete')")),
+    os.path.join(SCAN_REL, "role", "index.vue"): ((":show-add", "hasAuth('role:add')"),
+                                                  (":show-delete", "hasAuth('role:delete')")),
+    os.path.join(SCAN_REL, "menu", "index.vue"): ((":show-add", "!showDeleted && hasAuth('menu:add')"),
+                                                  (":show-delete", "!showDeleted && hasAuth('menu:delete')")),
 }
 ANCHOR_TAG = re.compile(r"<TableHeaderOperation(?=[\s/>])")
 ANCHOR_CLOSE = re.compile(r"</TableHeaderOperation\s*>")
@@ -373,6 +377,9 @@ class TestAnchorRoster(unittest.TestCase):
             "ip-rule/index.vue": ((":show-add", "hasAuth('ipRule:add')"), (":show-delete", "false")),
             "user/index.vue": ((":show-add", "!showDeleted && hasAuth('user:add')"),
                                (":show-delete", "!showDeleted && hasAuth('user:delete')")),
+            "role/index.vue": ((":show-add", "hasAuth('role:add')"), (":show-delete", "hasAuth('role:delete')")),
+            "menu/index.vue": ((":show-add", "!showDeleted && hasAuth('menu:add')"),
+                               (":show-delete", "!showDeleted && hasAuth('menu:delete')")),
         })
 
 
