@@ -354,7 +354,7 @@ LOGINJ Super 123456 | jq -r .code                                    # 0000（�
 SET password_max_length 64; SET password_min_length 8
 ```
 
-- 告警規則 `password-policy-invalid`（`deploy/grafana-provisioning/alerting/rules.yml`；5 分鐘增量 >0）活體實測（U22 執行＝`contracts/code-gates.md` §7.3；dev 庫寫入逐步取 user 放行）：`dc --profile metrics up -d --wait` 後重做上段觸發 → `curl -s 'http://127.0.0.1:39090/api/v1/query?query=sum(increase(password_policy_invalid_total[5m]))' | jq -r '.data.result[0].value[1]'` >0 → Grafana（33000）告警清單該規則轉 Firing；不入 `throttle_degraded_total`（`contracts/code-gates.md` §7）。
+- 告警規則 `password-policy-invalid`（`deploy/grafana-provisioning/alerting/rules.yml`；5 分鐘增量 >0）活體實測（U22 執行＝`contracts/code-gates.md` §7.3；dev 庫寫入逐步取 user 放行）：`dc --profile metrics up -d --wait` 後重做上段觸發 → `curl -s 'http://127.0.0.1:39090/api/v1/query?query=sum(increase(password_policy_invalid_total%5B5m%5D))' | jq -r '.data.result[0].value[1]'` >0（方括號須編碼：curl 把字面 `[…]` 當網址展開、報 rc 3） → Grafana（33000）告警清單該規則轉 Firing；不入 `throttle_degraded_total`（`contracts/code-gates.md` §7）。
 
 設密冷卻（AS5；維度＝標的×操作者）與管理員重設之斷權（US2 AS3）：
 
@@ -501,7 +501,7 @@ RC "--scan --pattern 'throttle:unlock:*'"                   # 含 throttle:unloc
 | 按鈕權限彈窗（R_SUPER；只觀察、按取消） | `role:*`／`menu:*` 六碼呈鎖定不可取消（22080 可取消＝刻意分岔「R_SUPER 角色與選單六碼」列）；`ipRule:unlock` 在候選且已勾；★不送出（受保護撤銷拒＝整合測試面） |
 | 選單編輯刪碼守門（32080 單邊） | 以自建選單（按鈕清單含 `role:edit` 與一自由碼）編輯、移除 `role:edit` 送出 → `biz.menu.protectedButtonRemove` 譯文提示、按鈕清單不變（22080 照常移除＝刻意分岔「選單編輯移除按鈕碼」列；只靜態對賬） |
 | IP 規則頁 | Super 見表頭前綴插槽「解鎖來源 IP」鈕（`ipRule:unlock`）→ 彈窗輸入 IP → 成功；不持碼者不見；表頭既有 prop 形不變（view-render-guard 錨）；22080 無此入口＝刻意分岔（32080 單邊＋22089 結構錨） |
-| 個人中心 | 頭像下拉 → 只掛「修改密碼」卡、其餘卡位留白；即時規則（攔截政策讀使之失敗 → 靜默退為必填）；成功 → 當前分頁保留、另一分頁 8888；零角色帳號可達 |
+| 個人中心 | 頭像下拉 → 只掛「修改密碼」卡、其餘卡位留白；即時規則（攔截政策讀使之失敗 → 退為只驗必填；卡不另出提示、共用請求層之統一錯誤提示照常）；成功 → 當前分頁保留、另一分頁 8888；零角色帳號可達 |
 | 登入頁 | 兩欄只驗必填：輸入任意非空字串不出格式紅字（22080 自 `rev5:007` 已同形）；以含特殊字元且超過 18 字密碼之自建帳號直接登入成功；captcha 軟區零變更；三顆快速登入鈕仍在（BL-00049） |
 | 語言下拉 | 32080 恰「简体中文／繁體中文／English」三項、清除儲存後首次開啟為繁中（22080 兩項且預設簡中＝刻意分岔「預設語言與語言下拉」列；詳 §11） |
 
@@ -619,7 +619,7 @@ SQL "SELECT string_agg(DISTINCT operation, ',' ORDER BY operation) FROM sys_oper
 | 款 | 觀察路徑 → 症狀（以實測定稿） |
 |---|---|
 | ADR⑧ 款 7（結案） | Super 開使用者頁 → 首載清單成功、新增抽屜之角色下拉列活性且啟用之角色；持停用角色者於編輯抽屜以灰色保留選項呈現（`rev5:B-145` 結案） |
-| ADR⑧ 款 10（改述） | 以 `qs_dora` 開角色頁（其角色被授角色管理頁可見性）→ 表頭與列鈕只見所持 `role:edit` 之編輯鈕；抽屜三顆授權鈕可見、彈窗之現況讀端屬封死集回 `5003`、確定鈕停用；選單頁同形（只見 `menu:add` 對應鈕；回收桶清單讀端 getDeletedMenus 屬封死集恆 `5003`、清單載不出＝復原鈕不可達） |
+| ADR⑧ 款 10（改述） | 以 `qs_dora` 開角色頁（其角色被授角色管理頁可見性）→ 表頭與列鈕只見所持 `role:edit` 之編輯鈕；抽屜三顆授權鈕可見、彈窗之現況讀端屬封死集回 `5003`、確定鈕停用、開窗各跳共用請求層錯誤提示「沒有權限執行此操作」；「菜單權限」彈窗另發之 getRoleHome 未授亦 `5003`、首頁下拉照常可操作；選單頁同形（只見 `menu:add` 對應鈕；回收桶清單讀端 getDeletedMenus 屬封死集恆 `5003`、跳同一提示、清單載不出＝復原鈕不可達） |
 | ADR⑧ 款 11（改述） | 全量替換之並行編輯後送出者整份覆蓋續存；可撞上之情境隨本刀擴大——指派寫端可使 R_SUPER 為多帳號持有（三維寫端屬封死集、只 R_SUPER 持有者可達）⇒ Super 與持 R_SUPER 之自建帳號於兩瀏覽情境對同一自建角色之端點權限彈窗先後送出不同期望全集 ⇒ 後送出者整份為準、前者差量被靜默撤銷；改述字面以 ADR⑧ 草稿為準 |
 | ADR⑧ 款 18（全解除） | §10 按鈕顯隱兩列之實測即其證（授撤 `role:*`／`menu:*`／`user:*` 碼後重新登入 ⇒ 對應鈕隨之顯隱） |
 | ADR⑧ 款 20（改述＋實測） | 上列 API 兩發＋CDP：`qs_dora` 於角色頁編輯 `R_QS_OFF` 只改名稱送出 ⇒ 成功、updateRole body 無 `status` 鍵（ADR-00070 觸發器④）；可達條件＝帳號同時屬已停用角色又持 updateRole（本刀指派寫端使之生產可達） |

@@ -47,7 +47,7 @@
 - 唯讀：零鎖、零交易、零稽核；錯誤集只有 `8888` 與 `5000`。登入路徑 MUST NOT 驗政策（seed 三帳號之 6 字元密碼照常登入）。
 
 seed 例：`{"data":{"minLength":8,"maxLength":64,"requireDigit":false,"requireLowercase":false,"requireUppercase":false,"requireSpecial":false,"forbidUsername":false},"code":"0000","msg":"common.success"}`。
-前端：`pwd-policy` hook 組表單規則（改密卡新密碼欄、「重設密碼」浮層）；取不到時靜默退為必填、後端仍是唯一裁判；新增抽屜之設密欄只掛提示文字（FR-038）。
+前端：`pwd-policy` hook 組表單規則（改密卡新密碼欄、「重設密碼」浮層）；取不到時退為只驗必填（卡與浮層不另出提示、不擋送出；共用請求層之統一錯誤提示照常＝user 2026-10-15 親決）、後端仍是唯一裁判；新增抽屜之設密欄只掛提示文字（FR-038）。
 
 ## 2. `POST /userCenter/changePassword`（Authed）
 

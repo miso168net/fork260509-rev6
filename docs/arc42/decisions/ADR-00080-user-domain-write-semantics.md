@@ -2,9 +2,9 @@
 id: "ADR-00080"
 title: 部分更新語意（續行 ADR-00047）——系統設定與角色選單兩域續行；使用者域：可空文字欄空字串＝清空落 NULL（新增與更新同形）、缺席早退＋值 diff（同值零寫入零稽核、不 bump 時戳；早退位次在固定序⑤之首）、指派欄期望全集全量替換（界外整筆拒）；會話政策寫端值 diff 同形；並行編輯恆送欄後送出者為準（已知態）；逐域差異表
 date: 2026-10-05
-status: accepted
+status: superseded
 supersedes: ["ADR-00047"]
-superseded_by: []
+superseded_by: [ADR-00091]
 provenance: "007-user-password-admin 之 spec FR-009、FR-012、FR-013、FR-016、FR-018、FR-020、FR-047、SC-003、US1 AS2／AS3、Edge Cases「使用者寫端」（空字串、同值 no-op、並行編輯、body 缺席或壞形、角色 id 界外）與刻意分岔登記表「可空文字欄之空字串」列；brainstorm §0 Q15（同值不寫不記＝非建議項）／Q16（空字串＝清空）／Q13（停用角色灰色保留）、§3 §1 ADR 待立⑦、§3 §2「no-op 與空字串」；並行編輯已知態之落點＝plan 期主線定案（spec Edge Cases 指 plan 期定）；被續行面＝ADR-00047 五款（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例；續行鏈 ADR-00015→ADR-00047→本 ADR）；前代出處＝rev5:server/src/model/facade/sys_user.rs（updateUser 全缺席早退＋值 diff no-op、指派實際變更亦成對寫審計欄）、rev5:server/src/handler/user.rs（`userGender` 值域外收斂為缺席、`status`／`roleIds` 之 null 與缺席同義、`userName` 出現即拒、守門固定序先於 facade 之早退）、rev5:src/views/manage/user/modules/user-operate-drawer.vue（狀態與角色只在改動時送、會話政策另打其端點）——其更新路徑不摺疊空字串之形（rev5:007 R2-1）由 Q16 翻；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
 tags: [wire, envelope, serde, role-menu-crud, user-password-admin]
 ---

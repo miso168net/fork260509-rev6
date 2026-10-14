@@ -54,7 +54,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。
 
-管理員解鎖登入節流（`POST /systemManage/unlockLogin`；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後：帳號維受包含規則〔007 刀 U13〕、來源維無守門＝ADR-00068 款 9 之續存半〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥）。UI 有兩處入口、共用同一請求包裝（`base-web/src/service/api/rev6-user-admin.ts` 之 `fetchUnlockLogin`）：帳號維＝使用者清單列操作「解鎖登入」（按鈕碼 `user:unlock`；標的＝該列帳號名原文）、來源維＝IP 規則頁表頭「解鎖來源 IP」鈕（按鈕碼 `ipRule:unlock`；彈窗輸入位址字面）；兩入口皆不預查鎖定狀態。以下為 API 直打形。先以超管帳號登入取票，再擇一維度：
+管理員解鎖登入節流（`POST /systemManage/unlockLogin`；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後：帳號維受包含規則〔007 刀 U13〕、來源維無守門＝ADR-00081 款 9 之續存半〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥）。UI 有兩處入口、共用同一請求包裝（`base-web/src/service/api/rev6-user-admin.ts` 之 `fetchUnlockLogin`）：帳號維＝使用者清單列操作「解鎖登入」（按鈕碼 `user:unlock`；標的＝該列帳號名原文）、來源維＝IP 規則頁表頭「解鎖來源 IP」鈕（按鈕碼 `ipRule:unlock`；彈窗輸入位址字面）；兩入口皆不預查鎖定狀態。以下為 API 直打形。先以超管帳號登入取票，再擇一維度：
 
 ```bash
 BASE=http://127.0.0.1:32080/api
@@ -146,6 +146,18 @@ curl -s "$BASE/systemManage/updateSystemSetting" -H "authorization: Bearer $TOKE
 ```
 
 `0000`＝已寫入、下一次設密即讀新值（政策每次消費現讀、不快取）；`2222 biz.systemSettings.invalidValue`＝值越該鍵 registry 界或非整數字面（寫端逐鍵驗、不驗跨鍵組合＝ADR-00079 決定 2）。改正後計數不再增、告警於 5 分鐘窗過後自然解除。
+
+查告警判準值與告警狀態（需 `metrics` profile 在跑；埠＝`docs/generated/reference/ports.md`）：
+
+```bash
+curl -s 'http://127.0.0.1:39090/api/v1/query?query=sum(increase(password_policy_invalid_total%5B5m%5D))' | jq -r '.data.result[0].value[1]'
+GF=$(docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T grafana cat /run/secrets/grafana_admin_password)
+curl -s -u "admin:$GF" http://127.0.0.1:33000/api/prometheus/grafana/api/v1/rules | jq -r '.data.groups[].rules[] | select(.name == "password-policy-invalid") | .state'
+```
+
+- 前者＝告警判準之 5 分鐘增量（`0`＝不響）；方括號須編碼，字面 `[5m]` 會被 curl 當網址展開、報 rc 3。後者＝告警狀態（`inactive`／`pending`／`firing`）。
+- ★要實測告警，先起 `metrics`、待 Prometheus 抓到首樣本後再製造矛盾並設密：計數為行程內累計、`increase` 只看抓取期間之變化，先觸發後起則首樣本即含觸發值、增量 0、告警不響。
+- 只起 `metrics`、未起 `obs` 時，以 Loki 為資料源之告警（如 `ipgate-degraded`、`accesslog-write-fail`）於同一清單呈 `firing` 而 health 為 `error`（查無 loki 主機）＝環境未起、非真告警。
 
 其餘觀測層維運隨觀測刀補實文。
 
@@ -246,9 +258,9 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 判定面過渡窗（授權寫端 commit 至判定面換上之間；ADR-00067 決定 6①）：窗內其他並行請求讀舊面——剛授予或剛復原之端點短暫仍回 `5003`（授予面反向症狀）、剛撤銷之端點短暫仍放行（撤銷殘留）；窗長＝一次重建＋失敗重試之退避＋排隊等候在途同步，換上即止（有界自癒、毋須處置）。發起寫端之請求於同步結束後才收到回應，單一操作者一般觀察不到此窗；窗不收（§11.2 `exhausted` 增）＝耗盡窗、處置沿下段「判定面同步耗盡」四步。
 
-排障錨「剛授予或剛復原之端點仍回 `5003`」依觀察時點分流（ADR-00067 決定 9）：①觀察早於發起寫端收到回應（他人並行之請求）＝過渡窗，稍後重送即通；②發起寫端已回成功後仍 `5003`＝不是過渡窗（回應於同步結束後才送出＝ADR-00067 決定 4），依序查——標的角色是否停用（角色管理頁狀態欄；停用不擋授權寫入與復原，停用即斷權出自授權讀端每請求濾角色狀態、重新啟用後下一請求即生效＝ADR-00065 決定 3 第⑤腿、ADR-00068 款 16，三維授予同理）→（限授予）寫端回應之 `effective` 是否含該（路徑, 方法）（不含＝所送之鍵不屬 getAllEndpoints 候選、已被 orphan skip 靜默略過＝ADR-00066 決定 2）→ 該鍵是否其後被撤（授權回收桶頁出現該角色該（路徑, 方法）且晚於該次寫端之 `endpoint_revoke` 歸檔列＝後送出之全量替換整份覆蓋＝ADR-00068 款 11；角色刪除受 in-use 守門所擋、持該角色者在場時不可達）→ §11.2 `exhausted` 增量（耗盡窗＝ADR-00067 決定 6②）、處置沿下段。
+排障錨「剛授予或剛復原之端點仍回 `5003`」依觀察時點分流（ADR-00067 決定 9）：①觀察早於發起寫端收到回應（他人並行之請求）＝過渡窗，稍後重送即通；②發起寫端已回成功後仍 `5003`＝不是過渡窗（回應於同步結束後才送出＝ADR-00067 決定 4），依序查——標的角色是否停用（角色管理頁狀態欄；停用不擋授權寫入與復原，停用即斷權出自授權讀端每請求濾角色狀態、重新啟用後下一請求即生效＝ADR-00065 決定 3 第⑤腿、ADR-00081 款 16，三維授予同理）→（限授予）寫端回應之 `effective` 是否含該（路徑, 方法）（不含＝所送之鍵不屬 getAllEndpoints 候選、已被 orphan skip 靜默略過＝ADR-00066 決定 2）→ 該鍵是否其後被撤（授權回收桶頁出現該角色該（路徑, 方法）且晚於該次寫端之 `endpoint_revoke` 歸檔列＝後送出之全量替換整份覆蓋＝ADR-00081 款 11；角色刪除受 in-use 守門所擋、持該角色者在場時不可達）→ §11.2 `exhausted` 增量（耗盡窗＝ADR-00067 決定 6②）、處置沿下段。
 
-授權回收桶某列復原鈕停用、或復原回 `2222 biz.policy.notRestorable`：一因一鍵、不揭露哪一腿（ADR-00065 決定 7），拒因亦不落 log——對照該列欄位依序自查：原因非 `endpoint_revoke`（選單維與按鈕維只剩閱覽，恢復＝於授權彈窗重勾＝ADR-00068 款 15）→ 來源角色不存在、已刪、已刪後以同代碼重建，或該列無來源角色 id（非同實例）→ 來源角色非 `R_SUPER` 而該（路徑, 方法）屬封死集 → 該（路徑, 方法）已不在路由表之政策保護端點全集；腿序與判準＝活書 §6.1「授權治理——島 G」④（旗標＝同段③）。清單顯示可復原、按下卻被拒＝旗標是列表當下之派生值，其後狀態已變或該列已被他人復原而消費（查無亦同鍵），重取清單再判；來源角色停用不擋復原（成功後仍 `5003`＝見上段排障錨）。
+授權回收桶某列復原鈕停用、或復原回 `2222 biz.policy.notRestorable`：一因一鍵、不揭露哪一腿（ADR-00065 決定 7），拒因亦不落 log——對照該列欄位依序自查：原因非 `endpoint_revoke`（選單維與按鈕維只剩閱覽，恢復＝於授權彈窗重勾＝ADR-00081 款 15）→ 來源角色不存在、已刪、已刪後以同代碼重建，或該列無來源角色 id（非同實例）→ 來源角色非 `R_SUPER` 而該（路徑, 方法）屬封死集 → 該（路徑, 方法）已不在路由表之政策保護端點全集；腿序與判準＝活書 §6.1「授權治理——島 G」④（旗標＝同段③）。清單顯示可復原、按下卻被拒＝旗標是列表當下之派生值，其後狀態已變或該列已被他人復原而消費（查無亦同鍵），重取清單再判；來源角色停用不擋復原（成功後仍 `5003`＝見上段排障錨）。
 
 判定面同步耗盡（§11.2 `casbin_reload_total{outcome="exhausted"}` 增、或 `casbin-reload-anomaly` 告警之 outcome＝exhausted）：寫端回應與 DB 皆已成功落地（原寫端不需重送），但現役判定面仍是上一份、本次已歸檔之授權仍在記憶體面生效——撤銷殘留（新撤之端點持續放行）、移除面之殘留繼承（同路由名重建之選單、同代碼重建之角色可經殘留面繼承）與授予面反向症狀（新授或剛復原之端點持續回 `5003`）並列（耗盡窗＝ADR-00043 決定 9；觸發面擴及授予面與復原、兩窗之定義＝ADR-00067 決定 6）。處置依序：
 
@@ -310,7 +322,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
    - ②的 `warnings` 含三類不算降級的告警（設定檔有不認得的鍵、訪客位址標頭名不合法〔§16.2〕、載入完成但零受信網段）；這三類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
    - ③看印出的數、不看 rc：`grep -c` 零命中時印 `0` 而 rc 為 1。③橫跨容器 log 內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`（如 `--since 24h`）。
    - 告警規則 `ipgate-degraded`（`deploy/grafana-provisioning/alerting/rules.yml`）也涵蓋載入降級，但啟動端事件每次啟動只發一次、紅一個評估窗即復歸——部署當下以②③④為準、不等告警。
-5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00069 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
+5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00082 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
 
 ### 16.2 CDN 邊緣網段：兩處各存一份、必須同步更新
 
@@ -343,6 +355,6 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | 項 | 去處 |
 |---|---|
 | 登入頁三顆快速登入鈕與表單預填密碼把 dev seed 帳密帶進前端——★轉 prod 前必須拆除 | 滯後卷 BL-00049（拍板＝ADR-00030） |
-| redis 持久化 | 維持不開（已知態＝ADR-00069 款 5） |
+| redis 持久化 | 維持不開（已知態＝ADR-00082 款 5） |
 | rust-api 行程數 | ★只准單一行程：casbin 判定面同步只換上本行程（ADR-00043 決定 9）；多行程或多實例部署前須先補跨行程同步通知（翻案觸發、風險見活書 §11.1） |
 | 機密輪替與 prod 值 | §7、§15 |

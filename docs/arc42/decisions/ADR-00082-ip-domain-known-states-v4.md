@@ -2,8 +2,8 @@
 id: "ADR-00082"
 title: IP 域已知態集（續行 ADR-00069）——款 1 解除（帳號維＝使用者列「解鎖登入」、來源維＝IP 規則頁「解鎖來源 IP」兩處入口共用同一包裝）、款 3 操作稽核寫入者集擴列使用者域寫端八支與個人中心改密並以現行全集重述（封閉詞彙五詞→八詞）、款 5 複核本刀新增之 redis 狀態皆可自癒、款 6 受審讀型擴列、款 2／4／7／8 續行（現行七款）
 date: 2026-10-05
-status: proposed
-supersedes: []
+status: accepted
+supersedes: ["ADR-00069"]
 superseded_by: []
 provenance: "007-user-password-admin 之 spec FR-056⑨、FR-006（稽核同交易、動作詞彙封閉五詞→八詞）、FR-021（unlockLogin 帳號維掛包含規則）、FR-026～FR-027（撤票原因 `admin_kick`）、FR-036～FR-037（改密與改密舊密節流 redis 桶、窗自癒）、FR-040（兩處解鎖入口、ADR-00069 款 1 解除、BL-00091 收）、FR-041（m0003 增 `ipRule:unlock`）、FR-059（「無 UI 按鈕」句等現在式假述掃除）、FR-064（新讀型入受審名冊）、SC-014、US4 AS9、Edge Cases「包含規則與委派」「斷權與會話」；brainstorm §0 Q9（非建議項）／Q20、GR3、GR4（非建議項）、§3 §1 ADR 待立⑨；被續行面＝ADR-00069 八款（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5；續行鏈 ADR-00040→ADR-00046→ADR-00069→本 ADR）；前代出處＝rev5:ADR 0067（解鎖入口歸屬之前代訂正：實落使用者管理頁頁首、雙維一處）、rev5:server/src/model/audit.rs（動作詞彙增 `kick`／`reset_password`／`change_password` 三詞與其分家理由）——rev6 解鎖入口改為帳號維使用者列、來源維 IP 規則頁（Q9）；draft 於 plan 期落 feature branch、續行款沿 006 刀字面、解除款與改寫款之證據於本刀 CDP 三方對照單元與整合測試觀察後定稿、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00069 狀態）；親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
 tags: [ip-trust-anchor, user-password-admin, known-state, wont-fix, by-design]
@@ -53,7 +53,7 @@ tags: [ip-trust-anchor, user-password-admin, known-state, wont-fix, by-design]
   - 選單寫端（新增／更新／刪除／批刪／復原；本刀起選單編輯移除尚有受保護授權之按鈕碼＝整筆拒、零列〔ADR-00086〕）；
   - 三維授權寫端（updateRoleMenu／updateRoleButton／updateRoleEndpoints；`update`，Applied 含空 diff 恰一列、Rejected 與查無角色零列）；
   - 授權回收桶復原（restorePolicy；`restore`，Applied 恰一列、NoOp 零列〔已知態＝ADR-00081 款 12〕、不可復原零列〔ADR-00065 決定 7〕）；
-  - ★使用者寫端（本刀）：addUser（`add`）、updateUser（`update`；同值＝零列＝ADR-00080 決定 3）、updateUserSessionPolicy（`update`；同值零列）、deleteUser（`delete`）、batchDeleteUser（`delete`，逐標的一列；空陣列與任一違規整批 rollback 皆零列）、restoreUser（`restore`）、kickUser（`kick`；標的記被踢帳號、使用者列零變更）、resetUserPassword（`reset_password`）；
+  - ★使用者寫端（本刀）：addUser（`add`）、updateUser（`update`；同值＝零列＝ADR-00091 決定 3）、updateUserSessionPolicy（`update`；同值零列）、deleteUser（`delete`）、batchDeleteUser（`delete`，逐標的一列；空陣列與任一違規整批 rollback 皆零列）、restoreUser（`restore`）、kickUser（`kick`；標的記被踢帳號、使用者列零變更）、resetUserPassword（`reset_password`）；
   - ★個人中心改密 changePassword（`change_password`；操作者＝本人）。
 
   動作詞彙為封閉八詞（`add`／`update`／`delete`／`restore`／`unlock`／`kick`／`reset_password`／`change_password`；本刀由五詞增三詞、`AuditOperation` 5→8；`reset_password` 與 `change_password` 分家＝受眾〔管理員對他人／本人〕與授權面〔政策保護／登入即可用〕皆不同）；稽核 payload 不含密碼明文與雜湊（島 I5；spec FR-006）。非寫入者：既有系統設定寫端維持不落稽核列（002 刀刻意決定）；m0003 之 seed 基線層改列不落操作稽核（島 G 之 G2 末句；ADR-00085）；讀端（含 getPasswordPolicy）不落；包含規則、seed 保護、本人規則與各業務守門之拒絕腿皆零列。⇒ 查詢端不得據此表宣稱「所有管理操作皆有稽核」。
@@ -79,6 +79,25 @@ tags: [ip-trust-anchor, user-password-admin, known-state, wont-fix, by-design]
 | 7 未知規則類型上 wire | 7 | 續行 |
 | 8 阻擋 warn 不設節流 | 8 | 續行 |
 
+## 親決分類
+
+依 ADR-00089（RL-0086）；類別定義同 ADR-00081 本節。
+
+| 款 | 類別 | 出處或理由 | 白話一句 |
+|---|---|---|---|
+| 決定 1 | 承決 | 款 1 解除＝spec FR-040；款 3 改寫＝spec FR-006；款 5／款 6 複核＝spec FR-026～FR-027、FR-036～FR-037、FR-064；其餘續行＝ADR-00069 同號款；決定節導言之 supersedes 與被續行者 status 屬 accepted 同顆簿記（GT-04） | IP 域舊八款：一款解除、一款改寫、其餘續行。 |
+| 決定 2 | 工程 | 現在式面改指之施工法（RL-0011 四形、RL-0050、LL-00064） | 引舊 ADR 的地方改指本 ADR，計數與詞彙數量詞一起改。 |
+| 款 1 | 承決 | spec FR-040、FR-041；brainstorm Q9、GR3、GR4 | 解鎖登入有兩個畫面入口了，舊款解除。 |
+| 款 2 | 承決 | ADR-00069 款 2 | dev 只能端到端驗三種來源信心態。 |
+| 款 3 | 承決 | ADR-00069 款 3；spec FR-006（動作詞彙封閉八詞、稽核同交易、payload 不含密碼）、FR-010、FR-013（ADR-00091 決定 3）、FR-014、FR-015、US1 AS6、FR-040（GR3）、FR-041（ADR-00085）、FR-043（ADR-00086） | 操作稽核新增使用者寫端與改密，動作詞從五個變八個，系統設定寫端仍不記。 |
+| 款 4 | 承決 | ADR-00069 款 4 | 故障窗內 logout 的回應可分辨票的真假，不修。 |
+| 款 5 | 承決 | ADR-00069 款 5；ADR-00090；spec FR-026～FR-027、FR-036～FR-037 | redis 不開持久化，本刀新增的 redis 狀態遺失也會自己恢復。 |
+| 款 6 | 承決 | ADR-00069 款 6；spec FR-064；ADR-00083 | wire 裁判不開嚴格模式，本刀新讀型入受審名冊。 |
+| 款 7 | 承決 | ADR-00069 款 7 | 未知規則類型照原樣上 wire、前端顯原字串。 |
+| 款 8 | 承決 | ADR-00069 款 8 | 每次 IP 阻擋恰記一則 warn、不節流。 |
+
+- **親決紀錄**：依 ADR-00089（007 刀 tasks T103、2026-10-15）。分類＝本表 10 列：承決 9、工程 1；待決 0。獨立核對（決定 5）首輪：升待決 0、改正 1 列（款 3 出處欄補列）；另依核對觀察於決定 1 出處欄併記導言之 supersedes 簿記；改正後復核（決定 6②）相符。對照表收尾一題（與 ADR-00081 共用）答「照表定稿（建議）」、拉出 0 款。
+
 ## 後果
 
 - ADR-00069 整顆轉 superseded：本 ADR accepted 那一顆同批補 `supersedes: ["ADR-00069"]`、把 ADR-00069 之 status 改為 superseded、`superseded_by` 由 generate 回填（GT-04 對宣告者不看 status，故草稿期 supersedes 恆空）；續行鏈＝ADR-00040→ADR-00046→ADR-00069→本 ADR，讀前三者須併讀本 ADR。
@@ -90,7 +109,7 @@ tags: [ip-trust-anchor, user-password-admin, known-state, wont-fix, by-design]
 ## 翻案觸發器
 
 - 款 2：dev 需要驗 CDN 相關信心態（例如引入本機 CDN 模擬）⇒ 重評 dev 信任模型。
-- 款 3：稽核合規需求要求「一切設定變更可追溯」、系統設定寫端被重寫（008 刀系統設定頁進場時複核）、授權回收桶之 NoOp 移除須留痕（ADR-00081 款 12 翻案）、或使用者域同值提交須留痕（ADR-00080 決定 3 翻案）。
+- 款 3：稽核合規需求要求「一切設定變更可追溯」、系統設定寫端被重寫（008 刀系統設定頁進場時複核）、授權回收桶之 NoOp 移除須留痕（ADR-00081 款 12 翻案）、或使用者域同值提交須留痕（ADR-00091 決定 3 翻案）。
 - 款 4：logout 需向呼叫端隱匿撤銷結果之場景出現、或弱 oracle 被證明可組合成實際攻擊。
 - 款 5：出現「redis 重啟後狀態遺失」之實際事故、或新增不可自癒之 redis 狀態。
 - 款 6：出現一次後端欄位外洩而裁判案未擋下之事故、或受審型數量使表驅動斷言不可維護。

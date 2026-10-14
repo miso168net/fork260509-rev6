@@ -322,10 +322,10 @@ spec「★ 軌道逐處登記」表 19 列（`src/main.ts` 候選列已於 plan 
 
 ### 7.3 活體驗證步驟（U22 執行；告警規則依既有活體驗證慣例實測；dev 庫寫入步驟逐步取 user 放行＝LL-00053）
 
-1. rust-api 重啟後 `curl -s http://127.0.0.1:32079/metrics | grep '^password_policy_invalid_total'` 印 `password_policy_invalid_total 0`；`grep '^throttle_degraded_total{source="redis_change_pwd"}'` 印 0。
+1. rust-api 重啟後 `curl -s http://127.0.0.1:32079/metrics | grep '^password_policy_invalid_total'` 印 `password_policy_invalid_total 0`；`grep '^throttle_degraded_total{source="redis_change_pwd"}'` 印 0。起 `metrics` profile（prometheus＋grafana；`docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile metrics up -d`）、待 Prometheus 抓到首樣本（計數 0）——★須先於步驟 2～3：計數為行程內累計、`increase` 只看抓取期間之變化，先觸發後起則首樣本即含觸發值、增量 0、告警不響（U22 實測）。
 2. 以超管票經系統設定寫端（`POST /systemManage/updateSystemSetting`）把 `password_min_length` 設 20、`password_max_length` 設 10（皆在 REGISTRY 界內：前者 (1, 128)、後者 (1, 256)）。
 3. 對自建帳號打一次 resetUserPassword（或本人 changePassword）→ `2222`＋`biz.user.passwordPolicy`；步驟 1 之命令印值 ≥1。
-4. 起 `metrics` profile（prometheus＋grafana；`docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile metrics up -d`）→ 於兩個評估週期內（`interval: 1m`、`for: 0s`）Grafana 告警清單（`127.0.0.1:33000`）中 `password-policy-invalid` 轉 Firing、summary 帶增量；窗過後（5 分鐘內無新增）自然解除。查核命令形（UI 或 Grafana HTTP API）於本步實跑後原樣入 RUNBOOK（只寫實跑過之命令＝006 刀前例）。
+4. 於兩個評估週期內（`interval: 1m`、`for: 0s`）Grafana 告警清單（`127.0.0.1:33000`）中 `password-policy-invalid` 轉 Firing、summary 帶增量；窗過後（5 分鐘內無新增）自然解除。查核命令形（UI 或 Grafana HTTP API）於本步實跑後原樣入 RUNBOOK（只寫實跑過之命令＝006 刀前例）。
 5. 收尾：兩鍵改回 seed 值（8／64）→ 走查還原工具 restore（`system_settings` 值等於合成 seed 值、審計欄歸 NULL；設定寫端之稽核列隨清理面清除）→ `diff` rc 0。
 6. 改密節流降級源以單元測試注入 redis 故障承擔（活體不另造 redis 故障）。
 
