@@ -80,8 +80,8 @@
 - **隨做隨記**：新拍板→ADR draft→accepted；階段 0 定稿與 SDD 步進→NOTES「下一步」同批更新（當前意圖真源）；架構影響→活書對應節【就在 feature branch 內改】；踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）；衍生工作→BACKLOG append；per-unit pin 即時 bump；長流程另開人讀進度表（gitignored 工作區）、每個動作同 call 追加＝context 自動壓縮能接續的前提（機制＝`.claude/hooks/compact-hook.py`、`.claude/settings.json` 三處註冊；規則與檔名／節名約定＝`tools/orchestration/compact-rules.md`）。
   一次性遷移（改名／搬移／基線前進／拓樸調整）之 brainstorm 或 spec 附 Risk／Guard／Rollback 三欄表。
 - **輕量軌**（維護項不開 SDD）：判準＝維護／小修——單點缺陷修復、文件與設定調整、既有機制的小幅完備化；不動 schema、不新增能力面。
-  程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄）。拿不準走哪軌：涉拍板級＝開 SDD。
-- **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES 改下一步 ③`python3 tools/docsync generate`＋`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`
+  程序＝開分支 → 編排單元（或直改）→ `merge --no-ff` 回 default（需 user 同意）→ misc 事件收單（消化 BACKLOG 條目時帶 backlog_done 欄；同顆刪 NOTES「下一步」之本批條、只留未來式——史查 MILESTONES；GT-06 守收單句）。拿不準走哪軌：涉拍板級＝開 SDD。
+- **收刀**：`merge --no-ff` 回 default（保留 feature branch 不清理）→ ①`docs/ops/events.jsonl` append feature_close（window＝序號）②NOTES「下一步」改寫為只剩未來式（本刀與其他已完成之刀／批／輪之條整段刪除、史查 MILESTONES；GT-06 守收單句）③`python3 tools/docsync generate`＋`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`
   → 一筆簿記 commit、lint 全綠放行。簿記一律排在 merge 之後。④簿記 commit 落地後量該顆牆鐘、append 一筆 `close_bookkeeping` perf 事件（隨下一顆 commit 入帳）；同顆逐項核 spec 之簿記後驗 SC 子句、tasks 收刀清單與 contracts 指定之收單事件註記（RL-0084）。
 - **review 輪**：findings 一律三分流（修／轉 BL-NNNNN／won't-fix ADR）；承載處二分——不定期獨立輪落報告 `docs/reviews/YYYYMMDD-<scope>.md`＋一筆 review 事件；
   feature／維護批收刀之 final holistic review 不落報告不落事件、以收單 commit 訊息逐項列處置（RL-0073、承 rev5:ADR 0075）。

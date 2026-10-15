@@ -37,7 +37,7 @@ flowchart LR
 | Workflow 單元 | tasks.md、規則塊 | 工作樹改動、findings、`{status, report}` | Workflow 工具＋看門狗 | 六件套（RL-0058～RL-0062）；PreToolUse hook |
 | final review | 全 diff | 處置清單（修／BL／ADR） | 主線自審 | RL-0073 三分流 |
 | merge | 分支 | default branch 前進 | `git merge --no-ff` | 人審當次同意（RL-0044） |
-| 收刀簿記 | merge SHA | events append、NOTES | 主線 | GT-02／GT-03 事件形制 |
+| 收刀簿記 | merge SHA | events append、NOTES | 主線 | GT-02／GT-03 事件形制；GT-06 NOTES 收單句腿 |
 | generate | 真源檔 | `docs/generated/**`＋例外註冊 | `python3 tools/docsync generate` | GT-01 零漂移 |
 
 ### 品質閘

@@ -130,9 +130,24 @@ class TestMetrics(unittest.TestCase):
         new = dict(questions=8, found=6, detour=2, not_found=0, wrong=0, avg_min_hops=1.5)
         pr = events.metrics([rv("r1", old), json.loads(MISC), rv("r2", new)], lessons=[])["probe_retrieval"]
         self.assertEqual(pr, {"scope": "r2", "le3_ratio": 0.75, "hit_ratio": 1.0, "not_found": 0, "wrong": 0,
-                              "avg_min_hops": 1.5, "negative_wrong": "—"})
+                              "avg_min_hops": 1.5, "negative_wrong": "—", "prev_le3_ratio": 0.5})
         pr1 = events.metrics([rv("r1", old)], lessons=[])["probe_retrieval"]
         self.assertEqual((pr1["le3_ratio"], pr1["hit_ratio"], pr1["wrong"], pr1["negative_wrong"]), (0.5, 0.8, 1, 1))
+        self.assertIsNone(pr1["prev_le3_ratio"], "只有一筆帶 probe 之 review＝無前輪、prev_le3_ratio 為 None")
+
+    def test_probe_retrieval_prev_is_second_latest_valid_probe(self):
+        """ADR-00021「≤3 跳比例輪間不降」之前輪值：取最近一筆之前、最近一筆**形檢合格**之帶 probe review 的 ≤3 跳比例；
+        不取最舊一筆、形檢不合格之 probe 不算一輪。"""
+        rv = lambda scope, found: json.loads(ev(type="review", date="2026-09-03", scope=scope, report="docs/reviews/20260903-x.md",
+                                                findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []},
+                                                probe=dict(questions=10, found=found, detour=10 - found, not_found=0, wrong=0,
+                                                           avg_min_hops=2.0)))
+        broken = rv("bad", 9)
+        broken["probe"]["detour"] = 5                     # 四值不守恆＝形檢不合格（9＋5≠10）
+        pr = events._probe_retrieval([rv("r1", 4), rv("r2", 6), broken, rv("r3", 8)])
+        self.assertEqual((pr["scope"], pr["le3_ratio"], pr["prev_le3_ratio"]), ("r3", 0.8, 0.6))
+        self.assertNotEqual(pr["prev_le3_ratio"], 0.4, "前輪不得取最舊一筆")
+        self.assertNotEqual(pr["prev_le3_ratio"], 0.9, "形檢不合格之 probe 不得充前輪")
 
 
 class TestGt02(unittest.TestCase):
@@ -437,6 +452,20 @@ class TestErrataViewAndMiscAdrs(unittest.TestCase):
         self.assertEqual(view[0]["probe"], p)
         bad = json.loads(ev(type="erratum", date="2026-09-05", target_line=1, field="probe", corrected=dict(p, found=9), reason="r"))
         self.assertTrue(any("不守恆" in x for x in events._check_event(bad)))
+
+    def test_probe_prev_round_comes_from_erratum_backfill_in_view(self):
+        """ADR-00021：前輪 probe 由 erratum 回填（000-r1 形）時，更正視圖下前輪值在帳；原值面（parse_events）則無前輪。"""
+        rv = lambda **k: ev(type="review", date="2026-09-05", scope="doc-governance", report="docs/reviews/20260905-x.md",
+                            findings={"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}, **k)
+        p1 = dict(questions=25, found=12, detour=13, not_found=0, wrong=0, avg_min_hops=2.0)
+        p2 = dict(questions=25, found=19, detour=6, not_found=0, wrong=0, avg_min_hops=1.68)
+        lines = (rv(), ev(type="erratum", date="2026-09-06", target_line=1, field="probe", corrected=p1, reason="回填"), rv(probe=p2))
+        view, errs = self._view(*lines)
+        self.assertEqual(errs, [])
+        pr = events._probe_retrieval(view)
+        self.assertEqual((pr["le3_ratio"], pr["prev_le3_ratio"]), (0.76, 0.48))
+        raw, _ = events.parse_events("\n".join(lines) + "\n")
+        self.assertIsNone(events._probe_retrieval(raw)["prev_le3_ratio"], "原值面無回填＝無前輪")
 
     def test_bad_target_and_bad_field_are_loud(self):
         for err, needle in ((('{"type":"erratum","date":"2026-09-05","target_line":9,"field":"merge",'

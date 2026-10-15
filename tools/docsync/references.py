@@ -532,11 +532,14 @@ def _metric_rows(m):
 
 def _probe_row(pr):
     """ADR-00021 檢索性列：最近一筆帶 probe 之 review 事件、比例現算；目標＝找不到＋答錯＝0、≤3 跳比例輪間不降。
-    ★狀態欄只判得動前半（找不到＋答錯＝0）；「輪間不降」需前一筆 probe 才可判、本列以「—（需前輪值）」明示。"""
+    狀態欄兩半各自判：前半＝找不到＋答錯＝0 判達標、否則超標；後半「輪間不降」＝本輪 le3_ratio ≥ 前輪（prev_le3_ratio）判達標、
+    否則未達標，並印前後兩值（前→本）；無前一筆帶 probe 之 review＝印「—（需前輪值）」。"""
     goal = "找不到＋答錯＝0；≤3 跳比例輪間不降"
     if pr == "n/a":
         return f"| 檢索性（最近獨立輪探針） | n/a | {goal} | — |"
-    status = _metric_status(pr["not_found"] + pr["wrong"], lambda v: v == 0) + "；輪間不降 —（需前輪值）"
+    prev, cur = pr["prev_le3_ratio"], pr["le3_ratio"]
+    trend = "—（需前輪值）" if prev is None else f"{'達標' if cur >= prev else '未達標'}（{prev}→{cur}）"
+    status = _metric_status(pr["not_found"] + pr["wrong"], lambda v: v == 0) + "；輪間不降 " + trend
     return (f"| 檢索性（最近獨立輪 {pr['scope']}） | ≤3 跳 {pr['le3_ratio']}／答對 {pr['hit_ratio']}／找不到 {pr['not_found']}／答錯 {pr['wrong']}"
             f"（否定對照答錯 {pr['negative_wrong']}）；平均最短 hops {pr['avg_min_hops']} | {goal} | {status} |")
 

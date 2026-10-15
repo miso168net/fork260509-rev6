@@ -418,6 +418,16 @@ TENSE_FORMS = tuple(re.compile(re.escape(w)) for w in ("待決", "TBD", "⏳", "
 # 同行他詞、鍵字面、其他 frontmatter 欄與正文照判。
 BLUEPRINT_KEY = "rev5_blueprint"
 BLUEPRINT_FOLLOW = "隨刀："
+# NOTES「## 下一步」節收單句腿（RL-0048 完成即刪、git 即史）：該節只寫當前意圖與下一步，整刀／整批／整輪收單後其條整段刪除、
+# 史查 MILESTONES。同義集單一家＝NOTES_DONE_FORMS：「已收刀」「已收單」「已全數收單」「皆已收」——「皆已收」後接字詞即不成形
+# （Python `\w` 於 str 含 CJK，故「皆已收斂」不中、「皆已收：」「皆已收（」中）；「三支皆已收單」以「已收單」單筆計。
+# 射程只到整刀／整批／整輪之收單字樣，刀內進度句照寫。射程外（記錄在案、非缺口）：①裸「已收」後接標點——刀內進度句
+# （`/speckit-clarify` 已收（…）、U0 已收（…））共用此形，收進樣式即誤擋進度句，整批／整輪偶用此形者亦一併漏網
+# ②「已收刀的／之」「已收單的／之」修飾形——指稱已收之刀類（如「不再回頭改已收刀的 spec 目錄」）、非收單句；「已收單後」
+# 與不帶「已」之「全數收單後」條件形——未收完時之計畫句（實見「七支全數收單後＝005」）
+# ③「已由某批收」從句形與「收於」形——無收單專屬字樣。三者由 CLAUDE.md §2 收刀與輕量軌收單步驟字面守。
+NOTES_NEXT = "## 下一步"
+NOTES_DONE_FORMS = re.compile(r"已(?:全數)?收[單刀](?![的之後])|皆已收(?!\w)")
 RE_SHEBANG_SH = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:/bin/|/usr/bin/)?(?:ba)?sh\b")
 SHEBANG_OK = ("#!/usr/bin/env bash", "#!/bin/sh", "#!/usr/bin/env sh", "#!/bin/bash")
 RE_GLUE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]")
@@ -502,16 +512,44 @@ def _forbidden_refs(ctx):
     return out
 
 
+def _notes_done_leg(ctx):
+    """NOTES「## 下一步」節收單句腿（RL-0048 完成即刪、git 即史）：節＝rstrip 後恰為 `## 下一步` 之行起、至下一個以 `## ` 起首之行
+    （不含）或檔尾止；先 strip_code（反引號與 fenced 內之提及不算＝同閘連結／行號腿之提及原則），節內每處 NOTES_DONE_FORMS 一筆 ERROR。
+    掃描面＝該節：NOTES 在 tracked 而無此節＝一筆 ERROR（RL-0051 掃描面空集合即紅）。
+    NOTES 不在 tracked 或讀不到＝本腿不另報；兜底逐途徑：①不在 tracked 亦不在磁碟、③在 tracked 而工作樹讀不到——current_wave
+    讀磁碟讀不到，由 gt_10 的波標記缺席腿兜底；②在磁碟而未入 tracked（如 `git rm --cached`）——current_wave 照讀到波標記、gt_10
+    不紅，兜底＝GT-12 工作樹⇔暫存區一致性腿（暫存區≠HEAD 時報該檔未追蹤）；②於該檔被 ignore 或暫存區＝HEAD 時無兜底。"""
+    text = ctx.text(NOTES) if NOTES in ctx.tracked else None
+    if text is None:
+        return []
+    out, on, seen = [], False, False
+    for i, line in enumerate(strip_code(text).split("\n"), 1):
+        if line.rstrip() == NOTES_NEXT:
+            on = seen = True
+            continue
+        if line.startswith("## "):
+            on = False
+        for m in (NOTES_DONE_FORMS.finditer(line) if on else ()):
+            out.append(finding(ERROR, "GT-06", f"{NOTES}:{i}",
+                               f"NOTES「## 下一步」節之收單句「{m.group(0)}」——該節只寫當前意圖與下一步（RL-0048 完成即刪、git 即史）；"
+                               "補救＝已完成之刀／批／輪之條整段刪除；命中處若為進行中條目內之已收子句，刪該子句、保留未來式部分；史查 docs/generated/MILESTONES.md"))
+    if not seen:
+        out.append(finding(ERROR, "GT-06", NOTES,
+                           "NOTES「## 下一步」節缺席（收單句腿之掃描面；RL-0051 掃描面空集合即紅）——"
+                           f"補救＝恢復節標題 `{NOTES_NEXT}`（該行 rstrip 後須恰為此字面）"))
+    return out
+
+
 def gt_06(ctx):
     """GATE:
       id=GT-06
       rule=RL-0048、RL-0015、RL-0077
       source=rev5:ADR 0012
-      drift=引用斷鏈、時態混入、tmp 具名路徑、spec 契約檔引用
-      face=tracked *.md；活書家族；現在式面全副檔名（tmp 腿與 spec 契約腿）
+      drift=引用斷鏈、時態混入、tmp 具名路徑、spec 契約檔引用、NOTES 下一步節殘留收單句
+      face=tracked *.md；活書家族；現在式面全副檔名（tmp 腿與 spec 契約腿）；NOTES「## 下一步」節（收單句腿）
       trigger=pre-commit
       rc=1
-      breaks-if-removed=死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針、跨刀活體契約回流 spec 目錄
+      breaks-if-removed=死連結與未來式靜默入書、受版控文件指進 gitignored tmp 成死指針、跨刀活體契約回流 spec 目錄、已收單之刀／批／輪條目在 NOTES 下一步節累積成過期意圖
     """
     out = []
     book_seen = False
@@ -550,6 +588,7 @@ def gt_06(ctx):
                                                                   "過去式住 git＋events）——補救＝改寫為現在式（以 as-built 為準、無實體寫「目前無」附理由），"
                                                                   "未來義務移 ops（BACKLOG／NOTES）"))
     out += _forbidden_refs(ctx)
+    out += _notes_done_leg(ctx)
     if not book_seen:
         out.append(finding(ERROR, "GT-06", "docs/arc42", "活書家族缺席（現在式面必在；RL-0051 掃描面空集合即紅）——連結／行號／路徑腿照跑"))
     return out

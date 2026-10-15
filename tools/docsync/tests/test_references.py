@@ -302,16 +302,56 @@ class TestStateTruncationAndMetricStatus(unittest.TestCase):
         self.assertEqual(references._metric_status("n/a", lambda v: v <= 1), "—")
         self.assertIn("檢索性", out)
 
-    def test_probe_row_status_half_judged(self):
-        row = references._probe_row({"scope": "s", "le3_ratio": 0.5, "hit_ratio": 1.0, "not_found": 0, "wrong": 0,
-                                     "negative_wrong": 0, "avg_min_hops": 2.0})
+    @staticmethod
+    def _pr(le3, prev, not_found=0, wrong=0):
+        return {"scope": "s", "le3_ratio": le3, "hit_ratio": 1.0, "not_found": not_found, "wrong": wrong,
+                "negative_wrong": 0, "avg_min_hops": 2.0, "prev_le3_ratio": prev}
+
+    @staticmethod
+    def _status(row):
+        return row.split("|")[4].strip()
+
+    def test_probe_row_first_half_and_no_prev(self):
+        """前半（找不到＋答錯＝0）判達標／超標；無前輪＝後半印「—（需前輪值）」、不印比較結果。"""
+        row = references._probe_row(self._pr(0.5, None))
         self.assertIn("平均最短 hops 2.0", row)
-        self.assertIn("達標", row)
-        self.assertIn("需前輪值", row)
-        bad = references._probe_row({"scope": "s", "le3_ratio": 0.5, "hit_ratio": 0.8, "not_found": 1, "wrong": 1,
-                                     "negative_wrong": 0, "avg_min_hops": 2.0})
-        self.assertIn("超標", bad)
+        self.assertEqual(self._status(row), "達標；輪間不降 —（需前輪值）")
+        self.assertNotIn("→", row, "無前輪不得印前後兩值")
+        self.assertNotIn("未達標", row)
+        bad = references._probe_row(self._pr(0.5, None, not_found=1, wrong=1))
+        self.assertTrue(self._status(bad).startswith("超標；"), bad)
         self.assertIn("| n/a |", references._probe_row("n/a"))
+
+    def test_probe_row_trend_up_or_flat_is_met(self):
+        """本輪 ≤3 跳比例 ≥ 前輪＝輪間不降達標、印前後兩值（前→本）；持平亦達標。"""
+        for prev, cur in ((0.48, 0.76), (0.76, 0.76)):
+            st = self._status(references._probe_row(self._pr(cur, prev)))
+            self.assertEqual(st, f"達標；輪間不降 達標（{prev}→{cur}）")
+            self.assertNotIn("未達標", st)
+            self.assertNotIn("需前輪值", st, "有前輪不得再印需前輪值")
+
+    def test_probe_row_trend_down_is_unmet(self):
+        """本輪 ≤3 跳比例 < 前輪＝輪間不降未達標、印前後兩值；兩半各自判、前半達標不掩蓋後半未達標。"""
+        st = self._status(references._probe_row(self._pr(0.48, 0.76)))
+        self.assertEqual(st, "達標；輪間不降 未達標（0.76→0.48）")
+        self.assertNotIn("輪間不降 達標", st)
+        self.assertNotIn("需前輪值", st)
+        st2 = self._status(references._probe_row(self._pr(0.76, 0.48, wrong=1)))
+        self.assertEqual(st2, "超標；輪間不降 達標（0.48→0.76）", "前半超標不牽動後半")
+
+    def test_state_probe_row_compares_against_erratum_backfilled_prev_round(self):
+        """gen_state 以更正視圖取 events：前輪 probe 由 erratum 回填時，STATE 檢索性列照印比較結果。"""
+        rv = lambda **k: json.dumps({"type": "review", "date": "2026-09-05", "scope": "doc-governance",
+                                     "report": "docs/reviews/20260905-x.md",
+                                     "findings": {"total": 0, "fixed": 0, "to_backlog": [], "wontfix_adr": []}, **k},
+                                    ensure_ascii=False)
+        p1 = {"questions": 25, "found": 12, "detour": 13, "not_found": 0, "wrong": 0, "avg_min_hops": 2.0}
+        p2 = {"questions": 25, "found": 19, "detour": 6, "not_found": 0, "wrong": 0, "avg_min_hops": 1.68}
+        err = json.dumps({"type": "erratum", "date": "2026-09-06", "target_line": 1, "field": "probe", "corrected": p1,
+                          "reason": "回填"}, ensure_ascii=False)
+        out = self._state(**{EVENTS: "\n".join((rv(), err, rv(probe=p2))) + "\n"})
+        row = [ln for ln in out.split("\n") if ln.startswith("| 檢索性")][0]
+        self.assertEqual(self._status(row), "達標；輪間不降 達標（0.48→0.76）")
 
 
 class TestComputeGeneratedFailLoud(unittest.TestCase):

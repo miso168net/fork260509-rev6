@@ -1,7 +1,7 @@
 ---
 id: "LL-00053"
 rule_id: "RL-0080"
-promotion_surface: none
+promotion_surface: rules
 ---
 LL-00053｜審查員以「拆掉真庫清理守衛」做判準變異，變異本身就把殘留留在 dev 庫或 redis；而 agent 刪鍵與主線 `walkthrough-baseline.py restore` 都被 auto mode 權限分類器以「Modify Shared Resources」拒絕，殘留只能等 TTL 自然到期或交 user 處置（006 刀 U1；2026-10-02）
 
@@ -11,7 +11,7 @@ LL-00053｜審查員以「拆掉真庫清理守衛」做判準變異，變異本
 
 **處置**：主線核實差異恰為該鍵（表 0 差、序列 0 差、redis 只差 1 鍵 1 前綴），且全量測試前後之 `diff` 完全相同（全量本身零新增殘留）；不再嘗試以任何途徑刪除，待 TTL 到期後補跑 `diff` 取 rc 0。
 
-**晉升面**：none——RL-0080 已要求變異打在判準上；本坑是變異手法與共用資料面的交互，守法句寫進本檔與後續單元定義之審查 prompt。
+**晉升面**：rules——user 2026-10-15 裁定 RL-0080 增一款「變異不得拆除、繞過真庫清理守衛或令其 Drop 不跑」（範圍隨該條：implementer、review、fix）。原判（裁定前）：RL-0080 已要求變異打在判準上；本坑是變異手法與共用資料面的交互，守法句寫進本檔與後續單元定義之審查 prompt。
 
 **再犯面與守法**：單元定義之 implementer／審查 prompt 一律烤入——判準變異**不得**拆除或繞過真庫（dev postgres／redis）測試之清理守衛（帶界水位守衛、`SessionKeysGuard`、`OpLogRowsGuard`、`RowFixupGuard` 等）或令其 Drop 不跑；要證守衛或零殘斷言承重，改用「守衛照掛、把斷言之期望反轉」、或在無共用資料面之合成／記憶體面上做。變異若仍意外留下殘留，必須於回報逐鍵逐列指名（表、id、鍵名、TTL）。主線收尾若見殘留：redis 帶 TTL 者等到期；DB 列或無 TTL 之鍵＝列入 user 待辦、不得自行繞過分類器。
 - 同根之另一觸發形（006 刀 U3；2026-10-02）：tasks 所定之主線殘列演練（以 psql 對 dev 庫植一列寫端授予形之殘列、全量測試後依 id 刪除並 setval 回植前值）於植列一步即被同一分類器以「Modify Shared Resources」拒絕——拒在執行前、dev 庫零變。演練之植入與拔除同屬改動共用資料面，拒絕及於同一結果之任何途徑，故不繞行：該 task 不勾、列入 user 待辦（由 user 決定放行該類命令或親自執行）；本刀同形之寫端面殘列演練與收刀前終態演練預期同受此限，排程時即列為 user 待辦項。
