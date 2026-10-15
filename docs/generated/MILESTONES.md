@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-15 | feature_close | 007-user-password-admin | 007 user-password-admin 收單（rev6 第七刀）：島 I 使用者域治理入憲／使用者管理十端點（清單・回收桶兩讀端＋新增・部分更新・刪除・批刪・復原・踢除下線・重設密碼・會話政策八寫端）與使用者頁接真／個人中心改密／密碼政策七鍵・設密冷卻・改密節流／錯誤明細通道兩鍵／解鎖帳號維套包含規則／自助路由白名單／繁中 runtime 與預設語言＋碼面閘 zh-tw-lint／管理頁按鈕碼逐鈕顯隱／seed-only migration m0003；ROUTES 49→61、MSG_KEYS 46→68；憲法 1.7.1→1.8.1 | 8d8dc57 | ADR-00074、ADR-00075、ADR-00076、ADR-00077、ADR-00078、ADR-00079、ADR-00080、ADR-00081、ADR-00082、ADR-00083、ADR-00084、ADR-00085、ADR-00086、ADR-00087、ADR-00090、ADR-00091、ADR-00092、ADR-00093 | 記 BL-00143、BL-00144、BL-00145、BL-00146、BL-00147；收 BL-00031、BL-00047、BL-00048、BL-00065、BL-00091、BL-00124、BL-00136、BL-00138、BL-00143、BL-00144 | §5、§6、§8、§10、§11、§12 |
 | 2026-10-06 | misc | governance | 007 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00140／BL-00141（brainstorm 定稿顆 5bfd07b 入 BACKLOG／BACKLOG-DEFERRED）與 BL-00142（plan 顆 b35ee2c 入 BACKLOG）之誕生；同顆 ADR-00075～ADR-00080、ADR-00083～ADR-00087 十一支經 user 親決轉 accepted（ADR-00074 與憲法 1.8.0 已於前顆 51f55f3）。 | — | — | 記 BL-00140、BL-00141、BL-00142 | — |
 | 2026-10-05 | misc | governance｜maint-readout-errata | maint-readout-errata 收單（user 2026-10-05 依 BACKLOG 體檢 v9 開批）：007 前讀出口與文件勘誤九項——NOTES 之 ADR-00044 指針節名（必要）與推送揮發字、README 憲法版本鏡像改指針、MILESTONES 增 BL（記／收）欄、活書 06／08 兩句、rust-api 前代歸因碼註；LESSONS LL-00069／LL-00070；新記 BL-00139。 | 0e4ad71 | — | 記 BL-00139 | — |
 | 2026-10-05 | review | 006-authz-governance | findings 11（修 11／BL 0／ADR 0） | — | — | — | — |
@@ -69,6 +70,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-15｜feature_close｜007-user-password-admin
+
+執行單元 U0～U23（U4 分兩段派發、U22／U23 主線為主）；T003 親決（ADR-00075～ADR-00080、ADR-00083～ADR-00087 accepted；憲法 1.8.0＝ADR-00074）；U22 CDP 三方對照與已知態觀察（含 user 放行之補跑）；T103 親決分類三支（ADR-00081／ADR-00082／ADR-00091 accepted、supersede ADR-00068／ADR-00069／ADR-00080）；T104 憲法 1.8.1 PATCH（ADR-00092）；反向確認三條皆相符（①BL-00108 char 級解析工具組仍恰兩檔 ②BL-00043 生產面零新增存取軌跡寫入點 ③BL-00133 歸檔表生產讀寫點零增）；T107 Day-1 登記三步、T108 全量閘、T109 反例演練、T110 子句表 1308 列逐列核；final holistic review 21 筆（修 18／轉 BL 1＝BL-00147／won't-fix ADR 1＝ADR-00093／駁回 1；處置見 93871a3）；全量 1550 passed／2 ignored；precommit_chain 55.11s（93871a3）；LL-00071～LL-00091；backlog_add 五＝BL-00143～BL-00147（BL-00140～BL-00142 已由本窗 2026-10-06 misc 事件帶入、不重記）；ADR-00088／ADR-00089 於本分支施作而屬 spec 範圍外之治理件、不列 adrs；本刀淨流量 −2（本窗新記 8＝BL-00140～BL-00147、收 10）
 
 ### 2026-10-06｜misc｜governance
 
