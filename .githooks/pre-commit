@@ -60,8 +60,12 @@ staged=$(git diff --cached --name-only)
 if echo "$staged" | grep -q '^tools/docsync/\|^\.githooks/\|^\.githooks-submodule/'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
+# 依賴觸發（ADR-00085；007 刀 final holistic review）：walkthrough-baseline 執行期與自測皆依路徑載入 tools/schema-gate.py 之合成鏈並讀演進帳——
+# 兩者任一單獨 staged 時亦跑 walkthrough-baseline 自測（耦合自證；否則只在 bootstrap 全量自測兜底）。
+wb_deps_staged=0
+if echo "$staged" | grep -qxF -e 'tools/schema-gate.py' -e 'docs/ops/reference-src/schema-evolution.json'; then wb_deps_staged=1; fi
 for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py tools/view-render-guard.py tools/route-artifact-gate.py tools/seed-view-gate.py tools/zh-tw-lint.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
-  if echo "$staged" | grep -qxF "$t"; then
+  if echo "$staged" | grep -qxF "$t" || { [ "$t" = tools/walkthrough-baseline.py ] && [ "$wb_deps_staged" = 1 ]; }; then
     pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
   fi
 done
@@ -98,7 +102,7 @@ if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/fork-delta-lint.py' -e '.s
   pc_run "fork-delta" python3 "$HOOK_DIR/../tools/fork-delta-lint.py"
 fi
 # msg key 跨端閘（003 刀 U9；spec FR-027、`docs/ops/reference-src/code-gate-contracts.md` §5）：rust-api **或** base-web gitlink 變動（pin bump）、或工具本體 staged 時跑 `check`
-# ——左源 rust-api/server/src/error.rs 之 MSG_KEYS ⇔ base-web 三檔 locale 各自 backend 子樹逐檔雙向全等（無白名單）＋Biz 構造點守衛＋前端 msg 字面消費點名冊（base-web src 剝註解後之 wire 字面 ⇔ 工具內名冊）
+# ——左源 rust-api/server/src/error.rs 之 MSG_KEYS ⇔ base-web 三檔 locale 各自 backend 子樹逐檔雙向全等（無白名單）＋Biz／BizData 構造點守衛（含明細通道射程守與佔位符對賬）＋前端 msg 字面消費點名冊（base-web src 剝註解後之 wire 字面 ⇔ 工具內名冊）
 # （`AppError::Biz(` 須 `Cow::Borrowed(字面|msg_key::NAME)`、`#[cfg(test)]` 排除）。★雙側觸發、比對面＝兩側**工作樹**：任一側改了自己
 # 那面而另一側工作樹未同批改＝本段紅；★「兩側改動須同一顆外層 commit 同時 bump 兩 pin」＝tasks 跨子庫同步律之紀律面——本段讀不到
 # pin 樹（兩側工作樹皆已同批改、只 commit 單側並只 bump 該側 pin 時本段照樣綠），不構成該律的機器守（該律之粗判＝下方 submodule-sync 段）。

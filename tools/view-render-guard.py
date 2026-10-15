@@ -27,7 +27,10 @@
         `#default`／`v-slot:default` 之 template（此形 (c) 亦紅）。標籤體之區段界＝對應之 `</TableHeaderOperation>`（其後之兄弟節點不入判、
         不取到檔尾）；缺閉合標籤（延伸到檔尾）、具名插槽 template 未閉合亦紅；具名插槽內之內層 template 以深度計、其內 HTML 註解整段跳過；
     (c) 檔內零 [`DEFAULT_SLOT`] 字面（`#default`／`v-slot:default`）。
-    錨檔內零個該開標籤＝不成立（正面錨無實例不算綠）。開標籤之終點以引號外第一個 `>` 判（屬性值內的 `>` 不誤斷）。
+    錨檔內零個該開標籤＝不成立（正面錨無實例不算綠）。
+    反向一條（007 刀 final holistic review）：射程內原文出現 `<TableHeaderOperation` 開標籤之檔集 MUST ⊆ [`ANCHORS`] 鍵集——
+    新管理頁之表頭未入錨表即紅、指名檔:行（共用表頭元件之兩 prop 預設皆 true：不入錨表＝寫入口對無權帳號照顯而本閘照綠）；
+    新頁同批入 [`ANCHORS`] 與自測錨表釘值。開標籤之終點以引號外第一個 `>` 判（屬性值內的 `>` 不誤斷）。
     射程外（機器守不及；逐項附承載）：
       · 同名 prop 之其他繫結寫法（靜態屬性、`v-bind` 物件展開、camelCase 別名）與錨屬性並存時之覆蓋序——承載＝審查兜底；
       · kebab-case 標籤名之第二個表頭——承載＝審查兜底；
@@ -241,6 +244,8 @@ def run_check(repo_root):
         anchor_rel = rel.replace(os.sep, "/")
         anchored.append((anchor_rel, len(_open_tags(anchor_text))))
         problems += [(anchor_rel, lineno, why) for lineno, why in check_anchor(anchor_text, attrs)]
+    problems += [(rel, lineno, "表頭開標籤所在檔不在錨表（新管理頁表頭未經正面錨；同批入本檔 ANCHORS 與自測錨表釘值）")
+                 for rel, lineno in unanchored_headers(repo_root)]
     lines = []
     if findings:
         lines += [f"{TAG} ✗ 管理頁出現原始 HTML 注入寫法 {len(findings)} 處（specs/004-ip-trust-anchor/spec.md FR-052：自由文字欄一律純文字插值；註解內字面同計）："]
@@ -256,13 +261,33 @@ def run_check(repo_root):
         return 1, lines
     return 0, ([f"{TAG} ✓ {scan_rel}/** 零原始 HTML 注入寫法（受掃 {count} 檔、{len(FORBIDDEN)} 條被禁字面）"]
                + [f"{TAG} ✓ {rel} 表頭 prop 形錨成立（{n} 個開標籤皆帶兩錨屬性、自閉合或標籤體只含具名 prefix／suffix 插槽、"
-                  "零 default 插槽覆寫字面）" for rel, n in anchored])
+                  "零 default 插槽覆寫字面）" for rel, n in anchored]
+               + [f"{TAG} ✓ {scan_rel}/** 之表頭開標籤所在檔皆在錨表（{len(ANCHORS)} 檔）"])
 
 
 # ── self-test（離線；一律實跑上方生產函式）────────────────────────────────────
 
 CLEAN_VUE = ("<script setup lang=\"ts\">\nconst memo = 'plain';\n</script>\n\n"
              "<template>\n  <span>{{ memo }}</span>\n</template>\n")
+def unanchored_headers(repo_root):
+    """腿②反向：射程內原文出現表頭開標籤、而不在 [`ANCHORS`] 鍵集之檔 → [(相對 repo 根之路徑, 首個開標籤之行號)]（空＝檔集 ⊆ 錨表）。"""
+    out = []
+    for dirpath, dirnames, filenames in os.walk(os.path.join(repo_root, SCAN_REL)):
+        dirnames.sort()
+        for name in sorted(filenames):
+            if not name.endswith(SCAN_EXTS):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), repo_root)
+            if rel in ANCHORS:
+                continue
+            with open(os.path.join(repo_root, rel), encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
+            m = ANCHOR_TAG.search(text)
+            if m:
+                out.append((rel.replace(os.sep, "/"), _line_of(text, m.start())))
+    return out
+
+
 IP_REL = os.path.join(SCAN_REL, "ip-rule", "index.vue")
 IP_ATTRS = ANCHORS[IP_REL]
 # 腿②正案：自閉合正形之縮影（錨值取 `ANCHORS` 之 IP 規則頁列；多行開標籤、兩錨屬性夾在其他屬性之間、自閉合）；第 6 行同 CLEAN_VUE（腿①命中案沿用行號）。
@@ -511,6 +536,7 @@ class TestRunCheck(unittest.TestCase):
         self.assertIn(f"受掃 {len(ANCHORS)} 檔", joined)
         for rel in ANCHORS:
             self.assertIn(f"{rel.replace(os.sep, '/')} 表頭 prop 形錨成立（1 個開標籤", joined)
+        self.assertIn(f"表頭開標籤所在檔皆在錨表（{len(ANCHORS)} 檔）", joined)
 
     def test_hit_is_rc1_with_file_and_line(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -526,6 +552,17 @@ class TestRunCheck(unittest.TestCase):
         joined = "\n".join(lines)
         self.assertIn("管理頁表頭脫離 prop 形", joined)
         self.assertIn("base-web/src/views/manage/ip-rule/index.vue:7", joined)
+        self.assertNotIn("原始 HTML 注入寫法", joined)
+
+    def test_header_in_a_file_outside_the_anchor_roster_is_rc1_with_file_and_line(self):
+        """反向腿：錨表外之管理頁出現表頭開標籤（即便兩屬性與自閉合皆合正形）＝rc 1、指名檔:行；同檔只放純文字插值＝不入判。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, lines = run_check(_fake_repo(tmp, _anchor_files({"audit/index.vue": ANCHORED_VUE,
+                                                                 "audit/modules/note.vue": CLEAN_VUE})))
+        joined = "\n".join(lines)
+        self.assertEqual(rc, 1, lines)
+        self.assertIn("base-web/src/views/manage/audit/index.vue:7  表頭開標籤所在檔不在錨表", joined)
+        self.assertNotIn("audit/modules/note.vue", joined)
         self.assertNotIn("原始 HTML 注入寫法", joined)
 
     def test_each_anchor_file_is_judged_with_its_own_values(self):
@@ -576,7 +613,7 @@ def main(argv):
         ok = unittest.main(argv=[argv[0]], exit=False, verbosity=1).result.wasSuccessful()
         if ok:
             _say(f"{TAG} ✓ self-test 過（FORBIDDEN {len(FORBIDDEN)} 條逐條逐行反例／註解內字面照紅／錨表逐列釘值／"
-                 f"表頭錨三條判準各有獨占反例〔標籤體放行面與紅面逐形、區段界〕・錨值逐檔・零實例・引號內 `>`／"
+                 f"表頭錨三條判準各有獨占反例〔標籤體放行面與紅面逐形、區段界〕・錨值逐檔・零實例・引號內 `>`・錨表外表頭（反向腿）／"
                  f"工作樹・射程・各錨檔缺席與零受掃檔 rc 2／用法守衛）")
         return 0 if ok else 1
     if cmd != "check" or len(argv) > 2:

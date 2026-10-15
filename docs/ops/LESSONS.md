@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00091 -->
+<!-- next: LL-00092 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -96,3 +96,4 @@
 | LL-00088 | 「新增圈界塊拔標記必紅」對夾在修改型替換塊裡的新增塊不成立：基線單行 `<script setup lang="ts"></script>` 拆成開閉兩行、新增塊夾其間，START 與 END 同拔時 lint 照綠（007 刀 U20） | none：判準本體已在碼面閘（範圍欄對賬腿＋圈界首尾成對檢查），計畫面之寫法守在 tasks 撰寫與單元定義審讀，不另立規則 | none | [LL-00088-new-fence-block-inside-modification-change-block-survives-pull-check.md](LESSONS/LL-00088-new-fence-block-inside-modification-change-block-survives-pull-check.md) |
 | LL-00089 | 計畫把豁免面最後一個真實例改掉、只交代「語料面不動」：讀真檔斷言「豁免確有實例」的測試隨之轉紅，generate 解不掉（007 刀 U21） | none：零實例之判準本體已在 RL-0067；同 LL-00082／LL-00085／LL-00087／LL-00088，計畫盤點面之寫法守在 tasks 撰寫與單元定義審讀，不另立規則 | none | [LL-00089-plan-retires-last-exempt-instance-real-instance-test-turns-red.md](LESSONS/LL-00089-plan-retires-last-exempt-instance-real-instance-test-turns-red.md) |
 | LL-00090 | CDP 派工 prompt 只照 task 具名清單編寫：實作期新增之分岔列與 ADR 草稿宣稱之「CDP 實測」腿全數漏跑，到 ADR 親決前對帳才發現（007 刀 U22） | none：守法在走查派工前之承載面對賬步（主線編排紀律），不另立規則；同 LL-00087／LL-00089 屬「計畫寫下之驗法未對後來增列之面展開」 | none | [LL-00090-cdp-dispatch-prompt-omits-divergence-rows-and-adr-observation-legs-added-after-tasks.md](LESSONS/LL-00090-cdp-dispatch-prompt-omits-divergence-rows-and-adr-observation-legs-added-after-tasks.md) |
+| LL-00091 | advisory key 不碰撞論證只看「真實 uid 的值域」，漏算取鎖早於存在性判定、key 直取請求原值——請求 id 恰等選單域 key 即取走域鎖（007 刀 final holistic review） | none：守法在 advisory key 空間論證之寫法（設計審查紀律）與碼面守門（`handler::user::guard_account_key`＋其整合案），不另立規則 | none | [LL-00091-advisory-key-collision-argument-missed-pre-existence-lock-on-raw-request-id.md](LESSONS/LL-00091-advisory-key-collision-argument-missed-pre-existence-lock-on-raw-request-id.md) |

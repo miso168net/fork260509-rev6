@@ -4,7 +4,7 @@
 十四條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
 view-render-guard〔零條件段：工作樹或射程缺席＝工具 rc 2、不設跳過分支（ADR-00019 決定 3／4）〕／route-artifact-gate〔第三觸發源＝憲法〕／seed-view-gate〔雙側：rust-api seed 面＋base-web view 面；
 零條件段、讀面缺席＝工具 rc 2（ADR-00071）〕／zh-tw-lint〔base-web pin bump 觸發、不寫子庫檔路徑字面；零條件段、讀面缺席＝工具 rc 2（ADR-00084）〕／submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
-與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
+與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS 與其依賴觸發兩字面（walkthrough-baseline ⇐ schema-gate／演進帳）、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
 一正（真檔零 finding）多反（刪段／改觸發字面／抽名冊一支／改命令子命令／幽靈段／刪 pc_join→紅指名）。
 ②pre-push 面 check_push_hooks(outer, sub, lib)（BL-00037①；憲法 §I.8 並列為機器閘）：外層／子庫 pre-push 各三字面（source lib 相對路徑形／SCAN_CONFIG／
 scan_push_ranges || exit 1）＋lib 之 betterleaks 呼叫與四種範圍推導字面；一正多反（刪任一字面→紅指名檔與字面、他檔不誤紅）。
@@ -165,6 +165,12 @@ ENTITY_DRIFT_ABSENT = "schema-snapshot.json 缺席"
 RE_PC_RUN = re.compile(r'pc_run "([^"]+)"')
 RE_FOR = re.compile(r"^for t in (.+); do\s*$", re.M)
 RE_TRIGGER = re.compile(r'^\s*if echo "\$staged" \| grep')
+# for 自測迴圈之依賴觸發（ADR-00085；007 刀 final holistic review）：walkthrough-baseline 執行期與自測皆依路徑載入 schema-gate 合成鏈並讀演進帳，
+# 兩者任一單獨 staged 亦須跑其自測——旗標推導行與迴圈內或式各一字面。
+SELFTEST_DEP_LITERALS = (
+    "if echo \"$staged\" | grep -qxF -e 'tools/schema-gate.py' -e 'docs/ops/reference-src/schema-evolution.json'; then wb_deps_staged=1; fi",
+    '{ [ "$t" = tools/walkthrough-baseline.py ] && [ "$wb_deps_staged" = 1 ]; }',
+)
 
 
 def check_hook_wiring(text, codegate_tools, non_gate_tools):
@@ -213,6 +219,9 @@ def check_hook_wiring(text, codegate_tools, non_gate_tools):
             out.append(f"for 自測名冊缺 {t}（碼面閘表∪NON_GATE_TOOLS 之成員）")
         if 'grep -qxF "$t"' not in text or 'python3 "$HOOK_DIR/../$t" test' not in text:
             out.append("for 自測迴圈本體缺 staged 精確比對或 test 命令字面")
+        for lit in SELFTEST_DEP_LITERALS:
+            if lit not in text:
+                out.append(f"for 自測迴圈缺依賴觸發字面（walkthrough-baseline ⇐ schema-gate／演進帳）：{lit}")
     return out
 
 
@@ -372,6 +381,14 @@ class TestHookWiring(unittest.TestCase):
         self.assertIn("tools/wire-schema.py", " ".join(check_hook_wiring(mutated, cg, ng)))
         mutated2 = hook.replace(" tools/wf-watchdog.py ", " ", 1)
         self.assertIn("tools/wf-watchdog.py", " ".join(check_hook_wiring(mutated2, cg, ng)))
+
+    def test_selftest_dep_literal_removed_red(self):
+        hook, cg, ng = real_inputs()
+        for lit in SELFTEST_DEP_LITERALS:
+            self.assertIn(lit, hook, "真 hook 須含依賴觸發字面")
+            mutated = hook.replace(lit, "true", 1)
+            msgs = " ".join(check_hook_wiring(mutated, cg, ng))
+            self.assertIn("依賴觸發", msgs, f"抽掉 {lit} 須紅指名")
 
     def test_command_subcommand_red(self):
         hook, cg, ng = real_inputs()

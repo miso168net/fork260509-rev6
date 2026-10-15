@@ -546,7 +546,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 
 - **MVP**＝Phase 1＋Phase 2（U1～U3）＋U4（m0003 與自鎖防護）＋Phase 4（U5～U7 底座與清單讀端）＋**US1 新增與編輯（U8）**：使用者清單、新增、編輯（含停用即撤票）經 API 端到端可用（quickstart §2、§3 前段、§5 停用列）、包含規則在寫端生效；UI 半於 U17。
 - 增量：刪除與復原（U9＝US1）→ 踢除、重設、會話政策與三向分派（U10＝US2／US3）→ 換發重驗（U11＝US2）→ 個人中心兩端點與自助白名單（U12＝US3）→ unlockLogin 帳號維（U13＝US4）→ wire 裁判收口（U14）→ 繁中 runtime 與 zh-tw-lint（U15～U16＝US5）→ 前端四單元（U17～U20＝US1／US3／US4）→ 文件 as-built（U21）→ CDP 三方對照、GR5、已知態觀察與 ADR-00081／ADR-00082 親決（U22）→ 收刀前承載體檢與 DoD（U23）；每單元收尾六步序、單元一支接一支連續跑完。
-- 收刀（★不在本清單）：final holistic review → `superpowers:finishing-a-development-branch`（push／merge 需 user 當次同意）→ 收刀簿記三步（`feature_close`：`adrs` 十六支〔ADR-00074～ADR-00087＋ADR-00090〔T112；本刀 U13 期間增補〕＋T104 之 PATCH ADR〕、`backlog_done` 10 條〔BACKLOG 同批刪列＝BL-00031／BL-00047／BL-00048／BL-00065／BL-00091／BL-00124／BL-00136／BL-00138／BL-00143／BL-00144〕、反向確認 3 條結果入註記、`backlog_add` 三〔BL-00143＝本刀 U10 誕生；BL-00144＝本刀 U12 誕生；BL-00145＝本刀 U13 期間誕生、不收；BL-00140／BL-00141／BL-00142 已於 T003 誕生、不得重記〕、`arch_impact` 以 `git diff --stat <merge-base>..HEAD -- docs/arc42/` 現算、notes 記淨流量值；NOTES 下一步→008 刀〔008 起每刀三語同批〕；generate）→ 第四步 `close_bookkeeping` perf（簿記 commit 落地後量牆鐘、隨下一顆 commit 入帳）＋同顆逐項核 SC-014 之簿記後驗子句、tasks 收刀清單各項與 contracts 指定寫入收單事件之註記，結果寫入其 commit 訊息（RL-0084）。
+- 收刀（★不在本清單）：final holistic review → `superpowers:finishing-a-development-branch`（push／merge 需 user 當次同意）→ 收刀簿記三步（`feature_close`：`adrs` 十八支〔ADR-00074～ADR-00087＋ADR-00090〔T112；本刀 U13 期間增補〕＋ADR-00091〔本刀 U18c 誕生、T103 轉 accepted；續行並 supersede ADR-00080〕＋T104 之 PATCH ADR〔ADR-00092〕＋ADR-00093〔final holistic review 誕生之已知態〕；ADR-00088／ADR-00089 不列〕、`backlog_done` 10 條〔BACKLOG 同批刪列＝BL-00031／BL-00047／BL-00048／BL-00065／BL-00091／BL-00124／BL-00136／BL-00138／BL-00143／BL-00144〕、反向確認 3 條結果入註記、`backlog_add` 五〔BL-00143＝本刀 U10 誕生；BL-00144＝本刀 U12 誕生；BL-00145＝本刀 U13 期間誕生、不收；BL-00146＝本刀 U23 T110 誕生、不收；BL-00147＝final holistic review 誕生、不收；BL-00140／BL-00141／BL-00142 已於 T003 誕生、不得重記〕、`arch_impact` 以 `git diff --stat <merge-base>..HEAD -- docs/arc42/` 現算、notes 記淨流量值；NOTES 下一步→008 刀〔008 起每刀三語同批〕；generate）→ 第四步 `close_bookkeeping` perf（簿記 commit 落地後量牆鐘、隨下一顆 commit 入帳）＋同顆逐項核 SC-014 之簿記後驗子句、tasks 收刀清單各項與 contracts 指定寫入收單事件之註記，結果寫入其 commit 訊息（RL-0084）。
 
 ## 需求追溯（FR-066：FR／US 驗收場景／SC／Edge Cases／帳本 → 承載；子句層、無承載者即紅）
 
@@ -1183,12 +1183,12 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | FR-060#10 反向確認 BL-00043（FR-031）：改密與踢除不新增存取軌跡寫入面 | 有斷言 | T105·機器守「②BL-00043 反向確認＝生產面零新增存取軌跡寫入點（`git -C rust-api grep -n 'sys_access_log' -- server/src`」；tasks.md·文件「反向確認 3 條結果入註記」 |  |
 | FR-060#11 反向確認 BL-00133：本刀不觸授權歸檔表 | 有斷言 | T105·機器守「③BL-00133 反向確認＝生產面對 `sys_casbin_policy_archive`」；tasks.md·文件「反向確認 3 條結果入註記」 |  |
 | FR-060#12 BL-00140／BL-00141／BL-00142 之 `backlog_add` MUST… | 非測試承載 | T003·機器守「lint 全綠且 GT-03 零警告」 |  |
-| FR-060#13 `feature_close.adrs` 列全（plan 期 ADR-00074～ADR-00… | 非測試承載 | T104·文件「新立 PATCH Amendment ADR（配號＝屆時下一號」；tasks.md·文件「`adrs` 十六支〔ADR-00074～ADR-00087＋ADR-00090」 |  |
+| FR-060#13 `feature_close.adrs` 列全（plan 期 ADR-00074～ADR-00… | 非測試承載 | T104·文件「新立 PATCH Amendment ADR（配號＝屆時下一號」；tasks.md·文件「`adrs` 十八支〔ADR-00074～ADR-00087＋ADR-00090」 |  |
 | FR-060#14 `arch_impact` 以收刀時 diff 現算之活書節號為準 | 非測試承載 | tasks.md·文件「`arch_impact` 以 `git diff --stat <merge-base>..HEAD -- docs/arc42/`」 |  |
 | FR-060#15 NOTES 下一步於 specify 起手後改 007 進行中 | 非測試承載 | T003·文件「`docs/ops/NOTES.md`「下一步」改為「現在＝00」；NOTES.md·文件「**進行中＝007 user-password-admin**（」 |  |
 | FR-060#16 收刀時 NOTES 下一步改 008（008 起每刀三語同批） | 非測試承載 | tasks.md·文件「同顆逐項核 SC-014 之簿記後驗子句」 |  |
 | FR-060#17 `backlog_done` 含 BL-00143（FR-032 日誌面兌現；本刀 U10 誕生） | 非測試承載 | T106·文件「`backlog_done` 10 條（BL-00031／BL-0」；tasks.md·文件「BL-00143（T111）」 |  |
-| FR-060#18 BL-00143 之 `backlog_add` MUST 由收刀事件承載（誕生晚於第一筆事件） | 非測試承載 | tasks.md·文件「`backlog_add` 三〔BL-00143＝本刀 U10 誕生」 |  |
+| FR-060#18 BL-00143 之 `backlog_add` MUST 由收刀事件承載（誕生晚於第一筆事件） | 非測試承載 | tasks.md·文件「`backlog_add` 五〔BL-00143＝本刀 U10 誕生」 |  |
 | FR-060#19 `backlog_done` 含 BL-00144（FR-037 並發上界與壞值自癒兌現；本刀 U12 誕生） | 非測試承載 | T106·文件「`backlog_done` 10 條（BL-00031／BL-0」；tasks.md·文件「BL-00144（T112；ADR-00090）」 |  |
 | FR-060#20 BL-00144／BL-00145 之 `backlog_add` MUST 由收刀事件承載（誕生晚於第一筆事件；BL-00145 本刀不收） | 非測試承載 | tasks.md·文件「BL-00144＝本刀 U12 誕生；BL-00145＝本刀 U13 期間誕生、不收」 |  |
 | FR-061#1 每支新端點（十二支）MUST 配 contract case | 有斷言 | T014·測試「registry +12 case（序＝ROUTES 宣告序；共」 | `all_registered_contract_cases_pass`、`coverage_gate_every_route_has_case` |
@@ -1514,7 +1514,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | US6-AS7#3 When 拆掉合成，Then 自測轉紅（變異自證） | 有斷言 | T007·測試「暫改合成為只讀凍結段 → ③⑤紅」 | `TestRestore.test_system_settings_seed_entries_are_synthesized_in_both_modes_and_synthesized_values_pass` |
 | US6-AS8#1 收刀 append feature_close 事件：backlog_done 10 條與 FR… | 非測試承載 | CLAUDE.md·文件「同顆逐項核 spec 標「收刀面於簿記 commit 後驗」之 」；T106·文件「`backlog_done` 10 條（BL-00031／BL-0」；code-gates.md·文件「**收刀 `feature_close`**：`backlog_done`」；spec.md·文件「`backlog_done` 10 條與 FR-060 相符；BL」 |  |
 | US6-AS8#2 BL-00140／BL-00141／BL-00142 之 backlog_add 已由本刀第一… | 有斷言 | T003·機器守「lint 全綠且 GT-03 零警告」 |  |
-| US6-AS8#3 BL-00143 之 backlog_add 由該收刀事件帶入 | 非測試承載 | tasks.md·文件「`backlog_add` 三〔BL-00143＝本刀 U10 誕生」 |  |
+| US6-AS8#3 BL-00143 之 backlog_add 由該收刀事件帶入 | 非測試承載 | tasks.md·文件「`backlog_add` 五〔BL-00143＝本刀 U10 誕生」 |  |
 | US6-AS8#4 BL-00144／BL-00145 之 backlog_add 由該收刀事件帶入 | 非測試承載 | tasks.md·文件「BL-00144＝本刀 U12 誕生；BL-00145＝本刀 U13 期間誕生、不收」 |  |
 | SC-001#1 路由表恰 61 條 | 有斷言 | T012·機器守「`ROUTES_COUNT` 49→61」；T014·機器守「coverage 雙向閘 61＝61」；T016·機器守「`TestRoutes::test_real_repo_pinned_rows`」；T108·走查「`docs/generated/reference/routes.md`」 | `routes_block_literal_form_and_pinned_rows`、`coverage_gate_every_route_has_case`、`coverage_gate_every_case_has_route`、`TestRoutes.test_real_repo_pinned_rows` |
 | SC-001#2 政策保護端點恰 45 | 有斷言 | T012·機器守「`POLICY_ROUTE_COUNT` 35→45」；T108·走查「`docs/generated/reference/routes.md`」 | `policy_endpoints_is_the_policy_projection_in_registration_order` |
@@ -1633,12 +1633,12 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | SC-013#4 走查後 diff rc 0 | 有斷言 | T102·走查「→ 重啟 rust-api → `diff` rc 0 →」 |  |
 | SC-014#1 （★收刀面子句於簿記 commit 後驗） | 非測試承載 | T110·文件「SC-014＝收刀面於簿記 commit 後驗（不在本任務）」；tasks.md·文件「同顆逐項核 SC-014 之簿記後驗子句」 |  |
 | SC-014#2 plan 期 ADR、實作期翻案 ADR 與收刀前 PATCH Amendment 全數 accepted | 非測試承載 | ADR-00090-password-set-cooldown-and-change-password-throttle-v2.md·文件「status: accepted」；T002·文件「ADR-00074 proposed→accepted」；T003·文件「十一支 proposed→accepted」；T103·文件「兩支 proposed→accepted」；T104·文件「新立 PATCH Amendment ADR」 |  |
-| SC-014#3 `feature_close.adrs` 列全 | 非測試承載 | tasks.md·文件「`adrs` 十六支〔ADR-00074～ADR-00087＋ADR-00090」 |  |
+| SC-014#3 `feature_close.adrs` 列全 | 非測試承載 | tasks.md·文件「`adrs` 十八支〔ADR-00074～ADR-00087＋ADR-00090」 |  |
 | SC-014#4 `backlog_done` 10 條與 FR-060 相符 | 非測試承載 | T106·文件「`backlog_done` 10 條（BL-00031／BL-0」；tasks.md·文件「`backlog_done` 10 條〔BACKLOG 同批刪列＝」 |  |
 | SC-014#5 BL-00140／BL-00141／BL-00142 之 `backlog_add` 在事件帳 | 非測試承載 | T003·文件「**DoD：lint 全綠且 GT-03 零警告」 |  |
 | SC-014#6 NOTES 下一步指 008 | 非測試承載 | tasks.md·文件「NOTES 下一步→008 刀〔008 起每刀三語同批〕」 |  |
 | SC-014#7 活書各節現在式更新、機器枚舉之假述零殘留 | 非測試承載 | T093·文件「活書 as-built（spec FR-059、FR-030」；T095·文件「errata 復掃紀錄（種子×現在式殘留＝0）入 commit 」 | `python3 tools/docsync lint` |
-| SC-014#8 BL-00143 之 `backlog_add` 在事件帳（收刀事件） | 非測試承載 | tasks.md·文件「`backlog_add` 三〔BL-00143＝本刀 U10 誕生」 |  |
+| SC-014#8 BL-00143 之 `backlog_add` 在事件帳（收刀事件） | 非測試承載 | tasks.md·文件「`backlog_add` 五〔BL-00143＝本刀 U10 誕生」 |  |
 | SC-014#9 BL-00144／BL-00145 之 `backlog_add` 在事件帳（收刀事件） | 非測試承載 | tasks.md·文件「BL-00144＝本刀 U12 誕生；BL-00145＝本刀 U13 期間誕生、不收」 |  |
 | E01#1 seed 帳號 id 1／2／3 不可刪：deleteUser 對 seed 帳號＝ | 有斷言 | T041·測試「常數 `SEED_USER_IDS: [i64; 3] = [1, 2, 3]`」；T047·測試「測試：各格負向」 | `seed_user_constants_match_the_seed_rows`、`delete_user_gates_run_in_the_fixed_order_and_refusals_change_nothing` |
 | E01#2 批刪含任一 seed 帳號之整批拒（拒因 `seededProtected`、不指筆、全批零變… | 有斷言 | T047·測試「測試：各格負向」 | `batch_delete_user_judges_each_step_over_the_whole_batch_and_refusals_change_nothing` |
@@ -1865,7 +1865,7 @@ Task: "T040 base-web i18n 四處補十一鍵（en-us／zh-cn／zh-tw backend 子
 | E52#2 rev5 側不寫入 | 有斷言 | T001·機器守「`bash tools/bootstrap.sh` 綠（含 re」；T108·機器守「rev5 唯讀復核」；T097·走查「§12 工具與閘逐條」 |  |
 | E52#3 rev5 側不動其 stack | 非測試承載 | T096·文件「只 up／stop／ps」；T099·文件「22080 登入後即掛非 GET 請求攔截、開抽屜或彈窗後按取消」；tasks.md·文件「22080 全程唯讀、一律 127.0.0.1」 |  |
 
-**帳本 → 承載**：`backlog_done` 10＝BL-00031（T031 T035 T101；ADR-00079）｜BL-00047（T003 T004；ADR-00087）｜BL-00048（T037；ADR-00075）｜BL-00065（T058 T059；島 I2）｜BL-00091（T069 T084 T085）｜BL-00124（T062；ADR-00078 四面比較、ADR-00090 決定 4 續行）｜BL-00136（T005 T006 T007 T010 T011 T098）｜BL-00138（①T073 T074 T075；②移交 BL-00141＝T094）｜BL-00143（T111）｜BL-00144（T112；ADR-00090）；反向確認 3＝BL-00108（T071 T105）｜BL-00043（T105）｜BL-00133（T105）；`backlog_add` 6＝BL-00140／BL-00141／BL-00142（T003）｜BL-00143（收刀事件；本刀 U10 誕生）｜BL-00144（收刀事件；本刀 U12 誕生）｜BL-00145（收刀事件；本刀 U13 期間誕生、不收＝008 brainstorm 起手前重評）；收刀前條文與現在式引用預清＝T106。
+**帳本 → 承載**：`backlog_done` 10＝BL-00031（T031 T035 T101；ADR-00079）｜BL-00047（T003 T004；ADR-00087）｜BL-00048（T037；ADR-00075）｜BL-00065（T058 T059；島 I2）｜BL-00091（T069 T084 T085）｜BL-00124（T062；ADR-00078 四面比較、ADR-00090 決定 4 續行）｜BL-00136（T005 T006 T007 T010 T011 T098）｜BL-00138（①T073 T074 T075；②移交 BL-00141＝T094）｜BL-00143（T111）｜BL-00144（T112；ADR-00090）；反向確認 3＝BL-00108（T071 T105）｜BL-00043（T105）｜BL-00133（T105）；`backlog_add` 8＝BL-00140／BL-00141／BL-00142（T003）｜BL-00143（收刀事件；本刀 U10 誕生）｜BL-00144（收刀事件；本刀 U12 誕生）｜BL-00145（收刀事件；本刀 U13 期間誕生、不收＝008 brainstorm 起手前重評）｜BL-00146（收刀事件；本刀 U23 T110 誕生、不收）｜BL-00147（收刀事件；final holistic review 誕生、不收）；收刀前條文與現在式引用預清＝T106。
 
 ## Notes
 

@@ -161,4 +161,5 @@
   rev6 側 32080（UI）／32089（example）／32079（API）／35432／36379／38025——2xxxx 對 3xxxx 不衝突、兩 stack 併行是預期形。
 - **UI 對照流程**：host 瀏覽器以 `--remote-debugging-port=9229` 起，CDP 接 `127.0.0.1:9229`（Node 24 內建 WebSocket；工具＝`tools/orchestration/cdp.mjs`），
   開分頁對照 22080（rev5）vs 32080（rev6）、必要時加 22089 三方比。★一律用 127.0.0.1、不用 localhost（origin 不同、token 不共享）；dev 帳號 Super／Admin／User。
+  ★rev6 未選語言預設繁中、rev5 預設簡中：結構清單與 toast 文案之對照兩側一律先顯式設簡中（寫 `lang` 儲存值；ADR-00084 決定 8）。
   真登入走查前後的全表基準 snapshot／diff／restore 工具＝`tools/walkthrough-baseline.py`（承 rev5 同名工具、rev5:L-071；非碼面閘、只指向 rev6 stack），契約住 RUNBOOK §9c。
