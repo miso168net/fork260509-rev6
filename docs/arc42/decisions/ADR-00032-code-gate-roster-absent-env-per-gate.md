@@ -2,9 +2,9 @@
 id: "ADR-00032"
 title: 碼面閘名冊承載於 RUNBOOK §12 碼面閘表（續行 ADR-00016）——名詞定義之環境缺席語意改為逐支見表、容器依賴型具名跳過
 date: 2026-09-15
-status: accepted
+status: superseded
 supersedes: ["ADR-00016"]
-superseded_by: []
+superseded_by: [ADR-00095]
 provenance: "user 拍板 2026-09-15（spec-compliance-002 對照審查 finding L2-3 三選一：①立新 ADR 翻案並改 RULES 名詞段／②轉 BL 留帳／③駁回只記報告）；被翻案面＝ADR-00016 決定 3 名詞括注「環境缺席＝具名跳過、工具缺席＝fail-loud」寫成全體碼面閘的共同屬性，與 ADR-00010 閘契約（schema-gate 環境異常 rc 2）、ADR-00018（entity-drift 快照缺席即紅）、ADR-00019 射程（容器依賴型）及其決定 4「方向不類推」相牴；as-built＝tools/schema-gate.py 之 GateError→rc 2、RUNBOOK §12 碼面閘表各列觸發時機欄"
 tags: [governance, gates, roster]
 ---

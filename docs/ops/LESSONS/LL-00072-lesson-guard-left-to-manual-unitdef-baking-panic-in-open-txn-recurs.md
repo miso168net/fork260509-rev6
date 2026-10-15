@@ -1,7 +1,7 @@
 ---
 id: "LL-00072"
-rule_id: "none：守法改由單元定義常駐段承載（主線組裝每支單元定義必烤）；是否升 RULES（implementer／review 範圍）屬調規，留 007 刀收刀前提請 user 裁定"
-promotion_surface: none
+rule_id: "RL-0087"
+promotion_surface: rules
 recurrence_of: "LL-00055"
 ---
 LL-00072｜LL-00055 的守法只寫「寫進後續單元定義」，主線組 007 刀 U5 單元定義時漏烤——同機制再犯兩發：讀者交易持列鎖時斷言 panic、並發案對手任務持鎖期間 panic，守衛 Drop 互鎖卡死而不轉紅（007 刀 U5）
@@ -12,6 +12,6 @@ LL-00072｜LL-00055 的守法只寫「寫進後續單元定義」，主線組 00
 
 **處置**：①讀案改為先 rollback 兩筆交易再斷言（implementer-3）。②三序案改為兩段：持鎖段只記紅因；收場段先放掉主線手上的交易，再收對手任務（逾時就 abort，並觀測其後端退出交易），最後才紅。探針七發皆在數秒內 FAILED、帶出紅因（碼品質 fix-3）。③主線自 U6 起把守法烤成單元定義的常駐不可違反項（implementer／review／fix 三面）：真庫案的斷言、`expect`、`unwrap` 一律放在交易收場之後；並發案對手任務持鎖時，先收場（主線交易 commit 或 rollback、對手任務 join 或 abort）再紅。
 
-**晉升面**：none——同機制已四犯（LL-00026→LL-00037→LL-00055→本則），守法改由單元定義常駐段承載；是否升 RULES（經 `docsync rules emit` 自動烤入、不再靠主線記得）屬調規，留收刀前提請 user 裁定。
+**晉升面**：rules——user 2026-10-15 裁定升為 RL-0087（範圍 implementer、review、fix），守法改由 `rules emit` 規則塊自動帶入。原判（裁定前）：同機制已四犯（LL-00026→LL-00037→LL-00055→本則），守法改由單元定義常駐段承載；是否升 RULES（經 `docsync rules emit` 自動烤入、不再靠主線記得）屬調規，留收刀前提請 user 裁定。
 
 **再犯面與守法**：凡 LESSONS 守法寫成「寫進後續單元定義」者，主線組裝每支單元定義時以 grep 核其在場（本則關鍵字＝「交易收場之後」）。跑測試若零輸出長時間不動，先查 `pg_stat_activity` 的 idle in transaction 連線，再懷疑框架。
