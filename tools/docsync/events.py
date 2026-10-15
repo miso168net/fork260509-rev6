@@ -587,20 +587,24 @@ def gt_03(ctx):
 
 def _probe_retrieval(events):
     """ADR-00021：最近一筆帶 probe 的 review 事件→{scope, le3_ratio（found/questions＝≤3 跳且答對）, hit_ratio（(found＋detour)/questions）, not_found, wrong,
-    avg_min_hops（grader 最短 hops 平均；000-r2 L1-05 前該鍵受形檢卻無渲染面）, negative_wrong（否定對照題答錯；缺席＝"—"）}；無＝"n/a"。"""
-    for e in reversed(events):
-        p = e.get("probe") if e.get("type") == "review" else None
-        if isinstance(p, dict) and not _check_probe(p):
-            q, neg = p["questions"], p.get("negative")
-            return {"scope": e["scope"], "le3_ratio": round(p["found"] / q, 2), "hit_ratio": round((p["found"] + p["detour"]) / q, 2),
-                    "not_found": p["not_found"], "wrong": p["wrong"], "avg_min_hops": p["avg_min_hops"],
-                    "negative_wrong": neg["wrong"] if neg else "—"}
-    return "n/a"
+    avg_min_hops（grader 最短 hops 平均；000-r2 L1-05 前該鍵受形檢卻無渲染面）, negative_wrong（否定對照題答錯；缺席＝"—"）,
+    prev_le3_ratio（前一筆帶 probe 之 review 事件的 le3_ratio、同法現算；無前一筆＝None——「≤3 跳比例輪間不降」之比較基準）}；無＝"n/a"。
+    帶 probe 者只認形檢合格之 probe（最近一筆與前一筆同）；取值面＝呼叫端傳入之 events（STATE 傳更正視圖、erratum 回填之 probe 即在其內）。"""
+    rounds = [(e, e["probe"]) for e in events if e.get("type") == "review" and isinstance(e.get("probe"), dict) and not _check_probe(e["probe"])]
+    if not rounds:
+        return "n/a"
+    e, p = rounds[-1]
+    q, neg = p["questions"], p.get("negative")
+    prev = rounds[-2][1] if len(rounds) > 1 else None
+    return {"scope": e["scope"], "le3_ratio": round(p["found"] / q, 2), "hit_ratio": round((p["found"] + p["detour"]) / q, 2),
+            "not_found": p["not_found"], "wrong": p["wrong"], "avg_min_hops": p["avg_min_hops"],
+            "negative_wrong": neg["wrong"] if neg else "—",
+            "prev_le3_ratio": round(prev["found"] / prev["questions"], 2) if prev else None}
 
 
 def metrics(events, lessons, min_window=3):
     """§4.3 三指標＋ADR-00021 檢索性：gov_ratio（全期）、lessons_dup_rate（全期）、backlog_net（最近 min_window 個 feature_close 自然窗）、
-    probe_retrieval（最近一筆帶 probe 之 review 事件、比例自計數現算）；空值一律 "n/a"。"""
+    probe_retrieval（最近一筆帶 probe 之 review 事件之比例＋前一筆之 ≤3 跳比例〔輪間不降比較基準〕、皆自計數現算；鍵見 `_probe_retrieval`）；空值一律 "n/a"。"""
     fcs = [e for e in events if e.get("type") == "feature_close"]
     gov = sum(1 for e in events if e.get("type") == "misc" and e.get("category") == "governance")
     out = {"gov_ratio": round(gov / len(fcs), 2) if fcs else "n/a", "probe_retrieval": _probe_retrieval(events)}

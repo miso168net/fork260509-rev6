@@ -15,7 +15,7 @@ LL-00058｜新增型圈界塊與修改型落在同一個 difflib 變更塊時，
 
 **成因**：
 - 一、lint 的判定機制。`tools/fork-delta-lint.py` 之 `find_unmarked_additions` 以 difflib 變更塊判定未圈界新增；含被移除碼行的變更塊整塊跳過（docstring 所載已知可接受殘留①），塊內新增行一律歸修改型標記涵蓋。圈界若與修改型落在同一變更塊，START／END 便無鑑別力。
-  - 只隔空行或收尾大括號往往隔不開：lint 取差異用 `difflib.unified_diff`，比對檔達 200 行時 autojunk 啟發式啟動，空行、`}` 這類高頻行被當成 junk、不作對齊錨點（menu 彈窗 259 行即此形）。
+  - 當時只隔空行或收尾大括號往往隔不開：lint 取差異用 `difflib.unified_diff`，比對檔達 200 行時 autojunk 啟發式啟動，空行、`}` 這類高頻行被當成 junk、不作對齊錨點（menu 彈窗 259 行即此形）。分塊現已關閉 autojunk（LL-00084 晉升面），此子因不再成立；其餘成因照舊。
   - 函式本體的基線行全數被替換時，其內任何位置都隔不開。
 - 二、預估值的來源。預估取自 rev5 base-web 的標記實數。rev5 的 getHome 世代比對圈界，是後一刀補入時的落法，本就不承重；前代實數沒先過拔標記判定就拿來當預估。
 

@@ -542,7 +542,10 @@ def find_unmarked_additions(base_content, ours_content):
     find_missing（後者驗修改型缺原行）；本函式驗新增型缺圈界，合起來令所有 fork-delta 皆帶標記。
     §III 新增型圈界紀律。
 
-    以 difflib.unified_diff 取差異、按 **change-block**（連續 +/- 行為一塊、context 行〔含空白〕分界）；
+    以 difflib.SequenceMatcher（autojunk 關閉）之 grouped opcodes（context 3 行、組法同 unified_diff）取差異、按
+    **change-block**（連續 +/- 行為一塊、context 行〔含空白〕分界）；★autojunk 關閉之據：預設啟發式於序列 ≥200 行時
+    把出現次數超過 1%＋1 之行判為熱門、不入比對索引，熱門閉合行（`</NFormItem>` 一類）前後皆為新增行時即被判為刪除＋
+    新增、兩段新增併成一個含移除碼行之替換塊而整塊跳過、圈界不受驗（self-test HJ0～HJ2 釘住）；
     ★只驗『純新增塊』（塊內無任何被移除碼行）——含被移除碼行者＝修改型/替換區塊、由 find_missing
     驗原行、本函式跳過（故 rev5 captcha 型『替換邏輯與其原行標記被空白 context 分隔』不誤報）。純新增塊去
     （跨行）註解＋純結構標點行（閉合 } 等＝區塊延續）後仍有實質新增碼卻無合法標記（限註解行、字串
@@ -566,7 +569,6 @@ def find_unmarked_additions(base_content, ours_content):
     洗白被 find_missing『刪行缺原行』兜住（逐值比次數：非唯一基線行被刪其一亦然；③所列灌水路徑除外）。"""
     out = []
     added, removed = [], []
-    seen_hunk = False
 
     def flush():
         if any(is_code(l) for l in removed):
@@ -575,18 +577,15 @@ def find_unmarked_additions(base_content, ours_content):
         if substantive and not _block_has_marker(added):
             out.append(substantive[0].strip())
 
-    for line in difflib.unified_diff(base_content.splitlines(),
-                                     ours_content.splitlines(), n=3, lineterm=""):
-        if line.startswith("@@"):
-            flush(); added, removed = [], []; seen_hunk = True
-        elif not seen_hunk:
-            continue                         # unified_diff 檔頭 ---/+++（首個 @@ 前）——seen_hunk 旗標
-        elif line.startswith("+"):           # 認檔頭，內容以 ++/-- 起首不撞 +++/---（rev5 對抗驗證 INT1）
-            added.append(line[1:])
-        elif line.startswith("-"):
-            removed.append(line[1:])
-        else:                                # context 行（含空白）＝ change-block 分界
-            flush(); added, removed = [], []
+    a, b = base_content.splitlines(), ours_content.splitlines()
+    # autojunk 關閉：預設啟發式令 ≥200 行序列之熱門行不入比對索引、熱門行夾於兩段新增時兩段併成替換塊（self-test HJ0～HJ2）
+    for group in difflib.SequenceMatcher(None, a, b, autojunk=False).get_grouped_opcodes(3):
+        for tag, i1, i2, j1, j2 in group:
+            if tag == "equal":               # 未改行（含空白）＝ change-block 分界（組界恆落在 equal 之內、不另分界）
+                flush(); added, removed = [], []
+            else:                            # replace／delete／insert：移除行取自基線、新增行取自我方
+                removed += a[i1:i2]
+                added += b[j1:j2]
     flush()
     return out
 
@@ -1019,6 +1018,27 @@ def self_test():
     assert find_unmarked_additions(nfb_base, nfb) == ["import brandNew from 'c';"], "self-test R：獨立純新增（空白鄰接標記修改）仍須攔（NF-B）"
     assert find_unmarked_additions(nfa_base, nfa) == ["*/ newFlag: true,"], "self-test S：區塊註解同行閉合後的新碼須被攔（NF-A）"
     assert find_unmarked_additions("const a = 1;\nconst b = 2;\n", nfc) == [], "self-test T：同行連續 /* */ /* 之第二註解 body 不誤報（NF-C）"
+    # ── 熱門行夾兩段新增（007 刀 U17 實得形）：序列 ≥200 行時 difflib 預設 autojunk 把出現次數超過 1%＋1 之行判為熱門、
+    #    不入比對索引；熱門閉合行前後皆為新增行時被判為刪除＋新增，兩段新增併成一個含移除行之替換塊、整塊被當修改型跳過。
+    #    分塊關閉 autojunk 後該行回為未改行、兩段新增各自成塊受驗；HJ0 先自證樣本確已越過熱門門檻（否則本組 vacuous）。
+    hj_item = "      <NFormItem :label=\"f{0}\">\n        <NInput v-model:value=\"m.f{0}\" />\n        </NFormItem>\n"
+    hj_base = ("<template>\n" + "".join(hj_item.format(i) for i in range(12))
+               + "".join(f"<!-- 說明 {i} -->\n" for i in range(170)) + "</template>\n")
+    hj_fence = "        <!-- [rev6-inline X(v)+ 007-user-password-admin {}] {} -->\n"
+    hj_a = hj_fence.format("START", "告知行") + "        <div class=\"hint\">{{ hint }}</div>\n" + hj_fence.format("END", "告知行")
+    hj_b = hj_fence.format("START", "政策段") + "        <NAlert>{{ policy }}</NAlert>\n" + hj_fence.format("END", "政策段")
+    hj_slot = "        <NInput v-model:value=\"m.f5\" />\n        </NFormItem>\n"
+    hj_ours = hj_base.replace(hj_slot, "        <NInput v-model:value=\"m.f5\" />\n" + hj_a + "        </NFormItem>\n" + hj_b)
+    hj_lines = hj_ours.splitlines()
+    assert len(hj_base.splitlines()) >= 200 and len(hj_lines) >= 200 \
+        and hj_lines.count("        </NFormItem>") > len(hj_lines) // 100 + 1, \
+        "self-test HJ0：樣本須達 200 行且閉合行次數越過熱門門檻（1%＋1）——否則 HJ1／HJ2 不重現該形"
+    assert find_unmarked_additions(hj_base, hj_ours) == [], "self-test HJ1：熱門閉合行夾兩段新增、兩段皆帶成對圈界須過"
+    for hj_seg, hj_body in ((hj_a, "<div class=\"hint\">{{ hint }}</div>"), (hj_b, "<NAlert>{{ policy }}</NAlert>")):
+        hj_pulled = hj_ours.replace(hj_seg, "".join(l + "\n" for l in hj_seg.splitlines() if "[rev6-inline" not in l))
+        assert find_unmarked_additions(hj_base, hj_pulled) == [hj_body], \
+            (f"self-test HJ2：熱門閉合行夾兩段新增、拔掉其中一段之圈界須攔「{hj_body}」——分塊若退回 difflib 預設 autojunk，"
+             f"該閉合行被判刪除＋新增、兩段併成替換塊而照綠（實得 {find_unmarked_additions(hj_base, hj_pulled)}）")
 
     # ── rev5 T069②：軌道名＋用途抽取正則——rev5:B-058 實測五種標記形逐形釘住（rev5:B-068 增驗 group(2)）──
     #    含 rev6 契約定形之新檔檔頭形 `NAME+ 002-system-settings`（軌道名 ∈ §III.1 表首欄字面）。
