@@ -98,4 +98,4 @@
 | ADR-00093 | accepted | 2026-10-15 | unlockLogin 帳號維對範圍外現役帳號回 5003、與查無之 0000 可區辨＝揭露該帳號之存在——包含規則之固有代價、記為 by-design 已知態；「不洩存在性」之射程收窄為「查無與範圍內現役帳號同形」 | 007-user-password-admin | — | — |
 | ADR-00094 | accepted | 2026-10-16 | 子句層需求追溯不定為通則——各刀 brainstorm 自定是否沿用與射程（附參考判準）；翻案觸發器綁 008 刀收刀承載體檢 | 輕量軌｜maint-backlog-142-146 | — | — |
 | ADR-00095 | accepted | 2026-10-16 | 碼面閘名冊續由 RUNBOOK §12 人寫表承載（續行 ADR-00032）——翻案觸發器改綁可觀測條件、拿掉支數門檻 | 輕量軌｜maint-backlog-142-146 | ADR-00032 | — |
-| ADR-00096 | accepted | 2026-10-16 | batchDeleteUser 不設批量上界——超大批可耗盡 PostgreSQL 共用鎖表而整批回 5000，記為 by-design 已知態；畫面前提＝每頁上限 30、勾選跨頁保留 | — | — | — |
+| ADR-00096 | accepted | 2026-10-16 | batchDeleteUser 不設批量上界——超大批可耗盡 PostgreSQL 共用鎖表而整批回 5000，記為 by-design 已知態；畫面前提＝每頁上限 30、勾選跨頁保留 | 輕量軌｜maint-backlog-139-140-145-147 | — | — |

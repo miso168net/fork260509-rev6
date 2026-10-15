@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-16 | misc | product｜maint-backlog-139-140-145-147 | maint-backlog-139-140-145-147 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第二批＝產品面）：BL-00140／BL-00145／BL-00147 移滯後卷（觸發改綁 prod 硬化等、X23 併入 BL-00147）、BL-00139 續延改觸發、ADR-00096（batchDeleteUser 不設批量上界 by-design）、X8 純文件現況註、NOTES 下一步改寫。 | 55555e6 | ADR-00096 | — | — |
 | 2026-10-16 | misc | governance｜maint-backlog-142-146 | maint-backlog-142-146 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第一批＝治理面）：BL-00146 by-design（ADR-00094）、BL-00142 續行人寫表（ADR-00095 supersede ADR-00032）、RULES 三改（RL-0080／RL-0085 擴寫、新 RL-0087）、LESSONS 改述＋LL-00092／LL-00093、檢索性輪間比較、fork-delta-lint 關閉 autojunk、NOTES 清理與 GT-06 收單句腿。 | ecf23f9 | ADR-00094、ADR-00095 | 收 BL-00142、BL-00146 | — |
 | 2026-10-15 | feature_close | 007-user-password-admin | 007 user-password-admin 收單（rev6 第七刀）：島 I 使用者域治理入憲／使用者管理十端點（清單・回收桶兩讀端＋新增・部分更新・刪除・批刪・復原・踢除下線・重設密碼・會話政策八寫端）與使用者頁接真／個人中心改密／密碼政策七鍵・設密冷卻・改密節流／錯誤明細通道兩鍵／解鎖帳號維套包含規則／自助路由白名單／繁中 runtime 與預設語言＋碼面閘 zh-tw-lint／管理頁按鈕碼逐鈕顯隱／seed-only migration m0003；ROUTES 49→61、MSG_KEYS 46→68；憲法 1.7.1→1.8.1 | 8d8dc57 | ADR-00074、ADR-00075、ADR-00076、ADR-00077、ADR-00078、ADR-00079、ADR-00080、ADR-00081、ADR-00082、ADR-00083、ADR-00084、ADR-00085、ADR-00086、ADR-00087、ADR-00090、ADR-00091、ADR-00092、ADR-00093 | 記 BL-00143、BL-00144、BL-00145、BL-00146、BL-00147；收 BL-00031、BL-00047、BL-00048、BL-00065、BL-00091、BL-00124、BL-00136、BL-00138、BL-00143、BL-00144 | §5、§6、§8、§10、§11、§12 |
 | 2026-10-06 | misc | governance | 007 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00140／BL-00141（brainstorm 定稿顆 5bfd07b 入 BACKLOG／BACKLOG-DEFERRED）與 BL-00142（plan 顆 b35ee2c 入 BACKLOG）之誕生；同顆 ADR-00075～ADR-00080、ADR-00083～ADR-00087 十一支經 user 親決轉 accepted（ADR-00074 與憲法 1.8.0 已於前顆 51f55f3）。 | — | — | 記 BL-00140、BL-00141、BL-00142 | — |
@@ -71,6 +72,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-16｜misc｜product｜maint-backlog-139-140-145-147
+
+主體 32d242e（原 320dc2e 經 final review 指出 ADR-00096 三處失準、未推即 reset --soft 重落）；FHR run wf_84e3226e-327 收單 2160cd9（13 筆＝修 10／駁回 3／轉 BL 0：BL-00147 換發句依 redis 1.7.0 預設逾時〔容器內 cargo registry 實核：回應 500 毫秒、建連 1 秒〕改述、X8 之 RUNBOOK §8／C4-L2／活書 07 現況註直做、RUNBOOK §16.4 補三列、NOTES 補 X1／X25 兩題）。user 裁定：2026-10-15 Q4～Q7、Q9、Q10（Q7＝續延、非建議項）與 Q8 附註（007 規格對照輪由 user 手動發起）；2026-10-16 預授權 merge、push 暫不做。帳面：開放 9→6、滯後 4→7、淨流量 0（移卷不算收）。儀表板 JSON 依 Q7 續延不動，兩項描述併入 BL-00139。
 
 ### 2026-10-16｜misc｜governance｜maint-backlog-142-146
 
