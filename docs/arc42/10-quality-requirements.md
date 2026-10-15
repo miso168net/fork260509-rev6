@@ -16,7 +16,7 @@ rev5_blueprint:
 | 契約一致性 | 契約守恆 | 每條 route 有 contract case、13 碼矩陣零偏離 | 憲法 §I.3；`rust-api/server/tests/contract.rs`（ROUTES×case 雙向覆蓋閘）／`src/error.rs` 13 碼矩陣斷言；wire 快照面另由 `tools/wire-schema.py`（碼面閘）守 |
 | 可重現性 | 可重現 | 任一外層 commit 的 pin＝子庫 worktree HEAD；新機 bootstrap rc 0 | GT-02；`tools/bootstrap.sh` |
 | 文件正確性 | 文件與碼零漂移 | generate 兩次同 bytes；名冊同源；預算表「內」 | GT-01／GT-12；STATE 預算對賬 |
-| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之兩支管理頁（system-settings／audit）之選單標題於側邊欄展開態與選單管理頁治理清單顯路由裸鍵（ADR-00068 款 2／款 6；帳＝BL-00045），收合態零差異；拒因 toast 之措辭差異限 ADR-00050 排除清單所列鍵；選單彈窗排序／頁籤固定序號兩欄限整數輸入（rev6 修正、rev5 可輸入小數） | 走查流程（CLAUDE.md §7） |
+| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之兩支管理頁（system-settings／audit）之選單標題於側邊欄展開態與選單管理頁治理清單顯路由裸鍵（ADR-00081 款 2／款 6；帳＝BL-00045），收合態零差異；拒因 toast 之措辭差異限 ADR-00050 排除清單所列鍵；選單彈窗排序／頁籤固定序號兩欄限整數輸入（rev6 修正、rev5 可輸入小數）；繁中畫面無 rev5 基準＝刻意分岔——rev6 未選語言預設繁中、rev5 預設簡中，結構清單與 toast 文案之對照兩側一律顯式設簡中（寫 `lang` 儲存值；ADR-00084 決定 8） | 走查流程（CLAUDE.md §7） |
 
 ## 10.2 品質情境
 
@@ -29,7 +29,7 @@ rev5_blueprint:
 | 量測 | 可斷言的值：碼、HTTP status、序列計數、時限 |
 | 守門 | 釘住該情境的測試或 lint |
 
-情境逐島一則＝憲法 §I.7 已入憲行為島 A～H（未入憲之島 I／J 目前無情境；承襲指針表＝憲法 §I.7）。每則只釘該島最容易被「順手統一」抹掉的 fail-* 方向（方向之凍結面＝該島入憲條文；島 H 情境所釘之判定面同步失敗方向＝島 G1、經 H2 互引，授予面與復原之同步方向與兩窗反向症狀由島 G 情境承接）；流的完整敘述住 §6.1、碼表與每級語意的權威定義住 §8.2／§8.3，本節依上表格式只在回應欄寫方向、在量測欄引用該欄所定義的可斷言值，不重新定義語意。守門欄的案名皆可 `grep -rn "fn <名>" rust-api/server` 自證。
+情境逐島一則＝憲法 §I.7 已入憲行為島 A～I（未入憲之島 J 目前無情境；承襲指針表＝憲法 §I.7）。每則只釘該島最容易被「順手統一」抹掉的 fail-* 方向（方向之凍結面＝該島入憲條文；島 H 情境所釘之判定面同步失敗方向＝島 G1、經 H2 互引，授予面與復原之同步方向與兩窗反向症狀由島 G 情境承接）；流的完整敘述住 §6.1、碼表與每級語意的權威定義住 §8.2／§8.3，本節依上表格式只在回應欄寫方向、在量測欄引用該欄所定義的可斷言值，不重新定義語意。守門欄的案名皆可 `grep -rn "fn <名>" rust-api/server` 自證。
 
 ### 島 A token rotation——並發換發與 grace 不可用
 
@@ -45,7 +45,7 @@ rev5_blueprint:
 | 欄 | 內容 |
 |---|---|
 | 刺激 | `single_session_default` 翻 on 後同帳號再登入；或翻 on 之前已有兩條會話、翻後不再登入 |
-| 回應 | 只於登入事件判定：其他 chain 的 active 轉 `revoked`＋逐 sid `session_event(kicked, single_session)`＋denylist `kicked`；被踢者下個請求 7777 modal；翻轉本身不觸任何既有會話、鍵缺席＝off 語意 |
+| 回應 | 只於登入事件判定：其他 chain 的 active 轉 `revoked`＋逐 sid `session_event(kicked, single_session)`＋denylist `kicked`；被頂替者下個請求 7777 modal；翻轉本身不觸任何既有會話、鍵缺席＝off 語意 |
 | 量測 | 前一條 access 打 Authed 端點回 `code=7777`＋`auth.session.kicked`；翻 on 前的兩條會話翻後皆仍 `0000`；`sys_user.session_id`＝新 sid |
 | 守門 | `handler/auth/login.rs`：`login_global_single_session_on_second_login_kicks_previous_to_7777`／`login_flipping_single_session_on_does_not_revoke_existing_sessions_until_next_login`；`handler/auth/refresh.rs`：`refresh_revoked_row_with_kicked_denylist_returns_7777_modal` |
 
@@ -63,7 +63,7 @@ rev5_blueprint:
 | 欄 | 內容 |
 |---|---|
 | 刺激 | 換發時 `session:{sid}:last_activity` 缺席（未寫或已過期）或讀取 `Err`；或距上次活動逾 `refresh_secs − access_secs`（＝N×60 秒） |
-| 回應 | 缺席／`Err`→fail-open 續換發（以 token exp 為界、偏晚不誤踢活躍者）；逾時→8888、SET NX `session:idle-emitted:{sid}` 守門僅首次落 `session_event(idle)`、列不動、絕不寫 denylist |
+| 回應 | 缺席／`Err`→fail-open 續換發（以 token exp 為界、偏晚不誤拒活躍者）；逾時→8888、SET NX `session:idle-emitted:{sid}` 守門僅首次落 `session_event(idle)`、列不動、絕不寫 denylist |
 | 量測 | 逾時腿回 `8888`、`session_event(idle)` 恰一列（再次換發不增列）、denylist 鍵缺席；fail-open 腿回 `0000`＋新對且零 idle 副作用 |
 | 守門 | `handler/auth/refresh.rs`：`refresh_idle_timeout_rejects_8888_emits_idle_once_and_never_denylists`／`refresh_activity_within_idle_window_rotates_with_zero_idle_side_effects`／`reject_idle_guard_write_error_emits_no_event_and_keeps_8888` |
 
@@ -74,7 +74,7 @@ rev5_blueprint:
 | 刺激 | 同帳號窗內連續失敗達 `captcha_after`（seed 2）與 `max_fails`（seed 5）；同一來源輪換帳號名、失敗累計達來源維門檻（seed 10／50），其間穿插一次成功登入；管理員放寬門檻、或對該維寫入解鎖標記；快取整體不可用（解鎖標記讀取 `Err`）；任一維計數查詢 `DbErr`；captcha 消耗標記 SET NX 瞬斷（快取健康）；設定三鍵缺列、越界或矛盾組合 |
 | 回應 | 每一維各自：自由區 1000→軟區 2222 `biz.auth.captchaRequired`→鎖定 2222 `biz.auth.locked`（兩維共用同一組 msg、不揭露觸發維度；拒絕皆驗密前擋、零稽核列零計數桶）；合成＝任一維鎖定即鎖定、否則任一維軟區即要求驗證碼；成功登入只重置帳號維、來源維不重置；判定於每次嘗試讀設定現值＋PG 滑動窗重算——放寬門檻與解鎖標記於下一次嘗試即生效、最早一筆失敗出窗即解；解鎖標記讀不到→視為無標記（fail-closed）＋captcha 整層停用續驗密碼、密碼錯仍計數；計數 `Err`→該維 `count := 0` 放行＋`captcha_forced`；SET NX `Err`→拒該次不罰；設定壞值→該維整組退常數＋該維告警至多一筆 |
 | 量測 | 窗內 `success=false` 列數＝通過節流閘後的失敗次數（被 `biz.auth.captchaRequired` 或 `biz.auth.locked` 擋下者零列；軟區過題後的密碼失敗照落列＝計數得以由軟門檻推進到硬門檻）；`throttle_soft_zone_total` 每發至多增 1；`throttle_degraded_total{source}` 對應源各增 1（值集＝`obs.rs` `THROTTLE_DEGRADED_SOURCES`、預註冊顯式 0）；鎖定與軟區拒絕皆不建任何節流鎖定鍵（快取層無鎖定鍵）、需驗證碼時送出有效題者另寫一把一次性消耗標記；顯式放行來源與缺席輸入＝來源維零查詢；解鎖後同一帳號（或同一來源）的下一次登入即進密碼驗證、不再回 `biz.auth.locked`，且落一列 `sys_login_attempt` |
-| 守門 | `throttle/mod.rs`：`three_zone_transition_rejects_without_audit_rows_or_redis_keys`／`soft_zone_rejections_do_not_consume_bucket_success_still_possible`／`source_dimension_three_zones_count_across_rotating_user_names`／`two_dimension_composition_hard_lock_wins_then_soft_zone_then_pass`／`interleaved_success_does_not_reset_the_source_dimension`／`relaxed_hard_threshold_applies_on_the_very_next_attempt_in_both_dimensions`／`lock_lifts_as_soon_as_the_earliest_failure_leaves_the_window`／`unlock_marker_read_error_means_no_marker_and_redis_down_per_dimension`／`explicit_allow_skips_the_source_dimension_including_its_marker_read`／`redis_down_disables_captcha_layer_but_keeps_counting`／`count_dberr_fails_open_with_captcha_forced_compensation_in_both_dimensions`／`captcha_gate_set_nx_failure_rejects_without_penalty`／`out_of_range_or_contradictory_settings_fall_back_whole_group_per_dimension`／`warn_degraded_increments_each_of_the_ten_sources`／`src_tree_carries_no_lock_cache_literals`；`handler/throttle.rs`：`unlocking_an_account_lets_the_same_login_through_at_once`／`unlocking_a_source_lets_the_same_login_through_at_once`；`obs.rs`：`pre_register_renders_throttle_degraded_ten_sources_explicit_zero`／`pre_register_renders_throttle_soft_zone_explicit_zero` |
+| 守門 | `throttle/mod.rs`：`three_zone_transition_rejects_without_audit_rows_or_redis_keys`／`soft_zone_rejections_do_not_consume_bucket_success_still_possible`／`source_dimension_three_zones_count_across_rotating_user_names`／`two_dimension_composition_hard_lock_wins_then_soft_zone_then_pass`／`interleaved_success_does_not_reset_the_source_dimension`／`relaxed_hard_threshold_applies_on_the_very_next_attempt_in_both_dimensions`／`lock_lifts_as_soon_as_the_earliest_failure_leaves_the_window`／`unlock_marker_read_error_means_no_marker_and_redis_down_per_dimension`／`explicit_allow_skips_the_source_dimension_including_its_marker_read`／`redis_down_disables_captcha_layer_but_keeps_counting`／`count_dberr_fails_open_with_captcha_forced_compensation_in_both_dimensions`／`captcha_gate_set_nx_failure_rejects_without_penalty`／`out_of_range_or_contradictory_settings_fall_back_whole_group_per_dimension`／`warn_degraded_increments_each_of_the_eleven_sources`／`src_tree_carries_no_lock_cache_literals`；`handler/throttle.rs`：`unlocking_an_account_lets_the_same_login_through_at_once`／`unlocking_a_source_lets_the_same_login_through_at_once`；`obs.rs`：`pre_register_renders_throttle_degraded_eleven_sources_explicit_zero`／`pre_register_renders_throttle_soft_zone_explicit_zero` |
 
 ### 島 F 信任錨與 IP 存取閘——全鏈 fail-open 與恰兩處 fail-closed
 
@@ -102,6 +102,15 @@ rev5_blueprint:
 | 回應 | 同步失敗＝保留上一份已知良好判定面（絕不空窗、半載、全域拒絕）：至多 3 次、線性退避、每次失敗與耗盡各一則 `security.authz` error，寫端回應不受影響（commit 成功即 `0000`）；互斥件使較晚 commit 之結果最後換上；刪除連動歸檔＋判定面同步使新實例零繼承舊授權、復原不回灌；後到之進域寫端於域鎖等待至先到者交易結束；零歸檔之移除面寫端不觸發同步（授予面與復原之觸發門＝島 G 情境） |
 | 量測 | 壞連線下 `R_SUPER` 對其 seed 授權之請求前後皆放行；`casbin_reload_total{outcome="retry"}` 增 3＋`{outcome="exhausted"}` 增 1、`ok` 零（成功路徑 `ok` 增 1）；就地 `load_policy` 失敗即清空現役面而重建後換上不清空（特性鎖定）；三支併發同步全數完成；刪除前判定面命中該授權、重建後之同名新實例零命中；`pg_locks` 上本 key 之 NOT granted 等待者恰 1；三 outcome 預註冊顯式 0 |
 | 守門 | `auth/enforce.rs`：`reload_failure_keeps_the_live_face_and_counts_retry_then_exhausted`／`in_place_load_policy_empties_the_live_face_while_rebuild_then_replace_keeps_it`／`reload_success_replaces_the_face_from_truth_and_counts_ok`／`three_concurrent_reloads_all_complete`／`stalled_reload_holds_the_next_one_so_the_later_rebuild_replaces_last`；`handler/menu.rs`：`deleting_a_menu_archives_its_route_and_sole_code_grants_and_syncs_the_face_once`／`deletes_that_archive_nothing_keep_shared_codes_and_do_not_sync`／`a_route_name_rebuilt_after_deletion_inherits_no_grant`／`restoring_a_deleted_menu_regrants_nothing_across_the_next_rebuild`／`delete_menu_waits_behind_the_menu_domain_holder`；`handler/role.rs`：`deleting_granted_roles_syncs_the_face_once_and_zero_policy_deletes_do_not`／`a_role_code_recreated_after_deletion_inherits_no_grant`；`model/facade/sys_casbin_archive.rs`：`enter_menu_domain_holds_rival_until_holder_commits`／`archive_reasons_pin_literals_and_only_endpoint_revoke_is_restorable`；`obs.rs`：`pre_register_renders_casbin_reload_three_outcomes_explicit_zero`；`tests/authz_entrypoint_lint.rs` |
+
+### 島 I 使用者域治理——政策矛盾設密全拒、斷權權威在 PG 與分碼不互換、包含規則 fail-closed
+
+| 欄 | 內容 |
+|---|---|
+| 刺激 | 系統設定把 `password_min_length` 設得大於 `password_max_length` 後，三設密入口（addUser、resetUserPassword、changePassword）各送一組看似合規之密碼；管理員停用、刪除、重設或踢除某帳號，而 commit 後之失效名單寫入失敗（redis 不可用）；同一帳號依序遭撤銷、單一會話頂替與管理員踢除；受下放之非超管操作者對持其未持角色之標的提交寫入、或讀其現役角色集時庫面故障；改密節流桶讀寫時 redis 不可用 |
+| 回應 | 政策矛盾＝三入口一律拒（不退預設；與島 E 設定壞值整組退常數方向相反）、每次設密驗證計一格並落 warn，登入不驗政策、不受影響；撤銷權威＝同交易撤票（`sys_token.status`），名單寫入失敗只結構化告警、回應不變——被撤者手上未過期之 access 至多 `access_secs` 內仍通得過 Authed 端點，換發由已撤之票列擋下（第一層）、撤票集外之票（含未經寫端之直改庫停用）由換發 active 腿之活性重驗擋下（第二層），不加每請求活性判定；被撤者所見碼三類各自對應、不互換（撤銷靜默重登、頂替與踢除同碼異文案）；包含規則違者 fail-closed 拒絕、零變更零稽核，A 或 T 讀庫故障不吞成空集；改密節流 redis 故障＝fail-open（加值防線）＋降級源計數 |
+| 量測 | 政策矛盾：三入口皆回 `2222`＋`biz.user.passwordPolicy`、明細違規碼含 `minLength` 或 `maxLength`，`password_policy_invalid_total` 每入口增 1、`security.password` warn 帶兩界現值；名單寫入失敗：寫端照回 `0000`、每被撤 sid 一則 `security.session` warn 帶 `degraded=denylist_write`，被撤者既有 access 打 Authed 端點仍 `0000`、至遲於存取權杖到期失效，換發被兩層擋下皆 `8888` 且零寫；直改庫停用者換發回 `8888` 且零寫；三類被撤者分別回 `8888` `auth.session.reLogin`／`7777` `auth.session.kicked`／`7777` `auth.session.kickedByAdmin`（名單值 `revoked`／`kicked`／`admin_kick`）；包含規則拒回 `5003`、帳號列與指派列逐欄不動、`sys_operation_log` 與 `session_event` 零新列、不新增觀測序列；A／T 讀庫故障回 `5000`；改密節流 redis `Err` 放行且 `throttle_degraded_total{source="redis_change_pwd"}` 增 |
+| 守門 | `model/password.rs`：`contradictory_policy_rejects_every_length_counts_and_warns_once_per_call`／`login_path_never_touches_the_password_policy`；`handler/user_center.rs`：`contradictory_policy_refuses_all_three_set_password_entries_and_counts_each_once`／`a_broken_cache_fails_open_and_counts_each_failed_bucket_step_under_redis_change_pwd`；`handler/user.rs`：`finish_user_write_denylist_write_failure_warns_per_sid_and_still_succeeds`／`finish_user_write_commits_before_the_first_denylist_write`／`disabled_accounts_are_denylisted_for_the_refresh_lifetime_and_their_next_request_gets_8888`／`kick_user_revokes_every_active_ticket_leaves_rotated_rows_and_the_victim_gets_7777_by_admin`／`inclusion_rule_refuses_two_ways_per_consumer_and_admits_peers_and_full_scope`／`guard_no_escalation_short_circuits_full_scope_and_fails_closed_on_db_errors`；`handler/throttle.rs`：`account_dimension_applies_the_inclusion_rule_and_refusals_write_nothing`；`handler/auth/refresh.rs`：`refresh_denylist_write_failure_old_access_lives_at_most_access_secs_and_both_layers_block_refresh`／`refresh_disabled_account_is_8888_with_zero_writes`／`refresh_revoked_row_dispatches_denylist_reason_three_ways`／`enforce_production_reads_no_sys_user_so_no_per_request_liveness_check`；`auth/enforce.rs`：`enforce_mw_denylist_admin_kick_7777_by_admin_counts_redis_source`；`obs.rs`：`pre_register_renders_password_policy_invalid_explicit_zero` |
 
 ## 10.3 E6 AI 品質情境
 

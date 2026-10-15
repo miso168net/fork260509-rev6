@@ -200,7 +200,6 @@ class TestGt06WrappedContractRef(unittest.TestCase):
 
 
 TENSE = "時態禁詞"   # 時態腿全部訊息共有的字面
-BOOK6 = "docs/arc42/06-runtime-view.md"
 
 
 def _bp(key, val, top="rev5_blueprint"):
@@ -272,12 +271,21 @@ class TestGt06Tense(unittest.TestCase):
             self.assertEqual([f[2] for f in fs], [f"{BOOK}:{line}"], text)
 
     def test_real_book_face_zero_hits_and_exemption_has_real_instance(self):
-        """真 repo：活書家族時態零命中；豁免的受守面有實例（RL-0067：06 節檔之 `隨刀：` 值確有「隨…進場」被免）。"""
+        """真 repo：活書家族時態零命中；豁免的受守面有實例時、其中確有「隨…進場」被免（RL-0067）。
+        受守面＝活書家族全檔 frontmatter 之 `隨刀：` 值；零實例＝紅證 vacuous（豁免機制由上列合成語料之正反案守）——
+        007 刀島 I 進場後活書家族已無 `隨刀：` 值；任一活書再出現該值即自動恢復實例斷言。"""
+        from docsync import common
         from docsync.tests.test_gates import real_lint
         fs, _ = real_lint()
         self.assertEqual([f for f in fs if TENSE in f[3]], [])
-        with open(os.path.join(ROOT, BOOK6), encoding="utf-8") as fh:
-            lines = book.strip_code(fh.read()).split("\n")
-        cols = book._blueprint_follow_cols(lines)
-        self.assertTrue(any(book.RE_TENSE_ENTER.search(lines[i - 1], c) for i, c in cols.items()), cols)
+        hits = {}
+        for rel in common.Ctx(ROOT).tracked:
+            if not (rel.endswith(".md") and book.is_book(rel)):
+                continue
+            with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+                lines = book.strip_code(fh.read()).split("\n")
+            for i, c in book._blueprint_follow_cols(lines).items():
+                hits[f"{rel}:{i}"] = bool(book.RE_TENSE_ENTER.search(lines[i - 1], c))
+        if hits:
+            self.assertTrue(any(hits.values()), hits)
 

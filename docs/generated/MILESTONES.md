@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-06 | misc | governance | 007 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00140／BL-00141（brainstorm 定稿顆 5bfd07b 入 BACKLOG／BACKLOG-DEFERRED）與 BL-00142（plan 顆 b35ee2c 入 BACKLOG）之誕生；同顆 ADR-00075～ADR-00080、ADR-00083～ADR-00087 十一支經 user 親決轉 accepted（ADR-00074 與憲法 1.8.0 已於前顆 51f55f3）。 | — | — | 記 BL-00140、BL-00141、BL-00142 | — |
 | 2026-10-05 | misc | governance｜maint-readout-errata | maint-readout-errata 收單（user 2026-10-05 依 BACKLOG 體檢 v9 開批）：007 前讀出口與文件勘誤九項——NOTES 之 ADR-00044 指針節名（必要）與推送揮發字、README 憲法版本鏡像改指針、MILESTONES 增 BL（記／收）欄、活書 06／08 兩句、rust-api 前代歸因碼註；LESSONS LL-00069／LL-00070；新記 BL-00139。 | 0e4ad71 | — | 記 BL-00139 | — |
 | 2026-10-05 | review | 006-authz-governance | findings 11（修 11／BL 0／ADR 0） | — | — | — | — |
 | 2026-10-05 | misc | governance｜maint-backlog-137-133 | maint-backlog-137-133 收單（user 2026-10-04 依 BACKLOG 體檢 v8 開批）：BL-00137 壓縮 hook 背景 task 目錄改探測候選暫存根；GT-03 增 BL 誕生／收單唯一性腳（ADR-00073）；BL-00133 之 C4-E2 指針半條（不刪列）；LESSONS LL-00062～LL-00066。 | 356a619 | ADR-00073 | 收 BL-00137 | — |
@@ -68,6 +69,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-06｜misc｜governance
+
+帳本落點：BL-00140／BL-00142＝docs/ops/BACKLOG.md、BL-00141＝docs/ops/BACKLOG-DEFERRED.md（事件帳此前無其誕生）。T003 親決輪 72 題（原排 71＋ADR-00084 決定 10 重申一題）：71 款照文定稿；ADR-00086 決定 5 採建議改字（條件句→已決形）＋其翻案觸發器 H2 行連動改字。續行型三支同顆補 supersedes：ADR-00080／ADR-00084／ADR-00087 續行並 supersede ADR-00047／ADR-00039／ADR-00012。
 
 ### 2026-10-05｜misc｜governance｜maint-readout-errata
 

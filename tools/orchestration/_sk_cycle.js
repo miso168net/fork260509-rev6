@@ -1,7 +1,6 @@
 // ★本段引用模板常數：UNIT（執行單元標籤，如 U2）、FEATURE（該刀 feature 分支長名）、CONTEXT、ALLOWED_BLOCK（_context／_allowed 段）、
 //   FIX_SELFCHECK（fix 修完必跑的自驗命令一句；_prompts 段）——組裝時定義，缺之即 ReferenceError；
-//   RULES_REVIEW／RULES_FIX 由 _sk_rules.js（generate 產物）供：review prompt 一律烤 RULES_REVIEW、fix prompt 一律烤 RULES_FIX（R1-080）；
-//   DEEP_THINK 由 _sk_head.js 供、烤在 review／fix prompt 首行（user 拍板 2026-09-04；implementer 首行由 _sk_main.js 烤入＝user 2026-09-23）。
+//   RULES_REVIEW／RULES_FIX 由 _sk_rules.js（generate 產物）供：review prompt 一律烤 RULES_REVIEW、fix prompt 一律烤 RULES_FIX（R1-080）。
 function rejectedBlock(rejected) {
   if (!rejected.length) return ''
   const lines = [
@@ -38,7 +37,6 @@ function fixPrompt(blockers, roundNo) {
     return '' + (i + 1) + '. 檔案：' + b.file + '\n   缺陷：' + b.summary + '\n   證據與建議：' + b.detail
   })
   return [
-    DEEP_THINK,
     '你是 ' + FEATURE + ' 之 **' + UNIT + ' 執行單元**的 **fix agent**（第 ' + roundNo + ' 輪修復）。',
     '',
     CONTEXT,
@@ -78,7 +76,7 @@ async function cycle(phaseName, reviewPrompt, tag) {
       ? '★本輪＝**確認輪**（第 ' + (r + 1) + ' 輪、fix 迴圈已跑滿上限）：只審不修，若無 blocker 即判收斂。'
       : '★本輪＝第 ' + (r + 1) + ' 輪審查。'
     const rv = await spawn(
-      [DEEP_THINK, head, '', reviewPrompt, '', RULES_REVIEW, rejectedBlock(rejected), escalatedBlock(escalated)].join('\n'),
+      [head, '', reviewPrompt, '', RULES_REVIEW, rejectedBlock(rejected), escalatedBlock(escalated)].join('\n'),
       Object.assign({ label: tag + ':review-' + (r + 1), phase: phaseName, schema: REVIEW_SCHEMA }, REVIEW_OPTS)
     )
     if (!rv) return { converged: false, reason: 'review agent 回傳 null（終止型故障）', blockers: lastBlockers, rejected, escalated, escalations }

@@ -1,14 +1,14 @@
 # schema-definition — rev6 schema 定稿權威（人寫左源；跨刀活體）
 
 > **身分**：本檔＝rev6 現行 schema 定稿的唯一人寫權威（**左源**）；右源＝`docs/ops/reference-src/schema-snapshot.json`（實庫照相）；兩者差額由 `docs/ops/reference-src/schema-evolution.json`（演進帳）逐筆解釋。歸屬面另居 `archetype-map.json`。
-> **與凍結存證的分工**（ADR-00012；起因 BL-00022 已收）：本檔內容抽自 `specs/001-schema-baseline/data-model.md`（001 刀收刀凍結態），該檔留為 001 當下史料、**不再前進**；本檔隨每支帶 migration 的刀前進（RUNBOOK §10 Day-1 登記紀律）。形同 `specs/001-schema-baseline/fixtures/`（凍結面）與 `schema-snapshot.json`（活體面）的既有二分。
+> **與凍結存證的分工**（ADR-00087；起因 BL-00022 已收）：本檔內容抽自 `specs/001-schema-baseline/data-model.md`（001 刀收刀凍結態），該檔留為 001 當下史料、**不再前進**；本檔各節留 001 基線、不隨刀前進；其後各刀之結構與 seed 變更只登演進帳（`m0003` 起）；現況看 `schema-snapshot.json`（人讀鏡像 `docs/generated/reference/schema.md`）。演進帳之登記紀律＝RUNBOOK §10 Day-1；活體面只有 `schema-snapshot.json`（凍結面＝`specs/001-schema-baseline/fixtures/`，既有二分）。
 > **節號**：保留與凍結存證相同的十節編號（`tools/schema-gate.py` 的 §2／§6／§9 解析靠 `## N. … ## N+1.` 節邊界定位）。§3／§4／§10 屬 001 及更早的史述、不隨刀前進，本檔只留指針。
 
 ## 1. archetype 歸屬（15 表；憲法 §I.6 四變體）
 
 > 承 `rev5:archetype-map`（已驗證歸屬帳、rev4 溯源）；rev6 `docs/ops/reference-src/archetype-map.json` 初版
-> 承襲 rev5 同名檔改座標、與本節逐筆對賬（audit 閘與 reference/schema 同源消費）。後續刀新表：先補本節歸屬、再登記
-> archetype-map，否則 audit 攔。
+> 承襲 rev5 同名檔改座標、與本節逐筆對賬（audit 閘與 reference/schema 同源消費）。後續刀新表：歸屬直接登記
+> `archetype-map.json`（本節留 001 基線 15 表、不補＝ADR-00087 決定 7），否則 audit 攔。
 
 | 表 | 變體 | 活性唯一（索引名） | 註 |
 |---|---|---|---|

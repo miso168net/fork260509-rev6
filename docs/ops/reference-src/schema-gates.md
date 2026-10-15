@@ -56,6 +56,11 @@
   normalize 後
   **未排序逐列 diff**（含 id 欄）；★**禁全檔排序後雜湊比對**（會同時掩蓋 sequence 落值
   漂移與真差異）。seed 演進（seed_add／seed_update／seed_delete 登記）同樣合成後才比對。
+  ★**seed_add 序號合成**（ADR-00085 決定 7）：`pk` 恰單欄 `c` 且 normalize 後文本有
+  `SELECT pg_catalog.setval('public.<表>_<c>_seq', N, B);` 行者，期望已發最大值 M＝N（B 真）或 N−1（B 假）；
+  新列 id（須為整數、否則 rc 2）大於 M 即把該行推至（新 id, true）、否則不動；多筆依帳序逐筆推進（取大）；
+  多欄 pk 或無該序列行之表不推；seed_update／seed_delete 不動序列（刪列不回捲＝同 PG 行為）。
+  對應 migration 之收尾契約＝`docs/ops/reference-src/schema-evolution-contract.md` §1。
 - **雙源互證（取代 rev5 之 rename 血緣對照）**：rev6 pristine 萃取之四份資料檔（三 json＋normalize 後 seed.sql）vs
   `rev5:specs/001-schema-baseline/fixtures/` 同名檔**逐位元全等**（無 normalize、無映射；provenance 不比）——該場景＝
   fixtures 產製之一次性驗證（U2、紀錄留 provenance.md），非三閘常態比對面；工具**不內建** rename map（research R6）；
@@ -63,7 +68,8 @@
 
 ## 3. audit archetype 閘（15 表歸屬逐表驗）
 
-- **左源**：`docs/ops/reference-src/archetype-map.json`（data-model §1 轉錄）。
+- **左源**：`docs/ops/reference-src/archetype-map.json`（初版＝001 基線 15 表之 §1 轉錄；新表歸屬直接登記本檔、
+  `docs/ops/reference-src/schema-definition.md` §1 留 001 基線＝ADR-00087 決定 7）。
 - **左源形契約**：`{lineage, usage, tables:[{table, label, active_unique, note}]}`——
   tables Day-1 恰 15 筆（由 `test` 子命令釘死；後續刀隨 add_table 登記成長、常態守門
   ＝實庫表集 vs map 表集全等）；table／label 必填非空（label ∈ 四變體字串）；active_unique＝活性唯一
@@ -87,8 +93,8 @@
   - `created_by` 可空性顯式驗（不靜默）：期望值＝`docs/ops/reference-src/schema-definition.md`「`*_by` 欄性質判準」逐表
     釋義——NN 恰四表（sys_access_log／sys_token／sys_pwd_custody／sys_user_email_verify）、
     其餘一律可空。
-- **表清單守門**：實庫表集 ≠ map 表集＝紅（新表未登記歸屬即攔——先補 data-model §1、
-  再登記 map）。
+- **表清單守門**：實庫表集 ≠ map 表集＝紅（新表未登記歸屬即攔——歸屬直接登記 map〔`note` 載來源刀與理由〕、
+  結構另登演進帳 `add_table`；schema-definition §1 不補＝ADR-00087 決定 7）。
 
 ## 3b. 時區前置與全時間欄型別斷言（ADR-00059／ADR-00060）
 

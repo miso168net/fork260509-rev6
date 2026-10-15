@@ -2,9 +2,9 @@
 id: "ADR-00012"
 title: schema 定稿權威自 001 spec 目錄抽出至 reference-src——凍結存證與跨刀活體二分
 date: 2026-09-05
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00087]
 provenance: "BL-00022（001 刀 spec-compliance-001 審查輪建議 1 所衍生）；user 拍板 2026-09-05（三選項一題一問：抽取／就地定位／延後，選抽取並指定不動 specs/001）；分類體檢 tmp/check-backlog.md §3"
 tags: [governance, schema, materials]
 ---

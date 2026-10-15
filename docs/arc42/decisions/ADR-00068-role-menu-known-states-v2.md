@@ -2,9 +2,9 @@
 id: "ADR-00068"
 title: 角色與選單管理之已知態（續行 ADR-00045）——八款逐款處置（款 1 解除／款 2、6 收窄為 system-settings 與 audit 兩列／款 3、4、7 改述／款 5、8 續行）＋新款：21 支可授出端點之下放效果（含 unlockLogin 無帳號維守門）／選單維受保護四列看得到、封死功能點不動／並行編輯後送出者整份覆蓋／授權回收桶復原 NoOp 移除歸檔列而零稽核／首頁下拉選值即寫／可授予指向不存在 view 之自建選單／選單維與按鈕維之授權撤銷只剩閱覽／授權回收桶復原不擋停用角色／只勾目錄之無子項死項與首頁兜底落 /403／三組按鈕碼授撤零可見效果／兩分頁下角色抽屜三欄舊值覆寫／UI 外對已停用之自身所屬角色送停用值照擋（款 17～20＝候選四款定案）
 date: 2026-10-01
-status: accepted
+status: superseded
 supersedes: ["ADR-00045"]
-superseded_by: []
+superseded_by: [ADR-00081]
 provenance: "006-authz-governance 之 spec FR-041⑥、FR-016、FR-023、FR-025、FR-028、FR-029⑤、FR-030、FR-033、FR-034、FR-036、FR-037、FR-044、SC-007、SC-010、SC-014（本刀 ADR 全數 accepted＝收刀帳本結清之一）、US1 AS11、US2 AS3／AS4、US3 AS3／AS5、US4 AS2、Edge Cases「授權寫端」「結構性封死與保護」「授權回收桶」「前端與已知態」「測試與走查基建」、Clarifications 2026-10-01 首題（復原 NoOp 零稽核）、第三題（首頁下拉選值即寫）與第五題（已知態觀察步驟得對 seed 角色寫入之具名例外）——後兩題＝plan 期 user 裁定；brainstorm §0 Q2／Q3／Q4／Q12／Q16、§0 主線工程判斷③（選單維受保護四列不封）、§3 §1 ADR 待立⑥、§3 §4 CDP 待觀察候選兩款；ADR-00070 決定 1／決定 4 與其後果之殘餘面（角色抽屜三欄舊值覆寫、UI 外送停用值照擋＝候選另兩款之出處）；被續行面＝ADR-00045 八款（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例；續行形同 ADR-00046 之於 ADR-00040、ADR-00047 之於 ADR-00015）；藍本＝rev5:ADR 0054 §4（選單維受保護列不入封死射程＝看得到點不動）、rev5:006 spec Edge Cases「本刀新造已知態」（可授予指向不存在 view 之自建選單）、rev5:006 research（復原 NoOp 與 Applied 對前端不可區分）；BL-00045（收窄為 008 刀兩頁）、BL-00048（unlockLogin 之帳號維守門屬 007 刀）；rev5:L-046／rev5:L-054（已知態須以實際操作觀察、連使用者實際會走的路徑一併記；只記最好驗的症狀＝煙測驗一條沒人走的路；無可觀察實例須附機器反證）；draft 於 plan 期落 feature branch、續行款沿 005 刀實測症狀、新款與改述款之症狀於本刀 CDP 走查實際觀察後定稿、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00045 狀態）"
 tags: [role-menu-crud, authz-governance, known-state, by-design]
 ---

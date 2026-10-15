@@ -6,7 +6,7 @@
 
 子命令：
   check   （預設）讀 seed 檔、views 樹、imports.ts 三面後判定；綠時逐列印出仍生效之具名豁免
-  test    離線 self-test（暫存目錄合成 fixtures＋對本檔自身之豁免表四釘；零 docker、零網路、不讀真 repo）
+  test    離線 self-test（暫存目錄合成 fixtures＋對本檔自身之豁免表五釘；零 docker、零網路、不讀真 repo）
 
 守什麼：
   sys_menu 列之 component 欄（`view.<鍵>`；帶佈局者 `layout.base$view.<鍵>`）是側欄項找到前端頁面的唯一憑據，兩端之間卻沒有任何
@@ -32,12 +32,14 @@
 具名豁免（[`EXEMPT`]）：
   恰兩列＝seed 列 9 與列 77 之兩鍵，各附 BL-00045 與解除謂詞；表是模組常數之唯讀檢視，不接受 args、env 或讀檔來源。
   到期即紅＝被豁免之鍵已出現在 views 集（頁已交付而列未摘）；幽靈亦紅＝被豁免之鍵已不在 seed 集。兩者都逼人同批摘列——表只會縮。
-  self-test 對本檔自身打四根釘、各封一條繞道、互不覆蓋：
+  self-test 對本檔自身打五根釘、各封一條繞道、互不覆蓋：
     鍵集恆定——表恰為那兩鍵、每列含指針與解除謂詞（多養一列＝當場紅；要養就得同批改斷言、在 diff 現形＝拍板級可見）；
     呼叫點原封傳入——run_check 內唯一的 judge 呼叫以 EXEMPT 本名為末實參（先併一份外來表再傳＝紅）；
     判定函式零外部取值形——三支解析函式與 judge 之原文不得出現讀檔、環境變數、命令列、stdin、json 之取值字面（run_check 只准讀檔）；
-    呼叫端零就地改表——EXEMPT 為唯讀檢視、全檔恰一處綁定且無 global 宣告、測試類以外恰一處引用（即上述末實參；judge 或 main 另行直讀即多一處）。
-  ★射程自陳：四釘守的是字面形與佈線；刻意繞開字面者（反射、動態拼名）仍靠人審，不是形式證明。
+    呼叫端零就地改表——EXEMPT 為唯讀檢視、全檔恰一處綁定且無 global 宣告、測試類以外恰一處引用（即上述末實參；judge 或 main 另行直讀即多一處）；
+    定義為純字面——頂層恰一處以 EXEMPT 為唯一目標之指派、其值＝types.MappingProxyType 包單一字面 dict（經 ast.literal_eval 成立；取自環境變數、
+    讀檔、命令列或任何呼叫、名稱引用、運算式＝紅，定義改置條件區塊或解構指派內＝頂層零處＝紅）。
+  ★射程自陳：五釘守的是字面形與佈線；刻意繞開字面者（反射、動態拼名）仍靠人審，不是形式證明。
 
 讀面型（ADR-00055 決定 3；本閘為首例）：
   (a) base-web `src/views/**` 與 `src/router/elegant/imports.ts`＝pre-commit submodule-sync 段之 base-web 閘面內＝延後偵測：外層單獨 commit 時
@@ -90,7 +92,7 @@ RE_VIEWS_BLOCK = re.compile(r"^export const views\b[^\n]*\{\n(.*?)^\};", re.M | 
 RE_IMPORT_KEY = re.compile(r'^\s*(?:"([^"]+)"|([A-Za-z0-9_$]+))\s*:\s*\(\)\s*=>\s*import\(', re.M)
 
 # 具名豁免（ADR-00071 決定 2）：鍵＝seed component 字面；值＝指針與解除謂詞。唯讀檢視＝執行期無從就地增列；
-# 「恰兩列、各含 BL-00045 與解除謂詞」由 self-test TestExemptInvariants 釘死（語意與四釘見檔頭）。
+# 「恰兩列、各含 BL-00045 與解除謂詞」由 self-test TestExemptInvariants 釘死（語意與五釘見檔頭）。
 EXEMPT = types.MappingProxyType({
     "view.manage_system-settings": "BL-00045（seed 列 9 之系統設定頁尚未交付）；解除謂詞＝本鍵之 view 出現於導出集即到期、同批摘列",
     "view.manage_audit": "BL-00045（seed 列 77 之稽核頁尚未交付）；解除謂詞＝本鍵之 view 出現於導出集即到期、同批摘列",
@@ -434,7 +436,7 @@ class TestRunCheck(unittest.TestCase):
 
 
 class TestExemptInvariants(unittest.TestCase):
-    """豁免表四釘：對本檔自身之常數與原文判，各封一條摘紅燈的繞道、互不覆蓋（射程自陳見檔頭）。"""
+    """豁免表五釘：對本檔自身之常數與原文判，各封一條摘紅燈的繞道、互不覆蓋（射程自陳見檔頭）。"""
 
     BANNED_JUDGE = ("open(", "read_text", "read_bytes", "environ", "getenv", "argv", "stdin", "input(", "json")
     BANNED_CALLER = ("environ", "getenv", "argv", "stdin", "input(", "json")
@@ -481,6 +483,21 @@ class TestExemptInvariants(unittest.TestCase):
                  for n in ast.walk(top) if isinstance(n, ast.Name) and n.id == "EXEMPT" and isinstance(n.ctx, ast.Load)]
         self.assertEqual(len(loads), 1, f"測試類以外 EXEMPT 引用 {len(loads)} 處（應恰 1＝傳進 judge 之末實參）")
 
+    def test_table_definition_is_pure_literal(self):
+        """定義為純字面：頂層恰一處以 EXEMPT 為唯一目標之指派、其值＝types.MappingProxyType 包單一字面 dict（經 ast.literal_eval 成立）——
+        取自環境變數、讀檔、命令列或任何呼叫、名稱引用、運算式皆非字面＝紅；定義改置於條件區塊或解構指派內＝頂層零處＝紅"""
+        defs = [n for n in self._module_tree().body
+                if isinstance(n, ast.Assign) and [getattr(t, "id", None) for t in n.targets] == ["EXEMPT"]
+                or isinstance(n, ast.AnnAssign) and getattr(n.target, "id", None) == "EXEMPT"]
+        self.assertEqual(len(defs), 1, "EXEMPT 須恰一處頂層定義")
+        value = defs[0].value
+        self.assertTrue(isinstance(value, ast.Call) and ast.unparse(value.func) == "types.MappingProxyType"
+                        and len(value.args) == 1 and not value.keywords, ast.dump(value))
+        try:
+            ast.literal_eval(value.args[0])
+        except ValueError:
+            self.fail("EXEMPT 之定義須為 types.MappingProxyType 包純字面 dict（不得取自 args／env／讀檔，ADR-00071 決定 2）")
+
 
 class TestUsage(unittest.TestCase):
     def test_unknown_subcommand_or_extra_args_is_rc64(self):
@@ -500,7 +517,7 @@ def main(argv):
         ok = unittest.main(argv=[argv[0]], exit=False, verbosity=1).result.wasSuccessful()
         if ok:
             _say(f"{TAG} ✓ self-test 過（seed 塊內解析與塊外誘餌／導出規則逐形／imports 只收 views 塊／缺 view・豁免生效・到期・幽靈・"
-                 f"結構腿兩向各自單向・兩腿同報／check 全鏈經真豁免表綠與到期・三面缺席與三側空集 rc 2／豁免表四釘／用法守衛）")
+                 f"結構腿兩向各自單向・兩腿同報／check 全鏈經真豁免表綠與到期・三面缺席與三側空集 rc 2／豁免表五釘／用法守衛）")
         return 0 if ok else 1
     rc, lines = run_check(REPO_ROOT)
     for ln in lines:

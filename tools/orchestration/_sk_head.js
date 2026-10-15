@@ -65,8 +65,8 @@ if (AGENT_FUSE < WORST) {
 let spawned = 0
 
 // 模型家（單一真源；拍板＝ADR-00056〔現行值 user 2026-09-23 定〕；生成表＝docs/generated/reference/agents.md、換模史＝本檔 git log）：
-//   全角色（implementer、review／fix 與 review 骨架四角色 lens／mirror／grader／critic）＝opus 1M xhigh、
-//   且 prompt 首行一律帶 DEEP_THINK 字面（深思關鍵詞；implementer 由 _sk_main.js、review／fix 由 _sk_cycle.js、四角色由 _sk_review.js 烤入）。
+//   全角色（implementer、review／fix 與 review 骨架四角色 lens／mirror／grader／critic）＝opus 1M xhigh；
+//   思考深度只由 effort 承載、prompt 不帶深思關鍵詞（ADR-00088；兩支 harness 案1 斷言）。
 const IMPL_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
 const REVIEW_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
 const FIX_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
@@ -74,7 +74,6 @@ const LENS_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
 const MIRROR_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
 const GRADER_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
 const CRITIC_OPTS = { model: 'opus[1m]', effort: 'xhigh' }
-const DEEP_THINK = 'ultrathink'
 
 function guard(p, label) {
   if (typeof p !== 'string') throw new Error('防呆②：prompt 非字串（label=' + label + '）')

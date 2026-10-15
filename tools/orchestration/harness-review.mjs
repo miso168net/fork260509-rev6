@@ -1,5 +1,6 @@
 // review 形骨架 harness（九案＝六正例＋三反例；BL-00006 入庫）：以樁 agent 乾跑組裝好的 review script——驗派發數／label 唯一／三態聚合／零 findings 跳過／
-//   null 與 agentStatus=failed 留帳不殺 run／保險絲與 guard（每支渲染後 prompt 的長度、zh-TW、冒煙 token、RULES-VERSION 在真 guard 下被驗）。
+//   null 與 agentStatus=failed 留帳不殺 run／保險絲與 guard（每支渲染後 prompt 的長度、zh-TW、冒煙 token、RULES-VERSION 在真 guard 下被驗）／
+//   每支 prompt 不帶深思關鍵詞（案1；ADR-00088）。
 // 用法：node tools/orchestration/harness-review.mjs <組裝好的 script.mjs>
 // 期望值不寫死：自 script 的 `const REVIEW_STAGE`／`const INLINE_VERIFY`／`const CRITIC = null`／`const SMOKE` 行與回傳結構（lenses／probes／batches 長度）推導；
 //   樁走真 spawn／guard、只有 agent()／parallel()／pipeline() 被替換。
@@ -86,6 +87,8 @@ const firstLensKey = (o) => (o.r.lenses && o.r.lenses[0] ? o.r.lenses[0].key : n
 const firstBatchKey = (o) => (o.r.batches && o.r.batches[0] ? o.r.batches[0].batch : null)
 const firstTable = (o) => (STAGE === 'explore' ? (o.r.lenses && o.r.lenses[0] && o.r.lenses[0].verify ? o.r.lenses[0].verify.verdicts : []) : (o.r.batches && o.r.batches[0] ? o.r.batches[0].verdicts : []))
 const mirrorsExpected = STAGE === 'verify' || INLINE
+// 深思關鍵詞（ADR-00088）：組裝形每支 prompt 不得含此字面（不分大小寫）——思考深度只由 effort 承載（ADR-00056）；字面寫死、不自 script 常數推導
+const DEEP_KEYWORD = /ultrathink/i
 
 // 案1：正常路徑——派發數＝結構、label 唯一、status ok、每支 prompt 過 guard 且模型家一致
 await run('案1 正常路徑：派發數＝結構、label 唯一、status ok、prompt 含冒煙／zh-TW／RULES-VERSION', baseStub({ lens: 0 }), (o) => {
@@ -93,6 +96,7 @@ await run('案1 正常路徑：派發數＝結構、label 唯一、status ok、p
   expect(new Set(labels(o)).size === o.calls.length, 'label 唯一', labels(o).join(','))
   expect(o.calls.every((c) => c.prompt.includes(SMOKE) && c.prompt.includes('zh-TW') && /RULES-VERSION:\s*[0-9a-f]{12}/.test(c.prompt) && c.prompt.length >= 400), '每支 prompt 含冒煙 token／zh-TW／RULES-VERSION 且 ≥400 字', '')
   expect(o.calls.every((c) => c.model === 'opus[1m]' && c.effort === 'xhigh' && c.schema), '每支 opus[1m]／xhigh／帶 schema（ADR-00056）', JSON.stringify(o.calls.map((c) => [c.model, c.effort, c.schema])))
+  expect(o.calls.every((c) => !DEEP_KEYWORD.test(c.prompt)), '每支 prompt 不帶深思關鍵詞（ADR-00088）', JSON.stringify(o.calls.filter((c) => DEEP_KEYWORD.test(c.prompt)).map((c) => c.label)))
   expect(o.r.agentsSpawned === o.calls.length && o.calls.length <= worst(o) + 1, 'agentsSpawned＝派發數且 ≤ 結構最壞＋1（保險絲）', o.r.agentsSpawned + '/' + worst(o))
   expect(typeof o.r.summary === 'object' && typeof o.r.summary.findings === 'number', 'summary 結構化計數在', JSON.stringify(o.r.summary))
 })

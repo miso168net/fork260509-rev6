@@ -2,9 +2,9 @@
 id: "ADR-00039"
 title: msg key 譯文之家＝三檔 locale backend 子樹各為該語權威（續行 ADR-00029）——不另立譯文表、鍵數以跨端閘為準
 date: 2026-09-20
-status: accepted
+status: superseded
 supersedes: ["ADR-00029"]
-superseded_by: []
+superseded_by: [ADR-00084]
 provenance: "004-ip-trust-anchor brainstorm Q3（BL-00042 ②；user 2026-09-15 拍板「三檔 locale backend 子樹各為該語之家」）；憲法 §III.2 BASE-WEB-I18N-WIRING (ii) 權威句已由 ADR-00034 Amendment（1.4.0）改寫、本檔＝其 ADR 面翻案紀錄；被翻案面＝ADR-00029 後果段與 provenance 所稱「`contracts/msg-keys.md` 為譯文（唯一）權威」；形承 ADR-00032（原意續行、只改一句）；ADR-00012 原則（跨刀活體不住 spec 目錄）；主線擬稿即 accepted（tasks T063）"
 tags: [i18n, contract, code-gate, base-web, rust-api, decision-reversal]
 ---

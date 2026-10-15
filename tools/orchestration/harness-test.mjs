@@ -3,8 +3,8 @@
 // 用法：node tools/orchestration/harness-test.mjs <組裝好的 script.mjs> [spec|quality]
 //   spec（預設）＝樁把 blocker 打在規格對照段；quality＝打在碼品質段（原 quality-only 變體併入、以第二參數切換）。
 // 期望值自 script 的 `const IMPLEMENTERS = <n>` 行推導（樁對每支 implementer 回同一形；n=0＝續跑形、案7 改驗零 implementer 直入審查）；任一斷言不符→逐項列出、exit 1；用法錯 exit 2。
-// 樁走真 spawn／guard（prompt 長度、zh-TW、冒煙 token、RULES-VERSION 皆在此被驗），只有 agent() 被替換；樁另記每支 prompt 原文供內容斷言（案 11／12：已駁回／已升級清單的渲染面），
-//   並記每支 model／effort 供模型家斷言（案 1 正、案 19 反：ADR-00056）。
+// 樁走真 spawn／guard（prompt 長度、zh-TW、冒煙 token、RULES-VERSION 皆在此被驗），只有 agent() 被替換；樁另記每支 prompt 原文供內容斷言（案 1：不帶深思關鍵詞＝ADR-00088；
+//   案 11／12：已駁回／已升級清單的渲染面），並記每支 model／effort 供模型家斷言（案 1 正、案 19 反：ADR-00056）。
 import fs from 'fs'
 const SCRIPT = process.argv[2]
 const TAG = process.argv[3] || 'spec'
@@ -19,12 +19,6 @@ if (!mImpl) {
   process.exit(2)
 }
 const N = Number(mImpl[1])
-const mDeep = src.match(/^const DEEP_THINK = '([^']+)'\s*$/m)
-if (!mDeep) {
-  console.error('script 缺 `const DEEP_THINK = \x27…\x27` 行（_sk_head.js）——implementer 首行斷言無從推導')
-  process.exit(2)
-}
-const DEEP = mDeep[1]
 const PRE = N + (TAG === 'quality' ? 1 : 0) // quality 模式：規格段一支 review 即收斂、blocker 打在品質段
 const STAGE = TAG === 'quality' ? 'CodeQualityReview' : 'SpecReview'
 const ROUNDS_KEY = TAG === 'quality' ? 'qualityReviewRounds' : 'specReviewRounds'
@@ -60,6 +54,8 @@ const count = (o, n) => expect(o.calls.length === n, '派發恰 ' + n + ' 支', 
 // 模型家（ADR-00056）：組裝形每支 agent 之 model／effort 恆為此值、不隨主線 session effort；字面寫死、不自 script 常數推導（推導＝自己比自己、常數被改仍綠）
 const FAMILY = { model: 'opus[1m]', effort: 'xhigh' }
 const offFamily = (opts) => opts.filter((x) => x.model !== FAMILY.model || x.effort !== FAMILY.effort)
+// 深思關鍵詞（ADR-00088）：組裝形每支 prompt 不得含此字面（不分大小寫）——思考深度只由上列 effort 承載；字面寫死、不自 script 常數推導
+const DEEP_KEYWORD = /ultrathink/i
 
 const OKW = { status: 'ok', report: 'r', filesChanged: ['f.ts'] }
 const B = (s) => ({ agentStatus: 'ok', blockers: [{ file: 'a.ts', summary: s, detail: 'd' }], notes: '' })
@@ -74,9 +70,9 @@ await run('案1 fix 迴圈跑滿→確認輪清空→判收斂（rev5:L-011 變�
   return CLEAN
 }, (o) => {
   noThrow(o); status(o, 'ok'); count(o, N + 8); expect(o.r[ROUNDS_KEY] === 4, ROUNDS_KEY + '=4', o.r[ROUNDS_KEY])
-  // implementer prompt 首行＝DEEP_THINK（user 2026-09-23：全角色 opus 且首行帶深思關鍵詞；_sk_main.js 烤入）
-  const implPrompts = o.prompts.filter((_, i) => o.calls[i].includes('implementer'))
-  expect(implPrompts.length === N && implPrompts.every((p) => p.split('\n')[0] === DEEP), 'implementer prompt 首行＝DEEP_THINK（' + DEEP + '）', JSON.stringify(implPrompts.map((p) => p.split('\n')[0])))
+  // 本案派發 implementer／review／fix 三角色（派發數已由上行釘死）：每支 prompt 不帶深思關鍵詞（ADR-00088）
+  const deepHits = o.calls.filter((_, i) => DEEP_KEYWORD.test(o.prompts[i]))
+  expect(deepHits.length === 0, '每支 prompt 不帶深思關鍵詞（ADR-00088）', JSON.stringify(deepHits))
   expect(offFamily(o.opts).length === 0, '每支 model／effort＝' + FAMILY.model + '／' + FAMILY.effort + '（ADR-00056）', JSON.stringify(offFamily(o.opts)))
 })
 

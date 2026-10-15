@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → bootstrap-roster（tools/bootstrap.sh staged 時只跑 test_hook_wiring 單檔、秒級）→ rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ view-render-guard（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——工作樹或射程缺席＝rc 2）→ route-artifact-gate（base-web pin bump、工具本體或憲法 staged 時條件實跑；docker 缺或 base-web 容器未起＝工具內具名跳過）→ seed-view-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ submodule-sync（rust-api／base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → bootstrap-roster（tools/bootstrap.sh staged 時只跑 test_hook_wiring 單檔、秒級）→ rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ view-render-guard（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——工作樹或射程缺席＝rc 2）→ route-artifact-gate（base-web pin bump、工具本體或憲法 staged 時條件實跑；docker 缺或 base-web 容器未起＝工具內具名跳過）→ seed-view-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ zh-tw-lint（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ submodule-sync（rust-api／base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -60,8 +60,12 @@ staged=$(git diff --cached --name-only)
 if echo "$staged" | grep -q '^tools/docsync/\|^\.githooks/\|^\.githooks-submodule/'; then
   pc_run "selftest-docsync" python3 "$HOOK_DIR/../tools/docsync" test
 fi
-for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py tools/view-render-guard.py tools/route-artifact-gate.py tools/seed-view-gate.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
-  if echo "$staged" | grep -qxF "$t"; then
+# 依賴觸發（ADR-00085；007 刀 final holistic review）：walkthrough-baseline 執行期與自測皆依路徑載入 tools/schema-gate.py 之合成鏈並讀演進帳——
+# 兩者任一單獨 staged 時亦跑 walkthrough-baseline 自測（耦合自證；否則只在 bootstrap 全量自測兜底）。
+wb_deps_staged=0
+if echo "$staged" | grep -qxF -e 'tools/schema-gate.py' -e 'docs/ops/reference-src/schema-evolution.json'; then wb_deps_staged=1; fi
+for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py tools/view-render-guard.py tools/route-artifact-gate.py tools/seed-view-gate.py tools/zh-tw-lint.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
+  if echo "$staged" | grep -qxF "$t" || { [ "$t" = tools/walkthrough-baseline.py ] && [ "$wb_deps_staged" = 1 ]; }; then
     pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
   fi
 done
@@ -71,7 +75,7 @@ done
 if echo "$staged" | grep -qxF -e 'tools/bootstrap.sh'; then
   pc_run "bootstrap-roster" python3 -m unittest discover -s "$HOOK_DIR/../tools/docsync/tests" -t "$HOOK_DIR/../tools" -p test_hook_wiring.py
 fi
-# ── 七支碼面閘（rust-fmt／wire-schema／fork-delta 隨 002 刀 U0 隨遷自 rev5:.githooks/pre-commit 同段形、msg-key-gate 隨 003 刀 U9、view-render-guard／route-artifact-gate 隨 004 刀 U8、seed-view-gate 隨 006 刀 U14；名冊＝RUNBOOK §12 碼面閘表、GT-12 腿對賬；皆入上方 for 自測迴圈）──
+# ── 八支碼面閘（rust-fmt／wire-schema／fork-delta 隨 002 刀 U0 隨遷自 rev5:.githooks/pre-commit 同段形、msg-key-gate 隨 003 刀 U9、view-render-guard／route-artifact-gate 隨 004 刀 U8、seed-view-gate 隨 006 刀 U14、zh-tw-lint 隨 007 刀 U16；名冊＝RUNBOOK §12 碼面閘表、GT-12 腿對賬；皆入上方 for 自測迴圈）──
 # rust 格式閘（承 rev5:B-112／rev5:ADR 0057 決定 3）：rust-api gitlink 變動（pin bump）或本工具本體 staged 時，於 rust-api 容器內跑
 # `cargo fmt --all --check`（唯讀、設定＝rust-api/rustfmt.toml）。★本段刻意零條件判斷：跳過邏輯住工具內——docker 不在 PATH／
 # compose 兩檔缺／rust-api 容器未在跑＝工具具名跳過 rc 0（「stack 沒起時 pre-commit MUST 可用」紀律不變）；容器在跑而 cargo-fmt 缺
@@ -90,7 +94,7 @@ if echo "$staged" | grep -qxF -e 'base-web' -e 'rust-api'; then
   pc_run "wire-schema" python3 "$HOOK_DIR/../tools/wire-schema.py" check --staged-gate
 fi
 # fork-delta 標記閘（憲法 §III）：base-web gitlink 變動（pin bump）時機器比對 base-web vs 源倉 example 基線——修改型缺 `原行:`／
-# 新增型缺圈界／軌道授權外／§III.2 範圍欄計數與標記實數不等（表外宣告 3）即擋 rc 1；工具本體 staged 時亦直跑一次（無引數＝self-test＋全掃）。
+# 新增型缺圈界／圈界首尾不成對／軌道授權外／§III.2 範圍欄計數與標記實數不等（表外宣告 3）即擋 rc 1；工具本體 staged 時亦直跑一次（無引數＝self-test＋全掃）。
 # ★第三個觸發源＝憲法：`load_roster()` 讀 §III.1／§III.2 兩表當授權名冊（含空 ★表哨兵句斷言）、範圍欄對賬腿另讀 §III.2 範圍欄注記之處數與塊數，
 # 純 §V.2 Amendment commit（含改範圍欄注記數）也當場紅、不等下一次 pin bump 才誤歸因。
 # ★源倉缺席或未切在 example＝工具首步斷言 die rc 2（fail-loud）；本段不設跳過分支——bootstrap 已斷言源倉在場且在 example。
@@ -98,7 +102,7 @@ if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/fork-delta-lint.py' -e '.s
   pc_run "fork-delta" python3 "$HOOK_DIR/../tools/fork-delta-lint.py"
 fi
 # msg key 跨端閘（003 刀 U9；spec FR-027、`docs/ops/reference-src/code-gate-contracts.md` §5）：rust-api **或** base-web gitlink 變動（pin bump）、或工具本體 staged 時跑 `check`
-# ——左源 rust-api/server/src/error.rs 之 MSG_KEYS ⇔ base-web 三檔 locale 各自 backend 子樹逐檔雙向全等（無白名單）＋Biz 構造點守衛＋前端 msg 字面消費點名冊（base-web src 剝註解後之 wire 字面 ⇔ 工具內名冊）
+# ——左源 rust-api/server/src/error.rs 之 MSG_KEYS ⇔ base-web 三檔 locale 各自 backend 子樹逐檔雙向全等（無白名單）＋Biz／BizData 構造點守衛（含明細通道射程守與佔位符對賬）＋前端 msg 字面消費點名冊（base-web src 剝註解後之 wire 字面 ⇔ 工具內名冊）
 # （`AppError::Biz(` 須 `Cow::Borrowed(字面|msg_key::NAME)`、`#[cfg(test)]` 排除）。★雙側觸發、比對面＝兩側**工作樹**：任一側改了自己
 # 那面而另一側工作樹未同批改＝本段紅；★「兩側改動須同一顆外層 commit 同時 bump 兩 pin」＝tasks 跨子庫同步律之紀律面——本段讀不到
 # pin 樹（兩側工作樹皆已同批改、只 commit 單側並只 bump 該側 pin 時本段照樣綠），不構成該律的機器守（該律之粗判＝下方 submodule-sync 段）。
@@ -130,21 +134,28 @@ fi
 if echo "$staged" | grep -qxF -e 'base-web' -e 'rust-api' -e 'tools/seed-view-gate.py'; then
   pc_run "seed-view-gate" python3 "$HOOK_DIR/../tools/seed-view-gate.py" check
 fi
+# 繁中 locale 用語閘（007 刀 U16；ADR-00084 決定 7、`docs/ops/reference-src/code-gate-contracts.md` §8）：base-web gitlink 變動（pin bump）或工具本體 staged 時跑 `check`
+# ——base-web 繁中 locale（zh-tw.ts）剝註解後之字串字面四腿（簡體殘字／字表完備〔另讀 zh-cn.ts〕／大陸用語／會話用語）＋空值。★兩檔住子庫、外層 staged 清單
+# 只見 gitlink `base-web`＝以 pin bump 觸發、本段不寫子庫檔路徑字面。★本段零條件判斷、不設跳過分支（ADR-00019 決定 3／4）：兩檔任一缺席或解析失敗＝工具 rc 2
+# fail-loud——bootstrap 已斷言 base-web 工作樹在場。零 docker、毫秒級；self-test 不隨 check 連帶跑、故本體走 for 迴圈形。
+if echo "$staged" | grep -qxF -e 'base-web' -e 'tools/zh-tw-lint.py'; then
+  pc_run "zh-tw-lint" python3 "$HOOK_DIR/../tools/zh-tw-lint.py" check
+fi
 # 跨子庫同步律段（BL-00057 粗判形；非碼面閘、無工具本體、不入 RUNBOOK §12 碼面閘表）：rust-api **或** base-web gitlink 變動（pin bump）時，
-# 兩子庫工作樹之「雙側閘閘面路徑」須無未 commit 改動（含未追蹤新檔）——rust-api 側 server/src/error.rs（msg-key-gate 左源）＋server/tests/fixtures/wire-schema.json
-# （wire 快照側）；base-web 側 src/locales/langs（msg-key-gate 右源）＋src/typings/common.d.ts＋src/typings/api（wire typings 側）＋src（msg-key-gate 前端消費點掃描面）。
+# 兩子庫工作樹之「雙側閘閘面路徑」須無未 commit 改動（含未追蹤新檔）——rust-api 側 server/src/error.rs（msg-key-gate 左源）＋server/src/handler/user.rs
+# （msg-key-gate 明細型之家＝佔位符對賬之 rust 面；007 刀 U6 起）＋server/tests/fixtures/wire-schema.json（wire 快照側）；base-web 側 src/locales/langs（msg-key-gate 右源）＋src/typings/common.d.ts＋src/typings/api（wire typings 側）＋src（msg-key-gate 前端消費點掃描面）。
 # ★理由：上方 wire-schema／msg-key-gate 兩支雙側閘讀的是**工作樹**（003 刀 U9 實證 pin 樹缺右源時 msg-key-gate 仍 rc 0），工作樹≠pin 樹時其綠
 # 不代表 commit 內容；「已 commit 未 bump」那一側由 GT-02（gitlink＝worktree HEAD；docsync lint 每顆必跑）擋，本段補「未 commit 的同面改動（含未追蹤新檔）」這一半。
 # ★未追蹤新檔照計（--untracked-files=all）：base-web src/typings/api 下新增而未 git add 之 .d.ts，wire-schema 重抽照樣讀入（TYPINGS_GLOB 讀檔案系統；
 # 任一側 pin 區間有變動即完整重抽）、pin 樹卻缺該檔——不計則本段與 wire-schema 同時靜默綠。★誤紅面（寧吵勿漏）：base-web 側閘面含 `src` 全目錄
 # （msg-key-gate 前端消費點掃描根；`src/locales/langs` 等三條窄路徑已被其涵蓋、為閘面對賬腿之等式而留），src 下兩支雙側閘皆不讀之檔的任何
-# 未 commit 改動（tracked 修改與未追蹤檔皆算）同樣擋下 pin bump。rust-api 側只列 msg-key-gate 左源與 wire 快照：msg-key-gate 之 Biz 構造點守衛
-# 比對面同在 rust-api 內＝單側、不跨子庫，與 rust-fmt 同不入本段閘面。
+# 未 commit 改動（tracked 修改與未追蹤檔皆算）同樣擋下 pin bump。rust-api 側只列 msg-key-gate 左源、明細型之家與 wire 快照：msg-key-gate 之 Biz／BizData
+# 構造點守衛比對面同在 rust-api 內＝單側、不跨子庫，與 rust-fmt 同不入本段閘面；佔位符對賬（明細型欄名 ⇔ 三檔 locale 譯文佔位符）跨子庫、故入。
 # 有改動＝rc 1、指名子庫與檔並給補救句；對子庫 git 失敗＝rc 2。★LL-00012：hook 期間 git 匯出外層 GIT_DIR／GIT_INDEX_FILE 等——對子庫下 git 前
 # 以 `unset $(git rev-parse --local-env-vars)` 剝除（githooks(5) 對他 repo 下 git 之慣用形；未剝＝查外層 index、恆空＝靜默綠）；
 # `--no-optional-locks`＝守上方並行 harness「各閘唯讀」（status 不順手回寫子庫 index）。閘面路徑字面 ⇔ 兩工具常數由 test_hook_wiring 對賬。
 if echo "$staged" | grep -qxF -e 'rust-api' -e 'base-web'; then
-  pc_run "submodule-sync" sh -c 'h=$1; shift; rc=0; for s in rust-api base-web; do ps=""; for p in "$@"; do case $p in "$s"/*) ps="$ps ${p#*/}" ;; esac; done; d=$(unset $(git rev-parse --local-env-vars); git --no-optional-locks -C "$h/../$s" status --porcelain --untracked-files=all -- $ps) || { echo "[pre-commit] ✗ submodule-sync：git -C ${s} status 失敗——子庫工作樹缺席或損壞、跑 bash tools/bootstrap.sh 檢修" >&2; exit 2; }; [ -z "$d" ] && continue; echo "[pre-commit] ✗ submodule-sync：${s} 工作樹之雙側閘閘面有未 commit 改動（雙側閘讀工作樹、此刻之綠不代表本 commit 內容）：" >&2; printf "%s\n" "$d" | sed "s|^|    ${s}：|" >&2; echo "    補救：該側先 git -C ${s} commit（或還原）上列改動，再回外層 git add rust-api base-web——兩 pin 同一顆外層 commit bump（跨子庫同步律）" >&2; rc=1; done; exit $rc' _ "$HOOK_DIR" 'rust-api/server/src/error.rs' 'rust-api/server/tests/fixtures/wire-schema.json' 'base-web/src/locales/langs' 'base-web/src/typings/common.d.ts' 'base-web/src/typings/api' 'base-web/src'
+  pc_run "submodule-sync" sh -c 'h=$1; shift; rc=0; for s in rust-api base-web; do ps=""; for p in "$@"; do case $p in "$s"/*) ps="$ps ${p#*/}" ;; esac; done; d=$(unset $(git rev-parse --local-env-vars); git --no-optional-locks -C "$h/../$s" status --porcelain --untracked-files=all -- $ps) || { echo "[pre-commit] ✗ submodule-sync：git -C ${s} status 失敗——子庫工作樹缺席或損壞、跑 bash tools/bootstrap.sh 檢修" >&2; exit 2; }; [ -z "$d" ] && continue; echo "[pre-commit] ✗ submodule-sync：${s} 工作樹之雙側閘閘面有未 commit 改動（雙側閘讀工作樹、此刻之綠不代表本 commit 內容）：" >&2; printf "%s\n" "$d" | sed "s|^|    ${s}：|" >&2; echo "    補救：該側先 git -C ${s} commit（或還原）上列改動，再回外層 git add rust-api base-web——兩 pin 同一顆外層 commit bump（跨子庫同步律）" >&2; rc=1; done; exit $rc' _ "$HOOK_DIR" 'rust-api/server/src/error.rs' 'rust-api/server/src/handler/user.rs' 'rust-api/server/tests/fixtures/wire-schema.json' 'base-web/src/locales/langs' 'base-web/src/typings/common.d.ts' 'base-web/src/typings/api' 'base-web/src'
 fi
 # entity 漂移閘（碼面閘、不入 GATES 名冊；承 rev5:.githooks/pre-commit 同段形、rev4:B-110 階段 0）：rust-api gitlink 變動
 # （pin bump）或 schema 快照本身 staged 時，比對 rust-api/entity/src vs 工作樹快照（＝待提交態）docs/ops/reference-src/schema-snapshot.json

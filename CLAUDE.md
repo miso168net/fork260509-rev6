@@ -27,7 +27,7 @@
   期間拍板→ADR draft。rev5 承襲候選——啟動書 §5 波次表、憲法 §I.7／§III.2 承襲指針、BACKLOG 帶 `rev5:` 標註項——是 brainstorm 的直接輸入：
   沿用項照已驗證結論施工、翻案項用新設計。★系統重寫刀序由首刀 brainstorm 決定（D13）。
 - **SDD 5 步**：`/speckit-specify`（input＝brainstorm 檔）→ `/speckit-clarify` → `/speckit-plan`（對照憲法 §IV 九題）→ `/speckit-tasks` → `/speckit-analyze`；
-  每步後 commit（spec-kit git extension auto-commit、ADR-00003；其 `[Spec Kit]` 英文固定訊息與 specify 自產 `checklists/requirements.md` 之檢核項文字＝RL-0042 兩項具名例外、授權住 RULES）。plan 之 research 必列「rev5 對應碼清單＋rev6 拍板差異點」（承 rev5:ADR 0019）。
+  每步後 commit（spec-kit git extension auto-commit、ADR-00003；其 `[Spec Kit]` 英文固定訊息與 specify 自產 `checklists/requirements.md` 之檢核項文字＝RL-0042 兩項具名例外、授權住 RULES）。plan 之 research 必列「rev5 對應碼清單＋rev6 拍板差異點」（承 rev5:ADR 0019）；plan 起草之 ADR 逐款標親決分類、待決款於 plan 期當場一題一問（RL-0086）。
   棄案論證寫完 MUST 回頭對所選方案跑同一反例（RL-0013）。specify 必以 `/speckit-specify` 顯式起手（其 Pre-Execution Checks 才會跑 before_specify hook 建分支）、不排進 brainstorm 流程內自動觸發；其內建 NEEDS CLARIFICATION 一次呈三題之形不採用，一律改走 §5 一題一問。
   ★分支名≠feature 身分真源：分支由 hook 之 speckit.git.feature 建（序號＝腳本先 `git fetch --all --prune`、再取 `git branch -a`〔含遠端追蹤分支〕之 `NNN-` 與 `specs/` 目錄兩者最大號＋1——起手會連帶觸發一次全 remote fetch，屬預期、非越權；設定住 `.specify/extensions/git/git-config.yml`、`.specify/init-options.json`）、
   `specs/<NNN>-<slug>/` 由 specify 自建並寫入 gitignored 的 `.specify/feature.json`（per-checkout；換機／切回舊分支先 `export SPECIFY_FEATURE_DIRECTORY=specs/<本刀目錄>`）——
@@ -130,6 +130,7 @@
 - 拍板級才問：動 schema／加 migration、feature scope 邊界、破紀律例外、user 可見行為變更（RULES 名詞段）。
 - 拍板級條目動工前先查拍板紀錄（ADR／events／NOTES）、查無紀錄＝先問；承諾過目的事項單獨兌現、不以概括指示自行豁免（RL-0001）。
 - 問法：一題一問、每題 2～3 選項、第一個為建議；大白話、每選項串回 user 核心目標；trade-off 主張先 grep 實證；行為類拍板附前後對照範例；正交維度拆開問。
+- SDD 刀 plan 期 ADR 之親決走親決分類（待決一題一問；承決與工程不逐款問；轉 accepted 前對照表一題收尾；RL-0086、ADR-00089）；維護批與 review 輪 ADR 由 user 於對話裁定後主線寫成 accepted。
 - 不採信 agent 或自己的回報：一律 grep／實跑取證。
 
 ## 6. 不要做的事（精選硬禁令）
@@ -160,4 +161,5 @@
   rev6 側 32080（UI）／32089（example）／32079（API）／35432／36379／38025——2xxxx 對 3xxxx 不衝突、兩 stack 併行是預期形。
 - **UI 對照流程**：host 瀏覽器以 `--remote-debugging-port=9229` 起，CDP 接 `127.0.0.1:9229`（Node 24 內建 WebSocket；工具＝`tools/orchestration/cdp.mjs`），
   開分頁對照 22080（rev5）vs 32080（rev6）、必要時加 22089 三方比。★一律用 127.0.0.1、不用 localhost（origin 不同、token 不共享）；dev 帳號 Super／Admin／User。
+  ★rev6 未選語言預設繁中、rev5 預設簡中：結構清單與 toast 文案之對照兩側一律先顯式設簡中（寫 `lang` 儲存值；ADR-00084 決定 8）。
   真登入走查前後的全表基準 snapshot／diff／restore 工具＝`tools/walkthrough-baseline.py`（承 rev5 同名工具、rev5:L-071；非碼面閘、只指向 rev6 stack），契約住 RUNBOOK §9c。

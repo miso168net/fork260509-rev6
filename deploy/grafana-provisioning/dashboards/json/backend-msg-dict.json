@@ -27,7 +27,7 @@
       "id": 1,
       "type": "text",
       "title": "backend.* 拒因鍵：鍵名與譯文的家（指針）",
-      "description": "BL-00099／ADR-00039 決定 2：不另立譯文表；鍵名左源＝MSG_KEYS、譯文之家＝三檔 locale、機器對賬＝tools/msg-key-gate.py",
+      "description": "BL-00099／ADR-00084 決定 5：不另立譯文表；鍵名左源＝MSG_KEYS、譯文之家＝三檔 locale、機器對賬＝tools/msg-key-gate.py",
       "gridPos": {
         "h": 10,
         "w": 24,
@@ -39,7 +39,7 @@
         "code": {
           "language": "plaintext"
         },
-        "content": "**拒因鍵（`backend.*`）的家在哪裡——本面板不重抄鍵表與譯文**\n\n- **鍵名左源**＝`rust-api/server/src/error.rs` 的 `MSG_KEYS`（Biz 構造點只准用 `msg_key::` 常數或字串字面，逐處由閘守）。\n- **譯文之家**＝`base-web/src/locales/langs/` 之 `zh-tw.ts`／`zh-cn.ts`／`en-us.ts`，各自的 `backend: {` 區塊（ADR-00039 決定 2：不另立譯文表）。\n- **機器對賬**＝`python3 tools/msg-key-gate.py check`：三檔 locale 的 backend 鍵集 ⇔ `MSG_KEYS` 逐檔雙向全等，不等即紅指名；另守 Biz 構造點與前端 msg 字面消費點名冊。\n\n> 本面板自 BL-00099 起改為指針形：人維護的第二份鍵表與譯文沒有任何機器對賬，004 刀六個新鍵的 zh-TW 欄就是這樣漂掉的；\n> 同批清掉前代遺留而 rev6 名冊沒有的五十餘鍵。要查某個 `msg` 值的意思，直接看上列三檔 locale——鍵名清單刻意不在此重抄，\n> 否則下一次新增 msg key 就會再造出同一個漂移面。"
+        "content": "**拒因鍵（`backend.*`）的家在哪裡——本面板不重抄鍵表與譯文**\n\n- **鍵名左源**＝`rust-api/server/src/error.rs` 的 `MSG_KEYS`（Biz 構造點只准用 `msg_key::` 常數或字串字面，逐處由閘守）。\n- **譯文之家**＝`base-web/src/locales/langs/` 之 `zh-tw.ts`／`zh-cn.ts`／`en-us.ts`，各自的 `backend: {` 區塊（ADR-00084 決定 5：不另立譯文表）。\n- **機器對賬**＝`python3 tools/msg-key-gate.py check`：三檔 locale 的 backend 鍵集 ⇔ `MSG_KEYS` 逐檔雙向全等，不等即紅指名；另守 Biz 構造點與前端 msg 字面消費點名冊。\n\n> 本面板自 BL-00099 起改為指針形：人維護的第二份鍵表與譯文沒有任何機器對賬，004 刀六個新鍵的 zh-TW 欄就是這樣漂掉的；\n> 同批清掉前代遺留而 rev6 名冊沒有的五十餘鍵。要查某個 `msg` 值的意思，直接看上列三檔 locale——鍵名清單刻意不在此重抄，\n> 否則下一次新增 msg key 就會再造出同一個漂移面。"
       }
     }
   ]
