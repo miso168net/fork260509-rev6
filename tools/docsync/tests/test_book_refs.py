@@ -1,4 +1,4 @@
-"""語料面：GT-06 引用健康（連結／行號／deep-link／per-machine 路徑／活書時態）、GT-11 bash 面、errata。"""
+"""語料面：GT-06 引用健康（連結／行號／deep-link／per-machine 路徑／活書時態／tmp 具名路徑／spec 契約檔引用／NOTES 下一步收單句）、GT-11 bash 面、errata。"""
 import os
 import tempfile
 import unittest
@@ -40,7 +40,7 @@ class TestGt06(unittest.TestCase):
         fs = self._run({BOOK: "# 1\n\n下一步再說；日後補。\n"})
         self.assertTrue(any("下一步" in f[3] for f in errs(fs)) and any("日後" in f[3] for f in errs(fs)))
         self.assertEqual(warns(fs), [])   # BL-00036③：時態不留 WARN 分級（RL-0015 carrier=lint）
-        self.assertEqual(errs(self._run({"docs/brainstorms/x.md": "下一步\n", "docs/ops/NOTES.md": "下一步\n"})), [])
+        self.assertEqual(errs(self._run({"docs/brainstorms/x.md": "下一步\n", "docs/ops/NOTES.md": "## 下一步\n下一步\n"})), [])
         self.assertEqual(errs(self._run({"docs/arc42/decisions/ADR-00001-x.md": "下一步\n"})), [])
 
     def test_tmp_named_path(self):
@@ -289,3 +289,147 @@ class TestGt06Tense(unittest.TestCase):
         if hits:
             self.assertTrue(any(hits.values()), hits)
 
+
+NOTES = book.NOTES
+NOTES_LEG = "「## 下一步」節"   # 收單句腿全部訊息共有的字面
+
+
+def _notes(*next_lines, now="- 現況一句。", pending="- 未決一句。", tail=True):
+    """NOTES 樁：波標記＋現況／下一步／未決三節（tail=False＝下一步為末節、至檔尾止）；回 (text, 下一步節首行之行號)。"""
+    head = ["<!-- wave: 6 -->", "# NOTES", "", "## 現況", "", now, "", "## 下一步", ""]
+    rest = ["", "## 未決", "", pending, ""] if tail else [""]
+    return "\n".join(head + list(next_lines) + rest), len(head) + 1
+
+
+class TestGt06NotesDone(unittest.TestCase):
+    """RL-0048 完成即刪、git 即史：NOTES「## 下一步」節不留整刀／整批／整輪之收單句——只掃該節、先剝程式碼（提及原則）；
+    刀內進度句（裸「已收」接標點、「已完成」「已定稿」）與合法現在式／未來式照寫。掃描面＝該節：NOTES 在 tracked 而缺節即紅
+    （RL-0051）；NOTES 不在 tracked 或讀不到＝本腿不另報，兜底逐途徑見 `_notes_done_leg` docstring 與途徑①③、途徑②兩案。
+    ★判準變異：拿掉樣式任一分支→對應收單形轉綠（本類紅）；節界改掃全檔→節外案紅；拿掉空面判→缺節案紅；
+    不剝程式碼→提及案紅；樣式加入裸「已收」→刀內進度案紅；拿掉「的」修飾形排除→修飾形案紅；每行只報首筆→同行多處案紅；
+    拿掉 tracked 閘（改讀磁碟）→途徑②案紅。"""
+
+    def _run(self, notes, extra=None):
+        files = {BOOK: "# 1\n\n目前無。\n", NOTES: notes}
+        files.update(extra or {})
+        return book.gt_06(stub(files))
+
+    def leg(self, fs):
+        return [f for f in fs if NOTES_LEG in f[3]]
+
+    def test_closure_forms_in_next_section_are_red_per_occurrence(self):
+        """反：實見收單形逐行一筆 ERROR、指該行並帶命中字面、附依據與補救；「已全數收單」「三支皆已收單」各只一筆（不重複計）。"""
+        forms = [("- 已收刀＝001 schema 基線（波 6 首刀）、002 system-settings（波 6 第二刀）。", "已收刀"),
+                 ("- **006 已收刀**：逐單元交付、merge SHA、ADR 清單。", "已收刀"),
+                 ("- **時區裁定施作（user 逐題裁定）＝已收單**：DB 伺服器時區固定。", "已收單"),
+                 ("- **005 前維護批（七支輕量軌）＝已全數收單**：逐支交付查 MILESTONES。", "已全數收單"),
+                 ("- **006 前 BACKLOG 體檢 v5＝三支皆已收單**：逐支交付。", "已收單"),
+                 ("- **七支全數收單後＝005 role-menu-crud**。", "全數收單"),
+                 ("- 規格對照審查五輪（RL-0073 ②）皆已收：002 刀與 003 刀。", "皆已收"),
+                 ("- 003 刀收刀後兩支維護批甲、乙皆已收（逐條見 MILESTONES）。", "皆已收"),
+                 ("- 002 刀之規格對照輪兩輪皆已收", "皆已收")]
+        text, first = _notes(*(line for line, _ in forms))
+        fs = self.leg(self._run(text))
+        self.assertEqual([(f[0], f[2]) for f in fs], [("ERROR", f"{NOTES}:{first + k}") for k in range(len(forms))], fs)
+        for f, (_, w) in zip(fs, forms):
+            self.assertIn(f"「{w}」", f[3])
+            self.assertTrue(all(s in f[3] for s in ("收單句", "RL-0048", "完成即刪", "整段刪除", "docs/generated/MILESTONES.md")), f)
+
+    def test_multiple_hits_on_one_line_are_one_finding_each(self):
+        """判準＝節內每處一筆、非每行一筆：同一行多處收單字樣（實見形＝一行逐支列「（已收單）」）→同一行號逐處一筆 ERROR、
+        各帶其命中字面（同字面重複亦逐處計）。★變異：每行只報首筆＝本案紅。"""
+        text, first = _notes("- 甲", "- 順序＝甲（已收單）→ 乙（已收單）→ 丙＝三支全數收單")
+        fs = self.leg(self._run(text))
+        self.assertEqual([(f[0], f[2]) for f in fs], [("ERROR", f"{NOTES}:{first + 1}")] * 3, fs)
+        self.assertEqual([f[3].split("收單句「", 1)[1].split("」", 1)[0] for f in fs], ["已收單", "已收單", "全數收單"], fs)
+
+    def test_progress_and_legit_forms_are_green(self):
+        """正：刀內進度句（裸「已收」後接標點——無反引號亦不中）、「已完成」「已完」「已定稿」與合法現在式／未來式零命中。"""
+        text, _ = _notes("- **TDD 進行中**：U0 已收（ADR-00026 accepted）；U1 進行中。",
+                         "- `/speckit-clarify` 已收（`bf30d03`；三題皆採建議）→ 下一步 plan。",
+                         "- specify、clarify 已完成（分支同名）；SDD 五步已完（含 analyze）。",
+                         "- 階段 0 brainstorm 已定稿（見 brainstorm 檔）。",
+                         "- 候選已收錄、爭點皆已收斂、射程已收窄；BL-00045 已附密碼政策投影快取連動之評估點。",
+                         "- 每次獨立輪收單隨 review 事件 probe 欄更新；每支帶 migration 的刀收刀前必跑三步；兩批收單後由 user 手動發起。")
+        self.assertEqual(errs(self._run(text)), [])
+
+    def test_declared_out_of_reach_forms_are_green(self):
+        """射程外（樣式常數旁註解逐條列名）：①裸「已收」接標點（刀內進度共用此形，整批／整輪偶用者一併漏網）
+        ②「已收刀的」「已收單的」修飾形（指稱已收之刀類、非收單句）③「已由某批收」從句形與「收於」形——皆零命中。"""
+        text, _ = _notes("- 維護批甲已收（逐條見 MILESTONES）；002 刀之輪已收（報告見 reviews）。",
+                         "- schema 定稿權威住 reference-src——不再回頭改已收刀的 spec 目錄；已收單的批不再重開。",
+                         "- 該條已由下條維護批收；本批收於某顆。")
+        self.assertEqual(self.leg(self._run(text)), [])
+
+    def test_out_of_section_and_code_mentions_are_green(self):
+        """正：「## 現況」「## 未決」節與他檔之收單形不在射程；節內反引號與 fenced 內之提及不算。"""
+        text, _ = _notes("- 收單句字樣之提及：`006 已收刀`、`＝已收單`、`皆已收：`。", "```", "- 007 已收刀", "```",
+                         now="- 006 已收刀（現況節不在射程）。", pending="- 某批＝已收單（未決節不在射程）。")
+        self.assertEqual(errs(self._run(text, extra={"docs/ops/x.md": "## 下一步\n\n- 006 已收刀；某批＝已收單\n"})), [])
+
+    def test_section_bounds(self):
+        """節界：起＝rstrip 後恰為 `## 下一步` 之行（容行尾空白／CR）、子節 `### ` 仍在節內、止於下一個 `## ` 行（不含）或檔尾。"""
+        text = "<!-- wave: 6 -->\n## 下一步  \r\n\n### 細項\n- 006 已收刀\n## 未決\n- 007 已收刀\n"
+        self.assertEqual([f[2] for f in self.leg(self._run(text))], [f"{NOTES}:5"])
+        text, first = _notes("- 甲", "- **006 已收刀**", tail=False)
+        self.assertEqual([f[2] for f in self.leg(self._run(text))], [f"{NOTES}:{first + 1}"])
+
+    def test_missing_next_section_is_red(self):
+        """空面（RL-0051）：NOTES 在 tracked 而無「## 下一步」節（缺節、改名、少了 `## `）→恰一筆 ERROR、指名缺節與補救；
+        改名節下之收單形不入射程、不另報。"""
+        for text in ("<!-- wave: 6 -->\n## 現況\n\n- x\n\n## 未決\n\n- y\n",
+                     "<!-- wave: 6 -->\n## 下一步（舊稿）\n\n- 006 已收刀\n",
+                     "<!-- wave: 6 -->\n下一步\n\n- 006 已收刀\n"):
+            fs = self.leg(self._run(text))
+            self.assertEqual(len(fs), 1, (text, fs))
+            self.assertEqual((fs[0][0], fs[0][2]), ("ERROR", NOTES), fs)
+            self.assertTrue(all(s in fs[0][3] for s in ("缺席", "RL-0051", "空集合", "恢復", "節標題")), fs)
+
+    def test_absent_notes_is_silent_and_gt10_backstops(self):
+        """兜底途徑①（不在 tracked、不在磁碟）與③（在 tracked、工作樹讀不到）：本腿零筆；兜底之實證＝同一樁上 gt_10
+        波標記缺席腿為 ERROR（current_wave 讀磁碟、讀不到即缺席）。途徑②見下一案。"""
+        files = {BOOK: "# 1\n\n目前無。\n"}
+        for tracked in ([BOOK], [BOOK, NOTES]):    # ①、③（樁無 NOTES 內容＝讀不到）
+            ctx = stub(files, tracked=tracked)
+            self.assertEqual(self.leg(book.gt_06(ctx)), [], tracked)
+            self.assertTrue(any(f[0] == "ERROR" and "波標記缺席" in f[3] for f in book.gt_10(ctx)), tracked)
+
+    def test_untracked_on_disk_notes_backstop_is_gt12_index_leg(self):
+        """兜底途徑②（在磁碟而未入 tracked，如 `git rm --cached`）：射程以 tracked 為準＝本腿零筆、不讀其內容；gt_10 讀磁碟照見
+        波標記＝零筆（非此途徑之兜底）。兜底＝GT-12 工作樹⇔暫存區一致性腿：暫存區≠HEAD 時報該檔未追蹤 ERROR。
+        據實釘住兩處無兜底：該檔被 ignore、或暫存區＝HEAD（無 commit 在準備）時該腿零筆。"""
+        import shutil
+        from docsync import gates
+        root = tmprepo.make_repo({BOOK: "# 1\n\n目前無。\n", NOTES: "<!-- wave: 6 -->\n## 下一步\n\n- **006 已收刀**\n"})
+        self.addCleanup(shutil.rmtree, root, True)
+        tmprepo.git(root, "rm", "-q", "--cached", NOTES)       # 暫存區刪、磁碟仍在＝暫存區≠HEAD
+        ctx = tmprepo.Ctx(root)
+        self.assertNotIn(NOTES, ctx.tracked)
+        self.assertEqual(self.leg(book.gt_06(ctx)), [])
+        self.assertEqual([f for f in book.gt_10(ctx) if "波標記缺席" in f[3]], [])
+        fs = gates._index_consistency_leg(ctx)
+        self.assertEqual([f[:3] for f in fs if "未追蹤" in f[3]], [("ERROR", "GT-12", NOTES)], fs)
+        exclude = os.path.join(root, ".git", "info", "exclude")
+        os.makedirs(os.path.dirname(exclude), exist_ok=True)
+        with open(exclude, "a", encoding="utf-8") as fh:
+            fh.write(f"\n{NOTES}\n")
+        self.assertEqual(gates._index_consistency_leg(tmprepo.Ctx(root)), [])     # 被 ignore：無兜底
+        tmprepo.git(root, "commit", "-qm", "y")
+        os.remove(exclude)
+        self.assertEqual(gates._index_consistency_leg(tmprepo.Ctx(root)), [])     # 暫存區＝HEAD：整腿不跑、無兜底
+
+    def test_real_notes_face_nonempty_and_zero_hits(self):
+        """真 repo：NOTES 之「## 下一步」節有條目（RL-0067 被守面有實例）且本腿零命中。"""
+        from docsync.tests.test_gates import real_lint
+        fs, _ = real_lint()
+        self.assertEqual([f for f in fs if NOTES_LEG in f[3]], [])
+        with open(os.path.join(ROOT, NOTES), encoding="utf-8") as fh:
+            lines = fh.read().split("\n")
+        start = [i for i, line in enumerate(lines) if line.rstrip() == "## 下一步"]
+        self.assertEqual(len(start), 1, start)
+        body = []
+        for line in lines[start[0] + 1:]:
+            if line.startswith("## "):
+                break
+            body.append(line)
+        self.assertTrue(any(line.startswith("- ") for line in body), body)
