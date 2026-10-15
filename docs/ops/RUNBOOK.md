@@ -48,7 +48,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 ## 8. reaper 操作
 
-`python3 deploy/setup-reaper-role.py`（reaper role 設密、走 `docker compose exec psql`）。隨 jobs 軌刀補實文。
+`python3 deploy/setup-reaper-role.py`（reaper role 設密、走 `docker compose exec psql`）。隨 jobs 軌刀補實文。★現況：rev6 無 reaper role（migration m0001～m0003 零 reaper）與 reaper bin——本腳本前置「role 已存在」不成立、執行即 psql 非零退出；承載＝BL-00043。
 
 ## 9. 維運端點與 DB 直連
 
@@ -363,6 +363,9 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | 項 | 去處 |
 |---|---|
 | 登入頁三顆快速登入鈕與表單預填密碼把 dev seed 帳密帶進前端——★轉 prod 前必須拆除 | 滯後卷 BL-00049（拍板＝ADR-00030） |
+| 登入節流於同帳號名（及同來源桶）並發下窗上界非嚴格 | 滯後卷 BL-00145 |
+| 設密雜湊與換發鎖內快取往返之資源耗用無上界 | 滯後卷 BL-00147 |
+| 首登強制改密 | 滯後卷 BL-00140（prod 硬化與實際需求兩臂、先到者） |
 | redis 持久化 | 維持不開（已知態＝ADR-00082 款 5） |
 | rust-api 行程數 | ★只准單一行程：casbin 判定面同步只換上本行程（ADR-00043 決定 9）；多行程或多實例部署前須先補跨行程同步通知（翻案觸發、風險見活書 §11.1） |
 | 機密輪替與 prod 值 | §7、§15 |

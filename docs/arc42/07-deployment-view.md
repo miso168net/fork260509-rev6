@@ -17,6 +17,6 @@ rev5_blueprint:
 ## 7.2 基礎設施第二層
 
 - **compose 三檔的組合形**：`docker-compose.yml`（基底：front-nginx／base-web／rust-api／migrate／postgres／redis 與觀測層）＋`docker-compose.dev.yml`（dev 疊加：mailpit）＋`docker-compose.example.yml`（soybean example 原版基線、對照用）。
-- **profiles**：`obs`（loki／alloy／socket-proxy／grafana）、`metrics`（prometheus／exporters／pushgateway／grafana）、`jobs`（reaper）；例行只 up／stop／ps。
+- **profiles**：`obs`（loki／alloy／socket-proxy／grafana）、`metrics`（prometheus／exporters／pushgateway／grafana）、`jobs`（reaper；★現況：rev6 無 reaper bin、起了也不運行，承載＝BL-00043）；例行只 up／stop／ps。
 - **卷與機密**：named volume 卷名帶 project 前綴（RUNBOOK §5）；機密＝sops×age 密文入版控、執行期解密到 SECRETS_DIR（`deploy/secrets/README.md`、RUNBOOK §15）。
 - **prod 形**：`/api/*` 前綴由 front-nginx strip 轉發、`/api/metrics` 擋塊（憲法 §II #3）；部署 checklist＝RUNBOOK §16。
