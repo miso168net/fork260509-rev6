@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-16 | misc | governance｜maint-backlog-142-146 | maint-backlog-142-146 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第一批＝治理面）：BL-00146 by-design（ADR-00094）、BL-00142 續行人寫表（ADR-00095 supersede ADR-00032）、RULES 三改（RL-0080／RL-0085 擴寫、新 RL-0087）、LESSONS 改述＋LL-00092／LL-00093、檢索性輪間比較、fork-delta-lint 關閉 autojunk、NOTES 清理與 GT-06 收單句腿。 | ecf23f9 | ADR-00094、ADR-00095 | 收 BL-00142、BL-00146 | — |
 | 2026-10-15 | feature_close | 007-user-password-admin | 007 user-password-admin 收單（rev6 第七刀）：島 I 使用者域治理入憲／使用者管理十端點（清單・回收桶兩讀端＋新增・部分更新・刪除・批刪・復原・踢除下線・重設密碼・會話政策八寫端）與使用者頁接真／個人中心改密／密碼政策七鍵・設密冷卻・改密節流／錯誤明細通道兩鍵／解鎖帳號維套包含規則／自助路由白名單／繁中 runtime 與預設語言＋碼面閘 zh-tw-lint／管理頁按鈕碼逐鈕顯隱／seed-only migration m0003；ROUTES 49→61、MSG_KEYS 46→68；憲法 1.7.1→1.8.1 | 8d8dc57 | ADR-00074、ADR-00075、ADR-00076、ADR-00077、ADR-00078、ADR-00079、ADR-00080、ADR-00081、ADR-00082、ADR-00083、ADR-00084、ADR-00085、ADR-00086、ADR-00087、ADR-00090、ADR-00091、ADR-00092、ADR-00093 | 記 BL-00143、BL-00144、BL-00145、BL-00146、BL-00147；收 BL-00031、BL-00047、BL-00048、BL-00065、BL-00091、BL-00124、BL-00136、BL-00138、BL-00143、BL-00144 | §5、§6、§8、§10、§11、§12 |
 | 2026-10-06 | misc | governance | 007 刀第一筆事件（tasks T003 施工前提顆）：補記 BL-00140／BL-00141（brainstorm 定稿顆 5bfd07b 入 BACKLOG／BACKLOG-DEFERRED）與 BL-00142（plan 顆 b35ee2c 入 BACKLOG）之誕生；同顆 ADR-00075～ADR-00080、ADR-00083～ADR-00087 十一支經 user 親決轉 accepted（ADR-00074 與憲法 1.8.0 已於前顆 51f55f3）。 | — | — | 記 BL-00140、BL-00141、BL-00142 | — |
 | 2026-10-05 | misc | governance｜maint-readout-errata | maint-readout-errata 收單（user 2026-10-05 依 BACKLOG 體檢 v9 開批）：007 前讀出口與文件勘誤九項——NOTES 之 ADR-00044 指針節名（必要）與推送揮發字、README 憲法版本鏡像改指針、MILESTONES 增 BL（記／收）欄、活書 06／08 兩句、rust-api 前代歸因碼註；LESSONS LL-00069／LL-00070；新記 BL-00139。 | 0e4ad71 | — | 記 BL-00139 | — |
@@ -70,6 +71,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-16｜misc｜governance｜maint-backlog-142-146
+
+主體 1f6f2d8（ADR-00094／ADR-00095、ADR-00032 轉 superseded、RULES 三改、README／RUNBOOK §12／RULES 名詞段改指 ADR-00095、LESSONS 八則改述＋LL-00092、BACKLOG 刪 BL-00142／BL-00146）；U1 32f04f6（run wf_c3d3a102-e0d、5 支：X7 檢索性輪間不降接真判、X24 fork-delta-lint 分塊關閉 autojunk＋HJ0～HJ2 自測；LL-00084 晉升 gate）；NOTES 清理 47b3ebd（下一步刪 11 條已完成條與兩段過期句）；U2 2f86708（run wf_169e908c-c3e、5 支：GT-06 NOTES 下一步收單句腿、CLAUDE.md §2 兩處、LL-00093、LL-00064 改述）；FHR run wf_2643604d-962 收單 1ded4a8（16 筆＝修 10／駁回 6／轉 BL 0：RL-0080 補「或令其 Drop 不跑」、收單句樣式收窄為四形、LESSONS 三則據實）＋base-web 9fe562dc（擺位註解理由改述）。BACKLOG 體檢 v10 run wf_3fe05acc-8d9（18 支）。user 裁定：2026-10-15 開兩批、13 題（本批 Q1、Q2、Q3a～Q3d 皆取建議；Q4～Q10 歸第二批）；2026-10-16 令清 NOTES 已收單段落、防再犯＝改規則字面＋加 lint 腿、腿只擋收單句；預授權兩批 merge、push 暫不做。X26 數量門檻型翻案觸發器枚舉：ADR-00020 未成立、ADR-00032 成立（由 ADR-00095 處置）、ADR-00089 未成立。RULES 預算：總 87／92、fix 20／19 超一（user 知情裁定、只警告）；RULES-VERSION debc0857b5f2→fa99668b6699。pre-commit 全鏈於工具顆報 47～52s（警戒 45s；docsync 自測觸發；未以 RUNBOOK §12b 命令形包量、不記 precommit_chain）。
 
 ### 2026-10-15｜feature_close｜007-user-password-admin
 
