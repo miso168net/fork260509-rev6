@@ -419,14 +419,15 @@ TENSE_FORMS = tuple(re.compile(re.escape(w)) for w in ("待決", "TBD", "⏳", "
 BLUEPRINT_KEY = "rev5_blueprint"
 BLUEPRINT_FOLLOW = "隨刀："
 # NOTES「## 下一步」節收單句腿（RL-0048 完成即刪、git 即史）：該節只寫當前意圖與下一步，整刀／整批／整輪收單後其條整段刪除、
-# 史查 MILESTONES。同義集單一家＝NOTES_DONE_FORMS：「已收刀」「已收單」「已全數收單」「全數收單」「皆已收」——「皆已收」後接字詞
-# 即不成形（Python `\w` 於 str 含 CJK，故「皆已收斂」不中、「皆已收：」「皆已收（」中）；「已全數收單」單筆計、不與「全數收單」重複。
+# 史查 MILESTONES。同義集單一家＝NOTES_DONE_FORMS：「已收刀」「已收單」「已全數收單」「皆已收」——「皆已收」後接字詞即不成形
+# （Python `\w` 於 str 含 CJK，故「皆已收斂」不中、「皆已收：」「皆已收（」中）；「三支皆已收單」以「已收單」單筆計。
 # 射程只到整刀／整批／整輪之收單字樣，刀內進度句照寫。射程外（記錄在案、非缺口）：①裸「已收」後接標點——刀內進度句
 # （`/speckit-clarify` 已收（…）、U0 已收（…））共用此形，收進樣式即誤擋進度句，整批／整輪偶用此形者亦一併漏網
-# ②「已收刀的」「已收單的」修飾形——指稱已收之刀類（如「不再回頭改已收刀的 spec 目錄」）、非收單句
+# ②「已收刀的／之」「已收單的／之」修飾形——指稱已收之刀類（如「不再回頭改已收刀的 spec 目錄」）、非收單句；「已收單後」
+# 與不帶「已」之「全數收單後」條件形——未收完時之計畫句（實見「七支全數收單後＝005」）
 # ③「已由某批收」從句形與「收於」形——無收單專屬字樣。三者由 CLAUDE.md §2 收刀與輕量軌收單步驟字面守。
 NOTES_NEXT = "## 下一步"
-NOTES_DONE_FORMS = re.compile(r"(?:已(?:全數)?|全數)收[單刀](?!的)|皆已收(?!\w)")
+NOTES_DONE_FORMS = re.compile(r"已(?:全數)?收[單刀](?![的之後])|皆已收(?!\w)")
 RE_SHEBANG_SH = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:/bin/|/usr/bin/)?(?:ba)?sh\b")
 SHEBANG_OK = ("#!/usr/bin/env bash", "#!/bin/sh", "#!/usr/bin/env sh", "#!/bin/bash")
 RE_GLUE = re.compile(r"\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]")
@@ -531,7 +532,7 @@ def _notes_done_leg(ctx):
         for m in (NOTES_DONE_FORMS.finditer(line) if on else ()):
             out.append(finding(ERROR, "GT-06", f"{NOTES}:{i}",
                                f"NOTES「## 下一步」節之收單句「{m.group(0)}」——該節只寫當前意圖與下一步（RL-0048 完成即刪、git 即史）；"
-                               "補救＝已完成之刀／批／輪之條整段刪除，史查 docs/generated/MILESTONES.md"))
+                               "補救＝已完成之刀／批／輪之條整段刪除；命中處若為進行中條目內之已收子句，刪該子句、保留未來式部分；史查 docs/generated/MILESTONES.md"))
     if not seen:
         out.append(finding(ERROR, "GT-06", NOTES,
                            "NOTES「## 下一步」節缺席（收單句腿之掃描面；RL-0051 掃描面空集合即紅）——"

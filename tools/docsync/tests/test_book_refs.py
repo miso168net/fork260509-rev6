@@ -306,7 +306,8 @@ class TestGt06NotesDone(unittest.TestCase):
     刀內進度句（裸「已收」接標點、「已完成」「已定稿」）與合法現在式／未來式照寫。掃描面＝該節：NOTES 在 tracked 而缺節即紅
     （RL-0051）；NOTES 不在 tracked 或讀不到＝本腿不另報，兜底逐途徑見 `_notes_done_leg` docstring 與途徑①③、途徑②兩案。
     ★判準變異：拿掉樣式任一分支→對應收單形轉綠（本類紅）；節界改掃全檔→節外案紅；拿掉空面判→缺節案紅；
-    不剝程式碼→提及案紅；樣式加入裸「已收」→刀內進度案紅；拿掉「的」修飾形排除→修飾形案紅；每行只報首筆→同行多處案紅；
+    不剝程式碼→提及案紅；樣式加入裸「已收」→刀內進度案紅；拿掉「的／之」修飾形排除→修飾形案紅；拿掉「後」條件形排除
+    或加回不帶「已」之「全數收單」分支→合法形案紅；補救句缺子句指引→收單形案紅；每行只報首筆→同行多處案紅；
     拿掉 tracked 閘（改讀磁碟）→途徑②案紅。"""
 
     def _run(self, notes, extra=None):
@@ -318,13 +319,12 @@ class TestGt06NotesDone(unittest.TestCase):
         return [f for f in fs if NOTES_LEG in f[3]]
 
     def test_closure_forms_in_next_section_are_red_per_occurrence(self):
-        """反：實見收單形逐行一筆 ERROR、指該行並帶命中字面、附依據與補救；「已全數收單」「三支皆已收單」各只一筆（不重複計）。"""
+        """反：實見收單形逐行一筆 ERROR、指該行並帶命中字面、附依據與補救（整條刪、進行中條目內之子句則刪子句）；「已全數收單」「三支皆已收單」各只一筆（不重複計）。"""
         forms = [("- 已收刀＝001 schema 基線（波 6 首刀）、002 system-settings（波 6 第二刀）。", "已收刀"),
                  ("- **006 已收刀**：逐單元交付、merge SHA、ADR 清單。", "已收刀"),
                  ("- **時區裁定施作（user 逐題裁定）＝已收單**：DB 伺服器時區固定。", "已收單"),
                  ("- **005 前維護批（七支輕量軌）＝已全數收單**：逐支交付查 MILESTONES。", "已全數收單"),
                  ("- **006 前 BACKLOG 體檢 v5＝三支皆已收單**：逐支交付。", "已收單"),
-                 ("- **七支全數收單後＝005 role-menu-crud**。", "全數收單"),
                  ("- 規格對照審查五輪（RL-0073 ②）皆已收：002 刀與 003 刀。", "皆已收"),
                  ("- 003 刀收刀後兩支維護批甲、乙皆已收（逐條見 MILESTONES）。", "皆已收"),
                  ("- 002 刀之規格對照輪兩輪皆已收", "皆已收")]
@@ -333,31 +333,34 @@ class TestGt06NotesDone(unittest.TestCase):
         self.assertEqual([(f[0], f[2]) for f in fs], [("ERROR", f"{NOTES}:{first + k}") for k in range(len(forms))], fs)
         for f, (_, w) in zip(fs, forms):
             self.assertIn(f"「{w}」", f[3])
-            self.assertTrue(all(s in f[3] for s in ("收單句", "RL-0048", "完成即刪", "整段刪除", "docs/generated/MILESTONES.md")), f)
+            self.assertTrue(all(s in f[3] for s in ("收單句", "RL-0048", "完成即刪", "整段刪除", "子句", "docs/generated/MILESTONES.md")), f)
 
     def test_multiple_hits_on_one_line_are_one_finding_each(self):
         """判準＝節內每處一筆、非每行一筆：同一行多處收單字樣（實見形＝一行逐支列「（已收單）」）→同一行號逐處一筆 ERROR、
         各帶其命中字面（同字面重複亦逐處計）。★變異：每行只報首筆＝本案紅。"""
-        text, first = _notes("- 甲", "- 順序＝甲（已收單）→ 乙（已收單）→ 丙＝三支全數收單")
+        text, first = _notes("- 甲", "- 順序＝甲（已收單）→ 乙（已收單）→ 丙＝三支已全數收單")
         fs = self.leg(self._run(text))
         self.assertEqual([(f[0], f[2]) for f in fs], [("ERROR", f"{NOTES}:{first + 1}")] * 3, fs)
-        self.assertEqual([f[3].split("收單句「", 1)[1].split("」", 1)[0] for f in fs], ["已收單", "已收單", "全數收單"], fs)
+        self.assertEqual([f[3].split("收單句「", 1)[1].split("」", 1)[0] for f in fs], ["已收單", "已收單", "已全數收單"], fs)
 
     def test_progress_and_legit_forms_are_green(self):
-        """正：刀內進度句（裸「已收」後接標點——無反引號亦不中）、「已完成」「已完」「已定稿」與合法現在式／未來式零命中。"""
+        """正：刀內進度句（裸「已收」後接標點——無反引號亦不中）、「已完成」「已完」「已定稿」與合法現在式／未來式零命中；
+        未來條件句（實見形「七支全數收單後＝005」＝七支未收完時之計畫、「已收單後」、不帶「已」之「待…全數收單」）亦不中。"""
         text, _ = _notes("- **TDD 進行中**：U0 已收（ADR-00026 accepted）；U1 進行中。",
                          "- `/speckit-clarify` 已收（`bf30d03`；三題皆採建議）→ 下一步 plan。",
                          "- specify、clarify 已完成（分支同名）；SDD 五步已完（含 analyze）。",
                          "- 階段 0 brainstorm 已定稿（見 brainstorm 檔）。",
                          "- 候選已收錄、爭點皆已收斂、射程已收窄；BL-00045 已附密碼政策投影快取連動之評估點。",
-                         "- 每次獨立輪收單隨 review 事件 probe 欄更新；每支帶 migration 的刀收刀前必跑三步；兩批收單後由 user 手動發起。")
+                         "- 每次獨立輪收單隨 review 事件 probe 欄更新；每支帶 migration 的刀收刀前必跑三步；兩批收單後由 user 手動發起。",
+                         "- **七支全數收單後＝005 role-menu-crud**（刀序＝首刀 brainstorm 定序）；兩批已收單後由 user 手動發起對照輪；待三支全數收單再開 008。")
         self.assertEqual(errs(self._run(text)), [])
 
     def test_declared_out_of_reach_forms_are_green(self):
         """射程外（樣式常數旁註解逐條列名）：①裸「已收」接標點（刀內進度共用此形，整批／整輪偶用者一併漏網）
-        ②「已收刀的」「已收單的」修飾形（指稱已收之刀類、非收單句）③「已由某批收」從句形與「收於」形——皆零命中。"""
+        ②「已收刀的／之」「已收單的／之」修飾形（指稱已收之刀類、非收單句）③「已由某批收」從句形與「收於」形——皆零命中。"""
         text, _ = _notes("- 維護批甲已收（逐條見 MILESTONES）；002 刀之輪已收（報告見 reviews）。",
                          "- schema 定稿權威住 reference-src——不再回頭改已收刀的 spec 目錄；已收單的批不再重開。",
+                         "- 已收刀之 spec 目錄為凍結存證；已收單之刀／批／輪條目不留。",
                          "- 該條已由下條維護批收；本批收於某顆。")
         self.assertEqual(self.leg(self._run(text)), [])
 
