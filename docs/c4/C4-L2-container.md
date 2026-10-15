@@ -42,5 +42,5 @@ flowchart LR
 | postgres_exporter | pg 指標 | metrics | → postgres |
 | redis_exporter | redis 指標 | metrics | → redis |
 | pushgateway | 批次指標接收 | metrics | — |
-| reaper | 清理 job（最小權限 DB 身分） | jobs | → postgres |
+| reaper | 清理 job（最小權限 DB 身分）；★現況：rev6 無 reaper bin 與 reaper role、起了也不運行（承載＝BL-00043） | jobs | → postgres |
 | example-dev | soybean example 原版基線（對照用） | example.yml | — |
