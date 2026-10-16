@@ -19,9 +19,9 @@
   ★明細通道（ADR-00076 決定 7）：BizData 構造點（`AppError::BizData(`／`Self::BizData(`／經 use 匯入之裸 `BizData(`；`::` 與 `(` 間容空白；
   函式值形亦計＝動態）同判、計入上述構造點總數（BizData 零處屬常態、不另設空比對面）：其**首引數**（括號內頂層第一個逗號之前；第二引數
   之明細物件不解析）MUST 為 `Cow::Borrowed(字面｜msg_key::NAME)`；變體宣告、match／if-let 樣式與括號內只有 `_`／`..` 之樣式（如
-  `matches!(e, AppError::BizData(..))`）不計＝`rev5:L-064` 前例。射程守分階段四句（閘常數 `BIZ_DATA_KEYS`＝射程二鍵→明細型名）：
+  `matches!(e, AppError::BizData(..))`）不計＝`rev5:L-064` 前例。射程守四句（閘常數 `BIZ_DATA_KEYS`＝射程二鍵→明細型名）：
   ①BizData 構造點之鍵 ⊆ `BIZ_DATA_KEYS`（他鍵＝射程未經 ADR 擴張）②已入 MSG_KEYS 之射程鍵生產區恰一處構造點（零處＝構造點蒸發、
-  多處＝分岔）③未入 MSG_KEYS 之射程鍵構造點數為 0 ④射程鍵以 `Biz(` 純 key 形構造＝紅（明細靜默消失）；②③隨兩鍵分批入名冊逐鍵生效。
+  多處＝分岔）③未入 MSG_KEYS 之射程鍵構造點數為 0 ④射程鍵以 `Biz(` 純 key 形構造＝紅（明細靜默消失）；②③逐鍵依該鍵是否已入 MSG_KEYS 判。
   佔位符對賬（`rev5:B-139` 之機器守）：已入 MSG_KEYS 之射程鍵，其明細型（`<error.rs 所在目錄>/handler/user.rs` 生產區間之同名具名欄位
   struct；欄名依 struct 級 `#[serde(rename_all = "…")]` 換算序列化名）之鍵集＝三檔該鍵譯文 `{…}` 佔位符集（逐檔）；其餘鍵之譯文佔位符集
   為空。明細型之家缺席、查無該型、非具名欄位形、rename_all 形或值不在解析射程、欄位帶 serde 屬性＝rc 2（寧結構紅、不算錯鍵集）。
@@ -510,7 +510,7 @@ def scan_biz(root, const_map, keys):
 
 
 def bizdata_stage_findings(bd_sites, keyset):
-    """射程守②③（ADR-00076 決定 7；分階段＝隨射程鍵入名冊逐鍵生效）：已入 MSG_KEYS 之射程鍵生產區恰一處構造點、
+    """射程守②③（ADR-00076 決定 7；逐鍵依該鍵是否已入名冊判）：已入 MSG_KEYS 之射程鍵生產區恰一處構造點、
     未入者零處。`bd_sites`＝scan_biz 第四值（只含已過射程守①之構造點）。"""
     out = []
     for key in BIZ_DATA_KEYS:
@@ -1134,7 +1134,7 @@ def self_test():
         # 真 repo 左源綠案：現行 error.rs 常數形解得出、Biz 構造點皆常數／字面形；右源以解出鍵集合成（三檔實體＝check 的事、pre-commit 段跑）
         # ——已入名冊之攜參鍵，其譯文佔位符取本閘對真明細型之解析（`detail_serialized_keys`；不抄譯文、不與 BD_VALUES 共變），其餘鍵取
         # LEAF_VALUE（零佔位符）。⑪b＝同一真左源配全零佔位符右源：攜參鍵三檔逐檔指名 rc 1（佔位符對賬於真左源確實生效、非恆綠；攜參鍵
-        # 自 007 刀 U8 起恆非空＝`biz.user.passwordPolicy`、ADR-00076）。
+        # 集＝`BIZ_DATA_KEYS` 中已入名冊者、自 007 刀 U8 起恆非空；ADR-00076）。
         real_rust = os.path.join(ROOT, DEFAULT_RUST)
         ok_real, rc, out, keys, bd_real, carried = False, None, [], [], [], {}
         ok_real_b, rc_b, out_b = False, None, []
