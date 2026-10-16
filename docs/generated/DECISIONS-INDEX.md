@@ -96,6 +96,7 @@
 | ADR-00091 | accepted | 2026-10-14 | 部分更新語意（續行 ADR-00080）——決定 1～6、8 原文續行；決定 7 改寫：使用者編輯抽屜之會話政策呼叫被拒（更新呼叫已生效）後留原地重試時，`status`／`roleIds` 之改動判定改以已生效值為比對基準；決定 9 改寫：現在式面 ADR-00080 改指本 ADR、與本 ADR 轉 accepted 同顆 | 007-user-password-admin | ADR-00080 | — |
 | ADR-00092 | accepted | 2026-10-15 | 憲法 Amendment 1.8.0→1.8.1——§III.2 ★`BASE-WEB-MANAGE-PAGE-WIRING` (v)～(viii)、★`BASE-WEB-LOGIN-CAPTCHA-WIRING` (ii)、★`BASE-WEB-I18N-WIRING` (i)(iii) 範圍欄預估值實數化（兌現 ADR-00074 回填義務）＋I18N (i) 理由欄 helper 簽章記法 | 007-user-password-admin | — | — |
 | ADR-00093 | accepted | 2026-10-15 | unlockLogin 帳號維對範圍外現役帳號回 5003、與查無之 0000 可區辨＝揭露該帳號之存在——包含規則之固有代價、記為 by-design 已知態；「不洩存在性」之射程收窄為「查無與範圍內現役帳號同形」 | 007-user-password-admin | — | — |
-| ADR-00094 | accepted | 2026-10-16 | 子句層需求追溯不定為通則——各刀 brainstorm 自定是否沿用與射程（附參考判準）；翻案觸發器綁 008 刀收刀承載體檢 | 輕量軌｜maint-backlog-142-146 | — | — |
+| ADR-00094 | superseded | 2026-10-16 | 子句層需求追溯不定為通則——各刀 brainstorm 自定是否沿用與射程（附參考判準）；翻案觸發器綁 008 刀收刀承載體檢 | 輕量軌｜maint-backlog-142-146 | — | ADR-00097 |
 | ADR-00095 | accepted | 2026-10-16 | 碼面閘名冊續由 RUNBOOK §12 人寫表承載（續行 ADR-00032）——翻案觸發器改綁可觀測條件、拿掉支數門檻 | 輕量軌｜maint-backlog-142-146 | ADR-00032 | — |
 | ADR-00096 | accepted | 2026-10-16 | batchDeleteUser 不設批量上界——超大批可耗盡 PostgreSQL 共用鎖表而整批回 5000，記為 by-design 已知態；畫面前提＝每頁上限 30、勾選跨頁保留 | 輕量軌｜maint-backlog-139-140-145-147 | — | — |
+| ADR-00097 | accepted | 2026-10-16 | 子句層需求追溯不定為通則（續行 ADR-00094）——是否沿用與射程非強制、一經沿用即須自證檢核工具；翻案觸發器綁 008 刀收刀承載體檢 | — | ADR-00094 | — |

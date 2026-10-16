@@ -2,9 +2,9 @@
 id: "ADR-00094"
 title: 子句層需求追溯不定為通則——各刀 brainstorm 自定是否沿用與射程（附參考判準）；翻案觸發器綁 008 刀收刀承載體檢
 date: 2026-10-16
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00097]
 provenance: "BL-00146（007 刀 U23 T110 誕生：user 2026-10-15 裁定轉 BL、交治理批評估）；user 2026-10-15 裁定（008 前 BACKLOG 體檢之 BL-00146 題：取「立 by-design ADR、各刀 brainstorm 自定」）；as-built＝`specs/007-user-password-admin/tasks.md`「需求追溯」節之子句表、LL-00071；前代無對應：`rev5:001`～`rev5:008` 各刀 tasks 皆為逐條追溯、零子句層"
 tags: [governance, traceability, process, user-password-admin]
 ---
