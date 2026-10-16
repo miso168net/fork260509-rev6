@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-16 | misc | governance｜maint-adr-00094-wording | maint-adr-00094-wording 收單（user 2026-10-16 裁定 Q-ADR94：另立 ADR 取代）：ADR-00097 續行並取代 ADR-00094——決定 2 拆為 2a 參考判準（非強制）與 2b 一經沿用即強制自證，決定 1、決定 3 與翻案觸發器照舊；ADR-00094 轉 superseded；NOTES 008 題面與 LL-00071 改指 ADR-00097；零碼改、BACKLOG 不變。 | ed51179 | ADR-00097 | — | — |
 | 2026-10-16 | misc | product｜maint-backlog-139-140-145-147 | maint-backlog-139-140-145-147 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第二批＝產品面）：BL-00140／BL-00145／BL-00147 移滯後卷（觸發改綁 prod 硬化等、X23 併入 BL-00147）、BL-00139 續延改觸發、ADR-00096（batchDeleteUser 不設批量上界 by-design）、X8 純文件現況註、NOTES 下一步改寫。 | 55555e6 | ADR-00096 | — | — |
 | 2026-10-16 | misc | governance｜maint-backlog-142-146 | maint-backlog-142-146 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第一批＝治理面）：BL-00146 by-design（ADR-00094）、BL-00142 續行人寫表（ADR-00095 supersede ADR-00032）、RULES 三改（RL-0080／RL-0085 擴寫、新 RL-0087）、LESSONS 改述＋LL-00092／LL-00093、檢索性輪間比較、fork-delta-lint 關閉 autojunk、NOTES 清理與 GT-06 收單句腿。 | ecf23f9 | ADR-00094、ADR-00095 | 收 BL-00142、BL-00146 | — |
 | 2026-10-15 | feature_close | 007-user-password-admin | 007 user-password-admin 收單（rev6 第七刀）：島 I 使用者域治理入憲／使用者管理十端點（清單・回收桶兩讀端＋新增・部分更新・刪除・批刪・復原・踢除下線・重設密碼・會話政策八寫端）與使用者頁接真／個人中心改密／密碼政策七鍵・設密冷卻・改密節流／錯誤明細通道兩鍵／解鎖帳號維套包含規則／自助路由白名單／繁中 runtime 與預設語言＋碼面閘 zh-tw-lint／管理頁按鈕碼逐鈕顯隱／seed-only migration m0003；ROUTES 49→61、MSG_KEYS 46→68；憲法 1.7.1→1.8.1 | 8d8dc57 | ADR-00074、ADR-00075、ADR-00076、ADR-00077、ADR-00078、ADR-00079、ADR-00080、ADR-00081、ADR-00082、ADR-00083、ADR-00084、ADR-00085、ADR-00086、ADR-00087、ADR-00090、ADR-00091、ADR-00092、ADR-00093 | 記 BL-00143、BL-00144、BL-00145、BL-00146、BL-00147；收 BL-00031、BL-00047、BL-00048、BL-00065、BL-00091、BL-00124、BL-00136、BL-00138、BL-00143、BL-00144 | §5、§6、§8、§10、§11、§12 |
@@ -72,6 +73,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-16｜misc｜governance｜maint-adr-00094-wording
+
+主體 4306051（ADR-00097 新立、ADR-00094 front-matter 轉 superseded、NOTES 008 需求追溯題與 LL-00071 之 rule_id／晉升面改指、generate 重產）。起因＝maint-backlog-142-146 之 final holistic review L1-3 揭出 ADR-00094 決定 2 以「參考判準（非強制）」起頭、統管自證句，與其 RL-0013 段「決定 2 要求沿用之刀自證」前後矛盾；當批主線判 accepted body 受 GT-04 鎖、只把讀法寫進 1ded4a8 訊息（其後 NOTES 008 題面同寫），此判斷當時未另向 user 報告。FHR run wf_5f5cd26a-8a4（1 lens＋inline 兩鏡；agent 1 支）零 finding、無修正顆；RL-0079 執行確認＝journal 三行、lens 讀 17 檔。user 裁定：2026-10-16 Q-ADR94 取「另立 ADR 取代」、同日另行同意 merge（兩批預授權不含本分支）、push 暫不做。帳面：ADR 96→97（accepted 79 不變、superseded 17→18）、BACKLOG 不變、淨流量 0。
 
 ### 2026-10-16｜misc｜product｜maint-backlog-139-140-145-147
 
