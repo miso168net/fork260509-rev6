@@ -17,7 +17,7 @@
 ## 2. 日常起停
 
 `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait`／`stop`／`ps`；host 埠世代 3xxxx（ADR-00001；真表＝`docs/generated/reference/ports.md`）。rev5 對照 stack 常駐 2xxxx、兩 stack 併行是預期形（CLAUDE.md §7）。
-★pull／checkout 動到 `deploy/trust-model.dev.toml`（含純註解改動）後，rust-api 容器**必重建**：`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api`——該檔為單檔 bind mount、git 換檔即懸空，watchexec 重啟與 `restart` 皆不重掛；徵狀不紅、只在 boot 日誌現 `信任模型載入告警 kind=Missing` 與 `internal_default:0`（LL-00033；secrets 檔同口徑＝`deploy/secrets/README.md`）。其餘隨對應刀補實文。
+★pull／checkout／merge（含收刀 merge）動到 `deploy/trust-model.dev.toml`（含純註解改動）後，rust-api 容器**必重建**：`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api`——該檔為單檔 bind mount、git 換檔即懸空，watchexec 重啟與 `restart` 皆不重掛；服務照常 healthy、日常操作面不紅，機器可見面只有 boot 日誌之 `信任模型載入告警 kind=Missing` 與 `internal_default:0`，以及全量 cargo 時之對賬案 `dev_trust_model_matches_the_delivered_file`（LL-00033／LL-00068；secrets 檔同口徑＝`deploy/secrets/README.md`）。外層 `.githooks/post-merge` 與 `.githooks/post-checkout` 於前後兩顆 commit 間該檔有變動時，在 stderr 印上列重建命令（只提示、恆 rc 0）；`git checkout -- <檔>` 之單檔還原與手改該檔不經 hook，須自行重建（LL-00095）。其餘隨對應刀補實文。
 
 ## 3. 觀測層 profiles（obs／metrics／jobs）
 

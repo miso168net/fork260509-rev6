@@ -17,14 +17,18 @@ scan_push_ranges || exit 1）＋lib 之 betterleaks 呼叫與四種範圍推導�
 ∪ wire-schema TYPINGS_PATHSPECS／SNAPSHOT_PATHSPECS（正規化為 repo 根相對）；一正多反（hook 少一／多一／常數多一／段缺席）。
 ⑥子庫 pre-commit 面 check_sub_precommit(text)（spec-compliance-003 L3-2）：兩源倉 commit 期唯一機密掃描——betterleaks 呼叫緊接 `rc=$?`、rc 0 放行、
 rc 2 命中分支、非零收尾 `exit 1`；一正多反（刪任一字面→紅指名該檔與字面）。
+⑦bind mount 來源變動提示面 TestBindMountHint（LL-00095）：臨時 repo 實跑外層 post-merge／post-checkout 兩支真 hook——前後兩顆 commit 間
+`deploy/trust-model.dev.toml` 有變動才於 stderr 印 RUNBOOK §2 重建命令、六發皆 rc 0（一正一反之外另含單檔還原形與 clone 形不判）。
 ★hook 本體 staged 時 pre-commit 自跑 docsync test（本案隨之）；tools/bootstrap.sh staged 時 bootstrap-roster 段只跑本檔（BL-00059）；bootstrap 體檢亦跑；接線不再只靠人記得（002 刀 U0 變異實測：刪三段 lint 仍綠）。"""
 import importlib.util
 import os
 import re
+import shutil
 import subprocess
 import unittest
 
 from docsync import ROOT, common, gates
+from docsync.tests import tmprepo
 
 # 五檔名冊（BL-00037①；子庫 pre-commit＝spec-compliance-003 L3-2 補）：外層與子庫 pre-commit 面＋pre-push 面三檔（外層／子庫 hook 與共用 lib）；鍵＝短名、值＝repo 相對路徑
 HOOKS_REL = {
@@ -597,6 +601,46 @@ class TestBootstrapRoster(unittest.TestCase):
         loosened = line.replace(" -e '^deploy/secrets_common\\.py$'", "")
         msgs = check_bootstrap_roster(text.replace(line, loosened, 1), self.SYNTH)
         self.assertTrue(any("deploy/secrets_common.py" in m and "應排除" in m for m in msgs), msgs)
+
+
+# ⑦bind mount 來源變動提示面（LL-00095；user 2026-10-17 裁定）：外層 post-merge 比 `HEAD@{1}`／HEAD、post-checkout 比兩參數；
+# 有變動＝stderr 印 RUNBOOK §2 重建命令、恆 rc 0。臨時 repo 之 git 與 hook 一律在剝 `GIT_*` 環境下跑（tmprepo 單一家）。
+BIND_HINT_MERGE = os.path.join(ROOT, ".githooks", "post-merge")
+BIND_HINT_CHECKOUT = os.path.join(ROOT, ".githooks", "post-checkout")
+BIND_HINT_CMD = "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api"
+
+
+class TestBindMountHint(unittest.TestCase):
+    """⑦：c1（植該檔與他檔）→c2（只改他檔）→c3（改該檔）；post-merge 於 c2、c3 落地後各跑一次，post-checkout 以（舊, 新）跑
+    c1→c2、c2→c3、c3→c3（單檔還原形）與 null-sha→c3（clone 形）——恰「改到該檔」兩發提示、六發皆 rc 0。"""
+
+    def test_hint_only_when_the_trust_model_file_changes(self):
+        root = tmprepo.make_repo({"deploy/trust-model.dev.toml": "a\n", "other.txt": "x\n"})
+        self.addCleanup(shutil.rmtree, root, True)
+
+        def head():
+            return tmprepo.git(root, "rev-parse", "HEAD")
+
+        def bump(rel, text):
+            tmprepo.write(root, rel, text)
+            tmprepo.git(root, "commit", "-qam", rel)
+            return head()
+
+        def run(hook, *args):
+            return subprocess.run(["sh", hook, *args], cwd=root, capture_output=True, text=True, env=tmprepo.clean_env())
+
+        c1 = head()
+        c2 = bump("other.txt", "y\n")
+        runs = {"merge@c2": run(BIND_HINT_MERGE)}
+        c3 = bump("deploy/trust-model.dev.toml", "b\n")
+        runs["merge@c3"] = run(BIND_HINT_MERGE)
+        runs["checkout c1→c2"] = run(BIND_HINT_CHECKOUT, c1, c2, "1")
+        runs["checkout c2→c3"] = run(BIND_HINT_CHECKOUT, c2, c3, "1")
+        runs["checkout c3→c3"] = run(BIND_HINT_CHECKOUT, c3, c3, "0")
+        runs["checkout null→c3"] = run(BIND_HINT_CHECKOUT, "0" * 40, c3, "1")
+        hinted = {k for k, r in runs.items() if BIND_HINT_CMD in r.stderr and "deploy/trust-model.dev.toml" in r.stderr}
+        self.assertEqual(hinted, {"merge@c3", "checkout c2→c3"}, {k: r.stderr for k, r in runs.items()})
+        self.assertEqual({k: r.returncode for k, r in runs.items() if r.returncode}, {}, "提示 hook 恆 rc 0")
 
 
 if __name__ == "__main__":

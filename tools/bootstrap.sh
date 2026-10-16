@@ -66,14 +66,14 @@ bl_ver="$(betterleaks version 2>/dev/null || true)"
 ok "betterleaks ${BETTERLEAKS_VER} 就緒（釘版斷言過）"
 # hooks 標的檔內容指紋斷言（承 rev5、rev4:B-124：simple-git-hooks 類若覆寫標的檔、hooksPath 指標值不變仍印 ok＝防線靜默失效）。
 # 法＝逐檔 git hash-object 對 git rev-parse HEAD:路徑 比對——逐 byte 級 blob 指紋、失敗逐檔指名；缺檔獨立分支指名。
-for hf in .githooks/pre-commit .githooks/pre-push .githooks/lib/scan-range.sh .githooks-submodule/pre-commit .githooks-submodule/pre-push; do
+for hf in .githooks/pre-commit .githooks/pre-push .githooks/post-merge .githooks/post-checkout .githooks/lib/scan-range.sh .githooks-submodule/pre-commit .githooks-submodule/pre-push; do
   [ -f "$ROOT/$hf" ] || die "$hf 缺檔——hooks 防線標的不存在；疑遭覆寫／誤刪：git checkout -- $hf 還原並追查來源"
   head_blob="$(git -C "$ROOT" rev-parse "HEAD:$hf" 2>/dev/null || echo '')"
   [ -n "$head_blob" ] || die "$hf 不在外層 HEAD——hooks 標的無版控基準；確認內容後 commit 該檔再重跑"
   wt_blob="$(git -C "$ROOT" hash-object "$hf")"
   [ "$wt_blob" = "$head_blob" ] || die "$hf 工作樹內容 ≠ HEAD 版本——a) 非本人改動＝疑遭覆寫：git diff HEAD -- $hf 查看、確認後 git checkout -- $hf 還原並追查覆寫源；b) 本人正在改 hooks（未 commit）：commit 後重跑即綠"
 done
-ok "hooks 標的檔內容＝HEAD 版本（五檔指紋一致）"
+ok "hooks 標的檔內容＝HEAD 版本（七檔指紋一致）"
 
 # ── 2. 源倉（缺才 clone、幂等）────────────────────────────────────────
 ensure_src() { # $1=目錄 $2=URL $3=名

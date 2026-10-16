@@ -58,8 +58,8 @@ fork260509-rev6/
 │   ├── secrets/                     明文落點說明（README＋.example；實值住 SECRETS_DIR、gitignored）
 │   ├── alloy/、grafana-provisioning/、nginx/、prometheus/   compose 掛載的服務／觀測層設定（動它＝動 runtime）
 │   └── dev-certs/                   dev TLS 憑證落點（gitignored、.gitkeep）
-├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測→bootstrap-roster（bootstrap.sh staged 時只跑 test_hook_wiring 單檔）→rust-fmt／wire-schema／fork-delta／msg-key-gate／view-render-guard／route-artifact-gate／seed-view-gate／zh-tw-lint→submodule-sync（pin bump 時兩子庫雙側閘閘面須無未 commit 改動、含未追蹤新檔）→entity-drift（快照缺席即紅）／schema-frozen／orchestration（骨架或範例 staged 時三支範例組裝＋harness）皆條件實跑；接線字面由 docsync tests 機器守；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）
-│   ├── pre-commit、pre-push
+├── .githooks/                       外層 hooks（core.hooksPath）：pre-commit（betterleaks→check＋lint→條件自測→bootstrap-roster（bootstrap.sh staged 時只跑 test_hook_wiring 單檔）→rust-fmt／wire-schema／fork-delta／msg-key-gate／view-render-guard／route-artifact-gate／seed-view-gate／zh-tw-lint→submodule-sync（pin bump 時兩子庫雙側閘閘面須無未 commit 改動、含未追蹤新檔）→entity-drift（快照缺席即紅）／schema-frozen／orchestration（骨架或範例 staged 時三支範例組裝＋harness）皆條件實跑；接線字面由 docsync tests 機器守；雙錨門檻＝pre-commit 檔頭常數）、pre-push（範圍掃描）、post-merge／post-checkout（前後兩顆 commit 間 `deploy/trust-model.dev.toml` 有變動即於 stderr 提示重建 rust-api；只提示、恆 rc 0）
+│   ├── pre-commit、pre-push、post-merge、post-checkout
 │   └── lib/                         scan-range.sh：pre-push 範圍推導（三 repo 共用）
 ├── .githooks-submodule/             兩 worktree 專用 hooks（pre-commit／pre-push；bootstrap 以絕對路徑設 hooksPath）
 ├── .claude/                         Claude Code 接線

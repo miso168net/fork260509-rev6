@@ -1,0 +1,8 @@
+#!/bin/sh
+# rev6 外層 post-merge — 單檔 bind mount 來源變動提示（LL-00033／LL-00068／LL-00095）：本次 merge（含 pull）改到
+# deploy/trust-model.dev.toml＝容器內該檔已懸空，印 RUNBOOK §2 重建命令。只提示、恆 exit 0（不擋、不動容器）。
+f=deploy/trust-model.dev.toml
+if [ -n "$(git diff --name-only 'HEAD@{1}' HEAD -- "$f" 2>/dev/null)" ]; then
+  echo "⚠ $f 已變動（單檔 bind mount、容器內該檔已懸空）→ 依 RUNBOOK §2 重建 rust-api：docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api" >&2
+fi
+exit 0
