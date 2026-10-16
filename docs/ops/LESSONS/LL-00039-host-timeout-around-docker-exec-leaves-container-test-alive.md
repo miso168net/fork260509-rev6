@@ -1,7 +1,7 @@
 ---
 id: "LL-00039"
-rule_id: "RL-0045"
-promotion_surface: none
+rule_id: "RL-0080"
+promotion_surface: rules
 ---
 LL-00039｜在 host 端用 `timeout` 包 `docker compose exec … cargo test`，逾時只殺掉 exec 客戶端，容器內的測試程序照活、持鎖不放，守衛 Drop 也不會跑（005 刀 U18）
 
@@ -11,7 +11,7 @@ LL-00039｜在 host 端用 `timeout` 包 `docker compose exec … cargo test`，
 
 **處置**：主線查容器 `/proc` 確認已無 `deps/` 測試行程、`pg_stat_activity` 無交易中閒置連線後，以空基準快照跑 `python3 tools/walkthrough-baseline.py restore <基準檔>` 讓序列回基線，依其輸出重啟 rust-api，再以 `diff` 與 `schema-gate.py check` 確認 rc 0。
 
-**晉升面**：none——RL-0045 已規定 rust 測試一律容器內 serial；本坑是逾時的寫法，守法句寫進本檔與後續單元定義。
+**晉升面**：rules——同根第三種觸發形（spec-compliance-007 修單 U1：容器內 timeout 短於實耗）後，user 2026-10-17 裁定擴寫 RL-0080 末句：變異與跑測皆不得令守衛 Drop 不跑，跑測逾時不得短於實耗（長跑一律丟背景、容器內 timeout 須大於實耗上界）。原判（裁定前）：none——RL-0045 已規定 rust 測試一律容器內 serial；本坑是逾時的寫法，守法句寫進本檔與後續單元定義。
 
 **再犯面與守法**：要替容器內測試設逾時，一律把 `timeout` 放進容器內（`docker compose … exec -T rust-api timeout <秒> cargo test …`），逾時的訊號才會送到容器內的 cargo。每發變異跑完後，先掃一次容器 `/proc`，確認沒有殘存的 `deps/` 行程，再進下一發；出現過逾時，就先查 `pg_stat_activity` 的交易中閒置連線、再對走查基準跑 `diff`。
 - 同根之另一觸發形（006 刀 U1；2026-10-02）：主線以 TaskStop 停掉在飛 workflow，agent 經 `docker compose exec` 在容器內起的 cargo 照活（實測該審查員之 `cargo test --no-run` 續跑）。停 workflow 後先以容器 `/proc/*/cmdline` 列行程（rust-api 映像無 `ps`），只終止該 agent 起的那一串、絕不碰 PID 1 之 watchexec 與 `cargo run --bin server`，並刪其容器內 `/tmp` 副本與獨立 target（動輒數 GB）。
