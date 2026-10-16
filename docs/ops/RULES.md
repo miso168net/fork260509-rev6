@@ -91,7 +91,7 @@ carrier ∈ prompt（烤進 agent prompt、`python3 tools/docsync rules emit --s
 | RL-0081 | 新 ADR 的 provenance 必帶 `rev5:`／`rev4:` 前代出處，無前代對應者寫「前代無對應：<理由>」；已 accepted 者不回改。 | 主線 | lint | LL-00046 |
 | RL-0082 | 主線在 tmp/ 手寫之時刻一律在寫入的同一指令以 `date` 取 OS 系統時間，不得估計或沿上一筆推算；工具產出之機器時間欄不在此限。 | 主線 | checklist | ADR-00062 |
 | RL-0083 | 受版控帳本之日期欄（events `date`、ADR `date`、滯後戳記）一律記 OS 系統時間之當地日期（UTC+8）；既有資料不回改。 | 主線 | checklist | ADR-00062 |
-| RL-0084 | 收刀 perf 第四步那顆 commit 內，逐項核對 spec 標「收刀面於簿記 commit 後驗」之 SC 子句、tasks 收刀清單各項與 contracts 指定寫入收單事件之註記，結果寫入該顆 commit 訊息；不符者當顆修正（事件帳漏記補於該顆 perf 事件 notes）、引承載或轉 BL。 | 主線 | checklist | LL-00049 |
+| RL-0084 | 收刀 perf 第四步那顆 commit 內，逐項核對 spec 標「收刀面於簿記 commit 後驗」之 SC 子句、tasks 收刀清單各項與 contracts 指定寫入收單事件之註記（contracts 以全檔中「寫入／入收單事件」各處之聯集為核對全集），結果寫入該顆 commit 訊息；「假述零殘留」類子句須以 spec 所列種子實跑 `python3 tools/docsync errata <詞>` 並於訊息記命中分流，不得以 lint／check 綠代證；不符者當顆修正（事件帳漏記補於該顆 perf 事件 notes）、引承載或轉 BL。 | 主線 | checklist | LL-00049 |
 | RL-0085 | 以 cargo 驗改碼結果或變異演練寫回之後：寫回不保 mtime（`cp` 不帶 `-p`、或寫回後 touch），並以 log 見 `Compiling` 或產物 mtime 晚於改檔時刻自證重編；只見 `Finished` 無 `Compiling`＝該次作廢重跑。變異植入後、執行前以 `cmp` 或雜湊核受測檔＝預期變異檔，植入命令逐句核回傳碼，逐支之間先還原並核回原檔。 | implementer,review,fix,主線 | prompt | LL-00061 |
 | RL-0086 | SDD 刀 plan 期起草之 ADR 逐款標親決分類（待決＝無出處之新拍板級、當場一題一問／承決＝出處終點為 user 決定紀錄或 spec 條目／工程＝回報備查）並經非起草者獨立核對；轉 accepted 前只重問作答後改過之待決款，餘以對照表一題收尾。 | 主線 | checklist | ADR-00089 |
 | RL-0087 | 真庫測試之斷言與 expect 一律在交易收場（commit／rollback）之後；並發案之對手持鎖期間不得 panic；自跑探針同守。 | implementer,review,fix | prompt | LL-00072 |

@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00094 -->
+<!-- next: LL-00095 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -99,3 +99,4 @@
 | LL-00091 | advisory key 不碰撞論證只看「真實 uid 的值域」，漏算取鎖早於存在性判定、key 直取請求原值——請求 id 恰等選單域 key 即取走域鎖（007 刀 final holistic review） | none：守法在 advisory key 空間論證之寫法（設計審查紀律）與碼面守門（`handler::user::guard_account_key`＋其整合案），不另立規則 | none | [LL-00091-advisory-key-collision-argument-missed-pre-existence-lock-on-raw-request-id.md](LESSONS/LL-00091-advisory-key-collision-argument-missed-pre-existence-lock-on-raw-request-id.md) |
 | LL-00092 | pre-commit 全鏈撞 90 秒硬上限而各檢查皆過——dev 容器經 bind mount 輪詢 /mnt/d，拖慢整套 docsync 自測（007 刀 U21 收單顆；2026-10-14） | none：環境負載坑——效能劣化閘（全鏈 90 秒硬上限）之處置寫法，非規則面；調門檻須立 ADR | none | [LL-00092-precommit-chain-hard-cap-hit-by-dev-container-drvfs-polling.md](LESSONS/LL-00092-precommit-chain-hard-cap-hit-by-dev-container-drvfs-polling.md) |
 | LL-00093 | NOTES「下一步」多數只加不刪：歷次收刀與維護批收單多半只追加一句「＝已收單／已收刀」、不刪舊條，該節 14 條中 11 條是已完成之刀／批／輪，每個 session 啟動照樣注入（maint-backlog-142-146；2026-10-16 user 揭出） | RL-0048 | gate | [LL-00093-notes-next-step-appended-closed-entries-never-deleted.md](LESSONS/LL-00093-notes-next-step-appended-closed-entries-never-deleted.md) |
+| LL-00094 | RL-0084 擴面後第一刀的簿記後驗仍漏兩處：contracts 指定入收單事件的反向確認只核了一節，「假述零殘留」以 lint／check 全綠代證（spec-compliance-007 抓到；2026-10-16） | RL-0084 | rules | [LL-00094-rl0084-post-check-covered-one-contract-section-and-proxied-residue-by-lint.md](LESSONS/LL-00094-rl0084-post-check-covered-one-contract-section-and-proxied-residue-by-lint.md) |
