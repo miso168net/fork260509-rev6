@@ -16,7 +16,7 @@
 - RULES：87 條／上限 92（implementer 45/48、review 18/18、fix 20/19、主線 51/52、人 10/12）
 - BACKLOG 開放：6｜滯後：7
 - LESSONS：93 筆
-- events：131 筆（erratum 2、feature_close 7、misc 50、perf 63、review 9）
+- events：132 筆（erratum 2、feature_close 7、misc 50、perf 64、review 9）
 - CLAUDE.md 行數：165（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 行數 | 4216 | 4000 | 超 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-10-16｜perf｜close_bookkeeping｜close_bookkeeping 17.02 秒 rc=0
 - 2026-10-16｜misc｜governance｜maint-adr-00094-wording｜maint-adr-00094-wording 收單（user 2026-10-16 裁定 Q-ADR94：另立 ADR 取代）：ADR-00097 續行並取…
 - 2026-10-16｜perf｜close_bookkeeping｜close_bookkeeping 17.39 秒 rc=0
-- 2026-10-16｜misc｜product｜maint-backlog-139-140-145-147｜maint-backlog-139-140-145-147 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第二批＝…

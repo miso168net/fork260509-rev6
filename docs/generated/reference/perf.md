@@ -68,3 +68,4 @@
 | 2026-10-15 | close_bookkeeping | 16.28 | 0 | 7a3c202 | 007-user-password-admin 收刀簿記顆（staged＝events.jsonl＋NOTES＋BACKLOG＋generated 四檔〔DECISIONS-INDEX／MILESTONES／STATE／reference/perf〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
 | 2026-10-16 | close_bookkeeping | 26.31 | 0 | d579e0b | maint-backlog-142-146 收單簿記顆（staged＝events.jsonl＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發；commit 尾段觸發 git 自動 gc 提示、計入牆鐘）；RUNBOOK §12b 命令形實量。 |
 | 2026-10-16 | close_bookkeeping | 17.39 | 0 | f4a3a93 | maint-backlog-139-140-145-147 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
+| 2026-10-16 | close_bookkeeping | 17.02 | 0 | 5aeccf7 | maint-adr-00094-wording 收單簿記顆（staged＝events.jsonl＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
