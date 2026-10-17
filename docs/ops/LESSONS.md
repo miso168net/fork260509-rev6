@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00096 -->
+<!-- next: LL-00097 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -101,3 +101,4 @@
 | LL-00093 | NOTES「下一步」多數只加不刪：歷次收刀與維護批收單多半只追加一句「＝已收單／已收刀」、不刪舊條，該節 14 條中 11 條是已完成之刀／批／輪，每個 session 啟動照樣注入（maint-backlog-142-146；2026-10-16 user 揭出） | RL-0048 | gate | [LL-00093-notes-next-step-appended-closed-entries-never-deleted.md](LESSONS/LL-00093-notes-next-step-appended-closed-entries-never-deleted.md) |
 | LL-00094 | RL-0084 擴面後第一刀的簿記後驗仍漏兩處：contracts 指定入收單事件的反向確認只核了一節，「假述零殘留」以 lint／check 全綠代證（spec-compliance-007 抓到；2026-10-16） | RL-0084 | rules | [LL-00094-rl0084-post-check-covered-one-contract-section-and-proxied-residue-by-lint.md](LESSONS/LL-00094-rl0084-post-check-covered-one-contract-section-and-proxied-residue-by-lint.md) |
 | LL-00095 | 007 刀收刀 merge 再度帶入 `deploy/trust-model.dev.toml` 的變動而沒有重建 rust-api 容器：信任模型檔在容器內懸空約 29 小時、橫跨三支維護批，直到 spec-compliance-007 修單 U1 的全量測試對賬案轉紅才浮出（同形第三次；2026-10-17） | none：守法已在 RUNBOOK §2 起手句與 LL-00068 守法②；本坑＝兩處文字守法皆未在收刀 merge 當下被對照，補法改為機器提示（外層 post-merge／post-checkout hook） | code | [LL-00095-close-merge-rewrote-trust-model-without-container-rebuild-third-time.md](LESSONS/LL-00095-close-merge-rewrote-trust-model-without-container-rebuild-third-time.md) |
+| LL-00096 | 既有閘加正則腿：正則內隱含之限制（錨 `^`、必含 `:`）未各算一條判準配反案或列射程外；新腿訊息與鄰腿共用字面，鄰腿既有判準之停用變異全綠存活——RL-0080 擴寫後首次再犯，碼品質審查仍跑四輪（spec-compliance-007 修單 U2；2026-10-17） | RL-0080 | rules | [LL-00096-regex-implicit-limits-and-shared-gate-message-mask-neighbour-criteria.md](LESSONS/LL-00096-regex-implicit-limits-and-shared-gate-message-mask-neighbour-criteria.md) |
