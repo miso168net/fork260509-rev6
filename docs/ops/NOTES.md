@@ -7,8 +7,7 @@
 
 ## 下一步
 
-- **下一步＝007 規格對照審查輪（user 手動發起）**：008 brainstorm 起手前，由 user 手動發起 007 刀之規格對照審查輪（RL-0073 ②）；主線不自行開輪。
-- **其後＝008 audit-settings-pages**（系統設定頁與稽核頁進場；待 user 開工令、依 CLAUDE.md §2 自階段 0 brainstorm 起手）；brainstorm 須答之題與約束：
+- **下一步＝008 audit-settings-pages**（系統設定頁與稽核頁進場；待 user 開工令、依 CLAUDE.md §2 自階段 0 brainstorm 起手）；brainstorm 須答之題與約束：
   - BACKLOG 觸發落在 008 之三條：BL-00043（存取日誌寫入面與 reaper 兩 job 入不入 008）、BL-00045（兩頁射程、§III.2 新用途、密碼政策投影快取失效、稽核端點連動）、BL-00133（授權歸檔表保留期）；各題建議與指 008 之義務枚舉（O 組 with-008 二十題、交付連動改述六項、X 組 with-008 二項）住 008 前 BACKLOG 體檢 v10（主線工作區、gitignored）。
   - 錯誤明細通道是否擴第三個攜參鍵（ADR-00076 翻案觸發器首條）：擴則 plan 期續行 ADR，並把 ADR-00076／ADR-00090 決定 1 之「照提示秒數重試必過」改為碼註之窄句（牆鐘回撥時可能須再等一次）；不擴則 brainstorm 記「以碼註為準」結案。
   - BL-00108 反向確認之探針口徑（008 若在 lint 增腿即踩）：探針取兩側函式名聯集、以 char 級簽名行數計，並寫明 byte 級 authz 組不計之理由。

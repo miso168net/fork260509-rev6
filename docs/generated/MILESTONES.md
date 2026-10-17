@@ -3,6 +3,8 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-17 | misc | governance｜maint-spec-compliance-007 | spec-compliance-007 規格對照輪收單（user 2026-10-16 發起、附屬 007 刀；review 事件同顆）：L7-2 轉 BL-00148 誕生——m0003×演進帳×凍結 seed 一致性只由需 docker 之閘承載；ADR-00098 經 review 事件 wontfix_adr 入帳；修單與 merge 見 review 事件。 | 8bb435a | — | 記 BL-00148 | — |
+| 2026-10-17 | review | 007-user-password-admin | findings 33（修 31／BL 1／ADR 1）；BL-00148、ADR-00098 | — | — | — | — |
 | 2026-10-16 | misc | governance｜maint-adr-00094-wording | maint-adr-00094-wording 收單（user 2026-10-16 裁定 Q-ADR94：另立 ADR 取代）：ADR-00097 續行並取代 ADR-00094——決定 2 拆為 2a 參考判準（非強制）與 2b 一經沿用即強制自證，決定 1、決定 3 與翻案觸發器照舊；ADR-00094 轉 superseded；NOTES 008 題面與 LL-00071 改指 ADR-00097；零碼改、BACKLOG 不變。 | ed51179 | ADR-00097 | — | — |
 | 2026-10-16 | misc | product｜maint-backlog-139-140-145-147 | maint-backlog-139-140-145-147 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第二批＝產品面）：BL-00140／BL-00145／BL-00147 移滯後卷（觸發改綁 prod 硬化等、X23 併入 BL-00147）、BL-00139 續延改觸發、ADR-00096（batchDeleteUser 不設批量上界 by-design）、X8 純文件現況註、NOTES 下一步改寫。 | 55555e6 | ADR-00096 | — | — |
 | 2026-10-16 | misc | governance｜maint-backlog-142-146 | maint-backlog-142-146 收單（user 2026-10-15 依 008 前 BACKLOG 體檢 v10 開批；第一批＝治理面）：BL-00146 by-design（ADR-00094）、BL-00142 續行人寫表（ADR-00095 supersede ADR-00032）、RULES 三改（RL-0080／RL-0085 擴寫、新 RL-0087）、LESSONS 改述＋LL-00092／LL-00093、檢索性輪間比較、fork-delta-lint 關閉 autojunk、NOTES 清理與 GT-06 收單句腿。 | ecf23f9 | ADR-00094、ADR-00095 | 收 BL-00142、BL-00146 | — |
@@ -73,6 +75,14 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-17｜misc｜governance｜maint-spec-compliance-007
+
+BL-00148 於治理文字顆 a513098 入 BACKLOG（觸發＝下一支 delta migration 進場之單元起手前），事件帳此前無其誕生（GT-03 在途警告至本筆消）。帳面：開放 6→7、滯後 7 不變；本輪淨流量 +1（L7-2 需 docker 承載、本輪不能收）。
+
+### 2026-10-17｜review｜007-user-password-admin
+
+user 2026-10-16 發起之 007 刀附屬對照輪（RL-0073 承載處②；基準＝HEAD 外層 7a0b47b／rust-api 34aa3d6／base-web 9fe562d，收刀點 merge 8d8dc57 只歸因、specs 本文不改；user 指定以 superpowers:requesting-code-review 對照 spec，其要點烤入 CONTEXT）。三支唯讀 Workflow 依序發射：run A wf_70c37789-513（六 lens、18 支、36.2 分）、run B wf_602f02ca-40a（三 lens＋冷啟動探針、12 支、40.8 分）、run C wf_3c932612-7a5（五 lens、15 支、44.9 分），皆零錯零 null；補證 run J wf_ff41fbd6-652（17 支、49.8 分）與 J2 wf_4ec186c9-e30（7 支、37.1 分）逐條判讀 L10-4 現在式面。findings 50 筆＝修 31／轉 BL 1（L7-2→BL-00148）／won't-fix ADR 1（L4-1→ADR-00098）／只記報告 13／駁回 3／併重 1；total 33 只計三分流者。零 blocker、零 wire 行為缺陷。★user 裁定：2026-10-16 七題（L4-1 by-design＝ADR-00098；rust 測試五案本輪補；L12-2 只補成功路徑日誌斷言；工具三筆本輪修、L11-2 改加 GT-12 腿；L7-2 轉 BL-00148；文件與碼註十筆本輪全修；RL-0084 擴寫＋LL-00094＋三項反向確認補記於本 notes）＋CLAUDE.md §2 兩處收刀步驟同補；2026-10-17 四題（Q-RL0084b＝RL-0084 第二點再補逐條判讀；Q-TM＝提示 hook；Q-RL0080＝末句擴及跑測逾時；Q-RL0080b＝RL-0080 再擴兩處）；merge 經 2026-10-17 同意、不跑 FHR（RL-0073 只對 feature 收刀要求）。修單＝rust-api 27d49c9（U1 補測七案＋碼註；wf_f8bc71bd-320 七支）、d69a0a2（補證殘留碼註四處）＋外層 a513098／02c0132／011c91d／8f851fb／d51bd3d／4f75750（U2 工具三筆；wf_31205df4-182 十一支、碼品質四輪＝LL-00096）／30d12e9／da11079（報告）；merge 8bb435a；U1 後容器內 serial 全量兩趟 1558 passed／0 failed／2 ignored；docsync test 431 OK。★L10-1 補記（007 feature_close notes 屬不可更正欄、依 RUNBOOK §12c 於此記；contracts code-gates §8.3 另三項反向確認，基準樹現算、修後 HEAD 同值）：①零新依賴＝rust-api Cargo.lock 自 6f74d202、base-web pnpm-lock.yaml 自 fb4dac2 皆零 diff；②migration 目錄恰 m0001～m0003（另 lib.rs、main.rs）；③schema-evolution.json entries 9、next_id 10；三項皆相符（原只住 U23 c9be3eb 訊息之 T105 ④⑤）。★L10-4 補記（SC-014 假述零殘留；RL-0084 第二點之形）：FR-059 種子於基準樹以 docsync errata 同一比對實跑、依 RULES 名詞段分面，現在式面逐條判讀 633 處（兩支判讀 run 591＋主線 42），確認殘留 10 處皆屬「007 刀」、本輪修（d69a0a2／d51bd3d），駁回 3；其餘種子現在式面零殘留；修後 HEAD（30d12e9）之「007 刀」662 處，增者逐條判讀皆出處、現況或他義。★環境態兩項：①rust-api 容器內信任模型單檔 bind mount 懸空約 29 小時（007 收刀 merge 後未重建；同形第三次＝LL-00095）→重建後轉綠、加提示 hook；②U1 規格審查員以短 timeout 中止跑測、留 casbin_rule 殘列（LL-00039 第三種觸發形）→restore rc 0、走查 diff rc 0、RL-0080 末句擴寫。探針三題皆 found、答錯 0、找不到 0，三題皆繞路（最短 3／2／5 跳、有效 5／4／8 跳；Q2 起因＝活書無 8888 前端呈現→P1-P1、Q3 七鍵鍵名須下探→P1-P2）；不填 probe 欄（理由同前五輪）。
 
 ### 2026-10-16｜misc｜governance｜maint-adr-00094-wording
 
