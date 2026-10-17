@@ -633,12 +633,138 @@ class TestGt12Doorbell(unittest.TestCase):
 
     def test_outer_absent_is_red_and_submodule_absent_is_named_skip(self):
         base = {RULES: RULES_TEXT, NOTES: "<!-- wave: 6 -->\n"}
-        self.assertTrue(any("walkthrough-baseline.py 缺席" in f[3] for f in errs(gates.gt_12(stub(base)))))
+        self.assertTrue(any("門鈴字面對賬：tools/walkthrough-baseline.py 缺席" in f[3] for f in errs(gates.gt_12(stub(base)))))
         fs = gates.gt_12(stub(dict(base, **{"tools/walkthrough-baseline.py": self.OUTER})))
         self.assertTrue(any(f[0] == "SKIP" and "GT-12.submodule-absent" in f[3] for f in fs), fs)
 
     def test_real_repo_doorbell_reconciles(self):
         self.assertEqual([f for f in errs(gates.gt_12(common.Ctx(ROOT))) if "門鈴字面對賬" in f[3]], [])
+
+
+REDIS_TAG = "redis 前綴對賬"   # 本腿全部訊息共有的字面
+
+
+class TestGt12RedisPrefixes(unittest.TestCase):
+    """redis 清理前綴名冊跨子庫同源腿——外層走查工具 tools/walkthrough-baseline.py 之 RESTORE_REDIS_PREFIXES ⇔ rust-api
+    server/src/cache/mod.rs 之鍵前綴（鍵字面首段＋`*_PREFIX` 常數首段；子庫側取 HEAD 樹）。形同門鈴腿：落 GT-12、兩側唯讀讀文＋正則取。"""
+    OUTER = 'X = 1\nRESTORE_REDIS_PREFIXES = ("session", "throttle", "cpwd")\n'
+    RUST = ('//! 鍵族：`session:denylist:{sid}`／`cpwd:{uid}`；本檔是全 crate 唯一的鍵渲染點、他處不得自 `format!` 拼鍵\n'
+            'fn denylist_key(sid: &str) -> String {\n    format!("session:denylist:{sid}")\n}\n'
+            'fn last_activity_key(sid: &str) -> String {\n    format!("session:{sid}:last_activity")\n}\n'
+            'pub fn throttle_unlock_ip_key(bucket: IpNetwork) -> String {\n'
+            '    format!("throttle:unlock:{}:{bucket}", crate::throttle::DIM_IP)\n}\n'
+            'pub const CHANGE_PWD_KEY_PREFIX: &str = "cpwd:";\n'
+            'pub fn change_pwd_key(uid: i64) -> String {\n    format!("{CHANGE_PWD_KEY_PREFIX}{uid}")\n}\n'
+            '#[cfg(test)]\nmod tests {\n    fn t() {\n        let k = format!("{}:gs", uniq_prefix());\n'
+            '        let h = format!("cmdstat_{command}:calls=");\n    }\n}\n')
+
+    def _one(self, outer, rust):
+        fs = errs(gates._redis_prefix_findings(outer, rust))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertIn(REDIS_TAG, fs[0][3])
+        return fs[0]
+
+    def test_current_three_prefixes_is_green(self):
+        self.assertEqual(gates._rust_redis_prefixes(self.RUST), {"session", "throttle", "cpwd"})
+        self.assertEqual(gates._redis_prefix_findings(self.OUTER, self.RUST), [])
+
+    def test_rust_prefix_renamed_is_red_naming_both_sides_and_diff(self):
+        f = self._one(self.OUTER, self.RUST.replace('"cpwd:"', '"pwd:"'))
+        self.assertEqual(f[2], "tools/walkthrough-baseline.py")
+        for part in ("RESTORE_REDIS_PREFIXES", "server/src/cache/mod.rs", "外層多 ['cpwd']", "rust 多 ['pwd']"):
+            self.assertIn(part, f[3])
+
+    def test_rust_new_key_family_is_red(self):
+        f = self._one(self.OUTER, self.RUST + 'pub fn lock_key(x: &str) -> String {\n    format!("lock:{x}")\n}\n')
+        self.assertIn("外層多 []、rust 多 ['lock']", f[3])
+
+    def test_outer_extra_prefix_is_red(self):
+        f = self._one(self.OUTER.replace('"cpwd")', '"cpwd", "captcha")'), self.RUST)
+        self.assertIn("外層多 ['captcha']、rust 多 []", f[3])
+
+    def test_anchor_vanish_on_either_side_is_red(self):
+        f = self._one("X = 1\n", self.RUST)
+        self.assertEqual(f[2], "tools/walkthrough-baseline.py")
+        self.assertIn("命中 0 處", f[3])
+        f = self._one(self.OUTER, "// moved\n")
+        self.assertEqual(f[2], "rust-api/server/src/cache/mod.rs")
+        self.assertIn("零命中", f[3])
+
+    def test_outer_multiple_anchors_is_red(self):
+        self.assertIn("命中 2 處", self._one(self.OUTER + 'RESTORE_REDIS_PREFIXES = ("session",)\n', self.RUST)[3])
+
+    def test_outer_anchor_forms(self):
+        """外層錨＝行首 `RESTORE_REDIS_PREFIXES = (…)`、元組只含雙引號字串字面（可跨行、可帶尾逗號與行尾註解）；非純字面元組
+        （名稱拼接、空元組）＝錨形零命中＝紅。不計之形逐途徑：①名稱非緊貼行首之賦值（屬性賦值 `wb.RESTORE_REDIS_PREFIXES = (…)`、
+        縮排之區域賦值）——行首判準擋；②名稱後不接 `=` 之引用（自測斷言 `assertEqual(RESTORE_REDIS_PREFIXES, …)`）——`=` 判準擋。"""
+        multi = 'RESTORE_REDIS_PREFIXES = (\n    "session",\n    "throttle",\n    "cpwd",\n)  # 清理前綴\n'
+        for other in ('wb.RESTORE_REDIS_PREFIXES = ("x",)\n', '    RESTORE_REDIS_PREFIXES = ("x",)\n',
+                      '    self.assertEqual(RESTORE_REDIS_PREFIXES, ("x",))\n'):
+            with self.subTest(other=other):
+                self.assertEqual(gates._redis_prefix_findings(multi + other, self.RUST), [])
+        for bad in ('RESTORE_REDIS_PREFIXES = BASE + ("x",)\n', 'RESTORE_REDIS_PREFIXES = ("session", "throttle") + EXTRA\n',
+                    "RESTORE_REDIS_PREFIXES = ()\n", "RESTORE_REDIS_PREFIXES = ('session', 'throttle', 'cpwd')\n"):
+            with self.subTest(bad=bad):
+                self.assertIn("命中 0 處", self._one(bad, self.RUST)[3])
+
+    def test_rust_anchor_forms(self):
+        """rust 錨兩形逐途徑：①`format!(` 首引號後之字面首段（單行、rustfmt 折行）②`*_PREFIX` 常數字面首段（pub／pub(crate)／無可見性、
+        const／static、值有無尾 `:`、值於 `=` 後折行）；不計＝首段為插值（`{}`、`{常數}`、`cmdstat_{command}:` 形）、`format!(` 字面無 `:`
+        （`pwdlock{uid}`、`pwdreset-{u}` 形＝射程外）、常數名非 `_PREFIX` 結尾、
+        以 `///`／`//`／`/*` 起首之註解行內之常數形（②錨行首）；照計＝`//` 註解內之 `format!(` 錨形（①無行首限制）、跨行區塊註解內
+        獨立成行之常數形（只會多出前綴＝誤紅、遮不掉新增前綴）。"""
+        cases = (('format!("session:denylist:{sid}")', {"session"}),
+                 ('format!(\n        "throttle:unlock:{}:{bucket}",\n        crate::throttle::DIM_IP\n    )', {"throttle"}),
+                 ('pub const CHANGE_PWD_KEY_PREFIX: &str = "cpwd:";', {"cpwd"}),
+                 ('    pub const SOME_VERY_LONG_KEY_FAMILY_PREFIX: &str =\n        "h:";', {"h"}),
+                 ('pub(crate) const A_PREFIX: &str = "a:";', {"a"}),
+                 ('    const B_PREFIX: &str = "b";', {"b"}),
+                 ("pub static C_PREFIX: &'static str = \"c:\";", {"c"}),
+                 ('format!("{}:gs", uniq_prefix())', set()),
+                 ('format!("{CHANGE_PWD_KEY_PREFIX}{uid}")', set()),
+                 ('format!("cmdstat_{command}:calls=")', set()),
+                 ('format!("pwdlock{uid}")', set()),
+                 ('format!("pwdreset-{u}")', set()),
+                 ('pub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";', set()),
+                 ('/// pub const D_PREFIX: &str = "d:";', set()),
+                 ('// pub const E_PREFIX: &str = "e:";', set()),
+                 ('/* pub const F_PREFIX: &str = "f:"; */', set()),
+                 ('/*\npub const G_PREFIX: &str = "g:";\n*/', {"g"}),
+                 ('// 舊寫法 format!("old:{x}")', {"old"}))
+        for text, want in cases:
+            with self.subTest(text=text):
+                self.assertEqual(gates._rust_redis_prefixes(text), want)
+
+    def test_outer_absent_is_red_and_submodule_absent_shares_doorbell_skip(self):
+        """外層缺席＝紅、gt_12 兩腿各出恰一筆、訊息首段各帶腿標籤（本腿接線不得吞掉或頂替門鈴腿那筆：任一腿那筆被拿掉、或改出
+        對方腿之訊息皆紅——兩腿缺席訊息同含「walkthrough-baseline.py 缺席」、不分腿之斷言對此失明）；rust-api 缺席＝本腿不另出列、
+        由門鈴腿之具名跳過（GT-12.submodule-absent）承載——gt_12 恰一筆該鍵 SKIP，
+        該行與 ENV_SKIPS 該鍵理由（GATES.md 環境跳過表同源）皆指名本腿（ADR-00019 決定 3：跳過與通過可辨；只名門鈴＝本腿未對賬而無名）。"""
+        base = {RULES: RULES_TEXT, NOTES: "<!-- wave: 6 -->\n"}
+        absent = [f[3] for f in errs(gates.gt_12(stub(base))) if "walkthrough-baseline.py 缺席" in f[3]]
+        self.assertEqual(sorted(m.split("——", 1)[0] for m in absent),
+                         sorted([f"{REDIS_TAG}：tools/walkthrough-baseline.py 缺席", "門鈴字面對賬：tools/walkthrough-baseline.py 缺席"]), absent)
+        fs = gates.gt_12(stub(dict(base, **{"tools/walkthrough-baseline.py": self.OUTER})))
+        self.assertEqual([f for f in fs if REDIS_TAG in f[3]], [])
+        skips = [f for f in fs if f[0] == "SKIP" and "GT-12.submodule-absent" in f[3]]
+        self.assertEqual(len(skips), 1, fs)
+        for part in ("門鈴字面", "redis 前綴名冊", "未對賬"):
+            self.assertIn(part, skips[0][3])
+        reason = gates.ENV_SKIPS["GT-12.submodule-absent"][1]
+        for part in (gates.DOORBELL_RUST, gates.REDIS_KEYS_RUST):
+            self.assertIn(part, reason)
+
+    def test_real_repo_redis_prefixes_reconcile(self):
+        """真 repo：本腿零 finding，且兩側錨形皆有命中（非空集合對賬、不是兩邊都抓空）。"""
+        ctx = common.Ctx(ROOT)
+        self.assertEqual([f for f in gates.gt_12(ctx) if REDIS_TAG in f[3]], [])
+        if ctx.exists("rust-api/.git"):
+            rc, rust = ctx.git_try("show", f"HEAD:{gates.REDIS_KEYS_RUST}", cwd=os.path.join(ROOT, "rust-api"))
+            self.assertEqual(rc, 0)
+            outer = gates.RE_REDIS_PREFIXES_OUTER.findall(ctx.text("tools/walkthrough-baseline.py"))
+            self.assertEqual(len(outer), 1)
+            self.assertTrue(gates._rust_redis_prefixes(rust))
+            self.assertEqual(set(gates.RE_DQ_STR.findall(outer[0])), gates._rust_redis_prefixes(rust))
 
 
 

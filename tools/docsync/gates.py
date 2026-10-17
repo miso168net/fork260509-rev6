@@ -127,7 +127,8 @@ ENV_SKIPS = {
     "GT-05.submodule-absent": ("base-web／rust-api 之 .git 任一不存在",
                                "同上：子庫 pin 樹不在，碼面裸編號的 git grep 無標的"),
     "GT-12.submodule-absent": ("rust-api 之 .git 不存在",
-                               "同 GT-05：門鈴頻道字面的子庫側常數（server/src/ipgate/mod.rs）無 HEAD 樹可讀；外層側照掃"),
+                               "同 GT-05：門鈴頻道字面的子庫側常數（server/src/ipgate/mod.rs）與 redis 清理前綴名冊的子庫側鍵前綴"
+                               "（server/src/cache/mod.rs）無 HEAD 樹可讀；外層側照掃"),
     "GT-07.secrets-absent": ("SECRETS_DIR 三級解析所得路徑非目錄",
                              "新機尚未佈機密（deploy/decrypt-secrets.py 未跑）：實值比對無標的；樣式面照掃"),
 }
@@ -591,11 +592,75 @@ def _doorbell_leg(ctx):
     sub = "rust-api"
     if not ctx.exists(sub + "/.git"):
         return [finding(SKIP, "GT-12", sub, f"⤳ 跳過：{sub} 不在工作樹（命中謂詞＝{sub}/.git 不存在；GT-12.submodule-absent）"
-                                            "——門鈴字面未對賬；ADR-00019 環境缺席具名跳過 rc 0")]
+                                            "——門鈴字面與 redis 前綴名冊皆未對賬（兩腿同謂詞、本行一併具名）；ADR-00019 環境缺席具名跳過 rc 0")]
     rc, rust = ctx.git_try("show", f"HEAD:{DOORBELL_RUST}", cwd=os.path.join(ctx.root, sub))
     if rc != 0:
         return [finding(ERROR, "GT-12", f"{sub}/{DOORBELL_RUST}", f"門鈴字面對賬：子庫 HEAD 樹取不到 {DOORBELL_RUST}（git show rc={rc}）——rust 側搬家須同批改本腿")]
     return _doorbell_findings(outer, rust)
+
+
+# redis 前綴名冊同源腿：外層走查工具 restore 清 redis 所用前綴名冊 ⇔ rust-api 全 crate 唯一鍵渲染點之鍵前綴。兩處跨子庫邊界——
+# rust 增改前綴而名冊未跟，seed 模式 restore 留殘鍵仍回 rc 0。形同門鈴腿：子庫側取 HEAD 樹、兩側唯讀讀文＋正則取、不 import，
+# 落 GT-12（工具 self-test 只在其本體 staged 時跑、承載不了此腿）。前綴＝鍵首段（首個 `:` 之前；走查工具以 `<前綴>:*` 掃鍵）。
+REDIS_KEYS_RUST = "server/src/cache/mod.rs"
+RE_REDIS_PREFIXES_OUTER = re.compile(r'^RESTORE_REDIS_PREFIXES[ \t]*=[ \t]*\(((?:\s*"[^"\\\n]*"\s*,)*\s*"[^"\\\n]*"\s*,?\s*)\)[ \t]*(?:#[^\n]*)?$', re.M)
+RE_DQ_STR = re.compile(r'"([^"\\\n]*)"')
+RE_REDIS_KEY_FORMAT = re.compile(r'format!\(\s*"([^"{}:\\\s]+):')
+RE_REDIS_KEY_PREFIX_CONST = re.compile(
+    r"""^[ \t]*(?:pub(?:\([^)\n]*\))?[ \t]+)?(?:const|static)[ \t]+[A-Z0-9_]*_PREFIX[ \t]*:[ \t]*&(?:'static[ \t]+)?str[ \t]*=\s*"([^"{}:\\\s]+)""",
+    re.M)
+
+
+def _rust_redis_prefixes(rust):
+    """rust 側原文 → 鍵前綴集：①`format!(` 首引號後之字面首段（`format!("session:denylist:{sid}")`→session；rustfmt 折行照取）
+    ②`*_PREFIX` 常數字面首段（`pub const CHANGE_PWD_KEY_PREFIX: &str = "cpwd:";`→cpwd；經 `format!("{常數}…")` 插值成鍵；
+    值於 `=` 後折行〔rustfmt 對超寬常數之形〕照取）。
+    cache/mod.rs 之鍵渲染寫法以此兩形為準（新寫法須同批補錨形、否則落射程外）。首段為插值者（`{}`、`{常數}`、`cmdstat_{command}:`）
+    不取——常數形由②承擔。
+    射程外（判不出、不入集合）：鍵首段不以字面落在 `format!(` 首引號之後者（`concat!`／`write!`／`+` 拼接、`{}` 首段帶常數實參、
+    raw string）、`format!(` 字面無 `:` 者（`format!("pwdlock{uid}")`、`format!("pwdreset-{u}")` 形；字面接插值之首段與非鍵之
+    `cmdstat_{command}:` 正則不可分、計入即誤紅；走查工具以 `<前綴>:*` 清鍵、此形無前綴可列，承載＝rust 側鍵族 `<族>:…` 命名紀律）、
+    前綴常數名不以 `_PREFIX` 結尾者、常數宣告於 `=` 之前（名稱與型別註記之間）折行者、cache/mod.rs 以外之鍵渲染
+    （rust 側「全 crate 唯一鍵渲染點」紀律自守）。
+    ②常數值無尾 `:` 者照取；插值處亦不補 `:`（`format!("{B_PREFIX}{uid}")`）時鍵無 `<前綴>:` 首段、走查工具掃不到而本腿照綠——承載同上命名紀律。
+    整檔取、兩形之註解面不同：①無行首限制——`//`／`///`／`//!` 註解與 `/* */` 區塊註解內之 `format!(` 錨形照計；②錨行首（容縮排）
+    ——以 `//`、`///`、`/*` 起首之註解行內之常數形不計，跨行區塊註解內獨立成行之常數形照計；`#[cfg(test)]` 測試模組內兩形皆照計。
+    照計者只會多出前綴（誤紅）或留住 rust 已棄之前綴（名冊多清一前綴、無殘鍵），遮不掉 rust 新增前綴。"""
+    return set(RE_REDIS_KEY_FORMAT.findall(rust or "")) | set(RE_REDIS_KEY_PREFIX_CONST.findall(rust or ""))
+
+
+def _redis_prefix_findings(outer, rust):
+    """純函式：兩側原文 → findings。外層錨＝行首 `RESTORE_REDIS_PREFIXES = (…)` 純雙引號字串字面元組、須恰一處（零命中或多命中皆
+    ERROR；名稱拼接、空元組、單引號等非此形＝零命中）；rust 側兩錨形合計零命中即 ERROR（掃描面空集合即紅、RL-0051）；兩側皆成立
+    才比集合，不等即 ERROR、指名兩側與差集。"""
+    out = []
+    o, r = RE_REDIS_PREFIXES_OUTER.findall(outer or ""), _rust_redis_prefixes(rust)
+    if len(o) != 1:
+        out.append(finding(ERROR, "GT-12", WALKTHROUGH, f"redis 前綴對賬：RESTORE_REDIS_PREFIXES 錨形命中 {len(o)} 處（須恰一；"
+                                                         "形＝行首純雙引號字串字面元組）——常數形改動須同批改本腿"))
+    if not r:
+        out.append(finding(ERROR, "GT-12", f"rust-api/{REDIS_KEYS_RUST}",
+                           f"redis 前綴對賬：鍵字面首段與 *_PREFIX 常數兩錨形零命中——rust 側鍵渲染點搬家或改寫法須同批改 {WALKTHROUGH} 與本腿"))
+    if len(o) == 1 and r:
+        got = set(RE_DQ_STR.findall(o[0]))
+        if got != r:
+            out.append(finding(ERROR, "GT-12", WALKTHROUGH,
+                               f"redis 前綴對賬：外層 RESTORE_REDIS_PREFIXES＝{sorted(got)} ≠ rust-api {REDIS_KEYS_RUST} 鍵前綴＝{sorted(r)}"
+                               f"（外層多 {sorted(got - r)}、rust 多 {sorted(r - got)}；兩側之一失準——seed 模式 restore 會留殘鍵而仍回 rc 0）"))
+    return out
+
+
+def _redis_prefix_leg(ctx):
+    outer = ctx.text(WALKTHROUGH)
+    if outer is None:
+        return [finding(ERROR, "GT-12", WALKTHROUGH, "redis 前綴對賬：tools/walkthrough-baseline.py 缺席——外層消費家不在，無對賬基準")]
+    sub = "rust-api"
+    if not ctx.exists(sub + "/.git"):
+        return []   # 同謂詞之具名跳過由門鈴腿出列（GT-12.submodule-absent；該行與 ENV_SKIPS 理由皆指名本腿）；一謂詞一跳過、本腿不另立 SKIP 錨形
+    rc, rust = ctx.git_try("show", f"HEAD:{REDIS_KEYS_RUST}", cwd=os.path.join(ctx.root, sub))
+    if rc != 0:
+        return [finding(ERROR, "GT-12", f"{sub}/{REDIS_KEYS_RUST}", f"redis 前綴對賬：子庫 HEAD 樹取不到 {REDIS_KEYS_RUST}（git show rc={rc}）——rust 側搬家須同批改本腿")]
+    return _redis_prefix_findings(outer, rust)
 
 
 # 「工作樹＝暫存區」一致性腿（ADR-00052 決定 1）：文字類腿讀工作樹、commit 收暫存區——兩版不一致時閘全綠而 commit 進去的是另一版。
@@ -707,8 +772,8 @@ def gt_12(ctx, extra_sources=None):
       id=GT-12
       rule=RL-0052、RL-0051
       source=rev5:ADR 0024
-      drift=名冊同源與數量預算、SKIP 鍵登記、Day-1 豁免到期、閘 rule= ↔ RULES carrier=lint 雙向對賬、人寫面數值／SHA 主張、跨子庫門鈴頻道字面同源、閘讀取面（工作樹）與 commit 內容（暫存區）一致
-      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS、各閘 GATE 區塊 rule= ⇔ RULES carrier=lint 列）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）、外層工作樹 ⇔ 暫存區（僅暫存區≠HEAD 時：tracked 檔未暫存改動〔gitlink 除外〕與未追蹤未 ignore 檔）
+      drift=名冊同源與數量預算、SKIP 鍵登記、Day-1 豁免到期、閘 rule= ↔ RULES carrier=lint 雙向對賬、人寫面數值／SHA 主張、跨子庫門鈴頻道字面與 redis 清理前綴名冊同源、閘讀取面（工作樹）與 commit 內容（暫存區）一致
+      face=tools/docsync/*.py（含 SKIP 錨形鍵 ⊆ DAY1_EXEMPTIONS ∪ ENV_SKIPS、各閘 GATE 區塊 rule= ⇔ RULES carrier=lint 列）、GATES.md、pre-commit 檔頭、RUNBOOK、RUNBOOK 碼面閘表（⇔ tools/ 頂層 *.py − NON_GATE_TOOLS）、NOTES 波標記、CLAUDE.md 與憲法之 SHA／上限主張（⇔ tools/bootstrap.sh、tools/orchestration/_sk_head.js）、tools/walkthrough-baseline.py 之 IPGATE_CHANNEL（⇔ rust-api HEAD 樹 server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL）與 RESTORE_REDIS_PREFIXES（⇔ rust-api HEAD 樹 server/src/cache/mod.rs 之鍵字面首段與 *_PREFIX 常數首段）、外層工作樹 ⇔ 暫存區（僅暫存區≠HEAD 時：tracked 檔未暫存改動〔gitlink 除外〕與未追蹤未 ignore 檔）
       trigger=pre-commit
       rc=1
       breaks-if-removed=閘可無語意區塊、名冊三處分叉、預算超限連警告都沒有、跳過分支可無名無登記、到期豁免可長留、lint 規則可無閘承擔而閘可指名非 lint 或已退役規則、人寫面數值與工具常數可單邊漂移、閘讀工作樹而 commit 收暫存區的另一版時全綠放行（先 add 改寫版再還原工作樹、LESSONS 漏 stage、generate 回填落在 add 之後）
@@ -771,6 +836,7 @@ def gt_12(ctx, extra_sources=None):
                 out.append(finding(ERROR, "GT-12", x, f"tools/ 頂層 {x} 未列於 RUNBOOK 碼面閘表（碼面閘進場須同刀入表；非閘工具改 NON_GATE_TOOLS）"))
     out += _claim_legs(ctx)
     out += _doorbell_leg(ctx)
+    out += _redis_prefix_leg(ctx)
     out += _index_consistency_leg(ctx)
     wave = book_mod.current_wave(ctx)
     if wave is None:

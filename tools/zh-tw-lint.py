@@ -33,7 +33,7 @@ spec FR-052、SC-009、GR2／GR5 之機器面；rev6 新寫、rev5 無藍本；�
       同葉名異父、名冊鍵掛於他父之下、大小寫異形）；
     b.`backend.auth.session.kicked` 缺席、缺「頂替」、含「踢」、含「管理員」各＝紅（含「踢」即使該鍵誤入 ADMIN_KICK_KEYS 仍紅）；
     c.`backend.auth.session.kickedByAdmin` 缺席、缺「管理員」、含「頂替」各＝紅；
-    d.ADMIN_KICK_KEYS 中 `page.` 起首之鍵在場而缺「踢除」＝紅；缺席之 page 鍵不判（名冊鍵先於頁面落地之過渡語意，鍵一落地即受判）；
+    d.ADMIN_KICK_KEYS 中 `page.` 起首之鍵缺席、缺「踢除」各＝紅（名冊鍵缺席＝名冊幽靈即紅、RL-0051）；
     e.任一鍵含 BANNED_SESSION_TERMS（踢出／踢掉／踢下線／擠下線／擠掉／頂掉）＝紅（ADMIN_KICK_KEYS 內亦同）。
   空值（zh-tw）：任一字串字面為空字串＝紅（逐字面判：同鍵多段字面中任一段為空亦紅；三語型別不擋空字串）。
   zh-cn.ts 只供腿②（簡化字為其本分）；en-us.ts 不讀。
@@ -60,6 +60,11 @@ spec FR-052、SC-009、GR2／GR5 之機器面；rev6 新寫、rev5 無藍本；�
     「里」「干」（契約點名之同形異用字）不在任一字表（兩檔現未用）：出現即由腿②逼出逐字人審；歸 _APPROVED_HOMOGRAPHS 時須同批補詞條組
     或列入 _HOMOGRAPHS_NO_TERM（「里面」詞條已在 MAINLAND_TERMS）。
     Big5 收錄而只是正字異體寫法之九字（确网与挂触异昵优构）不屬此類、歸 SIMPLIFIED_CHARS＝腿①照報。
+  ·腿③只判 MAINLAND_TERMS 所收之詞（鍵全文子字串比對）。判不出者兩形、皆由 GR5 AI 逐頁審讀承擔（self-test 釘此兩形）：
+    甲、不入表之詞取大陸義（具歧義之詞與非大陸專用語、逐詞理由見該表上方註解；例「會話已逾時」「密碼策略」「使用者編碼」）；
+    乙、「字節」「字符」詞境以外之形（表只收字節數、個字節、字符串、字符數、個字符；例「長度 64 字符」「字節長度」「字符集」）——
+    裸詞入表必誤殺相鄰正當詞（文字節錄、名字符合、數字符號）。反向之誤中：詞境「個字節」「個字符」遇「個字」接「節…」「符合」「符號」
+    之正當相鄰形（例「這個字符合規定」）照報，合法用例若現＝入 EXEMPT（self-test 釘照報與入 EXEMPT 即抑制）。
   ·值內非字串字面之成分（識別字、運算式、函式呼叫、含 `${…}` 之反引號）不貢獻字、其內容不判，審查兜底。鍵層「MUST 含」判準
     （④b「頂替」、④c「管理員」、④d「踢除」）以該鍵字串字面串接之全文判：值內無任何字串字面者（上列四形）逐腿視同無字＝紅；
     值內另有字串字面者只以該字面判（例 `x + '…頂替'` 過 ④b 之必含）。
@@ -70,8 +75,8 @@ spec FR-052、SC-009、GR2／GR5 之機器面；rev6 新寫、rev5 無藍本；�
     檢查（`App.I18n.Schema` 標型缺鍵、`const` 宣告語法錯）。只多一個 `}` 者全檔括號不配對＝rc 2（見退出碼）。
   ·程式內之原因值與後端碼註不在射程（GR2）。
 
-退出碼：0 綠／1 任一腿命中、空值或白名單幽靈（合併列出、逐項指名鍵路徑與字或詞；鍵在場者並附檔:行〔腿②為首見之檔:行〕，鍵缺席之三形——
-  頂替鍵缺席、管理員踢除鍵缺席、白名單幽靈之鍵已不在——只指鍵路徑）／2 結構異常（逐形列舉、各形 self-test 以訊息指名成因：
+退出碼：0 綠／1 任一腿命中、空值或白名單幽靈（合併列出、逐項指名鍵路徑與字或詞；鍵在場者並附檔:行〔腿②為首見之檔:行〕，鍵缺席之四形——
+  頂替鍵缺席、管理員踢除鍵缺席、踢除頁面鍵缺席、白名單幽靈之鍵已不在——只指鍵路徑）／2 結構異常（逐形列舉、各形 self-test 以訊息指名成因：
   兩檔任一缺席或非 UTF-8（不以替代字元續判）、物件根兩形皆缺、物件至檔尾未收、括號錯配或多出閉括號〔物件根內由解析各層判；物件根以外
   ——根前與根收尾後合併為一列——另以括號堆疊判：多一個 `}` 提早收住物件根、其後鍵值落在根外即落此形〕、物件根以外之開括號至檔尾未收、
   字串或註解未收尾〔單、雙引號字面內遇換行亦屬之〕、鍵位不是識別字／數字／引號字串〔展開 `...`、計算鍵 `[…]`、含 `${…}` 之反引號鍵〕、鍵後缺 `:`〔簡寫屬性〕、鍵缺值、
@@ -215,14 +220,20 @@ _HOMOGRAPHS_NO_TERM = types.MappingProxyType({
 })
 
 # 大陸用語 → 臺灣用語：ADR-00084 決定 7 之初版必收詞全收（同形異用字詞條住 _HOMOGRAPH_TERMS、於此併入），另收「常量」（007 刀 U15
-#   全樹審讀；臺灣程式用語作「常數」）。不入表：具歧義之詞（文件、項目、地址、對象——臺灣亦有正當用法）與非大陸專用語（工作臺、一站式、
-#   開箱即用、前沿技術、最佳實踐），皆由 GR5 AI 逐頁審讀承擔。
+#   全樹審讀；臺灣程式用語作「常數」）與 007 刀 contracts msg-keys §1.3 繁中用詞表避用欄之詞：「內置」（臺灣作「內建」）；「字節」「字符」
+#   只收詞境形（字節數、個字節、字符串、字符數、個字符）——裸詞誤殺相鄰正當詞（「文字節錄」「名字符合」「數字符號」），詞境以外之形
+#   （例「長度 64 字符」「字節長度」「字符集」）判不出、由 GR5 AI 逐頁審讀承擔（檔頭「射程外」段腿③項）；詞境「個字節」
+#   「個字符」遇「個字」接「節…」「符合」「符號」之正當相鄰形（例「這個字符合規定」）亦命中，合法用例若現＝入 EXEMPT。
+#   不入表：具歧義之詞（文件、項目、地址、對象——臺灣亦有正當用法；同表避用欄之「會話」——臺灣「英語會話」等對話義通行、
+#   「策略」——臺灣「行銷策略」等謀略義通行、只政策義屬大陸用法、「編碼」——臺灣「字元編碼」等 encoding 義通行、只代碼義屬大陸用法）
+#   與非大陸專用語（工作臺、一站式、開箱即用、前沿技術、最佳實踐），皆由 GR5 AI 逐頁審讀承擔。
 MAINLAND_TERMS = types.MappingProxyType({
     "用戶": "使用者", "默認": "預設", "登錄": "登入", "註銷": "登出", "退出登錄": "登出", "菜單": "選單", "設置": "設定", "數據": "資料",
     "信息": "訊息／資訊", "網絡": "網路", "軟件": "軟體", "程序": "程式", "支持": "支援", "激活": "啟用", "賬號": "帳號", "服務器": "伺服器",
     "緩存": "快取", "內存": "記憶體", "打印": "列印", "導入": "匯入", "導出": "匯出", "搜索": "搜尋", "刷新": "重新整理", "創建": "建立",
     "保存": "儲存", "郵箱": "信箱", "鏈接": "連結", "圖標": "圖示", "字體": "字型", "模塊": "模組", "加載": "載入", "視頻": "影片",
     "屏幕": "螢幕", "全屏": "全螢幕", "質量": "品質", "里面": "裡面", "常量": "常數",
+    "內置": "內建", "字節數": "位元組數", "個字節": "個位元組", "字符串": "字串", "字符數": "字元數", "個字符": "個字元",
     **{term: advice for group in _HOMOGRAPH_TERMS.values() for term, advice in group.items()},
 })
 
@@ -499,7 +510,11 @@ def judge(tw, cn, simplified, approved, terms, kick_keys, exempt):
         if SUPERSEDE_WORD in by_admin[1]:
             leg4.append(f"腿④管理員踢除鍵含「{SUPERSEDE_WORD}」｜{ADMIN_KICKED_KEY}（{by_admin[0]}）")
     for key in sorted(kick_keys):
-        if key.startswith(PAGE_PREFIX) and key in present and KICK_WORD not in present[key][1]:
+        if not key.startswith(PAGE_PREFIX):
+            continue
+        if key not in present:
+            leg4.append(f"腿④踢除頁面鍵缺席｜{key}——管理員踢除之頁面文案 MUST 在場且含「{KICK_WORD}」")
+        elif KICK_WORD not in present[key][1]:
             leg4.append(f"腿④踢除頁面鍵缺「{KICK_WORD}」｜{key}（{present[key][0]}）")
     first_seen = {}
     for name, leaves in ((TW_NAME, tw), (CN_NAME, cn)):
@@ -519,12 +534,11 @@ def judge(tw, cn, simplified, approved, terms, kick_keys, exempt):
     hits = leg1 + leg2 + leg3 + leg4 + empty + ghost
     if hits:
         return RC_VIOLATION, [f"{TAG} ✗ 繁中 locale 命中 {len(hits)} 項（四腿、空值與白名單幽靈逐項獨立出列）："] + [f"  {h}" for h in hits]
-    page_kick = [k for k in kick_keys if k.startswith(PAGE_PREFIX)]
     lines = [f"{TAG} ✓ {TW_NAME} 葉鍵 {len(tw)}（字串字面 {sum(len(l) for _, _, l in tw)}）、{CN_NAME} 葉鍵 {len(cn)}"
              f"（字串字面 {sum(len(l) for _, _, l in cn)}）；兩檔 CJK 用字 {len(first_seen)} 字全分類"
              f"（屬 SIMPLIFIED_CHARS {sum(1 for c in first_seen if c in simplified)}、APPROVED_CHARS {sum(1 for c in first_seen if c in approved)}）；"
-             f"MAINLAND_TERMS {len(terms)} 詞、會話用語腿（ADMIN_KICK_KEYS {len(kick_keys)} 鍵、其 page 鍵在場 "
-             f"{sum(1 for k in page_kick if k in present)}／{len(page_kick)}）、空值皆零命中；EXEMPT {len(exempt)} 筆"]
+             f"MAINLAND_TERMS {len(terms)} 詞、會話用語腿（ADMIN_KICK_KEYS {len(kick_keys)} 鍵）、空值皆零命中；"
+             f"EXEMPT {len(exempt)} 筆"]
     lines += [f"{TAG}   豁免仍生效：{path}「{token}」——{why}" for path, token, why in exempt]
     return RC_OK, lines
 
@@ -552,6 +566,8 @@ def _say(msg, err=False):
 
 OK_KICKED = "您的帳號已在其他裝置登入，此工作階段已被頂替"
 OK_BY_ADMIN = "此工作階段已被管理員結束，請重新登入"
+# ADMIN_KICK_KEYS 之 page 三鍵（皆在 page.manage.user 之下）之合法預設值：葉名 → 值
+OK_PAGE_KICK = {"kick": "踢除", "confirmKick": "確認踢除？", "kickSuccess": "踢除成功"}
 CN_TREE = {"backend": {"common": {"success": "操作成功"}}}
 TW_POSIX = TW_REL.replace(os.sep, "/")
 CN_POSIX = CN_REL.replace(os.sep, "/")
@@ -579,8 +595,9 @@ def _ts(tree, root="const"):
     return f"{head}{body};\n\nexport default local;\n"
 
 
-def _tw(page=None, kicked=OK_KICKED, by_admin=OK_BY_ADMIN, extra_backend=None):
-    """合成 zh-tw 樹：backend 會話兩鍵預設合法；page 子樹與 backend 其餘子樹由案自帶。kicked／by_admin 給 None＝該鍵缺席。"""
+def _tw(page=None, kicked=OK_KICKED, by_admin=OK_BY_ADMIN, extra_backend=None, page_kick=OK_PAGE_KICK):
+    """合成 zh-tw 樹：backend 會話兩鍵與 page 踢除三鍵預設合法；page 子樹與 backend 其餘子樹由案自帶。kicked／by_admin 給 None＝該鍵缺席；
+    page_kick＝補進 page.manage.user 之踢除鍵（葉名 → 值；給子集＝其餘 page 踢除鍵缺席），案自帶同名葉者以案值為準。案傳入之 page 不被改動。"""
     session = {}
     if kicked is not None:
         session["kicked"] = kicked
@@ -588,7 +605,11 @@ def _tw(page=None, kicked=OK_KICKED, by_admin=OK_BY_ADMIN, extra_backend=None):
         session["kickedByAdmin"] = by_admin
     backend = {"auth": {"session": session}}
     backend.update(extra_backend or {})
-    return {"backend": backend, "page": page or {"home": {"greeting": "早安"}}}
+    page = dict(page or {"home": {"greeting": "早安"}})
+    manage = dict(page.get("manage", {}))
+    manage["user"] = {**page_kick, **manage.get("user", {})}
+    page["manage"] = manage
+    return {"backend": backend, "page": page}
 
 
 def _line_of(text, needle):
@@ -766,6 +787,41 @@ class TestC05Mainland(unittest.TestCase):
         rc, text = _judge(_ts(_tw(page={"home": {"greeting": "常量路由"}})))
         self.assertEqual(rc, 1, text)
         self.assertIn("「常量」→ 臺灣用語「常數」", text)
+
+    def test_c05_built_in_and_byte_char_contexts_are_red_with_advice(self):
+        """契約繁中用詞表避用欄之入表詞逐詞紅、附臺灣用語：「內置」裸詞；「字節」「字符」以詞境（字節數、個字節、字符串、字符數、個字符）"""
+        probes = (("a", "系統內置角色", "內置", "內建"), ("b", "字節數超過上限", "字節數", "位元組數"),
+                  ("c", "最長 100 個字節", "個字節", "個位元組"), ("d", "字符串格式", "字符串", "字串"),
+                  ("e", "字符數超過上限", "字符數", "字元數"), ("f", "最長 64 個字符", "個字符", "個字元"))
+        tw = _ts(_tw(page={"home": {key: value for key, value, _, _ in probes}}))
+        rc, text = _judge(tw, approved=APPROVED_CHARS | frozenset("節串"))
+        self.assertEqual(rc, 1, text)
+        for key, value, term, advice in probes:
+            self.assertIn(f"腿③大陸用語｜{TW_NAME}:{_line_of(tw, value)} page.home.{key}「{term}」→ 臺灣用語「{advice}」", text)
+        self.assertEqual(text.count("腿③大陸用語｜"), len(probes), text)
+
+    def test_c05_byte_char_bare_neighbours_and_unlisted_terms_are_green(self):
+        """「字節」「字符」裸詞之相鄰正當詞不受詞境波及（文字節錄、名字符合、數字符號）；「會話」「策略」「編碼」不入表（臺灣另有正當用法）"""
+        legit = ("文字節錄", "名字符合", "數字符號", "英語會話", "行銷策略", "字元編碼", "內建角色")
+        rc, text = _judge(_ts(_tw(page={"home": {f"k{i}": value for i, value in enumerate(legit)}})),
+                          approved=APPROVED_CHARS | frozenset("節英"))
+        self.assertEqual(rc, 0, text)
+
+    def test_c05_out_of_range_forms_pinned(self):
+        """射程外形之釘（檔頭「射程外」段腿③項）：甲、不入表之詞取大陸義（會話、策略、編碼）不報；乙、「字節」「字符」詞境以外之形不報；
+        反向之詞境相鄰誤中（「這個字符合規定」命中「個字符」）照報、入 EXEMPT 即抑制"""
+        missed = ("會話已逾時", "密碼策略", "使用者編碼", "長度 64 字符", "字節長度", "字符集")
+        approved = APPROVED_CHARS | frozenset("節這")
+        rc, text = _judge(_ts(_tw(page={"home": {f"k{i}": value for i, value in enumerate(missed)}})), approved=approved)
+        self.assertEqual(rc, 0, text)
+        tw = _ts(_tw(page={"home": {"a": "這個字符合規定"}}))
+        rc, text = _judge(tw, approved=approved)
+        self.assertEqual(rc, 1, text)
+        self.assertIn(f"腿③大陸用語｜{TW_NAME}:{_line_of(tw, '這個字符合規定')} page.home.a「個字符」→ 臺灣用語「個字元」", text)
+        self.assertEqual(text.count("腿③大陸用語｜"), 1, text)
+        rc, text = _judge(tw, approved=approved, exempt=(("page.home.a", "個字符", "合成理由：符合義之相鄰誤中"),))
+        self.assertEqual(rc, 0, text)
+        self.assertIn("豁免仍生效：page.home.a「個字符」——合成理由：符合義之相鄰誤中", text)
 
     def test_c05_homograph_words_in_mainland_sense_are_red_with_advice(self):
         """同形異用字取大陸用法之詞（其餘字已為正體＝腿①不報之漏網形）由腿③逐詞報、附臺灣用語（審查實證七形）"""
@@ -997,10 +1053,22 @@ class TestC07Session(unittest.TestCase):
         tw = _ts(_tw(page={"manage": {"user": {"kick": "強制下線", "confirmKick": "確認踢除？"}}}))
         self._red(tw, f"腿④踢除頁面鍵缺「踢除」｜page.manage.user.kick（{TW_NAME}:{_line_of(tw, 'kick:')}）")
 
-    def test_c07_absent_page_kick_keys_are_not_judged(self):
-        """名冊之 page 鍵在真檔缺席＝「MUST 含踢除」不判（過渡語意）"""
-        rc, text = _judge(_ts(_tw(page={"manage": {"user": {"title": "使用者清單"}}})))
-        self.assertEqual(rc, 0, text)
+    def test_c07_absent_page_kick_key_is_red(self):
+        """名冊之 page 鍵缺席＝紅、只指鍵路徑（名冊幽靈即紅＝RL-0051；出列形同頂替鍵／管理員踢除鍵缺席）：三鍵逐一缺席各恰一行、
+        三鍵全缺三行；同層其餘鍵在場不抵缺席"""
+        page = {"manage": {"user": {"title": "使用者清單"}}}
+        page_keys = sorted(k for k in ADMIN_KICK_KEYS if k.startswith(PAGE_PREFIX))
+        self.assertEqual(len(page_keys), len(OK_PAGE_KICK))
+        for key in page_keys:
+            leaf = key.rsplit(".", 1)[1]
+            with self.subTest(absent=key):
+                text = self._red(_ts(_tw(page=page, page_kick={k: v for k, v in OK_PAGE_KICK.items() if k != leaf})),
+                                 f"腿④踢除頁面鍵缺席｜{key}——")
+                self.assertEqual(text.count("腿④"), 1, text)
+        text = self._red(_ts(_tw(page=page, page_kick={})), "腿④踢除頁面鍵缺席｜")
+        for key in page_keys:
+            self.assertIn(f"腿④踢除頁面鍵缺席｜{key}——", text)
+        self.assertEqual(text.count("腿④"), len(page_keys), text)
 
     def test_c07_banned_session_terms_each_red(self):
         """六個禁用詞逐一：落在 ADMIN_KICK_KEYS 之 page 鍵內亦紅"""
@@ -1334,7 +1402,8 @@ class TestTables(unittest.TestCase):
 
     REQUIRED_TERMS = ("用戶", "默認", "登錄", "註銷", "退出登錄", "菜單", "設置", "數據", "信息", "網絡", "軟件", "程序", "支持", "激活",
                       "賬號", "服務器", "緩存", "內存", "打印", "導入", "導出", "搜索", "刷新", "創建", "保存", "郵箱", "鏈接", "圖標",
-                      "字體", "模塊", "加載", "視頻", "屏幕", "全屏", "質量", "于", "后台", "以后", "之后", "然后", "最后", "里面", "常量")
+                      "字體", "模塊", "加載", "視頻", "屏幕", "全屏", "質量", "于", "后台", "以后", "之后", "然后", "最后", "里面", "常量",
+                      "內置", "字節數", "個字節", "字符串", "字符數", "個字符")
 
     def test_simplified_table_shape(self):
         self.assertIsInstance(SIMPLIFIED_CHARS, types.MappingProxyType)
