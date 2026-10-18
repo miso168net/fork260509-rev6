@@ -480,9 +480,14 @@ def gen_reference_routes(ctx):
 
 
 def _docsync_lines(ctx):
-    """docsync package 行數（wc -l 口徑＝`cat tools/docsync/*.py | wc -l`；不含 tests/ 語料面，與 CLAUDE.md 行數同法）。"""
-    return sum((ctx.text(rel) or "").count("\n") for rel in ctx.tracked
-               if rel.startswith("tools/docsync/") and rel.endswith(".py") and rel.count("/") == 2)
+    """docsync package 邏輯行數（啟動書 §4.4「邏輯行數目標 ≤4,000、測試不計入預算」）：tracked `tools/docsync/*.py`（頂層、不含 tests/
+    語料面）逐行計「去掉前後 ASCII 空白（空格、定位字元、\\r\\f\\v；全形空格等非 ASCII 空白不去）後非空、且不以 `#` 起首」者——去空行與
+    註解行；判準純逐行、不辨語法（docstring 內之行同判），docstring 行、行尾帶註解之碼行、末行無換行照計。口徑同 000-w1 brainstorm 之驗法
+    `grep -vcE "^\\s*(#|$)" tools/docsync/*.py` 合計（C locale 之 `\\s`＝ASCII 空白）。斷行面：真 Ctx.text 以 universal newline 讀檔，
+    `\\r\\n` 與單獨 `\\r` 皆已譯成 `\\n`（空白集之 `\\r` 只對不譯換行之 ctx 生效）——CRLF 檔兩法同值；單獨 `\\r` 於 grep 不斷行、兩法可異。"""
+    ws = " \t\r\f\v"
+    return sum(1 for rel in ctx.tracked if rel.startswith("tools/docsync/") and rel.endswith(".py") and rel.count("/") == 2
+               for ln in (ctx.text(rel) or "").split("\n") if ln.strip(ws) and not ln.strip(ws).startswith("#"))
 
 
 def _budget_rows(ctx, counts, caps):
@@ -496,7 +501,7 @@ def _budget_rows(ctx, counts, caps):
     for k in ("總",) + rules_mod.SCOPES:
         if k in counts:
             rows.append((f"RULES {k}", counts[k], caps.get(k, "—")))
-    rows.append(("docsync 行數", _docsync_lines(ctx), 4000))   # 啟動書 §4.3／spec SC-007＝目標非閘（GT-12 不加腿；BL-00012）
+    rows.append(("docsync 邏輯行", _docsync_lines(ctx), 4000))   # 啟動書 §4.4＝目標非閘（GT-12 不加腿；BL-00012）；001 刀 spec SC-007 曾以 wc -l 口徑量
     lines = ["| 項目 | 現值 | 上限 | 狀態 |", "|---|---|---|---|"]
     for name, val, cap in rows:
         status = "—" if not isinstance(val, int) or not isinstance(cap, int) else ("內" if val <= cap else "超")

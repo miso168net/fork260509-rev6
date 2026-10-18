@@ -604,6 +604,8 @@ def _doorbell_leg(ctx):
 # 落 GT-12（工具 self-test 只在其本體 staged 時跑、承載不了此腿）。前綴＝鍵首段（首個 `:` 之前；走查工具以 `<前綴>:*` 掃鍵）。
 REDIS_KEYS_RUST = "server/src/cache/mod.rs"
 RE_REDIS_PREFIXES_OUTER = re.compile(r'^RESTORE_REDIS_PREFIXES[ \t]*=[ \t]*\(((?:\s*"[^"\\\n]*"\s*,)*\s*"[^"\\\n]*"\s*,?\s*)\)[ \t]*(?:#[^\n]*)?$', re.M)
+# RE_DQ_STR 只施於外層錨 group 1（元素已排除 `"`／`\`／換行）：類內去 `\`、去換行與閉引號可省之變異於此定義域等價、不補殺案；
+# 新增呼叫點（定義域外）即須重核。
 RE_DQ_STR = re.compile(r'"([^"\\\n]*)"')
 RE_REDIS_KEY_FORMAT = re.compile(r'format!\(\s*"([^"{}:\\\s]+):')
 RE_REDIS_KEY_PREFIX_CONST = re.compile(
@@ -614,15 +616,24 @@ RE_REDIS_KEY_PREFIX_CONST = re.compile(
 def _rust_redis_prefixes(rust):
     """rust 側原文 → 鍵前綴集：①`format!(` 首引號後之字面首段（`format!("session:denylist:{sid}")`→session；rustfmt 折行照取）
     ②`*_PREFIX` 常數字面首段（`pub const CHANGE_PWD_KEY_PREFIX: &str = "cpwd:";`→cpwd；經 `format!("{常數}…")` 插值成鍵；
-    值於 `=` 後折行〔rustfmt 對超寬常數之形〕照取）。
+    名於 `_PREFIX` 之前容大寫 ASCII 字母、數字與底線〔可為空〕；值於 `=` 後折行〔rustfmt 對超寬常數之形〕照取）。
     cache/mod.rs 之鍵渲染寫法以此兩形為準（新寫法須同批補錨形、否則落射程外）。首段為插值者（`{}`、`{常數}`、`cmdstat_{command}:`）
     不取——常數形由②承擔。
     射程外（判不出、不入集合）：鍵首段不以字面落在 `format!(` 首引號之後者（`concat!`／`write!`／`+` 拼接、`{}` 首段帶常數實參、
-    raw string）、`format!(` 字面無 `:` 者（`format!("pwdlock{uid}")`、`format!("pwdreset-{u}")` 形；字面接插值之首段與非鍵之
+    raw string、非圓括號定界〔`format!["…"]`／`format!{"…"}`〕與 `!` 後帶空白〔`format! ("…")`〕、非 `format!` 巨集之同名函式
+    〔`my::format("…")`〕）、`format!(` 字面無 `:` 者（`format!("pwdlock{uid}")`、`format!("pwdreset-{u}")` 形；字面接插值之首段與非鍵之
     `cmdstat_{command}:` 正則不可分、計入即誤紅；走查工具以 `<前綴>:*` 清鍵、此形無前綴可列，承載＝rust 側鍵族 `<族>:…` 命名紀律）、
-    前綴常數名不以 `_PREFIX` 結尾者、常數宣告於 `=` 之前（名稱與型別註記之間）折行者、cache/mod.rs 以外之鍵渲染
+    ①首段含空白、反斜線或 `}` 者與首段為空者（非鍵之訊息字串 `format!("redis error: {x}")` 即以空白排除；真鍵前綴含此類字元亦同不取）、
+    前綴常數名不以 `_PREFIX` 結尾者、常數名於 `_PREFIX` 之前含大寫 ASCII 字母、數字與底線以外之字元者（小寫字母〔非全大寫蛇形
+    `Lock_PREFIX`；rustc 僅警告、照常編譯〕、非 ASCII 字母〔`Ä_PREFIX`〕、raw identifier〔`r#LOCK_PREFIX`〕）、常數宣告於 `=` 之前折行者（`pub` 與 `(` 之間、`pub(…)` 括號內、`const`／`static` 與名稱之間、
+    名稱至 `=` 之間〔含型別註記內〕；唯可見性與 `const`／`static` 之間折行者照取〔可見性內另有折行亦同〕——次行自成無可見性之錨形）、
+    常數宣告於 `=` 之前同行之空格／tab 異於錨形者（`pub` 與 `(` 之間帶空白〔`pub (crate)`〕、`&` 之後帶空白〔`& str`、
+    `& 'static str`〕、`pub(…)` 與 `const`／`static` 緊貼〔`pub(crate)const`〕）、常數宣告不起首於行（容縮排）者（同行前置屬性
+    〔`#[allow(dead_code)] pub const …`〕、同行前一項〔`fn f() {} pub const …`〕）、`static mut` 之宣告、cache/mod.rs 以外之鍵渲染
     （rust 側「全 crate 唯一鍵渲染點」紀律自守）。
-    ②常數值無尾 `:` 者照取；插值處亦不補 `:`（`format!("{B_PREFIX}{uid}")`）時鍵無 `<前綴>:` 首段、走查工具掃不到而本腿照綠——承載同上命名紀律。
+    ②常數值無尾 `:` 者照取、值首段截至首個 `{`／`}`／反斜線／空白（`"a b:"`→a），以 `{` 起首或首段為空者不取，值不以 `"` 起首者
+    （非字串字面 `concat!("k", ":")`、raw string `r"k:"`）不取；插值處亦不補 `:`
+    （`format!("{B_PREFIX}{uid}")`）時鍵無 `<前綴>:` 首段、走查工具掃不到而本腿照綠——承載同上命名紀律。
     整檔取、兩形之註解面不同：①無行首限制——`//`／`///`／`//!` 註解與 `/* */` 區塊註解內之 `format!(` 錨形照計；②錨行首（容縮排）
     ——以 `//`、`///`、`/*` 起首之註解行內之常數形不計，跨行區塊註解內獨立成行之常數形照計；`#[cfg(test)]` 測試模組內兩形皆照計。
     照計者只會多出前綴（誤紅）或留住 rust 已棄之前綴（名冊多清一前綴、無殘鍵），遮不掉 rust 新增前綴。"""
@@ -632,7 +643,11 @@ def _rust_redis_prefixes(rust):
 def _redis_prefix_findings(outer, rust):
     """純函式：兩側原文 → findings。外層錨＝行首 `RESTORE_REDIS_PREFIXES = (…)` 純雙引號字串字面元組、須恰一處（零命中或多命中皆
     ERROR；名稱拼接、空元組、單引號等非此形＝零命中）；rust 側兩錨形合計零命中即 ERROR（掃描面空集合即紅、RL-0051）；兩側皆成立
-    才比集合，不等即 ERROR、指名兩側與差集。"""
+    才比集合，不等即 ERROR、指名兩側與差集。
+    射程外（判不出）：①外層錨形行恰一處，而模組層另有不合錨形之再綁定——非字面（自身拼接
+    `RESTORE_REDIS_PREFIXES = RESTORE_REDIS_PREFIXES + ("x",)`、`tuple(…)`、增量賦值 `+=`）與不合錨形之字面（單引號、型別註記、
+    縮排於模組層區塊內、條件式、隱式拼接、空元組）——再綁定行不計、錨數仍 1，照比錨形行之字面值，有效值與 rust 不符亦照綠；
+    ②錨形行為單元素而無尾逗號者（`("session")`——Python 實值為字串而非元組，走查工具據以迭代即逐字元）照計、照比其字面值。"""
     out = []
     o, r = RE_REDIS_PREFIXES_OUTER.findall(outer or ""), _rust_redis_prefixes(rust)
     if len(o) != 1:
@@ -735,7 +750,8 @@ def _rule_reconcile_leg(blocks, rules_text, origin=None):
 # 碼面閘表腿（002 刀 U0）：tools/ 頂層 *.py 除下列非閘工具外皆為碼面閘、MUST 列於 RUNBOOK §12 碼面閘表（名冊唯一權威；
 # GATES.md 依 ADR-00010 不收碼面閘）。新增非閘工具＝改此常數同刀；碼面閘進場＝入表同刀。
 # 003 刀 U10a：tools/walkthrough-baseline.py＝走查前後全表基準對賬（隨遷、需 dev stack、走查收尾手動跑）、不守版控品質＝非閘。
-NON_GATE_TOOLS = ("tools/wf-watchdog.py", "tools/comment-overlap.py", "tools/walkthrough-baseline.py")
+# maint-pre008-carriers U3：tools/regex-mutants.py＝正則變異枚舉器（對正則判準做變異自證時手動跑）、不守版控品質＝非閘。
+NON_GATE_TOOLS = ("tools/wf-watchdog.py", "tools/comment-overlap.py", "tools/walkthrough-baseline.py", "tools/regex-mutants.py")
 RE_CODEGATE_HEADER = re.compile(r"^\|\s*工具檔\s*\|")
 RE_CODEGATE_PATH = re.compile(r"^`(tools/[^`/]+\.py)`$")
 

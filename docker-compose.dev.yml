@@ -189,6 +189,7 @@ services:
   # ═══ rev4:016-observability rev4:T025 reaper dev override（比照 migrate：target＋共用 mask 卷＋
   #     entrypoint 整段 override——dev 映像 ENTRYPOINT＝watchexec、只改 command 會被當
   #     watcher 參數）═══
+  # ★現況：rev6 無 reaper bin（rust-api 零 reaper 目標）與 reaper role（migration m0001～m0003 零 reaper）——下列 loop 之 `cargo run --bin reaper` 起了也跑不動；承載＝BL-00043。
   reaper:
     build:
       target: dev
