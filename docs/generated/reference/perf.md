@@ -70,3 +70,4 @@
 | 2026-10-16 | close_bookkeeping | 17.39 | 0 | f4a3a93 | maint-backlog-139-140-145-147 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
 | 2026-10-16 | close_bookkeeping | 17.02 | 0 | 5aeccf7 | maint-adr-00094-wording 收單簿記顆（staged＝events.jsonl＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
 | 2026-10-17 | close_bookkeeping | 16.88 | 0 | 7ed76d7 | spec-compliance-007 收單簿記顆（staged＝events.jsonl＋NOTES＋generated 三檔〔STATE／MILESTONES／DECISIONS-INDEX〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |
+| 2026-10-19 | close_bookkeeping | 18.4 | 0 | d2b8250 | maint-pre008-carriers 收單簿記顆（staged＝events.jsonl＋generated 兩檔〔STATE／MILESTONES〕；零 gitlink、零工具本體⇒條件段皆未觸發）；RUNBOOK §12b 命令形實量。 |

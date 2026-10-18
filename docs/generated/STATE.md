@@ -16,7 +16,7 @@
 - RULES：87 條／上限 92（implementer 45/48、review 18/18、fix 20/19、主線 51/52、人 10/12）
 - BACKLOG 開放：7｜滯後：7
 - LESSONS：97 筆
-- events：136 筆（erratum 2、feature_close 7、misc 52、perf 65、review 10）
+- events：137 筆（erratum 2、feature_close 7、misc 52、perf 66、review 10）
 - CLAUDE.md 行數：165（只報表、不擋）
 
 ## 治理指標（啟動書 §4.3 三項＋ADR-00021 檢索性）
@@ -40,6 +40,6 @@
 | docsync 邏輯行 | 3652 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
+- 2026-10-19｜perf｜close_bookkeeping｜close_bookkeeping 18.4 秒 rc=0
 - 2026-10-19｜misc｜governance｜maint-pre008-carriers｜maint-pre008-carriers 收單（008 前 BACKLOG 體檢 v11 之承接批；user 2026-10-18 開工令「九項全掛」）：D…
 - 2026-10-17｜perf｜close_bookkeeping｜close_bookkeeping 16.88 秒 rc=0
-- 2026-10-17｜misc｜governance｜maint-spec-compliance-007｜spec-compliance-007 規格對照輪收單（user 2026-10-16 發起、附屬 007 刀；review 事件同顆）：L7-2 轉 BL-…
