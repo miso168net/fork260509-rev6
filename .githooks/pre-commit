@@ -64,7 +64,7 @@ fi
 # 兩者任一單獨 staged 時亦跑 walkthrough-baseline 自測（耦合自證；否則只在 bootstrap 全量自測兜底）。
 wb_deps_staged=0
 if echo "$staged" | grep -qxF -e 'tools/schema-gate.py' -e 'docs/ops/reference-src/schema-evolution.json'; then wb_deps_staged=1; fi
-for t in tools/wf-watchdog.py tools/comment-overlap.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py tools/view-render-guard.py tools/route-artifact-gate.py tools/seed-view-gate.py tools/zh-tw-lint.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
+for t in tools/wf-watchdog.py tools/comment-overlap.py tools/regex-mutants.py tools/walkthrough-baseline.py tools/schema-gate.py tools/entity-drift-gate.py tools/rust-fmt-gate.py tools/wire-schema.py tools/fork-delta-lint.py tools/msg-key-gate.py tools/view-render-guard.py tools/route-artifact-gate.py tools/seed-view-gate.py tools/zh-tw-lint.py deploy/preflight-secrets.py deploy/decrypt-secrets.py deploy/generate-secrets.py deploy/setup-reaper-role.py deploy/backup-db.py; do
   if echo "$staged" | grep -qxF "$t" || { [ "$t" = tools/walkthrough-baseline.py ] && [ "$wb_deps_staged" = 1 ]; }; then
     pc_run "selftest-$(basename "$t" .py)" python3 "$HOOK_DIR/../$t" test
   fi
