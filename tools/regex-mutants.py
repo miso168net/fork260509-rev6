@@ -13,6 +13,10 @@
       合成樣本自測（暫存目錄內合成模組與兩套測試、用完即清；不依賴 repo 現況）。
   子行程：cwd＝第一個 `--path`、sys.path 前置全部 `--path`、`-B` 且 PYTHONDONTWRITEBYTECODE=1（不寫 bytecode）；本行程不 import 受測模組（取原文亦經子行程）。
   例（cwd＝repo 根）：`run --path tools --module docsync.gates --const RE_DQ_STR --test docsync.tests.test_gates.TestGt12RedisPrefixes`。
+  自測寫成檔內模組層 TestCase 之閘工具（`test` 子命令經 `unittest.main` 跑者），以工具模組名兼作測試名：
+    `run --path tools --module zh-tw-lint --const RE_ESCAPE --test zh-tw-lint`。
+  自測為自訂函式、非 TestCase 者：另寫一支 unittest 包住該函式——以 `importlib.import_module(<同 --module>)` 取模組（與替換後之物件同一）、
+    呼其自測函式，不拋例外且回傳 None 或 0 即綠；包裝檔所在目錄併入 `--path`、`--test <包裝模組>.<類>`。
 
 解析：自行分詞原始 pattern 字串、每一成分保留原文位移（變異＝就地改寫原文、報表直指原成分）。支援語法＝字面、跳脫（含 `\\xhh`／`\\uhhhh`／
   `\\Uhhhhhhhh`／`\\0` 起首之八進位與控制字元）、字元類（含否定、區間、類內跳脫與類別跳脫）、類別跳脫（`\\d\\D\\s\\S\\w\\W`）、錨（`^`／`$`／`\\A`／`\\Z`／`\\b`／`\\B`）、
@@ -23,17 +27,20 @@
 
 算子（每支一變異；逐常數去重——變異後全文相同者只留先產之一支並註明；編譯失敗者報無效、不計殺或存活；已帶量詞之成分不另產「可省」）：
   停用（放寬）：
-    ①錨拿掉（含前後瞻整段）；
+    ①錨拿掉（含前後瞻整段；以 `(?:)` 取代）；
     ②必含字面可省——未帶量詞之字面依序切 token：連續字詞字元（ASCII 英數與底線、未跳脫）為一 token，其餘每個字面字元（含空格與跳脫字元）各為
       一 token；改寫為 `(?:token)?`；
     ③否定字元類逐成員拿掉（區間與類別跳脫各為一成員；拿光＝改為任意字元 `[\\s\\S]`）；
-      ③④⑧ 重組類內成員時，原文為裸 `-` 之成員一律改寫 `\\-`（防與兩側成員拼成新區間或成無效區間）；
+      ③④⑧ 重組類內成員時，原文為裸 `-` 之成員一律改寫 `\\-`（防與兩側成員拼成新區間或成無效區間）、`\\0` 起首之八進位
+      （含區間端點）一律改寫定寬 `\\xhh`（防續吸其後成員之數字）；
     ④正字元類放寬兩形：空白類（成員皆屬空格、tab、`\\r\\f\\v`）加換行；ASCII 字母區間加另一大小寫之同區間（類內已有者略）；
     ⑤量詞下界歸零（`+`→`*`、`{m,n}`→`{0,n}`、`{m}`→`{0,m}`、`{m,}`→`{0,}`；懶惰形保留懶惰）；
     ⑥未帶量詞之既有群組整段可省（前後瞻除外）。
   收窄（正向覆蓋）：
-    ⑦必含字面 token 刪去（切法同②）；⑧正字元類逐成員拿掉（僅一成員者略）；⑨`?` 改必要、`*`／`+` 改恰一次（懶惰形同）；
-    ⑩字元類外之 `\\s` 改 `[ \\t]`；⑪分支逐支刪去（兩支以上者）。
+    ⑦必含字面 token 刪去（以 `(?:)` 取代、切法同②）；⑧正字元類逐成員拿掉（僅一成員者略）；
+    ⑨`?` 改必要、`*`／`+` 改恰一次（整段改寫為 `(?:原成分)`；懶惰形同）；⑩字元類外之 `\\s` 改 `[ \\t]`；⑪分支逐支刪去（兩支以上者）。
+  隔開鄰接原文：①⑦ 以 `(?:)`、⑨ 以 `(?:原成分)` 取代被改處，②⑥ 之結果本即群組——鄰接原文不得拼成新語法（直刪之反例：`a{1,x}` 刪 `x`
+    得量詞 `a{1,}`、`\\0-12` 刪 `-` 得八進位 `\\012`、`a(?=b)?` 拿掉前瞻得 `a?`）；類內見上③④⑧ 之改寫。
   分組按算子、不按語意：位於負向前後瞻內之成分，停用算子實為收窄、收窄算子實為放寬。
 
 射程外（不產變異；逐項）：
@@ -259,7 +266,7 @@ class _Parser:
                 hkind, hval, he = self.cls_member(e + 1)
                 if hkind != "char":
                     raise Unsupported("字元類區間端點為類別跳脫", i)
-                items.append(Node("range", i, he, lo=val, hi=hval))
+                items.append(Node("range", i, he, lo=val, hi=hval, mid=e))
                 i = he
             else:
                 items.append(Node(kind, i, e, val=val))
@@ -351,7 +358,7 @@ def generate(const, pattern, flags=0, groups=None):
                     j += 1
             s, e = nd.start, seq[j].end
             add(2, (s, e), s, e, f"(?:{p[s:e]})?")
-            add(7, (s, e), s, e, "")
+            add(7, (s, e), s, e, "(?:)")   # 刪除一律以 `(?:)` 隔開鄰接原文（例：`a{1,x}` 刪 `x` 不得拼成量詞 `{1,}`）
             k = j + 1
 
     def walk_node(nd, quantified):
@@ -362,13 +369,13 @@ def generate(const, pattern, flags=0, groups=None):
                 new = "*" if core == "+" else "{0," + ("" if nd.qmax is None else str(nd.qmax)) + "}"
                 add(5, (nd.start, nd.end), nd.qstart, nd.end, new + lz)
             if core in ("?", "*", "+"):
-                add(9, (nd.start, nd.end), nd.qstart, nd.end, "")
+                add(9, (nd.start, nd.end), nd.start, nd.end, "(?:" + p[nd.atom.start:nd.atom.end] + ")")   # 例：`\0?1` 不得拼成 `\01`
             walk_node(nd.atom, True)
         elif nd.kind == "anchor":
-            add(1, (nd.start, nd.end), nd.start, nd.end, "")
+            add(1, (nd.start, nd.end), nd.start, nd.end, "(?:)")
         elif nd.kind == "group":
             if nd.gkind in LOOK:
-                add(1, (nd.start, nd.end), nd.start, nd.end, "")
+                add(1, (nd.start, nd.end), nd.start, nd.end, "(?:)")   # 帶量詞之前後瞻：`a(?=b)?` 不得成 `a?`
             elif not quantified:
                 add(6, (nd.start, nd.end), nd.end, nd.end, "?")
             walk_alt(nd.alt)
@@ -380,9 +387,19 @@ def generate(const, pattern, flags=0, groups=None):
     def walk_cls(nd):
         items, txt = nd.items, p[nd.start:nd.end]
 
-        def body(skip=None):
+        def fixed(t, val):
+            # `\0` 起首之八進位改寫定寬 `\xhh`：拿掉鄰成員後會續吸其後成員之數字（`[\0a1]` 去 a 不得成 `[\01]`）
+            return f"\\x{ord(val):02x}" if t.startswith("\\0") else t
+
+        def mtext(x):
             # 原文為裸 `-` 之成員一律改寫 `\-`：拿掉鄰成員或於類尾附加區間後，裸 `-` 會與兩側成員拼成新區間（或成無效之區間）
-            return "".join("\\-" if p[x.start:x.end] == "-" else p[x.start:x.end] for j, x in enumerate(items) if j != skip)
+            if x.kind == "range":
+                return fixed(p[x.start:x.mid], x.lo) + "-" + fixed(p[x.mid + 1:x.end], x.hi)
+            t = p[x.start:x.end]
+            return "\\-" if t == "-" else fixed(t, x.val) if x.kind == "char" else t
+
+        def body(skip=None):
+            return "".join(mtext(x) for j, x in enumerate(items) if j != skip)
         if nd.neg:
             for k, it in enumerate(items):
                 rest = body(k)
@@ -572,7 +589,7 @@ def do_run(paths, module, consts, tests):
              "——基線須全綠才可判殺")
         return 2, rep
     if base["run"] == 0:
-        _err("基線零案：指定測試載入後一案也沒跑——殺／存活無從判定")
+        _err("基線零案：指定測試載入後一案也沒跑——殺／存活無從判定（所指模組無 TestCase 者：照 docstring 之 unittest 包裝法改指包裝類）")
         return 2, rep
     print(f"基線：✓ {base['run']} 案全綠（skipped={base['skipped']}；{dt:.1f}s）", flush=True)
     killed = survived = invalid = errored = timed = 0
@@ -647,7 +664,7 @@ import unittest
 import rmt_target
 import rmt_closure
 
-DROP_CARET = "k=([ab]+)$"   # RE_P#1（①拿掉 `^`）之變異後全文：Count／Crash／Slow 據此於該支之下改變行為
+DROP_CARET = "(?:)k=([ab]+)$"   # RE_P#1（①拿掉 `^`）之變異後全文：Count／Crash／Slow 據此於該支之下改變行為
 
 
 class Weak(unittest.TestCase):
@@ -763,13 +780,20 @@ SYN_WEAK_SURVIVORS = SYN_WEAK_RELAX | SYN_WEAK_NARROW
 SYN_ERR_KILLED = {(7, "k"), (7, "="), (8, "a"), (8, "b"), (9, "[ab]+")}
 SYN_P_HEADER = "== RE_P：`^k=([ab]+)$`（旗標 re.M）——變異 11 支（有效 11／無效 0／去重併入 0）"
 SYN_Q_HEADER = "== RE_Q：`(?<=ab)c|a|a`（旗標 無）——變異 12 支（有效 10／無效 1／去重併入 1）"
+# 對抗式合成語料（就地改寫易令鄰接原文拼成新語法之各形與其鄰形；FHR L4-1 與 U3 碼品質第 3 輪之形併入）
+SYN_ADVERSARIAL = (r"a{1,x}", r"a{1*}", r"\0-12", r"[\0a1]", r"[^\0a1]", r"[\x00-\01a7]", r"a(?=b)?", r"(?=x)?a", r"x{\b2}", r"\0?1",
+                   r"x{2:}", r"a{,x}", r"a{x,2}", r"(a){x}", r"\0a1", r"x(?!y)?z", r"[\0-\x1f1]", r"[a-z0-9.-]", r"[Z0-9-c]", r"[^a0-9-z]",
+                   r'[\w0-9-"]', r"[a^b]x[a^]", r"[]a]", r"\0123", r"(?<=ab)c|a|a", r"a{1,2x}", r"(?:\0|1)2", r"\01?2", r"[\01a2]",
+                   r"^{x}$")
 
 
 def self_test():
     """合成樣本逐案自證；任一案敗＝rc 1、指名案名與實得值。
     產生面（不起子行程）：十一算子各一案起、斷言原成分、位移與變異後全文（②另斷言帶量詞者不產可省、②⑦另斷言字詞 token 含底線與數字、
     ④另斷言空白類混他字元或含換行者與異大小寫字母區間不產、含 `\\r\\f\\v` 之空白類照產、⑤另斷言 `{m,}` 上界照留空與下界已為零者不產、⑥另斷言已可省者與前後瞻不產、
-    ⑧另斷言單成員不產、拿掉首成員後以字面 `^` 起首者改寫 `\\^`、③④⑧另斷言類內裸 `-` 重組後改寫 `\\-` 且變異後字元集＝所標算子之語意、⑨另斷言懶惰形整段改恰一次與 `{…}` 形不產、⑩另斷言類內 `\\s` 與 `\\S`／`\\d` 不產）；無效變異（後瞻變寬）標無效、去重（`a|a`
+    ⑧另斷言單成員不產、拿掉首成員後以字面 `^` 起首者改寫 `\\^`、③④⑧另斷言類內裸 `-` 重組後改寫 `\\-` 且變異後字元集＝所標算子之語意、⑨另斷言懶惰形整段改恰一次與 `{…}` 形不產、⑩另斷言類內 `\\s` 與 `\\S`／`\\d` 不產；①⑦⑨另斷言刪除與移除以 `(?:)`／`(?:原成分)`
+    隔開鄰接原文〔七形逐斷言全文與語意〕、③⑧另斷言類內 `\\0` 起首之八進位成員〔含區間端點〕改寫定寬；前後瞻內照常逐成分產；
+    對抗式合成語料〔SYN_ADVERSARIAL〕逐支核全文構造與類之字元集）；無效變異（後瞻變寬）標無效、去重（`a|a`
     之兩支分支刪去同文）留一支並註明；支援語法全集之解析與群組數自我一致、群組數不符＝結構異常；類內首位 `]` 為字面成員、`\\0` 起首之八進位
     至多三位；不支援構造十形各指名構造與位移。
     執行面（暫存目錄合成模組與測試、子行程實跑）：弱測試集（命中行非首行＝丟 re.M 即轉紅）→指定之七支存活 rc 1、標頭全文、存活者各落
@@ -803,13 +827,13 @@ def self_test():
         return fn
 
     # ── 產生面：十一算子 ──
-    guard("①錨拿掉：`^`／`$`", expect(r"^a$", {(1, "^", 0, "a$"), (1, "$", 2, "^a")}))
-    guard("①錨拿掉：`\\b` 與前瞻整段", expect(r"\bx(?=b)", {(1, r"\b", 0, r"x(?=b)"), (1, "(?=b)", 3, r"\bx")}))
+    guard("①錨拿掉：`^`／`$`（以 `(?:)` 取代）", expect(r"^a$", {(1, "^", 0, "(?:)a$"), (1, "$", 2, "^a(?:)")}))
+    guard("①錨拿掉：`\\b` 與前瞻整段", expect(r"\bx(?=b)", {(1, r"\b", 0, r"(?:)x(?=b)"), (1, "(?=b)", 3, r"\bx(?:)")}))
     guard("②字面可省：字詞字元連續段一 token、跳脫字元與其他字面各一 token；帶量詞者不產",
           expect(r"ab\.c d?", {(2, "ab", 0, r"(?:ab)?\.c d?"), (2, r"\.", 2, r"ab(?:\.)?c d?"), (2, "c", 4, r"ab\.(?:c)? d?"),
                                (2, " ", 5, r"ab\.c(?: )?d?")}, absent={(2, "d"), (2, "d?")}))
     guard("②⑦字詞 token：ASCII 英數與底線之連續段為一 token（`a_1` 不拆成 `a`／`_`／`1`）",
-          expect(r"a_1\.", {(2, "a_1", 0, r"(?:a_1)?\."), (7, "a_1", 0, r"\."), (2, r"\.", 3, r"a_1(?:\.)?"), (7, r"\.", 3, "a_1")},
+          expect(r"a_1\.", {(2, "a_1", 0, r"(?:a_1)?\."), (7, "a_1", 0, r"(?:)\."), (2, r"\.", 3, r"a_1(?:\.)?"), (7, r"\.", 3, "a_1(?:)")},
                  absent={(op, t) for op in (2, 7) for t in ("a", "_", "1", "a_", "_1")}))
     guard("③否定類去成員：逐成員（含跳脫成員）；拿光＝任意字元",
           expect(r'[^"\\]x[^y]', {(3, '"', 2, r'[^\\]x[^y]'), (3, r"\\", 3, r'[^"]x[^y]'), (3, "y", 9, r'[^"\\]x[\s\S]')}))
@@ -833,7 +857,7 @@ def self_test():
     guard("⑤下界已為零者不產：`?`／`*`／`{0,n}`／`{,n}`（無 ⑤ 支、亦無同原文落去重者）", t_qmin_zero)
     guard("⑥群組可省：未帶量詞之群組；已可省者與前瞻不產",
           expect(r"(?:ab)c(?:d)?(?=e)", {(6, "(?:ab)", 0, r"(?:ab)?c(?:d)?(?=e)")}, absent={(6, "(?:d)?"), (6, "(?:d)"), (6, "(?=e)")}))
-    guard("⑦字面刪去：切法同②", expect(r"ab\.c", {(7, "ab", 0, r"\.c"), (7, r"\.", 2, "abc"), (7, "c", 4, r"ab\.")}))
+    guard("⑦字面刪去：切法同②、以 `(?:)` 取代", expect(r"ab\.c", {(7, "ab", 0, r"(?:)\.c"), (7, r"\.", 2, "ab(?:)c"), (7, "c", 4, r"ab\.(?:)")}))
     guard("⑧正類去成員：逐成員；單成員不產", expect(r"[ab][c]", {(8, "a", 1, "[b][c]"), (8, "b", 2, "[a][c]")}, absent={(8, "c")}))
 
     def t_caret():
@@ -871,10 +895,96 @@ def self_test():
           dash_rows([(r"[Z0-9-c]", 8, "0-9", r"[Z\-c]", {"Z", "-", "c"}),
                      (r"[^a0-9-z]", 3, "0-9", r"[^a\-z]", ascii_all - {"a", "-", "z"}),
                      (r'[\w0-9-"]', 8, "0-9", r'[\w\-"]', lower | upper | digit | {"_", "-", '"'})]))
+    guard("③⑧類去成員：`\\0` 起首之八進位成員（含區間端點）重組後改寫定寬 `\\xhh`（不得續吸其後成員之數字）",
+          dash_rows([(r"[\0a1]", 8, "a", r"[\x001]", {"\x00", "1"}),
+                     (r"[^\0a1]", 3, "a", r"[^\x001]", ascii_all - {"\x00", "1"}),
+                     (r"[\x00-\01a7]", 8, "a", r"[\x00-\x017]", {"\x00", "\x01", "7"})]))
+
+    def fusion_rows(rows):
+        """rows＝(原文, 算子, 原成分, 變異後全文, 須全配之樣本, 須不全配之樣本)：鄰接原文不得拼成新語法——逐形斷言全文、有效與語意。"""
+        def fn():
+            bad = []
+            for pattern, op, comp, text, yes, no in rows:
+                ms = [m for m in generate("P", pattern)[0] if m.op == op and m.comp == comp]
+                ok = [(m.text, m.valid) for m in ms] == [(text, True)]
+                if ok:
+                    rx = re.compile(text)
+                    ok = all(rx.fullmatch(s) for s in yes) and not any(rx.fullmatch(s) for s in no)
+                if not ok:
+                    bad.append((pattern, op, comp, [(m.text, m.valid) for m in ms]))
+            return not bad, f"不符 {bad}"
+        return fn
+
+    guard("①⑦⑨隔開鄰接原文：字面大括號不成量詞、`\\0` 八進位不續吸其後數字、帶量詞之前後瞻移除後量詞不改綁（七形逐斷言全文與語意）",
+          fusion_rows([(r"a{1,x}", 7, "x", r"a{1,(?:)}", ["a{1,}"], ["aa"]),
+                       (r"a{1*}", 9, "1*", r"a{(?:1)}", ["a{1}"], ["a"]),
+                       (r"\0-12", 7, "-", r"\0(?:)12", ["\x0012"], ["\n"]),
+                       (r"x{\b2}", 1, r"\b", r"x{(?:)2}", ["x{2}"], ["xx"]),
+                       (r"\0?1", 9, r"\0?", r"(?:\0)1", ["\x001"], ["\x01", "1"]),
+                       (r"a(?=b)?", 1, "(?=b)", r"a(?:)?", ["a"], ["", "b"]),
+                       (r"(?=x)?a", 1, "(?=x)", r"(?:)?a", ["a"], [""])]))
+    guard("前後瞻內之成分照常逐成分產（遞迴進前後瞻）：負向後瞻內之類成員、前瞻內之字面",
+          expect(r"(?<![ab])x(?=cd)", {(8, "a", 5, r"(?<![b])x(?=cd)"), (2, "cd", 13, r"(?<![ab])x(?=(?:cd)?)")}))
+
+    uni = [chr(c) for c in range(128)] + ["é", "中", "\u3000", "\xa0"]
+
+    def cset(text):
+        rx = re.compile(text)
+        return frozenset(ch for ch in uni if rx.fullmatch(ch))
+
+    def t_adversarial():
+        bad, total, zero = [], 0, []
+        for pat in SYN_ADVERSARIAL:
+            before = total
+            nodes, stack = [], [parse(pat, 0, re.compile(pat).groups)]
+            while stack:
+                nd = stack.pop()
+                nodes.append(nd)
+                stack.extend(x for sq in nd.branches for x in sq) if nd.kind == "alt" else None
+                stack.append(nd.alt) if nd.kind == "group" else None
+                stack.append(nd.atom) if nd.kind == "rep" else None
+            for m in generate("P", pat)[0]:
+                total += 1
+                s, e = m.start, m.start + len(m.comp)
+                if m.op in (1, 7):
+                    want = pat[:s] + "(?:)" + pat[e:]
+                elif m.op == 9:
+                    at = next(n for n in nodes if n.kind == "rep" and (n.start, n.end) == (s, e)).atom
+                    want = pat[:s] + "(?:" + pat[at.start:at.end] + ")" + pat[e:]
+                elif m.op == 2:
+                    want = pat[:s] + "(?:" + m.comp + ")?" + pat[e:]
+                elif m.op == 6:
+                    want = pat[:e] + "?" + pat[e:]
+                elif m.op == 10:
+                    want = pat[:s] + "[ \\t]" + pat[e:]
+                else:
+                    want = m.text
+                # 唯一預期之無效＝後瞻內字面可省（後瞻變寬、編譯失敗＝∅無效、不靜默）
+                ok = m.text == want and (m.valid or (pat, m.op, m.comp) == ("(?<=ab)c|a|a", 2, "ab"))
+                if ok and m.op in (3, 4, 8):
+                    cl = min((n for n in nodes if n.kind == "cls" and n.start <= s and e <= n.end), key=lambda n: n.end - n.start)
+                    sets = [cset("[" + ("\\" + pat[x.start:x.end] if pat[x.start:x.end] in ("-", "^", "]", "[") else pat[x.start:x.end]) + "]")
+                            for x in cl.items]
+                    k = next((j for j, x in enumerate(cl.items) if x.start == s), None)
+                    if m.op == 4:
+                        it = cl.items[k] if k is not None and m.comp != pat[cl.start:cl.end] else None
+                        exp = cset(pat[cl.start:cl.end]) | (cset(f"[{it.lo.swapcase()}-{it.hi.swapcase()}]") if it else {"\n"})
+                    else:
+                        rest = frozenset().union(*(x for j, x in enumerate(sets) if j != k))
+                        exp = frozenset(uni) - rest if cl.neg else rest
+                    ok = cset(m.text[cl.start:cl.end + len(m.text) - len(pat)]) == exp
+                if not ok:
+                    bad.append((pat, OP_NAMES[m.op], m.comp, m.text, m.valid))
+            if total == before:
+                zero.append(pat)
+        return not bad and not zero, f"{len(SYN_ADVERSARIAL)} 支語料、{total} 支變異；零變異 {zero}；不符 {bad}"
+
+    guard("對抗式合成語料逐支核：①⑦ 全文＝被改處以 `(?:)` 取代、⑨＝`(?:原成分)`、②⑥⑩ 構造全文、③④⑧ 變異類之字元集＝所標算子之集合運算、全數有效",
+          t_adversarial)
     guard("⑨量詞改必要／恰一次：`?`／`*`／`+`",
-          expect(r"a?b*c+", {(9, "a?", 0, "ab*c+"), (9, "b*", 2, "a?bc+"), (9, "c+", 4, "a?b*c")}))
-    guard("⑨懶惰形整段改恰一次（`d+?`→`d`、不留 `?`）；`{…}` 形量詞不產",
-          expect(r"d+?e{1,2}f{,2}", {(9, "d+?", 0, "de{1,2}f{,2}")}, absent={(9, "e{1,2}"), (9, "f{,2}")}))
+          expect(r"a?b*c+", {(9, "a?", 0, "(?:a)b*c+"), (9, "b*", 2, "a?(?:b)c+"), (9, "c+", 4, "a?b*(?:c)")}))
+    guard("⑨懶惰形整段改恰一次（`d+?`→`(?:d)`、不留 `?`）；`{…}` 形量詞不產",
+          expect(r"d+?e{1,2}f{,2}", {(9, "d+?", 0, "(?:d)e{1,2}f{,2}")}, absent={(9, "e{1,2}"), (9, "f{,2}")}))
     guard("⑩字元類外之 `\\s` 改 `[ \\t]`；類內 `\\s` 與 `\\s` 以外之類別跳脫（`\\S`／`\\d`）不產",
           expect(r"a\s*b[\s]\S\d", {(10, r"\s", 1, r"a[ \t]*b[\s]\S\d")}, absent={(10, r"\s", 6), (10, r"\S"), (10, r"\d")}))
     guard("⑪分支刪去：逐支（含首支、中支、末支）",

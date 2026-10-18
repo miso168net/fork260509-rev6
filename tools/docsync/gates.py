@@ -604,6 +604,8 @@ def _doorbell_leg(ctx):
 # 落 GT-12（工具 self-test 只在其本體 staged 時跑、承載不了此腿）。前綴＝鍵首段（首個 `:` 之前；走查工具以 `<前綴>:*` 掃鍵）。
 REDIS_KEYS_RUST = "server/src/cache/mod.rs"
 RE_REDIS_PREFIXES_OUTER = re.compile(r'^RESTORE_REDIS_PREFIXES[ \t]*=[ \t]*\(((?:\s*"[^"\\\n]*"\s*,)*\s*"[^"\\\n]*"\s*,?\s*)\)[ \t]*(?:#[^\n]*)?$', re.M)
+# RE_DQ_STR 只施於外層錨 group 1（元素已排除 `"`／`\`／換行）：類內去 `\`、去換行與閉引號可省之變異於此定義域等價、不補殺案；
+# 新增呼叫點（定義域外）即須重核。
 RE_DQ_STR = re.compile(r'"([^"\\\n]*)"')
 RE_REDIS_KEY_FORMAT = re.compile(r'format!\(\s*"([^"{}:\\\s]+):')
 RE_REDIS_KEY_PREFIX_CONST = re.compile(
@@ -626,7 +628,8 @@ def _rust_redis_prefixes(rust):
     `Lock_PREFIX`；rustc 僅警告、照常編譯〕、非 ASCII 字母〔`Ä_PREFIX`〕、raw identifier〔`r#LOCK_PREFIX`〕）、常數宣告於 `=` 之前折行者（`pub` 與 `(` 之間、`pub(…)` 括號內、`const`／`static` 與名稱之間、
     名稱至 `=` 之間〔含型別註記內〕；唯可見性與 `const`／`static` 之間折行者照取〔可見性內另有折行亦同〕——次行自成無可見性之錨形）、
     常數宣告於 `=` 之前同行之空格／tab 異於錨形者（`pub` 與 `(` 之間帶空白〔`pub (crate)`〕、`&` 之後帶空白〔`& str`、
-    `& 'static str`〕、`pub(…)` 與 `const`／`static` 緊貼〔`pub(crate)const`〕）、cache/mod.rs 以外之鍵渲染
+    `& 'static str`〕、`pub(…)` 與 `const`／`static` 緊貼〔`pub(crate)const`〕）、常數宣告不起首於行（容縮排）者（同行前置屬性
+    〔`#[allow(dead_code)] pub const …`〕、同行前一項〔`fn f() {} pub const …`〕）、`static mut` 之宣告、cache/mod.rs 以外之鍵渲染
     （rust 側「全 crate 唯一鍵渲染點」紀律自守）。
     ②常數值無尾 `:` 者照取、值首段截至首個 `{`／`}`／反斜線／空白（`"a b:"`→a），以 `{` 起首或首段為空者不取，值不以 `"` 起首者
     （非字串字面 `concat!("k", ":")`、raw string `r"k:"`）不取；插值處亦不補 `:`

@@ -614,7 +614,7 @@ class TestGt12Doorbell(unittest.TestCase):
     子庫在場之兩案（`_sub_ctx` 樁）：判定依 HEAD 樹而非工作樹（兩面取值相反、改讀工作樹即紅）；HEAD 樹取不到＝紅、指名子庫檔路徑。
     兩錨之行首判準與值字元類排除 `"` 一案；名字面、名界、`=` 判準（兩側各釘）、rust 收尾 `";` 與值非空一案；兩錨必含字面逐 token
     刪一之誘餌（任一字面改為可省即紅）一案；外層錨 `=` 兩側 `\\s*` 之零空白照取與容換行一案；rust 側宣告改寫（無可見性、`pub(crate)`、
-    `pub static`、`&'static str`）＝錨形零命中＝紅一案（錨形放寬即轉綠）。"""
+    `pub static`、`&'static str`）＝錨形零命中＝紅一案（錨形放寬即轉綠）。門鈴兩錨以 `python3 tools/regex-mutants.py run` 跑兩類測試＝零存活。"""
     OUTER = 'X = 1\nIPGATE_CHANNEL = "ipgate:invalidate"\n'
     RUST = '/// 門鈴\npub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";\n'
 
@@ -769,8 +769,12 @@ class TestGt12RedisPrefixes(unittest.TestCase):
     （數字照取、`_PREFIX` 之前可空；小寫、非 ASCII、`r#` 不取）釘於 rust 錨形一案；常數宣告於 `=` 之前
     折行之途徑一案、同行空格／tab 異於錨形之途徑一案、同行空白判準之多空格／tab／零空白照取一案；外層錨空白判準之零空白、tab、
     元素閉引號後折行（重複段與末段）與右括號後 tab 照取一案；外層元組元素首尾引號（重複段與末段）缺一之誘餌一案。
-    射程外釘兩案：外層錨形行恰一處而模組層另有不合錨形之再綁定（非字面與不合錨形之字面）＝照綠；錨形行為單元素而無尾逗號
-    （Python 實值為字串）照計＝照綠（皆判不出）。"""
+    射程外釘三案：外層錨形行恰一處而模組層另有不合錨形之再綁定（非字面與不合錨形之字面）＝照綠；錨形行為單元素而無尾逗號
+    （Python 實值為字串）照計＝照綠（皆判不出）；rust 常數宣告不起首於行（同行前置屬性、同行前一項）與 `static mut` 皆不取。
+    等價存活（`python3 tools/regex-mutants.py run` 以兩類測試跑 redis 腿四支正則之存活者〔`RE_REDIS_KEY_FORMAT` 零存活〕、皆判等價、不補殺案；逐成分）：外層錨 `\\)`
+    後 `[ \\t]*` 加換行（re.M 下 `$` 於首個換行前即成立、對同一 `)` 接受集相同，多吞者只會是空白行或註解行）；`RE_DQ_STR` 之捕獲
+    群組可省（`[^…]*` 可空、群組不被跳過）與類內去 `\\\\`、去換行、閉引號可省（前提＝只施於外層錨 group 1、元素已排除 `"`／`\\\\`／
+    換行；見 gates.py 定義處註）；常數錨行首 `[ \\t]*` 與可見性後 `[ \\t]+` 加換行（跨行之命中必對應原式於末行行首之命中、擷取相同）。"""
     OUTER = 'X = 1\nRESTORE_REDIS_PREFIXES = ("session", "throttle", "cpwd")\n'
     RUST = ('//! 鍵族：`session:denylist:{sid}`／`cpwd:{uid}`；本檔是全 crate 唯一的鍵渲染點、他處不得自 `format!` 拼鍵\n'
             'fn denylist_key(sid: &str) -> String {\n    format!("session:denylist:{sid}")\n}\n'
@@ -977,6 +981,15 @@ class TestGt12RedisPrefixes(unittest.TestCase):
             with self.subTest(decoy=decoy):
                 outer = self.OUTER + '"""\nRESTORE_REDIS_PREFIXES = ' + decoy + '\n"""\n'
                 self.assertEqual(gates._redis_prefix_findings(outer, self.RUST), [])
+
+    def test_out_of_range_rust_const_not_line_initial_and_static_mut_not_taken(self):
+        """射程外釘（`_rust_redis_prefixes` docstring）：常數宣告不起首於行——同行前置屬性 `#[…]`、同行前一項——與 `static mut`
+        之宣告皆不取（錨行首、`const`／`static` 之後須接常數名）；對照之行首形照取（錨形放寬或 `mut` 改可接即轉紅）。"""
+        for text in ('#[allow(dead_code)] pub const K_PREFIX: &str = "k:";\n', 'fn f() {} pub const K_PREFIX: &str = "k:";\n',
+                     'pub static mut K_PREFIX: &str = "k:";\n'):
+            with self.subTest(text=text):
+                self.assertEqual(gates._rust_redis_prefixes(text), set())
+        self.assertEqual(gates._rust_redis_prefixes('pub const K_PREFIX: &str = "k:";\n'), {"k"})
 
     def test_out_of_range_anchor_once_plus_non_anchor_rebind_stays_green(self):
         """射程外釘（`_redis_prefix_findings` docstring ①）：外層錨形行恰一處、模組層另有不合錨形之再綁定——非字面（自身拼接、

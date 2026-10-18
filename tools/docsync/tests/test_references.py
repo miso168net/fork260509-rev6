@@ -79,7 +79,8 @@ class TestMilestonesAndStateRendering(unittest.TestCase):
         newline 譯掉 `\\r`，本樁不譯換行、直餵以釘空白集）、純註解行、縮排註解行（空格與定位字元）不計；行尾帶註解之碼行、docstring 行、
         全形空格行（U+3000 非 ASCII 空白、不去；grep C locale 同計）、末行無換行照計。tests/ 不入檔集。本語料 wc 口徑（換行字元數）＝15、
         邏輯行＝8——兩口徑可判別；空白集拿掉 `\\r`／`\\f`／`\\v` 任一＝9、只剩空格與定位字元＝11、改用 Python 預設 strip（含 Unicode
-        空白）＝7。"""
+        空白）＝7。檔集與斷行另釘於第二樁：非 `.py`（`tools/docsync/notes.md`）與同深度異前綴（`tools/orchestration/x.py`）不入檔集；
+        斷行只認 `\\n`——行中之 `\\x1c`（`str.splitlines` 視為斷行）不斷行＝計 1（改用 splitlines、拿掉 `.py` 或前綴判準任一＝2）。"""
         src = ('"""模組 docstring。\n'
                'docstring 第二行\n'
                '　\n'
@@ -100,6 +101,8 @@ class TestMilestonesAndStateRendering(unittest.TestCase):
         self.assertEqual(src.count("\n"), 15)
         self.assertEqual(references._docsync_lines(ctx), 8)
         self.assertIn("| docsync 邏輯行 | 8 | 4000 | 內 |", references._budget_rows(ctx, {}, {}))
+        ctx2 = stub({"tools/docsync/n.py": "a = 1\x1cb = 2\n", "tools/docsync/notes.md": "x = 1\n", "tools/orchestration/x.py": "y = 2\n"})
+        self.assertEqual(references._docsync_lines(ctx2), 1)
 
 
 class TestGenerateIdempotent(unittest.TestCase):

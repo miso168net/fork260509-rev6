@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=9fe562d｜rust-api=532f9cb
+- pins：base-web=9fe562d｜rust-api=bba4a3d
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
@@ -37,7 +37,7 @@
 | RULES fix | 20 | 19 | 超 |
 | RULES 主線 | 51 | 52 | 內 |
 | RULES 人 | 10 | 12 | 內 |
-| docsync 邏輯行 | 3651 | 4000 | 內 |
+| docsync 邏輯行 | 3652 | 4000 | 內 |
 
 ## 最近事件（尾 3 筆、新在前）
 - 2026-10-17｜perf｜close_bookkeeping｜close_bookkeeping 16.88 秒 rc=0
