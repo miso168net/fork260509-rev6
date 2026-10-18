@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-19 | misc | governance｜maint-pre008-carriers | maint-pre008-carriers 收單（008 前 BACKLOG 體檢 v11 之承接批；user 2026-10-18 開工令「九項全掛」）：D0 文件類、U1 docsync 邏輯行口徑與 GT-12 子庫 HEAD 樹判別案、U2 rust-api 測試與碼註、U3 正則變異枚舉工具 tools/regex-mutants.py 並接線 RL-0080；final holistic review 11 筆皆修（轉 BL 0、won't-fix ADR 0）；BACKLOG 條數不變。 | 0a394ed | — | — | — |
 | 2026-10-17 | misc | governance｜maint-spec-compliance-007 | spec-compliance-007 規格對照輪收單（user 2026-10-16 發起、附屬 007 刀；review 事件同顆）：L7-2 轉 BL-00148 誕生——m0003×演進帳×凍結 seed 一致性只由需 docker 之閘承載；ADR-00098 經 review 事件 wontfix_adr 入帳；修單與 merge 見 review 事件。 | 8bb435a | — | 記 BL-00148 | — |
 | 2026-10-17 | review | 007-user-password-admin | findings 33（修 31／BL 1／ADR 1）；BL-00148、ADR-00098 | — | — | — | — |
 | 2026-10-16 | misc | governance｜maint-adr-00094-wording | maint-adr-00094-wording 收單（user 2026-10-16 裁定 Q-ADR94：另立 ADR 取代）：ADR-00097 續行並取代 ADR-00094——決定 2 拆為 2a 參考判準（非強制）與 2b 一經沿用即強制自證，決定 1、決定 3 與翻案觸發器照舊；ADR-00094 轉 superseded；NOTES 008 題面與 LL-00071 改指 ADR-00097；零碼改、BACKLOG 不變。 | ed51179 | ADR-00097 | — | — |
@@ -75,6 +76,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-19｜misc｜governance｜maint-pre008-carriers
+
+ADR-00095 複核：觸發器首條 2026-10-17 因 J-H018 成立；漂移屬已兌現過渡語的時態殘留，審查已抓到並當輪改正，不需機器抽取＝維持。RL-0080 括注接線（RULES-VERSION 13794b33f782→05a1ca15f9d1；條數不變）；LL-00097（recurrence_of LL-00096；RL-0080 同根第 6 次）晉升面＝code（tools/regex-mutants.py）＋RL-0080 條文括注。user 2026-10-19 另裁三題：共用清單防線＝不再加；工具產錯處置＝只從根修（LL-00097 守法 (l) 之第一次，對抗式合成語料併入工具自測）；merge 回 default。U1～U3 三顆因 FHR L2-2／L2-3 改寫訊息而重建 SHA（ecfd289→a56ce55、d4ce0df→df4e517、9fa64eb→fe2055a；樹同、未推）。
 
 ### 2026-10-17｜misc｜governance｜maint-spec-compliance-007
 
