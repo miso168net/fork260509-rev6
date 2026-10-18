@@ -362,6 +362,7 @@ services:
       - rev6_net
 
   # ═══ rev4:016-observability rev4:T025 jobs（reaper 回收 sidecar、profiles:[jobs] opt-in、一般 up 不啟）═══
+  # ★現況：rev6 無 reaper bin（rust-api 零 reaper 目標）與 reaper role（migration m0001～m0003 零 reaper）——jobs profile 起了也跑不動、心跳零發射；承載＝BL-00043。
   reaper:
     profiles: [jobs]
     build:

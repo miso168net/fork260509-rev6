@@ -21,9 +21,9 @@ LL-00095｜007 刀收刀 merge 再度帶入 `deploy/trust-model.dev.toml` 的變
 - 依 RUNBOOK §2 重建 rust-api 容器（`up -d --force-recreate --no-deps`）。重建後容器內該檔可讀、boot 日誌為 `warnings:0 internal_default:1`；U1 自驗之容器內全量兩趟 rc 0。
 - user 2026-10-17 裁定（LL-00068 晉升面「同形第三次即評估 post-merge／post-checkout 提示 hook」之評估）：本輪加提示 hook。外層 `.githooks/post-merge` 與 `.githooks/post-checkout` 在前後兩顆 commit 間該檔有變動時，於 stderr 印出 RUNBOOK §2 的重建命令；只提示、恆 rc 0。bootstrap hooks 指紋名冊、GT-09 `EXEC_REQUIRED` 與 README 檔樹同步加這兩檔，RUNBOOK §2 起手句補上 merge 與 hook。行為由 docsync tests 以臨時 repo 實跑兩支真 hook 機器守。
 
-**晉升面**：code——上列兩支提示 hook。`git checkout -- <檔>` 的單檔還原（post-checkout 兩參數相同、不帶路徑資訊）與手改該檔不經 hook，仍靠 RUNBOOK §2 自查。
+**晉升面**：code——上列兩支提示 hook（涵蓋 pull、checkout／switch、merge、rebase）。不經 hook 的途徑——`reset --hard`、`stash push`／`pop`／`apply`、`cherry-pick`、`revert`、`restore` 與 `checkout -- <檔>` 的單檔還原（post-checkout 兩參數相同、不帶路徑資訊）、衝突 merge 以 commit 收尾、手改該檔——仍靠 RUNBOOK §2 自查；git 對 reset、stash、cherry-pick 沒有對應 hook，加 hook 涵蓋不可行。
 
 **再犯面與守法**：
 - ①merge、pull、切分支後見到 hook 提示，即依 RUNBOOK §2 重建 rust-api，不是 `restart`。
-- ②單檔還原或手改該檔後，自行重建。
+- ②以不經 hook 的途徑（RUNBOOK §2 第②類）改寫該檔後，自行重建。
 - ③全量 cargo 中對賬案轉紅時先看 mount（`ls -la /etc/rev6/`），不要去改碼（同 LL-00068 ③）。

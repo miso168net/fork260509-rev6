@@ -17,7 +17,8 @@
 ## 2. 日常起停
 
 `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --wait`／`stop`／`ps`；host 埠世代 3xxxx（ADR-00001；真表＝`docs/generated/reference/ports.md`）。rev5 對照 stack 常駐 2xxxx、兩 stack 併行是預期形（CLAUDE.md §7）。
-★pull／checkout／merge（含收刀 merge）動到 `deploy/trust-model.dev.toml`（含純註解改動）後，rust-api 容器**必重建**：`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api`——該檔為單檔 bind mount、git 換檔即懸空，watchexec 重啟與 `restart` 皆不重掛；服務照常 healthy、日常操作面不紅，機器可見面只有 boot 日誌之 `信任模型載入告警 kind=Missing` 與 `internal_default:0`，以及全量 cargo 時之對賬案 `dev_trust_model_matches_the_delivered_file`（LL-00033／LL-00068；secrets 檔同口徑＝`deploy/secrets/README.md`）。外層 `.githooks/post-merge` 與 `.githooks/post-checkout` 於前後兩顆 commit 間該檔有變動時，在 stderr 印上列重建命令（只提示、恆 rc 0）；`git checkout -- <檔>` 之單檔還原與手改該檔不經 hook，須自行重建（LL-00095）。其餘隨對應刀補實文。
+★任何讓 git 改寫 `deploy/trust-model.dev.toml` 的操作（含純註解改動）之後，rust-api 容器**必重建**：`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --force-recreate --no-deps rust-api`——該檔為單檔 bind mount、git 換檔即懸空，watchexec 重啟與 `restart` 皆不重掛；服務照常 healthy、日常操作面不紅，機器可見面只有 boot 日誌之 `信任模型載入告警 kind=Missing` 與 `internal_default:0`，以及全量 cargo 時之對賬案 `dev_trust_model_matches_the_delivered_file`（LL-00033／LL-00068；secrets 檔同口徑＝`deploy/secrets/README.md`）。途徑分兩類：①會提示＝pull、checkout／switch 切分支、merge（含收刀 merge）、rebase——外層 `.githooks/post-merge` 與 `.githooks/post-checkout` 於前後兩顆 commit 間該檔有變動時，在 stderr 印上列重建命令（只提示、恆 rc 0）；②不經提示＝`reset --hard`、`stash push`／`pop`／`apply`、`cherry-pick`、`revert`、`restore` 與 `checkout -- <檔>` 之單檔還原、衝突 merge 以 commit 收尾、手改該檔——須自行重建（LL-00095）。
+★同一機制適用 `docker-compose.dev.yml` 全部單檔 bind mount：front-nginx 之 `deploy/nginx/nginx.conf`、`deploy/nginx/conf.d/_locations.inc`、`deploy/nginx/conf.d/dev.conf`，loki 之 `deploy/loki-config.yml`，alloy 之 `deploy/alloy/alloy-config.alloy`，prometheus 之 `deploy/prometheus/prometheus.yml`，以及重跑 `deploy/generate-dev-cert.sh` 後 front-nginx 之 `deploy/dev-certs/fullchain.pem`、`privkey.pem`（gitignored、不經 git，重產同樣換檔）。任一經上列途徑改寫，即以 `up -d --force-recreate --no-deps <服務>` 重建對應服務——`restart` 或服務內 reload 讀到的仍是舊檔；這些檔不在提示 hook 射程內（目錄掛載之 `deploy/grafana-provisioning` 不受此坑）。其餘隨對應刀補實文。
 
 ## 3. 觀測層 profiles（obs／metrics／jobs）
 
@@ -204,7 +205,7 @@ rc 判讀先辨層次：`rc=1` 常是工具**拒絕執行**（參數錯、零測
 | `bash deploy/generate-age-key.sh [檔名]` | 產 age 金鑰（容器化；覆蓋閘） | 否（需 docker＋tty） |
 | `bash deploy/generate-dev-cert.sh` | dev TLS 憑證（§1 步驟 4） | 否（需 docker） |
 
-**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數；成員以該常數為準、此處不鏡像）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。讀面通則（ADR-00055）：碼面閘讀的是子庫工作樹、不是本顆 commit 所 pin 的子庫內容——各列觸發時機欄尾標 (a) 讀面在 pre-commit submodule-sync 閘面內＝延後至下次該側 pin bump 補抓、(b) 讀面在閘面外＝無兜底（只靠「子庫先 commit、外層再 bump pin」紀律）；新雙側或讀子庫工作樹的碼面閘進場時同刀標型。
+**碼面閘表**（名冊唯一權威；碼面閘＝RULES 名詞段定義、屬系統面、不計入 GT-12 的 ≤12 治理閘預算、GATES.md 不收）。GT-12 腿機器對賬：`tools/` 頂層 tracked `*.py` − `NON_GATE_TOOLS`（`tools/docsync/gates.py` 常數；成員以該常數為準、此處不鏡像）⇔ 本表首欄反引號路徑集，雙向差集即紅、表缺席或零路徑列即紅；首欄非路徑者＝註記列、不計。「根據 ADR」欄＝該閘之 rev6 ADR 序號（accepted；新列進場同批填）；閘本體直接由憲法節授權者填該節（如 `tools/fork-delta-lint.py`＝憲法 §III）。讀面通則（ADR-00055）：碼面閘讀的是子庫工作樹、不是本顆 commit 所 pin 的子庫內容——各列觸發時機欄尾標 (a) 讀面在 pre-commit submodule-sync 閘面內＝延後至下次該側 pin bump 補抓、(b) 讀面在閘面外＝無兜底（只靠「子庫先 commit、外層再 bump pin」紀律）；新雙側或讀子庫工作樹的碼面閘進場時同刀標型。本表「守什麼／觸發時機」欄漂移之 finding＝ADR-00095 翻案觸發器首條成立，收單須記複核結論。
 
 | 工具檔 | 守什麼 | 觸發時機（含環境缺席語意） | 根據 ADR |
 |---|---|---|---|
@@ -368,6 +369,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | 登入節流於同帳號名（及同來源桶）並發下窗上界非嚴格 | 滯後卷 BL-00145 |
 | 設密雜湊與換發鎖內快取往返之資源耗用無上界 | 滯後卷 BL-00147 |
 | 首登強制改密 | 滯後卷 BL-00140（prod 硬化與實際需求兩臂、先到者） |
+| 非安全來源（http 且非 localhost／127.0.0.1）下 Clipboard API 不存在＝產密浮層「複製」如實報失敗（rev5 另有 `execCommand` 退路、rev6 不帶回） | base-web `src/components/custom/pwd-gen-modal.vue` 檔頭 rev6 差異註；走 https 即不觸及 |
 | redis 持久化 | 維持不開（已知態＝ADR-00082 款 5） |
 | rust-api 行程數 | ★只准單一行程：casbin 判定面同步只換上本行程（ADR-00043 決定 9）；多行程或多實例部署前須先補跨行程同步通知（翻案觸發、風險見活書 §11.1） |
 | 機密輪替與 prod 值 | §7、§15 |
