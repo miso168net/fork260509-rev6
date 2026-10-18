@@ -610,9 +610,27 @@ class TestSkipRegistrySingleAuthority(unittest.TestCase):
 class TestGt12Doorbell(unittest.TestCase):
     """BL-00121：門鈴頻道字面跨子庫同源腿——外層走查工具 tools/walkthrough-baseline.py 之 IPGATE_CHANNEL ⇔ rust-api
     server/src/ipgate/mod.rs 之 IPGATE_INVALIDATE_CHANNEL（子庫側取 HEAD 樹）。★落 GT-12（每 commit 必跑）而非該工具 self-test
-    （只在工具本體 staged 時跑、rust 側改名時不跑＝假腿）；兩側值唯讀讀文＋正則取、不 import 工具。"""
+    （只在工具本體 staged 時跑、rust 側改名時不跑＝假腿）；兩側值唯讀讀文＋正則取、不 import 工具。
+    子庫在場之兩案（`_sub_ctx` 樁）：判定依 HEAD 樹而非工作樹（兩面取值相反、改讀工作樹即紅）；HEAD 樹取不到＝紅、指名子庫檔路徑。
+    兩錨之行首判準與值字元類排除 `"` 一案；名字面、名界、`=` 判準（兩側各釘）、rust 收尾 `";` 與值非空一案；兩錨必含字面逐 token
+    刪一之誘餌（任一字面改為可省即紅）一案；rust 側宣告改寫（無可見性、`pub(crate)`、`pub static`、`&'static str`）＝錨形零命中＝紅
+    一案（錨形放寬即轉綠）。"""
     OUTER = 'X = 1\nIPGATE_CHANNEL = "ipgate:invalidate"\n'
     RUST = '/// 門鈴\npub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";\n'
+
+    @staticmethod
+    def _sub_ctx(outer, rel, head, work):
+        """rust-api 在場之樁（`rust-api/.git` 存在＝exists 成立）：`git show HEAD:<rel>`（cwd＝子庫）回 (0, head)，head 為 None 則沿樁
+        預設 (128, "")；工作樹面 `rust-api/<rel>` 讀 work。兩類共用。"""
+        c = stub({gates.WALKTHROUGH: outer, "rust-api/.git": "gitdir: x\n", f"rust-api/{rel}": work})
+        base = c.git_try
+
+        def git_try(*a, cwd=None):
+            if head is not None and a == ("show", f"HEAD:{rel}") and cwd == os.path.join(c.root, "rust-api"):
+                return 0, head
+            return base(*a, cwd=cwd)
+        c.git_try = git_try
+        return c
 
     def test_equal_is_green(self):
         self.assertEqual(gates._doorbell_findings(self.OUTER, self.RUST), [])
@@ -637,6 +655,92 @@ class TestGt12Doorbell(unittest.TestCase):
         fs = gates.gt_12(stub(dict(base, **{"tools/walkthrough-baseline.py": self.OUTER})))
         self.assertTrue(any(f[0] == "SKIP" and "GT-12.submodule-absent" in f[3] for f in fs), fs)
 
+    def test_anchor_line_start_and_value_quote_exclusion(self):
+        """兩錨之行首判準與值字元類排除 `"`：不計＝外層縮排之區域賦值與屬性賦值、rust 側註解行與縮排宣告（行首判準擋）；
+        值取首對引號之間——行尾註解另帶引號者照取正值（字元類排除 `"` 擋貪婪吞到註解）。"""
+        for outer in (self.OUTER + '    IPGATE_CHANNEL = "x"\n', self.OUTER + 'wb.IPGATE_CHANNEL = "x"\n',
+                      'IPGATE_CHANNEL = "ipgate:invalidate"  # 舊值 "ipgate:reload"\n'):
+            with self.subTest(outer=outer):
+                self.assertEqual(gates._doorbell_findings(outer, self.RUST), [])
+        for rust in (self.RUST + '// pub const IPGATE_INVALIDATE_CHANNEL: &str = "x";\n',
+                     self.RUST + 'mod m {\n    pub const IPGATE_INVALIDATE_CHANNEL: &str = "x";\n}\n',
+                     'pub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate"; // 舊值 "ipgate:reload";\n'):
+            with self.subTest(rust=rust):
+                self.assertEqual(gates._doorbell_findings(self.OUTER, rust), [])
+
+    def test_anchor_name_boundary_terminator_and_nonempty(self):
+        """兩錨之名字面、名界、`=` 判準、rust 收尾 `";` 與值非空：不計（皆照綠）＝他名常數（`NOTIFY_CHANNEL`；名字面擋）、
+        同前綴之他名（`IPGATE_CHANNEL_OLD`、`IPGATE_INVALIDATE_CHANNEL_OLD`；名界擋＝名後不得接字元）、行首名後不接 `=` 之文字
+        （外層三引號字串內 `IPGATE_CHANNEL "ipgate:reload"`、rust 區塊註解內 `IPGATE_INVALIDATE_CHANNEL: &str  "ipgate:reload";`；
+        `=` 判準擋——單停分兩途徑：可省＝計成第二錨、命中 2 處；刪去＝基準錨失配、誘餌成唯一錨而落值不符，兩途徑皆紅）、
+        區塊註解內無 `;` 收尾之殘句（收尾 `";` 擋）；
+        值為空字串＝該側錨形零命中＝紅（不落成值不符之訊息）。"""
+        for outer in (self.OUTER + 'NOTIFY_CHANNEL = "ipgate:reload"\n', self.OUTER + 'IPGATE_CHANNEL_OLD = "ipgate:reload"\n',
+                      self.OUTER + '"""\nIPGATE_CHANNEL "ipgate:reload" 為舊頻道\n"""\n'):
+            with self.subTest(outer=outer):
+                self.assertEqual(gates._doorbell_findings(outer, self.RUST), [])
+        for rust in (self.RUST + 'pub const NOTIFY_CHANNEL: &str = "ipgate:reload";\n',
+                     self.RUST + 'pub const IPGATE_INVALIDATE_CHANNEL_OLD: &str = "ipgate:reload";\n',
+                     self.RUST + '/*\npub const IPGATE_INVALIDATE_CHANNEL: &str  "ipgate:reload";\n*/\n',
+                     self.RUST + '/*\npub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:reload" 為舊值\n*/\n'):
+            with self.subTest(rust=rust):
+                self.assertEqual(gates._doorbell_findings(self.OUTER, rust), [])
+        for outer, rust, want in (('IPGATE_CHANNEL = ""\n', self.RUST, "門鈴字面對賬：IPGATE_CHANNEL 錨形命中 0 處"),
+                                  (self.OUTER, 'pub const IPGATE_INVALIDATE_CHANNEL: &str = "";\n',
+                                   "門鈴字面對賬：IPGATE_INVALIDATE_CHANNEL 錨形命中 0 處")):
+            with self.subTest(outer=outer, rust=rust):
+                fs = errs(gates._doorbell_findings(outer, rust))
+                self.assertEqual(len(fs), 1, fs)
+                self.assertIn(want, fs[0][3])
+
+    def test_anchor_required_tokens_deleted_one_at_a_time(self):
+        """兩錨必含字面逐 token 刪一之誘餌＝不計（皆照綠）；任一字面改為可省即誘餌計成第二錨、命中 2 處＝紅。
+        外層（三引號字串內、置於檔尾——值字元類 `[^"]` 跨行，誘餌之後不得再有引號）：名字面、值首引號、值閉引號各刪一
+        （`=` 刪去之誘餌住 test_anchor_name_boundary_terminator_and_nonempty；值刪去＝空字串、零命中案同住該案；`=` 兩側空白屬 `\\s*`、
+        刪去仍合錨形＝非必含）。
+        rust（區塊註解內）：`pub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:reload";` 之 16 個 token（字詞、各單一空格、`:`、`&`、
+        `=`、兩引號、值、`;`）逐一刪去，另 `pub `、`const `、`pub const `、`: &str` 四段整段刪去（可見性、`const`、兩者合段與型別註記
+        可省之途徑）。"""
+        for outer in (' = "ipgate:reload"', 'IPGATE_CHANNEL = ipgate:reload"', 'IPGATE_CHANNEL = "ipgate:reload'):
+            with self.subTest(outer=outer):
+                self.assertEqual(gates._doorbell_findings(self.OUTER + "'''\n" + outer + "\n'''\n", self.RUST), [])
+        toks = ("pub", " ", "const", " ", "IPGATE_INVALIDATE_CHANNEL", ":", " ", "&", "str", " ", "=", " ", '"', "ipgate:reload", '"', ";")
+        decoys = ["".join(toks[:i] + toks[i + 1:]) for i in range(len(toks))]
+        decoys += ['const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:reload";', 'pub IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:reload";',
+                   'IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:reload";', 'pub const IPGATE_INVALIDATE_CHANNEL = "ipgate:reload";']
+        self.assertEqual(len(set(decoys)), 20)
+        for rust in decoys:
+            with self.subTest(rust=rust):
+                self.assertEqual(gates._doorbell_findings(self.OUTER, self.RUST + "/*\n" + rust + "\n*/\n"), [])
+
+    def test_rust_declaration_rewritten_is_red(self):
+        """rust 側宣告改寫＝錨形命中 0 處＝紅、恰一筆、帶腿標籤（rust 側形變須同批改本腿；錨形放寬即轉綠）：無可見性（`const`）、
+        `pub(crate)`、`pub static`、`&'static str`。"""
+        for rust in ('const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";\n',
+                     'pub(crate) const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";\n',
+                     'pub static IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";\n',
+                     "pub const IPGATE_INVALIDATE_CHANNEL: &'static str = \"ipgate:invalidate\";\n"):
+            with self.subTest(rust=rust):
+                fs = errs(gates._doorbell_findings(self.OUTER, rust))
+                self.assertEqual(len(fs), 1, fs)
+                self.assertIn("門鈴字面對賬：IPGATE_INVALIDATE_CHANNEL 錨形命中 0 處", fs[0][3])
+
+    def test_submodule_present_judges_head_tree_not_worktree(self):
+        """子庫在場＝判 HEAD 樹、未 commit 改動不入判：HEAD 樹值與外層不符而工作樹相符＝紅（指名 HEAD 樹之值）；反之 HEAD 相符而
+        工作樹不符＝綠。實作改讀工作樹＝兩向皆翻。"""
+        reload = self.RUST.replace("ipgate:invalidate", "ipgate:reload")
+        fs = errs(gates._doorbell_leg(self._sub_ctx(self.OUTER, gates.DOORBELL_RUST, head=reload, work=self.RUST)))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertIn("門鈴字面對賬：外層 IPGATE_CHANNEL＝「ipgate:invalidate」≠ rust-api IPGATE_INVALIDATE_CHANNEL＝「ipgate:reload」", fs[0][3])
+        self.assertEqual(gates._doorbell_leg(self._sub_ctx(self.OUTER, gates.DOORBELL_RUST, head=self.RUST, work=reload)), [])
+
+    def test_submodule_head_tree_unreadable_is_red_naming_path(self):
+        """子庫在場而 `git show HEAD:<檔>` rc≠0＝紅、恰一筆、指名子庫檔路徑與 rc（不得落成錨形零命中之訊息）。"""
+        fs = errs(gates._doorbell_leg(self._sub_ctx(self.OUTER, gates.DOORBELL_RUST, head=None, work=self.RUST)))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertEqual(fs[0][2], f"rust-api/{gates.DOORBELL_RUST}")
+        self.assertIn(f"門鈴字面對賬：子庫 HEAD 樹取不到 {gates.DOORBELL_RUST}（git show rc=128）", fs[0][3])
+
     def test_real_repo_doorbell_reconciles(self):
         self.assertEqual([f for f in errs(gates.gt_12(common.Ctx(ROOT))) if "門鈴字面對賬" in f[3]], [])
 
@@ -646,7 +750,15 @@ REDIS_TAG = "redis 前綴對賬"   # 本腿全部訊息共有的字面
 
 class TestGt12RedisPrefixes(unittest.TestCase):
     """redis 清理前綴名冊跨子庫同源腿——外層走查工具 tools/walkthrough-baseline.py 之 RESTORE_REDIS_PREFIXES ⇔ rust-api
-    server/src/cache/mod.rs 之鍵前綴（鍵字面首段＋`*_PREFIX` 常數首段；子庫側取 HEAD 樹）。形同門鈴腿：落 GT-12、兩側唯讀讀文＋正則取。"""
+    server/src/cache/mod.rs 之鍵前綴（鍵字面首段＋`*_PREFIX` 常數首段；子庫側取 HEAD 樹）。形同門鈴腿：落 GT-12、兩側唯讀讀文＋正則取。
+    子庫在場之兩案同門鈴腿（共用 `TestGt12Doorbell._sub_ctx` 樁）：判定依 HEAD 樹而非工作樹；HEAD 樹取不到＝紅、指名子庫檔路徑。
+    外層錨之元組字串字元類排除逐條（重複段與末段各釘）、左右括號分釘、元素間逗號、名界、`=` 判準與其兩側不容換行、行尾註解不跨行
+    一案；rust 兩錨首段字元類排除逐條與首段非空一案；rust 兩錨必含字面逐 token 刪一之誘餌、`format!` 非圓括號定界與 `!` 後帶空白、
+    常數值不以 `"` 起首（皆不取）一案；`*_PREFIX` 名界（`_PREFIX` 後須接 `:`）與名字元類
+    （數字照取、`_PREFIX` 之前可空；小寫、非 ASCII、`r#` 不取）釘於 rust 錨形一案；常數宣告於 `=` 之前
+    折行之途徑一案、同行空格／tab 異於錨形之途徑一案。
+    射程外釘兩案：外層錨形行恰一處而模組層另有不合錨形之再綁定（非字面與不合錨形之字面）＝照綠；錨形行為單元素而無尾逗號
+    （Python 實值為字串）照計＝照綠（皆判不出）。"""
     OUTER = 'X = 1\nRESTORE_REDIS_PREFIXES = ("session", "throttle", "cpwd")\n'
     RUST = ('//! 鍵族：`session:denylist:{sid}`／`cpwd:{uid}`；本檔是全 crate 唯一的鍵渲染點、他處不得自 `format!` 拼鍵\n'
             'fn denylist_key(sid: &str) -> String {\n    format!("session:denylist:{sid}")\n}\n'
@@ -693,10 +805,176 @@ class TestGt12RedisPrefixes(unittest.TestCase):
     def test_outer_multiple_anchors_is_red(self):
         self.assertIn("命中 2 處", self._one(self.OUTER + 'RESTORE_REDIS_PREFIXES = ("session",)\n', self.RUST)[3])
 
+    def test_outer_string_char_classes_delimiters_and_name_boundary(self):
+        """外層錨之元組字串字元類排除逐條（`"`／反斜線／換行；重複段與末段各釘）、左右括號分釘、元素間逗號、名字面與名界、`=` 判準與
+        其兩側不容換行（`[ \\t]`）、行尾註解不跨行：
+        紅（錨形零命中）＝含反斜線轉義（`"c\\x70wd"`，首位與末位）、隱式拼接（`"session" "throttle"`，非末位與末位；Python 實值已非
+        逐元素前綴）、無括號之裸元組（左右括號皆停才計）、多行元組之收尾行另帶內容（`) if FULL else ("session",)`、`)[:1]`）與末元素非
+        字面（`EXTRA,`）——右括號判準擋：單停即於末字串元素行尾收錨、取三前綴照比而判綠，而 Python 實值已非該字面（FULL 為假時
+        ＝`("session",)`，seed 模式 restore 留 throttle／cpwd 殘鍵）；
+        綠（不計）＝三引號字串內被折斷之錨形句（字串元素不跨行；末位與非末位）、他名元組（`OTHER_PREFIXES`；名字面擋）、同前綴之他名
+        （`RESTORE_REDIS_PREFIXES_DOC`；名界擋）、跨行呼叫內行首之關鍵字引數（`dict(\\nRESTORE_REDIS_PREFIXES = "x")`；左括號判準擋——
+        單停即以外層呼叫之右括號收錨）、三引號字串內行首名後不接 `=` 之文字（`RESTORE_REDIS_PREFIXES ("x",)`；`=` 判準擋——單停分兩
+        途徑：可省＝計成第二錨、命中 2 處；刪去＝基準錨失配、誘餌成唯一錨而落值不符）、跨行呼叫內 `=` 之前或之後折行之關鍵字引數（`=` 兩側之
+        `[ \\t]` 不容換行各擋一形——任一側放寬成 `\\s` 即計成第二錨）；以上綠形之單停變異除 `=` 刪去途徑外皆落成命中 2 處。行尾註解之後
+        另起一行之第二錨形照計＝命中 2 處。"""
+        multi = 'RESTORE_REDIS_PREFIXES = (\n    "session",\n    "throttle",\n    "cpwd",\n'
+        for bad in ('RESTORE_REDIS_PREFIXES = ("session", "throttle", "c\\x70wd")\n',
+                    'RESTORE_REDIS_PREFIXES = ("c\\x70wd", "session", "throttle")\n',
+                    'RESTORE_REDIS_PREFIXES = ("session" "throttle", "cpwd")\n',
+                    'RESTORE_REDIS_PREFIXES = ("session", "throttle" "cpwd")\n',
+                    'RESTORE_REDIS_PREFIXES = "session", "throttle", "cpwd"\n',
+                    multi + ') if FULL else ("session",)\n', multi + ')[:1]\n', multi + '    EXTRA,\n)\n'):
+            with self.subTest(bad=bad):
+                self.assertIn("命中 0 處", self._one(bad, self.RUST)[3])
+        for extra in ('"""\nRESTORE_REDIS_PREFIXES = ("x\n")\n"""\n', '"""\nRESTORE_REDIS_PREFIXES = ("x\n", "y")\n"""\n',
+                      'OTHER_PREFIXES = ("x",)\n', 'RESTORE_REDIS_PREFIXES_DOC = ("x",)\n',
+                      'd = dict(\nRESTORE_REDIS_PREFIXES = "x")\n', '"""\nRESTORE_REDIS_PREFIXES ("x",)\n"""\n',
+                      'd = dict(\nRESTORE_REDIS_PREFIXES\n= ("x",)\n)\n', 'd = dict(\nRESTORE_REDIS_PREFIXES =\n("x",)\n)\n'):
+            with self.subTest(extra=extra):
+                self.assertEqual(gates._redis_prefix_findings(self.OUTER + extra, self.RUST), [])
+        two = 'RESTORE_REDIS_PREFIXES = ("session", "throttle", "cpwd")  # 現值\nRESTORE_REDIS_PREFIXES = ("x",)\n'
+        self.assertIn("命中 2 處", self._one(two, self.RUST)[3])
+
+    def test_rust_segment_char_classes_and_nonempty(self):
+        """rust 兩錨首段字元類排除逐條與首段非空：`format!(` 首段——含空白者（非鍵之訊息字串 `"redis error: {x}"`）、閉引號後緊接 `:`
+        者（`format!("a")::b:`；首段不跨引號）、含反斜線跳脫者（`"a\\\\b:{x}"`）、以 `{` 起首而其後緊接 `:` 者（`format!("{:?}", e)`；
+        `{` 排除擋——單停即取成 `{`）、含 `}` 者（`format!("a}}:{x}")`；`}` 排除擋——單停即取成 `a}}`）、首段為空者（`":{x}"`）皆不取，
+        非 `format!` 之巨集（`concat!`＝射程外）不取；`*_PREFIX` 常數值——以 `{` 起首（`"{t}:"`；`{` 排除擋——單停即取成 `{t`）或
+        為空（`":"`）者不取、首段截至首個 `{`、`}`、反斜線或空白（`"a{b}:"`、`"a}b:"`、`"a\\\\b:"`、`"a b:"`→a；`"a}b:"` 由 `}` 排除擋
+        ——單停即取成 `a}b`）、同行非首項之宣告不取（錨行首）、可見性 `pub(…)` 內折行者不取（`=` 之前其餘折行途徑釘於
+        test_rust_const_line_break_before_equals_paths）。
+        腿層一併釘：各形併入 RUST、外層補其應取之前綴＝綠。"""
+        cases = (('fn e(x: &str) -> String {\n    format!("redis error: {x}")\n}\n', set()),
+                 ('// format!("a")::b:\n', set()),
+                 ('fn k(x: &str) -> String {\n    format!("a\\\\b:{x}")\n}\n', set()),
+                 ('fn d(e: E) -> String {\n    format!("{:?}", e)\n}\n', set()),
+                 ('fn k(x: &str) -> String {\n    format!("a}}:{x}")\n}\n', set()),
+                 ('fn k(x: &str) -> String {\n    format!(":{x}")\n}\n', set()),
+                 ('const K: &str = concat!("lock:", "x");\n', set()),
+                 ('pub const T_PREFIX: &str = "{t}:";\n', set()),
+                 ('pub const E_PREFIX: &str = ":";\n', set()),
+                 ('pub const B_PREFIX: &str = "a{b}:";\n', {"a"}),
+                 ('pub const A_PREFIX: &str = "a}b:";\n', {"a"}),
+                 ('pub const Y_PREFIX: &str = "a\\\\b:";\n', {"a"}),
+                 ('pub const Z_PREFIX: &str = "a b:";\n', {"a"}),
+                 ('pub(crate) fn f() -> u8 { 0 } pub(crate) const K_PREFIX: &str = "k:";\n', set()),
+                 ('pub(\n    crate\n) const K_PREFIX: &str = "k:";\n', set()))
+        for extra, want in cases:
+            with self.subTest(extra=extra):
+                self.assertEqual(gates._rust_redis_prefixes(extra), want)
+                outer = self.OUTER.replace('"cpwd")', '"cpwd"' + "".join(f', "{p}"' for p in sorted(want)) + ")")
+                self.assertEqual(gates._redis_prefix_findings(outer, self.RUST + extra), [])
+
+    def test_rust_anchor_required_tokens_deleted_one_at_a_time(self):
+        """rust 兩錨必含字面逐 token 刪一之誘餌＝不取（腿層併入 RUST 照綠）；任一字面改為可省即多取一前綴＝紅。
+        `format!(` 錨：`format!("lock:{x}")` 之 `format`、`!`、`(`、首引號、首段後 `:` 各刪一（`!` 刪去取合法 Rust 之同名函式呼叫
+        `my::format(…)`，餘置 `//` 註解內——①無行首限制、註解內錨形照計；首段刪成空之 `":{x}"` 住
+        test_rust_segment_char_classes_and_nonempty；插值、閉引號與 `)` 刪去仍合錨形＝非必含）；射程外之定界形（`format![…]`、
+        `format!{…}`、`format! (…)`；合法 Rust、`_rust_redis_prefixes` docstring 射程外例示）不取——圓括號判準放寬成容 `[`／`{`
+        或 `!` 後容空白即取 lock。
+        `*_PREFIX` 常數錨（區塊註解內獨立成行＝②之照計面）：`pub const K_PREFIX: &str = "k:";` 之 `pub` 與 `const` 間空格、`const`、
+        其後空格、`_PREFIX`、`:`、`&`、`str`、`=`、值首引號各刪一，另型別註記 `: &str` 整段刪去（值首段刪成空之 `":"` 住
+        test_rust_segment_char_classes_and_nonempty；
+        `pub`、名前段 `K`、`:` 後與 `=` 兩側之空格、值尾 `:`、閉引號與 `;` 刪去仍合錨形＝非必含）；`pub static K_PREFIX: &'static str = "k:";`
+        之生命週期 `'`、`static` 字、其後空格各刪一；`pub(crate) const K_PREFIX: &str = "k:";` 之 `pub`、`(`、`)` 各刪一（`crate` 刪去
+        仍合錨形；`)` 後空格刪去之 `pub(crate)const` 住 test_rust_const_same_line_whitespace_paths）；值不以 `"` 起首者
+        （非字串字面 `concat!("k", ":")`、raw string `r"k:"`；皆合法 Rust、射程外）不取——值首引號改為可省即取成 `concat!(`／`r`。"""
+        fmt = ('fn k(x: &str) -> String {\n    my::format("lock:{x}")\n}\n', '// !("lock:{x}")\n', '// format!"lock:{x}"\n',
+               '// format!(lock:{x}")\n', '// format!("lock{x}")\n',
+               'fn k(x: &str) -> String {\n    format!["lock:{x}"]\n}\n', 'fn k(x: &str) -> String {\n    format!{"lock:{x}"}\n}\n',
+               'fn k(x: &str) -> String {\n    format! ("lock:{x}")\n}\n')
+        const = ('pubconst K_PREFIX: &str = "k:";', 'pub  K_PREFIX: &str = "k:";', 'pub constK_PREFIX: &str = "k:";', 'pub const K: &str = "k:";',
+                 'pub const K_PREFIX &str = "k:";', 'pub const K_PREFIX: str = "k:";', 'pub const K_PREFIX: & = "k:";',
+                 'pub const K_PREFIX: &str "k:";', 'pub const K_PREFIX: &str = k:";', 'pub const K_PREFIX = "k:";',
+                 'pub static K_PREFIX: &static str = "k:";', "pub static K_PREFIX: &' str = \"k:\";",
+                 "pub static K_PREFIX: &'staticstr = \"k:\";",
+                 '(crate) const K_PREFIX: &str = "k:";', 'pubcrate) const K_PREFIX: &str = "k:";',
+                 'pub(crate const K_PREFIX: &str = "k:";')
+        for extra in fmt + tuple("/*\n" + c + "\n*/\n" for c in const) + ('pub const K_PREFIX: &str = concat!("k", ":");\n',
+                                                                          'pub const K_PREFIX: &str = r"k:";\n'):
+            with self.subTest(extra=extra):
+                self.assertEqual(gates._rust_redis_prefixes(extra), set())
+                self.assertEqual(gates._redis_prefix_findings(self.OUTER, self.RUST + extra), [])
+
+    def test_rust_const_line_break_before_equals_paths(self):
+        """`*_PREFIX` 常數宣告於 `=` 之前折行之途徑（`_rust_redis_prefixes` docstring 射程外句）：不取＝`pub` 與 `(` 之間、`const`／
+        `static` 與名稱之間、名稱至 `=` 之間（名稱與 `:` 之間、`:` 與 `&` 之間、型別註記內〔`&` 之後、`'static` 與 `str` 之間〕、型別
+        註記與 `=` 之間）——各處皆不容換行，放寬成容 `\\s` 即取 k；`pub(…)` 括號內之途徑釘於 test_rust_segment_char_classes_and_nonempty。
+        照取＝可見性與 `const`／`static` 之間折行（次行自成無可見性之錨形；可見性內另有折行亦同〔`pub` 與 `(` 之間、括號內〕；可見性改為
+        必要即不取）。同行空格／tab 之途徑釘於 test_rust_const_same_line_whitespace_paths。"""
+        cases = (('pub\n(crate) const K_PREFIX: &str = "k:";\n', set()),
+                 ('pub const\n    K_PREFIX: &str = "k:";\n', set()),
+                 ('pub const K_PREFIX\n    : &str = "k:";\n', set()),
+                 ('pub const K_PREFIX:\n    &str = "k:";\n', set()),
+                 ('pub const K_PREFIX: &\n    str = "k:";\n', set()),
+                 ("pub static K_PREFIX: &\n    'static str = \"k:\";\n", set()),
+                 ("pub static K_PREFIX: &'static\n    str = \"k:\";\n", set()),
+                 ('pub const K_PREFIX: &str\n    = "k:";\n', set()),
+                 ('pub\nconst K_PREFIX: &str = "k:";\n', {"k"}),
+                 ('pub(crate)\n    const K_PREFIX: &str = "k:";\n', {"k"}),
+                 ('pub\n(crate)\nconst K_PREFIX: &str = "k:";\n', {"k"}),
+                 ('pub(\n    crate\n)\n    const K_PREFIX: &str = "k:";\n', {"k"}))
+        for text, want in cases:
+            with self.subTest(text=text):
+                self.assertEqual(gates._rust_redis_prefixes(text), want)
+
+    def test_rust_const_same_line_whitespace_paths(self):
+        """`*_PREFIX` 常數宣告於 `=` 之前同行之空格／tab 異於錨形之途徑（`_rust_redis_prefixes` docstring 射程外句）皆不取：`pub` 與
+        `(` 之間帶空格或 tab（`pub (crate)`；該處放寬成容 `[ \\t]*` 即取 k）、`&` 之後帶空格（`& str`、`& 'static str`；同）、
+        `pub(…)` 與 `const`／`static` 緊貼（`pub(crate)const`；該處 `[ \\t]+` 放寬成 `[ \\t]*` 即取 k）。"""
+        for text in ('pub (crate) const K_PREFIX: &str = "k:";\n', 'pub\t(crate) const K_PREFIX: &str = "k:";\n',
+                     'pub const K_PREFIX: & str = "k:";\n', "pub static K_PREFIX: & 'static str = \"k:\";\n",
+                     'pub(crate)const K_PREFIX: &str = "k:";\n'):
+            with self.subTest(text=text):
+                self.assertEqual(gates._rust_redis_prefixes(text), set())
+
+    def test_out_of_range_anchor_once_plus_non_anchor_rebind_stays_green(self):
+        """射程外釘（`_redis_prefix_findings` docstring ①）：外層錨形行恰一處、模組層另有不合錨形之再綁定——非字面（自身拼接、
+        `tuple(…)`、增量賦值）與不合錨形之字面（單引號、型別註記、縮排於模組層區塊內、條件式、隱式拼接、空元組）：再綁定行不計、
+        錨數仍 1，照比錨形行之字面值；有效值已與 rust 不符（多 x 或少 cpwd 等）而本腿照綠。"""
+        for rebind in ('RESTORE_REDIS_PREFIXES = RESTORE_REDIS_PREFIXES + ("x",)\n',
+                       'RESTORE_REDIS_PREFIXES = tuple(p for p in RESTORE_REDIS_PREFIXES if p != "cpwd")\n',
+                       'RESTORE_REDIS_PREFIXES += ("x",)\n',
+                       "RESTORE_REDIS_PREFIXES = ('session', 'throttle')\n",
+                       'RESTORE_REDIS_PREFIXES: tuple = ("session", "throttle")\n',
+                       'if True:\n    RESTORE_REDIS_PREFIXES = ("session",)\n',
+                       'RESTORE_REDIS_PREFIXES = ("session", "throttle") if True else ()\n',
+                       'RESTORE_REDIS_PREFIXES = ("session", "thr" "ottle")\n',
+                       'RESTORE_REDIS_PREFIXES = ()\n'):
+            with self.subTest(rebind=rebind):
+                self.assertEqual(len(gates.RE_REDIS_PREFIXES_OUTER.findall(self.OUTER + rebind)), 1)
+                self.assertEqual(gates._redis_prefix_findings(self.OUTER + rebind, self.RUST), [])
+
+    def test_out_of_range_single_element_without_trailing_comma_counts(self):
+        """射程外釘（`_redis_prefix_findings` docstring ②）：錨形行為單元素而無尾逗號（`("session")`——Python 實值為字串而非元組）
+        照計、照比其字面值——rust 側恰為該前綴時本腿照綠。"""
+        outer, rust = 'RESTORE_REDIS_PREFIXES = ("session")\n', 'fn k(s: &str) -> String {\n    format!("session:{s}")\n}\n'
+        self.assertEqual(len(gates.RE_REDIS_PREFIXES_OUTER.findall(outer)), 1)
+        self.assertEqual(gates._redis_prefix_findings(outer, rust), [])
+
+    def test_submodule_present_judges_head_tree_not_worktree(self):
+        """子庫在場＝判 HEAD 樹、未 commit 改動不入判：HEAD 樹前綴與外層不符而工作樹相符＝紅（差集取自 HEAD 樹）；反之＝綠。"""
+        renamed = self.RUST.replace('"cpwd:"', '"pwd:"')
+        sub = TestGt12Doorbell._sub_ctx
+        fs = errs(gates._redis_prefix_leg(sub(self.OUTER, gates.REDIS_KEYS_RUST, head=renamed, work=self.RUST)))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertIn(f"{REDIS_TAG}：外層 RESTORE_REDIS_PREFIXES＝", fs[0][3])
+        self.assertIn("外層多 ['cpwd']、rust 多 ['pwd']", fs[0][3])
+        self.assertEqual(gates._redis_prefix_leg(sub(self.OUTER, gates.REDIS_KEYS_RUST, head=self.RUST, work=renamed)), [])
+
+    def test_submodule_head_tree_unreadable_is_red_naming_path(self):
+        """子庫在場而 `git show HEAD:<檔>` rc≠0＝紅、恰一筆、指名子庫檔路徑與 rc（不得落成 rust 側錨形零命中之訊息）。"""
+        fs = errs(gates._redis_prefix_leg(TestGt12Doorbell._sub_ctx(self.OUTER, gates.REDIS_KEYS_RUST, head=None, work=self.RUST)))
+        self.assertEqual(len(fs), 1, fs)
+        self.assertEqual(fs[0][2], f"rust-api/{gates.REDIS_KEYS_RUST}")
+        self.assertIn(f"{REDIS_TAG}：子庫 HEAD 樹取不到 {gates.REDIS_KEYS_RUST}（git show rc=128）", fs[0][3])
+
     def test_outer_anchor_forms(self):
         """外層錨＝行首 `RESTORE_REDIS_PREFIXES = (…)`、元組只含雙引號字串字面（可跨行、可帶尾逗號與行尾註解）；非純字面元組
         （名稱拼接、空元組）＝錨形零命中＝紅。不計之形逐途徑：①名稱非緊貼行首之賦值（屬性賦值 `wb.RESTORE_REDIS_PREFIXES = (…)`、
-        縮排之區域賦值）——行首判準擋；②名稱後不接 `=` 之引用（自測斷言 `assertEqual(RESTORE_REDIS_PREFIXES, …)`）——`=` 判準擋。"""
+        縮排之區域賦值）——行首判準擋；②名稱非行首且其後接 `,` 之引用（自測斷言 `assertEqual(RESTORE_REDIS_PREFIXES, …)`）——行首判準
+        與 `=` 判準兩重擋、單停任一照綠（本形不作任一判準之證；`=` 判準之殺案住 test_outer_string_char_classes_delimiters_and_name_boundary）。"""
         multi = 'RESTORE_REDIS_PREFIXES = (\n    "session",\n    "throttle",\n    "cpwd",\n)  # 清理前綴\n'
         for other in ('wb.RESTORE_REDIS_PREFIXES = ("x",)\n', '    RESTORE_REDIS_PREFIXES = ("x",)\n',
                       '    self.assertEqual(RESTORE_REDIS_PREFIXES, ("x",))\n'):
@@ -709,8 +987,12 @@ class TestGt12RedisPrefixes(unittest.TestCase):
 
     def test_rust_anchor_forms(self):
         """rust 錨兩形逐途徑：①`format!(` 首引號後之字面首段（單行、rustfmt 折行）②`*_PREFIX` 常數字面首段（pub／pub(crate)／無可見性、
-        const／static、值有無尾 `:`、值於 `=` 後折行）；不計＝首段為插值（`{}`、`{常數}`、`cmdstat_{command}:` 形）、`format!(` 字面無 `:`
-        （`pwdlock{uid}`、`pwdreset-{u}` 形＝射程外）、常數名非 `_PREFIX` 結尾、
+        const／static、值有無尾 `:`、值於 `=` 後折行；名於 `_PREFIX` 之前含數字〔`V2_KEY_PREFIX`；名字元類收窄去數字即不取〕或為空
+        〔`_PREFIX`；改為必要即不取〕照取）；不計＝首段為插值（`{}`、`{常數}`、`cmdstat_{command}:` 形）、`format!(` 字面無 `:`
+        （`pwdlock{uid}`、`pwdreset-{u}` 形＝射程外）、常數名非 `_PREFIX` 結尾（含名中帶 `_PREFIX` 而其後另接字元者 `KEY_PREFIX_V2`——
+        `_PREFIX` 後須接 `:` 之名界擋；放寬即多取 v2）、常數名於 `_PREFIX` 之前含大寫 ASCII 字母、數字與底線以外之字元者（射程外；名字元類
+        `[A-Z0-9_]` 擋——小寫字母 `Lock_PREFIX`〔放寬成容小寫即取 lock〕、非 ASCII 字母 `Ä_PREFIX`〔放寬成 `\\w` 即取 ae〕、raw
+        identifier `r#LOCK_PREFIX`〔放寬成容 `r#` 即取 rlock〕）、
         以 `///`／`//`／`/*` 起首之註解行內之常數形（②錨行首）；照計＝`//` 註解內之 `format!(` 錨形（①無行首限制）、跨行區塊註解內
         獨立成行之常數形（只會多出前綴＝誤紅、遮不掉新增前綴）。"""
         cases = (('format!("session:denylist:{sid}")', {"session"}),
@@ -726,6 +1008,12 @@ class TestGt12RedisPrefixes(unittest.TestCase):
                  ('format!("pwdlock{uid}")', set()),
                  ('format!("pwdreset-{u}")', set()),
                  ('pub const IPGATE_INVALIDATE_CHANNEL: &str = "ipgate:invalidate";', set()),
+                 ('pub const KEY_PREFIX_V2: &str = "v2:";', set()),
+                 ('pub const V2_KEY_PREFIX: &str = "v2:";', {"v2"}),
+                 ('pub const _PREFIX: &str = "u:";', {"u"}),
+                 ('pub const Lock_PREFIX: &str = "lock:";', set()),
+                 ('pub const Ä_PREFIX: &str = "ae:";', set()),
+                 ('pub const r#LOCK_PREFIX: &str = "rlock:";', set()),
                  ('/// pub const D_PREFIX: &str = "d:";', set()),
                  ('// pub const E_PREFIX: &str = "e:";', set()),
                  ('/* pub const F_PREFIX: &str = "f:"; */', set()),
