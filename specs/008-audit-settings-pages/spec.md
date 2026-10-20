@@ -14,6 +14,13 @@
 > **一支 delta migration m0004**（reaper 最小權限 role＋GRANT；選單 77 增 `audit:purge` 碼＋R_SUPER 按鈕授權列）；其前補 BL-00148 之零 docker 離線對賬腿。
 > 憲法一次 MINOR（1.8.1→1.9.0）：島 J 全入（J1～J5、J2 回填）、§III.2 管理頁 ★ 軌道新用途 (ix)(x)、§I.6 變體 B 括號句改 J3 交叉指針、MAJOR 射程九島→十島。ADR ①～⑩（plan 期起草）＋收刀前 PATCH Amendment 一支。BACKLOG 開放項 5 條隨本刀收、零新記（008 窗淨約 −6）。
 
+## Clarifications
+
+### Session 2026-10-21
+
+- Q: 設定頁 10 個數字鍵輸入越界值時，要不要一律鉗到後端宣告的上下界再存？ → A: 10 鍵一律鉗界（user 選建議項）——界值全由讀端下發之登記表宣告界、前端不抄鍵集；越界輸入失焦即鉗至界值後送出並存檔。rev5 前端只 5 鍵有界（`password_min_length`、`password_max_length`、`login_throttle_max_fails`、`login_throttle_window_minutes`、`login_throttle_captcha_after`），另 5 鍵（`ip_captcha_after`、`ip_max_fails`、`ip_window_minutes`、`password_change_min_interval`、`session_idle_timeout`）由「越界送出、後端拒、提示並回退」改為鉗界存檔＝刻意分岔；更正 brainstorm 工程判斷③「畫面同 rev5」只對前 5 鍵成立。落 US1 第 2、3 條、FR-046、Edge Cases、SC-009、刻意分岔登記表。
+- Q: 存取日誌的「狀態」欄只記 HTTP 狀態碼，要照 rev4 欄形、在存取分頁加一句說明就好嗎？ → A: 照 rev4 欄形＋加一句說明（user 選建議項；提問緣起＝user 轉來之 side agent 提醒）——零 DDL、不加業務碼欄；rev6 與 rev4 回應對映相同（權限不足 403、找不到 404，其餘含業務拒因與系統錯誤皆 HTTP 200），故存取日誌之狀態欄分不出業務成敗＝已知態；存取分頁上方加一句告示（比照登入嘗試分頁、三語）；spec、活書與 RUNBOOK 寫明。落 US2 第 3 條、US4 第 1 條、FR-009、FR-022、FR-055、FR-064、Edge Cases、Key Entities、SC-006、刻意分岔登記表。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - 超管調整系統設定（四組逐項即改即存、界值、矛盾提示、政策快取、變更入稽核） (Priority: P1)
@@ -27,8 +34,8 @@
 **Acceptance Scenarios**:
 
 1. **Given** Super 已登入，**When** 側欄點「系統設定」，**Then** 正常進頁；四組固定序（密碼策略／工作階段／IP 源登入／帳號登入）共 16 鍵——`password_` 前綴歸密碼策略、`ip_` 歸 IP 源登入、`login_throttle_` 歸帳號登入、其餘歸工作階段；側欄項與頁內標題為譯文、非 `route.manage_system-settings` 裸鍵；組內依固定鍵序、未列序之新鍵排組尾保伺服器相對序（前綴皆不符之新鍵落工作階段組尾）；空組整卡不渲染。
-2. **Given** 頁面已載入，**When** 切換開關型設定，**Then** 立即送出、成功提示、回讀全列；**When** 數字欄失焦或按 Enter，**Then** 送出並回讀；**When** 清空數字欄後失焦，**Then** 不送出、回讀使畫面回退為伺服器現值；**When** 後端拒絕（如越界），**Then** 顯示可讀拒因（i18n 轉譯、非裸鍵）、回讀使畫面回退。
-3. **Given** 數字欄，**When** 輸入，**Then** 輸入框之上下界＝讀端下發之登記表宣告界（如 `password_min_length` 1～128、`session_idle_timeout` 5～1440、`password_change_min_interval` 0～86400），畫面與 rev5 相同；界值之單一權威仍在後端登記表（ADR-00054）。
+2. **Given** 頁面已載入，**When** 切換開關型設定，**Then** 立即送出、成功提示、回讀全列；**When** 數字欄改值後失焦或按 Enter，**Then** 送出並回讀（值未變不送出）；**When** 清空數字欄後失焦，**Then** 不送出、回讀使畫面回退為伺服器現值；**When** 寫入被後端拒絕，**Then** 顯示可讀拒因（i18n 轉譯、非裸鍵）、回讀使畫面回退（數字框已鉗界＝畫面上送不出越界值，此分支之驗法於 plan 期定）。
+3. **Given** 10 個數字鍵，**When** 輸入越界值後失焦，**Then** 框內值鉗至讀端下發之登記表宣告界後送出並存檔（如 `password_min_length` 界 1～128、輸入 999 存為 128；`session_idle_timeout` 界 5～1440、輸入 0 存為 5、操作日誌記 60→5）；界值之單一權威仍在後端登記表（ADR-00054）；其中 `ip_captcha_after`／`ip_max_fails`／`ip_window_minutes`／`password_change_min_interval`／`session_idle_timeout` 五鍵於 rev5 無前端界（越界送後端拒）＝刻意分岔（clarify Q1）。
 4. **Given** 庫中有一列型別合法但不在登記表宣告集內之設定（seed 態無此列），**When** 進頁，**Then** 該列唯讀顯示、排該組尾、標示其後端 description；直呼寫端仍回 `2222`（ADR-00057 已知態）。
 5. **Given** 三對跨鍵判準（皆嚴格不等式）——`password_min_length` ＞ `password_max_length`、`login_throttle_captcha_after` ＞ `login_throttle_max_fails`、`ip_captcha_after` ＞ `ip_max_fails`，**When** 任一對存成矛盾組合，**Then** 該對所屬之組卡片即時警示並寫明後果（密碼長度對＝三個設密入口一律拒；節流兩對＝後端該維三鍵整組退回出廠常數）、不阻擋存檔、後端照舊逐鍵驗；**When** 兩值相等，**Then** 不警示（相等合法：軟區寬度零）；**When** 改回非矛盾，**Then** 警示消失。
 6. **Given** 同一分頁內已載入過密碼政策（使用者頁之重設或產密浮層、個人中心改密卡），**When** 於設定頁成功寫入政策七鍵任一（長度上下界、四類字元要求、禁止密碼與帳號相同），**Then** 該分頁之即時提示、產密構造界與送出前擋改用新值；其他已開分頁仍須重新整理（RUNBOOK §11.3 同批改述）。
@@ -49,7 +56,7 @@
 
 1. **Given** Super 已登入，**When** 側欄點「稽核」，**Then** 正常進頁、四分頁可切換；各表固定 `created_at` 降冪、`id` 降冪決勝；每頁預設 10 筆、可調（size 夾於 [1, 100]、current 下界 1）；前端零排序、零匯出、零快照內容搜尋。
 2. **Given** 操作日誌分頁，**When** 以資料表名（等值）、動作（等值）、操作者 id 或名（id 優先；名對應含已軟刪同名之全集）與時間區間過濾，**Then** 結果符合全部條件；操作者名以第二發批次查詢補齊（不 join、無 N+1）、查無名稱顯示 id、再無顯示「-」。
-3. **Given** 存取日誌分頁，**When** 以 HTTP 方法（等值）、狀態碼（等值）、路徑（部分字串、萬用字元字面化）、操作者 id 或名與時間區間過濾，**Then** 結果正確；列含方法、路徑、狀態、操作者、來源 IP、XFF、region、traceId。
+3. **Given** 存取日誌分頁，**When** 以 HTTP 方法（等值）、狀態碼（等值）、路徑（部分字串、萬用字元字面化）、操作者 id 或名與時間區間過濾，**Then** 結果正確；列含方法、路徑、狀態、操作者、來源 IP、XFF、region、traceId；分頁上方告示「狀態碼為 HTTP 狀態：權限不足 403、找不到 404；業務拒絕與系統錯誤亦顯示 200」之語意（clarify Q2）。
 4. **Given** 登入嘗試分頁，**When** 以嘗試帳號名（部分字串）、成敗（只收 `true`／`false`、值域外視同未設）與來源 IP 過濾，**Then** 結果正確；來源 IP 為精確等值比對（IPv4 /32、IPv6 /128）、非字串包含（`rev5:B-078` 確認句）；分頁上方告示「節流短路遭拒不落表」之語意、不承諾嚴格上限。
 5. **Given** 會話事件分頁，**When** 以使用者 id 或名、事件型（等值）、原因（等值）與時間區間過濾，**Then** 結果正確；列含 sid、事件型、原因、使用者、來源 IP；該源結構上無 XFF 欄＝不渲染、不留空欄。
 6. **Given** 操作日誌有快照之列，**When** 點「查看快照」，**Then** 唯讀浮層以純文字 JSON 顯示變更前／後；快照頂層之 `userPhone`／`userEmail` 已由後端讀出時打碼（手機長於 5 字＝前 3＋`****`＋後 2、否則全遮 `****`；信箱＝首字＋`***`＋`@網域`、無 `@`＝首字＋`***`；深度一層、變更前後各一次）；資料庫原值不動；無快照之列顯示無快照提示。
@@ -87,7 +94,7 @@
 
 ### User Story 4 - 存取日誌：每筆已登入請求留一列、寫入不擋業務 (Priority: P2)
 
-自本刀起，每一筆已登入使用者的 API 請求都在存取日誌留下一列（誰、什麼方法、哪個路徑、回應狀態、來源位址與轉發鏈），被授權擋下的請求也記；未登入的請求（登入、換發、驗證碼等公開端點）一律不記。寫入不影響業務：回應先回、寫入在背景完成，失敗只告警、不擋請求。
+自本刀起，每一筆已登入使用者的 API 請求都在存取日誌留下一列（誰、什麼方法、哪個路徑、回應的 HTTP 狀態碼、來源位址與轉發鏈），被授權擋下的請求也記；未登入的請求（登入、換發、驗證碼等公開端點）一律不記。寫入不影響業務：回應先回、寫入在背景完成，失敗只告警、不擋請求。
 
 **Why this priority**: BL-00043 前半；rev5 之存取分頁讀空表（`rev5:R2-9` 不搬）於本刀翻案；告警 ③d 自本刀起有事件源。屬資料面能力、與兩頁可分開驗收，故次於 P1。
 
@@ -95,8 +102,8 @@
 
 **Acceptance Scenarios**:
 
-1. **Given** 已登入請求，**When** 完成，**Then** 落一列：操作者 uid、HTTP 方法、路徑（只取請求路徑、絕不含 query string、絕不讀 body）、回應狀態、真實來源位址、對端、XFF 判定窗轉錄（≤1024 字元、零 CR／LF、超長留最右端）、信心；region 與 trace_id 無料源＝空。
-2. **Given** 已登入但被授權判定拒絕之請求（`5003`），**When** 完成，**Then** 照記一列（中介層位於認證之後而包住授權判定）。
+1. **Given** 已登入請求，**When** 完成，**Then** 落一列：操作者 uid、HTTP 方法、路徑（只取請求路徑、絕不含 query string、絕不讀 body）、回應之 HTTP 狀態碼（不記業務碼：業務拒絕與系統錯誤皆為 200；clarify Q2）、真實來源位址、對端、XFF 判定窗轉錄（≤1024 字元、零 CR／LF、超長留最右端）、信心；region 與 trace_id 無料源＝空。
+2. **Given** 已登入但被授權判定拒絕之請求（`5003`），**When** 完成，**Then** 照記一列、該列狀態＝403（中介層位於認證之後而包住授權判定）。
 3. **Given** 未認證之請求（公開子路由），**When** 完成，**Then** 零列（中介層構造上不掛公開子路由；表之操作者欄 NOT NULL）；**Given** 認證失敗之請求（`8888`、`3333`、`7777`），**Then** 亦零列。
 4. **Given** 稽核讀端自身之請求，**When** 完成，**Then** 亦記（無豁免名單）；讀端 handler 與其交易仍零寫入（島 J1「稽核查詢純唯讀」之射程不含中介層之存取日誌列）。
 5. **Given** 寫入失敗（資料庫故障注入），**When** 請求完成，**Then** 業務回應之狀態與內文不變、結構化告警一則（告警 ③d 依此重錨）＋降級計數增一；**Given** 請求上下文或身分缺席，**Then** 跳過寫入（不 panic、不 500）。
@@ -135,7 +142,7 @@
 2. **Given** 零 docker 離線對賬腿，**When** 對 m0003 與 m0004 執行，**Then** 綠；**When** 改壞 migration 之 SQL 常數、少登一筆演進帳、或改壞凍結 seed 前值，**Then** 各紅；逐判準停用之變異皆紅；需 docker 之 `check` 維持不進 pre-commit 常跑鏈。
 3. **Given** 全新庫依序跑 m0001～m0004，**When** 跑 schema 三閘，**Then** 綠（演進帳 `seed_update`／`seed_add` 合成、新列序號期望值隨之推進）；**When** 拆掉序號合成，**Then** gate2 紅；schema-definition 不前進（ADR-00087）。
 4. **Given** reaper 以 `reaper_database_url`（最小權限 role）連線，**When** 三 job 執行，**Then** 所需語句皆成功；**When** 嘗試權限外語句（如寫業務表、改授權域三表），**Then** 被資料庫拒絕。
-5. **Given** 觀測層，**When** 收刀前檢查，**Then** ③d 依存取日誌 as-built 重錨、⑤⑤b（票回收）與⑥⑥b（排程清理）自「無事件源」改為現況、新增對賬非零告警；`rust-api.json` 兩支 HLL 面板與「設定讀取頻次」面板已刪並重排；reaper 四面板與 `audit-log.json` trace_id 相關描述改 rev6 as-built。
+5. **Given** 觀測層，**When** 收刀前檢查，**Then** ③d 依存取日誌 as-built 重錨、⑤⑤b（票回收）與⑥⑥b（排程清理）自「無事件源」改為現況、新增對賬告警兩條（任一維非零、對賬心跳逾時）；`rust-api.json` 兩支 HLL 面板與「設定讀取頻次」面板已刪並重排；reaper 四面板與 `audit-log.json` trace_id 相關描述改 rev6 as-built。
 6. **Given** 走查還原工具與 schema 閘，**When** 存取日誌入刀後，**Then** 兩工具之 runtime-append 常數同值擴入 `sys_access_log`、自測對賬兩者相等；走查前後全表基準 diff rc 0。
 7. **Given** 收刀，**When** append `feature_close` 事件，**Then** `backlog_done` 5 條與 FR-066 相符、本刀零 `backlog_add`。
 
@@ -163,6 +170,7 @@
 - 清理與併發寫入：只刪早於水平線之列、與新寫入零交集；自記與刪除同交易。
 - 被授清理端點者（D5：五支皆可授出）受 30 天下限與永久清理自記兜底；授出不改任何守門。
 - 清理浮層之天數下界為前端 UX 護欄（照 rev5 抄一份、碼註寫明權威在後端常數）；繞過前端直呼仍由後端擋。
+- 天數極大至時間無法表示時 MUST NOT 使服務崩潰：資料庫拒、整筆回滾、回 `5000`（rev5 形；浮層無上界）；reaper 之保留天數環境變數同（該表交易失敗＝結構化錯誤＋非零退出）。
 - 清理鈕持碼而無端點授權＝按下得 `5003`（誠實）；端點有碼無＝鈕不見、API 可達（兩鍵各自獨立、由超管一併治理）。
 
 **存取日誌**
@@ -171,12 +179,14 @@
 - 非同步寫入可能於測試收尾後才落地＝跨測試污染（R3）；與業務共用連線池、突發流量下可能拖慢業務請求（R3）——對策於 plan 期定；不動連線池設定（不觸 BL-00147「改動連線池設定」臂）。
 - 不入登入路徑（不觸 BL-00145「改動判定次序」臂）。
 - 寫入失敗只告警、不擋＝fail-open（島 J2）；與 HTTP 寫端「上下文缺席拒寫」方向相反屬刻意（存取日誌為請求後之觀測紀錄、操作稽核為與業務同交易之紀錄）。
+- 狀態欄＝HTTP 狀態碼：只權限不足（403）與找不到（404）可辨，業務拒絕（`2222`）與系統錯誤（`5000`）皆為 200、與成功無從區分＝已知態（rev4 欄形；clarify Q2）；被拒之業務操作亦不落操作日誌——業務成敗不在稽核頁之射程；存取分頁以告示說明。
 
 **系統設定**
 
 - 未知 settingType（非二值 enum、非 number）→唯讀呈現原值；未映射 i18n 鍵之新設定→label 以後端 description 遞補（16 鍵全映射、不以 description 退底）。
 - 快速連續切換開關：逐次提交、以回讀收斂（無防抖、可短暫閃動＝rev5 既有行為）。
-- 同值寫入（如 API 直呼送現值）：照寫（續 ADR-00080 系統設定域之「同值照寫」）並照落一列稽核（快照前後相同）——本刀起與角色選單域同形；預設形、列為 clarify 候選。
+- 越界輸入：10 個數字鍵一律鉗至宣告界後存檔（clarify Q1）；誤打越界值之察覺＝成功提示、框內數值與操作日誌舊→新；鉗界後若形成跨鍵矛盾（如 `password_min_length` 存為 128 而上界仍為 64），矛盾提示照常出現。
+- 同值寫入：照寫（續 ADR-00080 系統設定域之「同值照寫」）並照落一列稽核（快照前後相同；D1「每次 updateSystemSetting 同交易落一列」字面）——本刀起與角色選單域同形；畫面上數字框值未變不送出、開關每切必變＝只 API 直呼可達。
 - 空字串：16 鍵皆 number 或二值 enum 型、空字串驗證不過＝`2222`；不新增「清空」語意（ADR-00080 設定域觸發器重評結論＝維持）。
 - 矛盾提示只比兩現值、不改後端行為：密碼長度對維持 ADR-00079（三入口一律拒＋專屬計數）；節流兩對維持島 E「整組退」；判準與後端同式之嚴格不等式。
 - 政策快取清除只限同分頁；寫入政策七鍵以外之鍵不清；寫入失敗不清。
@@ -199,10 +209,10 @@
 
 **m0004 與 seed**
 
-- 角色為資料庫叢集層物件：dev 庫重跑、pristine 驗證庫與既有角色並存之容錯（R1；`rev4:m012` 之已存在即略過形）。
+- 角色為資料庫叢集層物件：dev 庫重跑、pristine 驗證庫與既有角色並存之容錯（R1；`rev4:m012` 之已存在即略過形）；遷移身分須具建立角色之權（compose 之 postgres 啟動使用者具之；日後改用無此權之託管庫須另議）。
 - schema 閘照相只含欄、索引、約束與資料＝看不到角色與 GRANT；權限面由 reaper 憑證之正負向測承擔。
 - `audit:purge` 不受保護（比照 `ipRule:unlock`）：可撤、可授；誤撤可經角色頁加回。
-- m0004 拆不拆兩支（角色與 seed）於 plan 期定；新列 id（預設顯式 165、m0003 形）與冪等形於 plan 期定；dev 庫序號可能已因走查前進。
+- m0004 為一支（角色、GRANT 與 seed 同支；D6「併入 m0004」字面）；新列 id（預設顯式 165、m0003 形）與冪等形於 plan 期定；dev 庫序號可能已因走查前進。
 - 判定面於開機全量載入：dev 庫於 rust-api 在跑時手動遷移須重啟 rust-api。
 
 **前端與進場**
@@ -239,8 +249,8 @@
 **B. 四源讀端（島 J1、J4）**
 
 - **FR-007**: 四支讀端 MUST 只讀交易、零寫入（島 J1：稽核查詢純唯讀；其測試射程＝讀端 handler 與其交易、不含中介層之存取日誌列）；MUST 回共用分頁信封（current 預設 1 下界 1、size 預設 10 夾於 [1, 100]）；固定序 `created_at` 降冪、`id` 降冪決勝、不收排序參數（ADR-00058；工程判斷⑤）；時間過濾 MUST 為 RFC3339 之 [`timeFrom`, `timeTo`)、畸形＝未設、顛倒＝空頁。
-- **FR-008**: getOperationLog 過濾維 MUST＝資料表名（等值）／動作（等值）／操作者 id 或名（id 優先；名對應含已軟刪同名之全集）／時間區間；列 MUST 含變更前後快照（可缺席）與來源欄。
-- **FR-009**: getAccessLog 過濾維 MUST＝HTTP 方法（等值）／狀態碼（等值）／路徑（部分字串、萬用字元字面化）／操作者 id 或名／時間區間；列 MUST 含方法、路徑、狀態、操作者與來源欄。
+- **FR-008**: getOperationLog 過濾維 MUST＝資料表名（等值）／動作（等值、大小寫敏感）／操作者 id 或名（id 優先；名對應含已軟刪同名之全集）／時間區間；列 MUST 含變更前後快照（可缺席）與來源欄。
+- **FR-009**: getAccessLog 過濾維 MUST＝HTTP 方法（等值）／狀態碼（等值）／路徑（部分字串、萬用字元字面化）／操作者 id 或名／時間區間；列 MUST 含方法、路徑、狀態、操作者與來源欄；狀態碼＝HTTP 狀態碼（rev6 回應對映：權限不足 403、找不到 404、其餘含業務拒因與系統錯誤皆 200）＝業務成敗不在存取日誌之已知態（clarify Q2）。
 - **FR-010**: getLoginAttempt 過濾維 MUST＝嘗試帳號名（部分字串）／成敗（嚴格 `true`|`false`、值域外＝未設）／來源 IP（精確等值）／時間區間；該源無操作者維。
 - **FR-011**: getSessionEvent 過濾維 MUST＝使用者 id 或名／事件型（等值）／原因（等值）／時間區間；列 MUST 含 sid、事件型、原因、使用者與來源 IP。
 - **FR-012**（`rev5:B-078` 確認句）: 讀端 MUST 零稽核欄複驗入口；來源 IP 過濾 MUST 為精確等值（IPv4 /32、IPv6 /128）、MUST NOT 以字串包含實作（路徑與帳號名之部分字串比對屬一般文字欄、非 IP 欄）。
@@ -267,7 +277,7 @@
 **D. 存取日誌寫入（島 J2；B2）**
 
 - **FR-021**: 存取日誌寫入中介層 MUST 只掛已認證子路由、位於認證之後而包住授權判定（授權拒絕之請求照記；工程判斷㉒）；公開子路由構造上不掛＝未認證零列（表之操作者欄 NOT NULL 兜底）；MUST NOT 設豁免名單（稽核讀端自身亦記）。
-- **FR-022**: 每列 MUST 記：操作者 uid、HTTP 方法、路徑（只取請求路徑、MUST NOT 含 query string、MUST NOT 讀 body）、回應狀態、真實來源位址、對端、XFF 判定窗轉錄、信心；region 與 trace_id 無料源＝空。
+- **FR-022**: 每列 MUST 記：操作者 uid、HTTP 方法、路徑（只取請求路徑、MUST NOT 含 query string、MUST NOT 讀 body）、回應之 HTTP 狀態碼（MUST NOT 新增業務碼欄；clarify Q2）、真實來源位址、對端、XFF 判定窗轉錄、信心；region 與 trace_id 無料源＝空。
 - **FR-023**: 寫入 MUST 於回應之後非同步進行（MUST NOT 同步等待寫入完成）；請求上下文或身分缺席 MUST 跳過（不 panic、不 500）；寫入失敗 MUST 只發結構化告警（告警 ③d 依其 as-built 欄位重錨）＋降級 metric、業務回應零影響（fail-open）。
 - **FR-024**: 中介層 MUST NOT 改動連線池設定（不觸 BL-00147 之臂）、MUST NOT 進入登入路徑或改動其判定次序（不觸 BL-00145 之臂）；ADR② MUST 解除 004 刀 research 防回歸清單 B 之 `rev5:R2-9`（`access_log_mw` 不搬；其 rev5 原因＝歸 `rev5:B-016` 稽核域射程、非否決判斷）並記射程、fail-open 方向與 R3 對策。
 - **FR-025**: 存取日誌之寫入 MUST 經新 facade（資料列構造只住 facade）；走查還原工具與 schema 閘之 runtime-append 常數（兩檔同值互釘）MUST 擴入 `sys_access_log`、還原清理面同評估、配自測；RUNBOOK §9c／§12 與 schema 閘收窄射程字面同批（工程判斷⑮）。
@@ -283,17 +293,17 @@
 
 - **FR-030**: reaper bin MUST 以 rev4 藍本重打字（rev4 出處帶 `rev4:` 前綴、註解重寫）；CLI MUST 為 `--execute`（缺席＝dry-run）＋`--job <name>`（`token-reap` 預設｜`audit-retention`｜`policy-reconcile`）；未知參數與未知 job 名 MUST 嚴拒（非零退出＋錯誤事件）；退出碼 0＝完跑（含 0 列）、非 0＝任一步失敗；失敗 MUST NOT 推成功心跳；心跳推送 best-effort、MUST 附全程時限、失敗不改退出碼（工程判斷⑨）。
 - **FR-031**: reaper MUST 以 `reaper_database_url`（m0004 所建最小權限 role；既有設密腳本開登入並設密）連線、MUST NOT 掛 `database_url`。
-- **FR-032**: token-reap MUST 以單一語句刪除過期逾寬限天數之票（`REAPER_GRACE_DAYS` 缺席或畸形退 7、畸形告警）；dry-run 輸出候刪數、零變動。
+- **FR-032**: token-reap MUST 以單一語句刪除過期逾寬限天數之票（`REAPER_GRACE_DAYS` 缺席或畸形退 7、畸形告警）；dry-run 輸出候刪數、零變動；MUST NOT 落操作日誌自記（票回收屬會話域、非稽核表之水平線清理；只結構化日誌與心跳；rev4 形）。
 - **FR-033**: audit-retention MUST：固定表序（操作日誌→存取日誌→登入嘗試→會話事件）；逐表單交易「水平線刪除＋自記」、與手動清理同謂詞同自記形（島 J3）；dry-run 逐表計數（謂詞同形）、零變動零自記；任一表失敗＝結構化錯誤＋非零退出＋不推心跳（已 commit 之表維持）。
 - **FR-034**: 四表保留天數環境變數（`AUDIT_RETENTION_{OPERATION_LOG,ACCESS_LOG,LOGIN_ATTEMPT,SESSION_EVENT}_DAYS`）MUST 三分語意：缺席＝90；畸形（無法解析為非負整數）＝結構化告警＋取 90；解析成功且小於 `PURGE_MIN_DAYS`（含 0）＝開跑前四鍵一次全驗之前置全拒（指名鍵與值、非零退出、不推心跳），且驗證 MUST 先於資料庫連線；每輪間隔 `REAPER_INTERVAL_SECS`（dev loop 缺席退 86400）；設定頁維持 16 鍵、零 seed（D8）；RUNBOOK 寫明。
-- **FR-035**: policy-reconcile MUST 唯讀逐維（選單、按鈕、端點）計數孤兒授權列（定義見 Key Entities）、輸出結構化日誌（指名維與計數）＋心跳 metric（逐維計數）、非零即告警；有無 `--execute` 皆 MUST 零寫入（不刪、不歸檔、不寫稽核）。
+- **FR-035**: policy-reconcile MUST 唯讀逐維（選單、按鈕、端點）計數孤兒授權列（定義見 Key Entities）、輸出結構化日誌（指名維與計數）＋心跳 metric（逐維計數＝每維一條 gauge、以標籤區分維）、任一維非零即告警；有無 `--execute` 皆 MUST 零寫入（不刪、不歸檔、不寫稽核）。
 - **FR-036**: 排程清理自記列 MUST 為（g2、g5；工程判斷㉕）：`created_by` 空、`real_ip`＝哨兵 `0.0.0.0`、`ip_confidence`／`peer_ip`／`x_forwarded_for` 皆空、變更後快照帶 job 字面與 {`table`, `before_days`, `deleted_count`}；刪 0 列照落（每輪四列）。寫入路徑 MUST 與 HTTP 寫端分離：操作者型之構造保證（唯一建構點＝自請求上下文構造）不動，系統程序另立只收碼內 job 字面之具名型（形制 plan 期定）；`model/audit.rs` 檔頭「沒有『自己填一個位址』的路」句 MUST 同批改述為兩路之現在式；HTTP 寫端照舊只轉錄請求上下文、缺席拒寫 `5000`；ADR③ MUST 寫明哨兵＝無網路來源之標記（001 data-model 前瞻註「sentinel 或另議、不回改本欄」之兌現）、非島 F 之 F3①與島 E 末點所禁之「有操作者而取不到其位址時以佔位位址補足」（R13）。
-- **FR-037**: 三 job MUST 各自心跳分組（grouping key 按 job、PUT 整組替換；`reaper_last_success_timestamp`／`reaper_deleted_total` 形＋對賬計數 metric，名稱於 plan 期定）；pushgateway 推送之 HTTP 實作 MUST 於 plan 期比較（甲＝既有 `metrics-exporter-prometheus` 之推送功能、乙＝rev4 藍本之 ureq）並記入 ADR③；任一新依賴 MUST 釘完整版號、依全域 §6 以「參照專案 lockfile 值」與「官方最新穩定版」兩源比對，分歧即問 user（工程判斷⑩）。
+- **FR-037**: 三 job MUST 各自心跳分組（grouping key 按 job、PUT 整組替換；`reaper_last_success_timestamp`／`reaper_deleted_total` 形＋對賬計數 metric，名稱於 contracts 定案、沿 `reaper_` 前綴）；pushgateway 推送之 HTTP 實作 MUST 於 plan 期比較（甲＝既有 `metrics-exporter-prometheus` 之推送功能、乙＝rev4 藍本之 ureq）並記入 ADR③；任一新依賴 MUST 釘完整版號、依全域 §6 以「參照專案 lockfile 值」與「官方最新穩定版」兩源比對，分歧即問 user（工程判斷⑩）。
 - **FR-038**: compose jobs 段 MUST 改為現況（「rev6 無 reaper bin／role、起了也跑不動」句改 as-built）；dev override 姿態（loop 每日一輪）照舊；`REAPER_INTERVAL_SECS` 與告警⑤／⑥門檻之 2× 互錨三檔同步。
 
 **G. m0004、seed 基線與離線對賬腿**
 
-- **FR-039**: 本刀 MUST 恰新增一支 delta migration `m0004`（拆為兩支與否於 plan 期定；不建表），內容 MUST 恰為：
+- **FR-039**: 本刀 MUST 恰新增一支 delta migration `m0004`（一支：D6「併入 m0004」與 B1 字面、clarify 步定案；不建表），內容 MUST 恰為：
 
   | 對象 | 改動 | 演進帳 | 承載 |
   |---|---|---|---|
@@ -309,13 +319,13 @@
 
 **H. 觀測層（B5 與重錨）**
 
-- **FR-043**: 告警規則 MUST 依 as-built 重錨：③d（accesslog-write-fail）綁存取日誌寫入失敗之 as-built 結構化欄位；⑤⑤b（token-reap 心跳與模式）與⑥⑥b（audit-retention 心跳與模式）之「無事件源」現況註改為有源現況；④ audit-capacity 之「rev6 尚無該 handler」註改述；MUST 新增對賬非零告警（規則名與門檻於 plan 期定）；RUNBOOK §11 MUST 補 audit-capacity 告警之處置子節（判讀＋經稽核頁清理或待 reaper 下一輪；比照 §11.3 形；工程判斷⑯）。
+- **FR-043**: 告警規則 MUST 依 as-built 重錨：③d（accesslog-write-fail）綁存取日誌寫入失敗之 as-built 結構化欄位；⑤⑤b（token-reap 心跳與模式）與⑥⑥b（audit-retention 心跳與模式）之「無事件源」現況註改為有源現況；④ audit-capacity 之「rev6 尚無該 handler」註改述；MUST 新增對賬告警兩條：①任一維計數大於 0 即告警 ②對賬心跳逾時（門檻沿⑤／⑥之 172800＝每輪間隔之 2 倍、納入同一組三檔互錨）；規則名於 contracts 定案（沿 obs016／obs017 形；主線工程判斷、clarify 步定案）；RUNBOOK §11 MUST 補 audit-capacity 告警之處置子節（判讀＋經稽核頁清理或待 reaper 下一輪；比照 §11.3 形；工程判斷⑯）。
 - **FR-044**: 儀表板 MUST（BL-00139）：`rust-api.json` 刪除兩支 HLL 面板與「設定讀取頻次」面板並重排版位；`reaper.json` 三面板與 `master-overview.json` 一面板之 reaper 描述改 rev6 as-built；`audit-log.json` trace_id 下鑽面板與 `trace_id` 變數之描述改述為「rev6 稽核列此欄恆空」；可選起 obs／metrics profile 活體驗證。
 
 **I. 前端——系統設定頁（§III.2 (ix)）**
 
 - **FR-045**: 系統設定頁 MUST 為單檔、資料驅動：控件由伺服器回之 `settingType` 決定（二值 enum→開關、number→數字框、其他→唯讀呈現原值）；四組固定序（密碼策略／工作階段／IP 源登入／帳號登入；依鍵前綴歸組＝`password_`→密碼策略、`ip_`→IP 源登入、`login_throttle_`→帳號登入、其餘→工作階段；組內固定鍵序、未列序新鍵排組尾保伺服器相對序；空組整卡不渲染；rev5 形）；前端 MUST NOT 硬編鍵→控件對應。
-- **FR-046**: 逐項即改即存 MUST：開關切換即提交；數字欄失焦或 Enter 提交、清空不送；提交後（成功與失敗皆）MUST 回讀伺服器全列收斂畫面；成功提示、失敗走既有攔截層之 i18n 轉譯；數字框之上下界 MUST 取自讀端下發之宣告界（FR-026）並鉗界；宣告集外列 MUST 唯讀、排組尾、標示 description。
+- **FR-046**: 逐項即改即存 MUST：開關切換即提交；數字欄失焦或 Enter 提交（值未變不送）、清空不送；提交後（成功與失敗皆）MUST 回讀伺服器全列收斂畫面；成功提示、失敗走既有攔截層之 i18n 轉譯；數字框之上下界 MUST 取自讀端下發之宣告界（FR-026）、10 個 number 鍵一律鉗界（越界輸入失焦即鉗至界值後送出；clarify Q1）；宣告集外列 MUST 唯讀、排組尾、標示 description。
 - **FR-047**: 三對跨鍵矛盾 MUST 即時警示、不阻存（D2；工程判斷㉔）：判準＝`password_min_length` ＞ `password_max_length`、`login_throttle_captcha_after` ＞ `login_throttle_max_fails`、`ip_captcha_after` ＞ `ip_max_fails`（嚴格不等式、相等合法）；警示 MUST 落在該對所屬之組卡片並寫出後果（密碼對＝三個設密入口一律拒；節流兩對＝後端該維三鍵整組退回出廠常數）；三語；維持 ADR-00079 決定 2（後端照舊逐鍵驗、不新增組合守門）。
 - **FR-048**: 寫入政策七鍵（`password_min_length`／`password_max_length`／`password_require_digit`／`password_require_lowercase`／`password_require_uppercase`／`password_require_special`／`password_forbid_username`）任一成功 MUST 呼叫密碼政策 hook 之清除函式（D3）；hook MUST 增清除函式，其檔頭「只增不清」與「寫入者唯一」句、重設密碼浮層檔頭之快取已知態句 MUST 同批改述；RUNBOOK §11.3「008 刀前無設定頁畫面＝走 API」MUST 改為設定頁首選。
 - **FR-049**: 16 鍵之 label＋help MUST 三語全映射（凍結 seed description 不可改＝不以 description 退底；未映射之新鍵才以 description 遞補）；帳號登入與 IP 源登入兩組之說明 MUST NOT 承諾嚴格上限（工程判斷⑰；BL-00145 約束）。
@@ -323,11 +333,11 @@
 
 **J. 前端——稽核頁（§III.2 (x)）**
 
-- **FR-051**: 稽核頁 MUST 四源四分頁（操作日誌／存取日誌／登入嘗試／會話事件；照 rev5 形：主頁＋四支搜尋卡＋清理浮層＋共用時間區間邏輯）；各分頁搜尋卡同構（預設展開、重設清空並觸發搜尋、時間區間本地輸入而 UTC ISO 上 wire〔D4〕）；重新整理鈕不重置頁碼、搜尋回第 1 頁；每頁預設 10 筆可調。
+- **FR-051**: 稽核頁 MUST 四源四分頁（操作日誌／存取日誌／登入嘗試／會話事件；照 rev5 形：主頁＋四支搜尋卡＋清理浮層＋共用時間區間邏輯）；各分頁搜尋卡同構（預設展開、重設清空並觸發搜尋、時間區間本地輸入而 UTC ISO 上 wire〔D4〕）；搜尋卡之輸入提示範例 MUST 用庫內實際字面（動作過濾為大小寫敏感等值，範例如 `update`、`kick`；rev5 提示寫大寫範例而照輸查無資料＝本刀文案照實、入分岔表）；重新整理鈕不重置頁碼、搜尋回第 1 頁；每頁預設 10 筆可調。
 - **FR-052**: 表格欄集 MUST 逐分頁照 rev5（`rev5:008` FR-B07；工程判斷①②）：XFF 於操作／存取／登入三分頁純文字插值（截尾＋懸停全文）＝與 rev5 零分岔（rev5 之「UI 對照唯一例外」為其對 rev4 之身分、不帶入 rev6 分岔表）；traceId 三分頁渲染（恆「-」）；region 存取／登入兩分頁渲染（恆「-」）、操作分頁不渲染；peerIp、ipConfidence 不渲染；會話事件分頁無 XFF 欄；橫向捲動寬度＝欄寬總和隨欄同批。
 - **FR-053**: 操作日誌之「查看快照」MUST 以唯讀浮層純文字 JSON 呈現變更前／後（值已由後端打碼；無快照提示）；排程清理自記列之操作者顯「-」、來源 IP 顯 `0.0.0.0`；設定變更列之標的 id 顯「-」（g2、g4）。
-- **FR-054**: 清理入口 MUST 每分頁一顆、共用單例浮層（標的隨分頁切換；表名×天數兩欄；天數下界 UX 護欄、警語＋二次確認；成功提示帶刪除筆數並刷新該分頁）；清理鈕 MUST 依 `audit:purge` 碼顯隱（D6）。
-- **FR-055**: 登入嘗試分頁 MUST 帶「節流短路遭拒不落表」語意之告示、MUST NOT 承諾嚴格上限；零匯出、零前端排序、零快照內容搜尋（rev5 同）。
+- **FR-054**: 清理入口 MUST 每分頁一顆、共用單例浮層（標的隨分頁切換、浮層標題帶標的表名；唯一輸入欄＝保留天數〔下界 30 之 UX 護欄、無上界、每次開啟重置為 30〕；警語＋二次確認〔浮層為第一步、確認泡泡為第二步〕；成功提示帶刪除筆數並刷新該分頁；rev5 形）；清理鈕 MUST 依 `audit:purge` 碼顯隱（D6）。
+- **FR-055**: 登入嘗試分頁 MUST 帶「節流短路遭拒不落表」語意之告示、MUST NOT 承諾嚴格上限；存取日誌分頁 MUST 帶「狀態碼為 HTTP 狀態：權限不足 403、找不到 404；業務拒絕與系統錯誤亦顯示 200」語意之告示（比照登入嘗試分頁、三語；clarify Q2）；零匯出、零前端排序、零快照內容搜尋（rev5 同）。
 - **FR-056**: 稽核頁之 API 包裝與型別 MUST 為 `rev6-` 前綴新檔與 `Api.Audit` 獨立命名空間（§III.1 BASE-WEB-WRAPPER／ADAPT；不入 barrel、直接路徑匯入）；自由文字欄一律純文字插值、新檔 MUST 過 view-render-guard。
 
 **K. 進場面（路由、譯文、seed-view-gate）與 fork-delta**
@@ -343,11 +353,11 @@
   ②§I.6 變體 B 括號句改 J3 交叉指針；§I.7 表尾句之 J2 空缺位處置；MAJOR 射程句「九島」改十島；承襲指針 J 列補 rev6 入憲載體
   ③§III.2 `BASE-WEB-MANAGE-PAGE-WIRING` 新用途 (ix) 系統設定頁進場、(x) 稽核頁進場（形照 (i)／(iv)：範圍欄只列 upstream 既有檔＝`{en-us,zh-cn}.ts` 之 `route:`／`page:` 新增型塊、`app.d.ts` 型節、路由產物四檔；`zh-tw.ts` 為 rev6 自有之整檔新增型檔、不入範圍欄，三語由行為欄「三語鍵集 MUST 相等」與型別守承擔；(x) 寫明 `audit:purge` 顯隱）
   ④活書 06／10 補島 J 情境；generate。範圍欄初值依表外宣告 1 例外路徑預估、收刀前 PATCH 實數化（前例 ADR-00051）。Amendment accepted 前 base-web 既有檔 MUST 零 diff。
-- **FR-061**: ADR MUST 於 plan 期起草（feature branch 內、序號接續；proposed 期不宣告 supersedes、accepted 同顆補；親決依 ADR-00089 分類）＋收刀前 PATCH Amendment 一支（配號＝當下下一號、plan 期不起草）：①島 J 入憲與 §III.2 (ix)(x)（Amendment；provenance `rev5:ADR 0077`；FR-060）②存取日誌寫入（解除 `rev5:R2-9`；FR-021～FR-025）③reaper 三 job 與最小權限 role（哨兵與刪 0 列照落、孤兒授權列只報不刪＋RUNBOOK 處置、心跳與告警重錨、HTTP 依賴取捨與版本；FR-030～FR-038）④錯誤明細通道三鍵（整顆 supersede ADR-00076〔其標題「射程恰兩鍵」被推翻〕；另一款釐清 ADR-00076／ADR-00090 決定 1「照提示秒數重試必過」於牆鐘回撥不成立；FR-004）⑤ADR-00081 續行（角色與選單已知態：款 2／款 6 解除；款 9 可授出集 30→35；款 10 改述＝設定頁「看得到、讀寫 `5003`」與稽核頁 `audit:purge` 碼顯隱之可見效果；稽核選單維〔政策列 142〕之非超管頁內形另立一款；ADR-00066 射程款複核結論；活書 11「十八款」改十六款）⑥ADR-00082 續行（IP 域已知態：款 3 寫入者全集與動作詞彙八→九；FR-020）⑦授權歸檔表永久保留（B3 by-design；歸檔列除經復原外永久保留、零碼改；ADR-00065 代價句之承接）⑧設定頁進場複核（ADR-00079 觸發器＝前端即時提示不擋；ADR-00054 觸發器不成立；ADR-00057 宣告集外列之呈現與判別；ADR-00080 設定域觸發器重評結論〔FR-028〕；ADR-00064 不下放；密碼政策快取清除之刻意分岔）⑨m0004 seed 與 role（演進帳登記、序號合成、Day-1 三步；ADR-00008 delta 第二支；FR-039～FR-042）⑩刻意分岔登記（可併入本 spec 分岔表、是否另立 ADR 於 plan 期定）。
+- **FR-061**: ADR MUST 於 plan 期起草（feature branch 內、序號接續；proposed 期不宣告 supersedes、accepted 同顆補；親決依 ADR-00089 分類）＋收刀前 PATCH Amendment 一支（配號＝當下下一號、plan 期不起草）：①島 J 入憲與 §III.2 (ix)(x)（Amendment；provenance `rev5:ADR 0077`；FR-060）②存取日誌寫入（解除 `rev5:R2-9`；FR-021～FR-025）③reaper 三 job 與最小權限 role（哨兵與刪 0 列照落、孤兒授權列只報不刪＋RUNBOOK 處置、心跳與告警重錨、HTTP 依賴取捨與版本；FR-030～FR-038）④錯誤明細通道三鍵（整顆 supersede ADR-00076〔其標題「射程恰兩鍵」被推翻〕；另一款釐清 ADR-00076／ADR-00090 決定 1「照提示秒數重試必過」於牆鐘回撥不成立；FR-004）⑤ADR-00081 續行（角色與選單已知態：款 2／款 6 解除；款 9 可授出集 30→35；款 10 改述＝設定頁「看得到、讀寫 `5003`」與稽核頁 `audit:purge` 碼顯隱之可見效果；稽核選單維〔政策列 142〕之非超管頁內形另立一款；ADR-00066 射程款複核結論；活書 11「十八款」改十六款）⑥ADR-00082 續行（IP 域已知態：款 3 寫入者全集與動作詞彙八→九；FR-020）⑦授權歸檔表永久保留（B3 by-design；歸檔列除經復原外永久保留、零碼改；ADR-00065 代價句之承接）⑧設定頁進場複核（ADR-00079 觸發器＝前端即時提示不擋；ADR-00054 觸發器不成立；ADR-00057 宣告集外列之呈現與判別；ADR-00080 設定域觸發器重評結論〔FR-028〕；ADR-00064 不下放；密碼政策快取清除與數字框 10 鍵一律鉗界〔clarify Q1〕之刻意分岔）⑨m0004 seed 與 role（演進帳登記、序號合成、Day-1 三步；ADR-00008 delta 第二支；FR-039～FR-042）⑩刻意分岔登記（可併入本 spec 分岔表、是否另立 ADR 於 plan 期定）。
   親決時點：Amendment 顆只含 ADR① 與其連動條文、其餘另顆。
 - **FR-062**: 工具 MUST：走查還原工具與測試守衛評估 reaper 與存取日誌之影響（走查期間不起 jobs；FR-025）；子句表檢核工具（FR-071）；本刀若改動既有 python 閘之正則判準（msg-key-gate 模組層 `RE_*`、zh-tw-lint、fork-delta-lint 等），該單元 MUST 先以 `python3 tools/regex-mutants.py run` 取全成分清單、存活者逐支補殺案或附等價證明並預估代價（工程判斷⑲；既有存活數 zh-tw-lint 30／46、fork-delta-lint 9／13 為 maint-pre008-carriers 實測、repo 未記；LL-00097 前例代價）。
 - **FR-063**: 碼註與現在式文件 MUST 改為 as-built：稽核模型與四支稽核 facade、登出 handler 之「`rev5:008` 增量不帶」「沒有 delete」類句（清理入刀後寫明水平線清理是唯一刪除路徑）；告警規則④之「rev6 尚無該 handler」；compose jobs 段（FR-038）。
-- **FR-064**: 活書 MUST 於 feature branch 內改為現在式 as-built：06／10 島 J 情境；05 `tools/` 列「恰兩列」與 seed-view-gate 描述；07 jobs profile 現況；08 稽核頁時間輸入語意（本地輸入、UTC 顯示）；11 角色與選單已知態款數（十八→十六）、IP 域已知態寫入者；12 稽核域詞組（存取日誌、水平線清理、手動清理、排程清理、票回收、授權對賬、清理自記列、孤兒授權列；與既有「撤銷殘留」區分）；C4-L2 reaper 列與 C4-E2 隱私流節保留期句；RUNBOOK §3／§8／§9c／§10／§11／§12 現在式，另增孤兒授權處置一節（落點 plan 期定；g3）。C4-L2 拓樸之容器集不變（reaper 與 pushgateway 既已在 compose）。
+- **FR-064**: 活書 MUST 於 feature branch 內改為現在式 as-built：06／10 島 J 情境；05 `tools/` 列「恰兩列」與 seed-view-gate 描述；07 jobs profile 現況；08 稽核頁時間輸入語意（本地輸入、UTC 顯示）與存取日誌狀態欄語意（HTTP 狀態碼、業務成敗不在其內；clarify Q2）；11 角色與選單已知態款數（十八→十六）、IP 域已知態寫入者；12 稽核域詞組（存取日誌、水平線清理、手動清理、排程清理、票回收、授權對賬、清理自記列、孤兒授權列；與既有「撤銷殘留」區分）；C4-L2 reaper 列與 C4-E2 隱私流節保留期句；RUNBOOK §3／§8／§9c／§10／§11／§12 現在式，另增孤兒授權處置一節（落點 plan 期定；g3），並寫明存取日誌狀態欄＝HTTP 狀態碼之已知態（落點 plan 期定；clarify Q2）。C4-L2 拓樸之容器集不變（reaper 與 pushgateway 既已在 compose）。
 - **FR-065**: 本刀落地後成假述之現在式句 MUST 以 `python3 tools/docsync errata <詞>` 機器枚舉逐處判讀改對（RL-0011），種子＝`BL-00045`、`BL-00043`、`BL-00133`、`BL-00139`、`BL-00148`、`seed-view-gate`、`恰兩列`、`008 刀`、`島 J`、`未入憲`、`稽核域行為島`、`保留期`、`purge_before`、`沒有 delete`、`尚無該 handler`、`rev5:008`、`死項`、`view 未進場`、`設定頁 view 刀`、`view 刀`、`裸鍵`、`只增不清`、`起了也跑不動`、`無事件源`、`reaper bin`、`access_log_mw`；另點名（種子掃不到）：系統設定兩檔三行碼註（FR-029）、重設密碼浮層檔頭快取句、RUNBOOK §11.3 走 API 句、`schema-definition.md` §8 缺頁句（改為不隨刀前進之形、基線字面不動；改此檔時 pre-commit 跑 schema-gate test）。
 - **FR-066**: 帳本 MUST 於收刀兌現：`backlog_done` 5 條＝BL-00043（FR-021～FR-025、FR-030～FR-038、FR-043）／BL-00045（FR-045～FR-058）／BL-00133（ADR⑦、FR-035）／BL-00139（FR-044）／BL-00148（FR-041）；反向確認 2 條＝BL-00108（本刀不於 rust 側新寫字元級解析 lint；探針取兩側函式名聯集〔同職異名三對 `close_of`↔`match_delim`、`split_top`↔`split_entries`、`attr_spans`↔`attr_group`，wire 側另有 `token_at`〕、計數口徑明寫其一〔字元切片參數之函式簽名行：common 6／entity 18／wire 21；或字元切片與字元向量之行數：common 7／entity 28／wire 25、限 `server/tests`〕；byte 級 lint 之三支輔助函式不計；工程判斷⑱）、BL-00002（零 AI 元件、不動 §9「目前無」句）；滯後卷約束照守（BL-00049 快速登入鈕刀期不拆、BL-00064／BL-00067 不碰 alova 與 demo 面、BL-00140 指針、BL-00141 不納、BL-00145 文案不承諾嚴格上限且不改登入判定次序、BL-00147 不動連線池設定與雜湊位次）；本刀零 `backlog_add`；`feature_close.adrs` 列全（plan 期 ADR＋收刀前 PATCH Amendment）、`arch_impact` 以收刀時 diff 現算之活書節號為準；NOTES 下一步 specify 起手後改 008 進行中。
 - **FR-067**: 收刀計數三則 MUST 逐單元記次數、收刀 `feature_close` notes 同句彙記（含 0）：ADR-00011 翻案觸發器①（RULES fix 20／19 超限後之刀數）、ADR-00084「zh-cn.ts 新字未分類之紅」（本刀＝第 2 刀）、ADR-00052「一致性腿誤擋正常部分 commit」；本刀晉升 fix／review 範圍之 RL 依 RL-0052 一進一出（工程判斷⑳）。
@@ -392,6 +402,9 @@
 | 設定頁跨鍵矛盾 | 無提示 | 三對嚴格不等式即時警示、不阻存 | D2、FR-047 |
 | 密碼政策快取 | SPA 存活期間只增不清 | 設定頁寫入政策七鍵任一成功即清同分頁快取 | D3、FR-048 |
 | 宣告集外設定列（seed 態無） | 依型別可編、寫入回 `2222` | 唯讀、排組尾、標示 description | 工程判斷③、FR-046 |
+| 數字框界值（5 鍵） | `ip_captcha_after`／`ip_max_fails`／`ip_window_minutes`／`password_change_min_interval`／`session_idle_timeout` 無前端界：越界送出、後端拒、提示「设置值无效」並回退 | 10 鍵一律依宣告界鉗界：越界失焦即改為界值後存檔 | clarify Q1、工程判斷③、FR-046 |
+| 操作日誌搜尋卡之動作提示 | 範例寫大寫（「如 UPDATE、KICK」），而過濾為大小寫敏感等值＝照提示輸入查無資料 | 範例改用庫內實際字面（如 `update`、`kick`） | 主線自校（clarify 步）、FR-051 |
+| 存取日誌分頁告示 | 無（該分頁為空表） | 分頁上方一句告示：狀態碼為 HTTP 狀態，業務拒絕與系統錯誤亦顯示 200 | clarify Q2、FR-055 |
 | 稽核頁清理鈕 | 頁內零按鈕級 gating | 依 `audit:purge` 碼顯隱（Super 持碼＝畫面同 rev5） | D6、FR-054、FR-039 |
 | 排程清理自記列 | 無 reaper（`rev5:B-016` 不入） | 起 jobs 時操作日誌出現 `purge` 自記列（操作者「-」、來源 IP `0.0.0.0`） | B1、g2、g5、FR-036 |
 | 繁中畫面 | runtime 兩語 | 兩頁全樹繁中（無 rev5 基準、驗收照 D12） | D12、FR-074 |
@@ -410,7 +423,7 @@
 ### Key Entities *(include if feature involves data)*
 
 - **操作日誌**（`sys_operation_log`、001 基線、append-only）：動作（封閉九詞）、標的表名、標的 id（可空：設定變更列、清理自記列、解鎖列）、變更前後快照、操作者（可空：排程清理自記列）、來源欄（真實來源位址 NOT NULL、對端、XFF、信心）、region／trace_id（恆空）。
-- **存取日誌**（`sys_access_log`）：每筆已登入請求一列——操作者（NOT NULL）、HTTP 狀態、方法、路徑、來源欄、region／trace_id（恆空）。
+- **存取日誌**（`sys_access_log`）：每筆已登入請求一列——操作者（NOT NULL）、HTTP 狀態碼（非業務碼；業務拒絕與系統錯誤皆 200）、方法、路徑、來源欄、region／trace_id（恆空）。
 - **登入嘗試**（`sys_login_attempt`）：嘗試帳號名、成敗、操作者（可空）、來源欄；節流短路遭拒不落表。
 - **會話事件**（`session_event`）：使用者、sid、事件型、原因、來源 IP（文字）、操作者。
 - **清理請求與清理自記列**：{來源表（四值）, 保留天數（≥30）}→刪除筆數；自記列＝動作 `purge`、目標表名、標的 id 空、快照 {table, before_days, deleted_count}（排程清理另帶 job、操作者空、來源位址哨兵 `0.0.0.0`）；操作日誌源之清理永久豁免之。
@@ -434,10 +447,10 @@
 - **SC-003**: 讀端語意可驗——四源每一過濾維各至少一案（含名對應已軟刪同名全集、萬用字元字面化、成敗值域外＝未設）；來源 IP 精確等值之反例一案（子字串不得命中）；分頁夾界、固定序、時間閉開、顛倒空頁、畸形未設、空字串 query 不 4xx 各一；四支讀端零寫入（寫入計數前後相等）。
 - **SC-004**: 打碼單點——兩鍵於變更前後各一案、手機 ≤5 字與無 `@` 信箱之邊界各一、非字串與巢狀不動各一；拆掉打碼呼叫必有測試轉紅；資料庫原值不變。
 - **SC-005**: 清理可證——低於 30 天 100% 被拒且拒因含下限值；白名單外拒；同時違反回 `invalidTable`；成功清理之回報筆數與實刪一致；清理自記列留存率 100%（含對操作日誌之清理）；故障注入下零部分成功（紅綠證）；上下文缺席 `5000` 零變更。
-- **SC-006**: 存取日誌——已登入請求每筆恰一列且路徑不含 query；`5003` 請求照記；未認證與認證失敗零列；注入寫入失敗時回應狀態與內文不變、告警與降級計數各增一；注入慢寫時回應不被延遲。
+- **SC-006**: 存取日誌——已登入請求每筆恰一列且路徑不含 query；`5003` 請求照記且狀態 403；業務拒絕（`2222`）之請求列狀態為 200 一案（已知態釘住）；存取分頁告示三語在場；未認證與認證失敗零列；注入寫入失敗時回應狀態與內文不變、告警與降級計數各增一；注入慢寫時回應不被延遲。
 - **SC-007**: reaper——三 job 之 dry-run 零變動；audit-retention 之 execute 逐表刪除＋四列自記（哨兵 `0.0.0.0`、操作者空、刪 0 列照落）；token-reap 之 execute 實刪數與 dry-run 候刪數一致；環境變數三分語意各一案（前置全拒先於連線）；未知參數與 job 嚴拒；任一失敗非零退出且不推成功心跳；心跳推送失敗不改退出碼；HTTP 寫端於上下文缺席仍 `5000`（哨兵不外溢）。
 - **SC-008**: 授權對賬——全新 seed 三維恆 0；三維各植入一形孤兒列皆被計入且告警觸發；job 前後授權域三表逐列不變。
-- **SC-009**: 系統設定頁——16 鍵 100% 可視可讀；可改鍵改動後 1 次回讀內畫面與伺服器一致；非法值 100% 被拒且拒因可讀；數字框界值與登記表宣告界逐鍵相等；宣告集外列唯讀（合成列一案）；三對矛盾各一案警示、相等不警示；同分頁政策快取即時；每次成功寫入恰一列 `update` 稽核、拒因零列。
+- **SC-009**: 系統設定頁——16 鍵 100% 可視可讀；可改鍵改動後 1 次回讀內畫面與伺服器一致；非法值 100% 被拒且拒因可讀；數字框界值與登記表宣告界逐鍵相等、越界輸入鉗界存檔一案（取 rev5 無前端界之鍵）；宣告集外列唯讀（合成列一案）；三對矛盾各一案警示、相等不警示；同分頁政策快取即時；每次成功寫入恰一列 `update` 稽核、拒因零列。
 - **SC-010**: m0004 與離線腿——全新庫重放後 schema 三閘綠、拆掉序號合成即紅；離線腿對 m0003／m0004 綠且一正一反與逐判準停用變異皆紅；授權列 164、受保護 25、R_SUPER 按鈕碼 22、選單 77 恰一碼；reaper role 允許語句成功、權限外語句被拒；Day-1 三步完成。
 - **SC-011**: CDP 三方對照（rev5 22080 vs rev6 32080；upstream 22089 作錨點）以**結構清單逐項全等**為判準（設定頁四組與鍵序、控件型、說明提示、逐項存與回讀；稽核頁四分頁之欄集與列序、搜尋卡、快照浮層、清理浮層流程；側欄兩項；提示文案），任一項不等即紅；間距／字體／顏色只記入走查紀錄、不擋收刀；排除清單＝刻意分岔登記表各項（CDP 開跑前凍結；CDP 中新發現者須經 user 親決入表、否則判紅）＋已知態各款＋請求次數維度；22080 側步驟一律顯式設簡中。
 - **SC-012**: 繁中介面兌現——zh-tw-lint 綠（簡體殘字掃描零命中、具名白名單除外；用語表綠）；型別檢查證三語鍵集相等；AI 逐頁審讀紀錄涵蓋全部接真頁面；user 抽查完成並記錄（D12）。
@@ -452,7 +465,7 @@
 - 001～007 刀底座已兌現且本刀純消費：四張稽核表在 001 基線（除 m0004 之角色與權限面外零 DDL）；操作稽核寫入面（004 起）、信任錨與請求上下文、錯誤明細通道（007）、判定面同步、設定寫端（002）、密碼政策 hook（007）、測試基建與名冊閘。
 - compose 已有 jobs profile 之 reaper 服務、metrics profile 之 pushgateway，密鑰產生器已產 `reaper_password`／`reaper_database_url`＝本刀補 bin、role 與現況註。
 - 風險 R1～R13 照 brainstorm §3 §4、plan 期逐條承接對策；其中存取日誌每請求一寫之負載與測試面影響（R3）、哨兵語意邊界（R13）已入本 spec 之 Edge Cases 與 FR。
-- **原 clarify 候選已於 brainstorm 與 grilling 定案**；剩餘 clarify 候選四題（皆非範圍或安全級、spec 以預設形承載）：對賬計數 metric 與告警規則之名稱與門檻；m0004 拆不拆兩支；pushgateway 推送之 HTTP 實作甲乙取捨（若引入新依賴、其版本另依全域 §6）；同值設定寫入照落稽核列（預設照落）。`/speckit-clarify` 照常掃描、依專案紀律一題一問（不採內建一次三題形）。
+- **clarify 步（2026-10-21）兩題**：數字框 10 鍵一律鉗界；存取日誌照 rev4 欄形（只記 HTTP 狀態碼）＋存取分頁加一句告示（緣起＝user 轉來之 side agent 提醒）——兩題皆 user 選建議項（見 Clarifications）。specify 期所列 clarify 候選四題之處置：對賬 metric 與告警＝命名與觀測出口之 HOW、主線工程判斷定案（每維一條 gauge；任一維大於 0 告警＋對賬心跳逾時告警、門檻沿 172800 互錨；名稱留 contracts；FR-035、FR-037、FR-043）；m0004 一支（依 D6「併入 m0004」之 user 拍板紀錄；FR-039）；同值設定寫入照寫照落（D1 字面＋ADR-00080；畫面不可達；FR-028）；pushgateway 推送之 HTTP 實作甲乙＝plan research 比較（一次性 CLI 之推送形與全程時限、依賴樹增量；若引入新依賴，版本依全域 §6 兩源比對、分歧即問 user）。另以 rev5／rev4 原碼補明與更正七處：清理浮層形（FR-054）、動作過濾大小寫敏感與搜尋卡提示照實字面（FR-008、FR-051、分岔表）、token-reap 不落自記（FR-032）、極大天數不崩潰（Edge Cases）、授權拒絕之存取日誌列狀態 403（US4）、遷移身分須具建立角色之權（Edge Cases）、brainstorm 工程判斷③「畫面同 rev5」只對 5 鍵成立（Q1）。
 - **前端零測試框架**：前端執行單元之 TDD 迴圈退化為型別檢查＋機器斷言＋兩段 review＋CDP 對照走查。
 - **Amendment 與 ADR 親決時點**：plan 期全數產草稿；Amendment 條文於 U0 逐款親決；施工前提 ADR 另顆。
 - **TDD 發射前置**：組裝形 workflow 模型家由 ADR-00056 固定（opus[1m]／xhigh）；CDP 操作一律 opus[1m]／xhigh；base-web pnpm 與其逾時一律放容器內。
