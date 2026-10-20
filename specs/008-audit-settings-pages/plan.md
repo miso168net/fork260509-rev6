@@ -7,7 +7,7 @@
 ## Summary
 
 把側欄兩項死項接成真頁：稽核 5 支端點（ROUTES 61→66、政策保護 45→50、可授出集 30→35；新檔 `handler/audit.rs`）、系統設定頁與稽核頁（§III.2 新用途 (ix)(x)），前後端同刀、CDP 對照 rev5 HEAD 驗收。語意核心五件：①**四源讀端**唯讀交易、固定序、寬鬆過濾、讀端打碼單點（島 J1、J4）②**水平線清理**固定序守門＋單交易自記，手動與 reaper 排程共用一支 retention 核（`model/retention.rs`；島 J3 一條規則之結構保證；排程自記列＝哨兵 `0.0.0.0`、操作者空、刪 0 列照落）③**存取日誌寫入**中介層掛於兩受保護子 router 之 enforce_mw 內側、包住授權判定、回應先回後非同步寫、號誌上界 2、fail-open（島 J2；解除 `rev5:R2-9`）④**設定寫端交易化並落操作稽核**、讀 wire 擴宣告旗標與界值（D1、clarify Q1）⑤**reaper 三 job**（token-reap、audit-retention、policy-reconcile 只報不刪）以 rev4 藍本重打、job 本體住 lib、心跳推 pushgateway。
-一支 delta migration `m0004`（reaper 最小權限 role＋GRANT；選單 77 增 `audit:purge` 碼＋R_SUPER 按鈕授權列 165）；其前補 BL-00148 零 docker 離線對賬腿（`schema-gate.py offline`＋pre-commit 段）。憲法一次 MINOR 1.8.1→1.9.0（島 J 全入、§III.2 (ix)(x)、I18N (i) 明細轉譯兩鍵→三鍵）；`MSG_KEYS` 68→70；`AppError` 變體維持 11；**新依賴恰一項**（ureq，心跳推送；版本待 user 依全域 §6 擇定，research R11.6）。
+一支 delta migration `m0004`（reaper 最小權限 role＋GRANT；選單 77 增 `audit:purge` 碼＋R_SUPER 按鈕授權列 165）；其前補 BL-00148 零 docker 離線對賬腿（`schema-gate.py offline`＋pre-commit 段）。憲法一次 MINOR 1.8.1→1.9.0（島 J 全入、§III.2 (ix)(x)、I18N (i) 明細轉譯兩鍵→三鍵）；`MSG_KEYS` 68→70；`AppError` 變體維持 11；**新依賴恰一項**（ureq 3.4.2，心跳推送；全域 §6 兩源分歧經 user 2026-10-21 plan 期擇定，research R11.6）。
 技術路徑＝高度參照 rev5 HEAD（讀端、清理、兩頁）與 rev4（reaper、存取軌跡中介層、reaper role）；對應碼清單與差異點＝research R2～R5。BACKLOG 收 5、記 0（008 窗淨約 −6）、反向確認 2。ADR 十支（ADR-00099～ADR-00108）已於本 plan 落 draft（`proposed`、各附親決分類）；收刀前另立 PATCH Amendment 一支。
 
 ## Technical Context
@@ -86,7 +86,7 @@ docs/arc42/decisions/ADR-00099～ADR-00108-*.md   # plan 期 draft（proposed）
 
 ```text
 rust-api/                                            # worktree（rev6-admin-rust-api）
-├── Cargo.toml(擴：workspace ureq)                    # 版本待 user 擇定
+├── Cargo.toml(擴：workspace ureq)                    # ureq 3.4.2（user 2026-10-21 擇定）
 ├── migration/src/
 │   ├── m0004_reaper_role_and_audit_purge.rs(新)      # role＋GRANT＋選單 77＋列 165＋setval；影響列數斷言；down 反向
 │   └── lib.rs(擴)

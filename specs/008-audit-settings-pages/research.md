@@ -8,7 +8,7 @@
 - **後端**：Rust 1.96.1（edition 2024）；axum 0.8.9、sea-orm 1.1.20、tokio 1.53.1、metrics 0.24.6、metrics-exporter-prometheus 0.18.3（`default-features = false`）、axum-prometheus 0.10.1、serde_json 1.0.151、tracing 0.1.44（`rust-api/Cargo.toml` 現讀）。容器內 build／test 全程 serial；真庫測試連 dev 庫（`config::database_url()`；`model/facade/test_kit.rs` 之 `real_db`）。
 - **前端**：Vue 3.5.34／TypeScript 6.0.3／naive-ui 2.44.1／vue-i18n 11.4.2（`base-web/package.json` 現讀）；零前端測試框架＝型別檢查＋機器斷言＋兩段 review＋CDP 對照。
 - **資料**：PostgreSQL 18.4；四稽核表與 `sys_token` 皆在 001 基線（欄形見 data-model §1）；本刀唯一 DDL＝m0004 之角色與權限面（R12）。
-- **新依賴**：恰一項候選——pushgateway 心跳推送之 HTTP client（R11.6；ureq，版本待 user 依全域 §6 定）；其餘零新依賴、零版本變更。
+- **新依賴**：恰一項——pushgateway 心跳推送之 HTTP client（R11.6；ureq 3.4.2，全域 §6 兩源分歧經 user 2026-10-21 plan 期擇定）；其餘零新依賴、零版本變更。
 - **部署面**：compose 既有 `reaper`（jobs profile）與 `pushgateway`（metrics profile）服務、密鑰產生器既產 `reaper_password`／`reaper_database_url`（角色名寫死 `reaper`：`deploy/generate-secrets.py` 之組合字串與 `deploy/setup-reaper-role.py` 之 `ALTER ROLE reaper`）；rust-api 容器不掛 `reaper_database_url`（最小權限分離、本刀不改）。
 
 ## R2 rev5 對應碼清單（後端）
