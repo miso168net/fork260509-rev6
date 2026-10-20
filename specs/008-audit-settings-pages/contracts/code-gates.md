@@ -4,7 +4,7 @@
 
 ### 1.1 授權來源與硬序
 
-授權鏈＝ADR-00099（proposed）→U0 user 逐款親決→accepted＋§III.2 兩新列與 I18N (i) 紀律欄改寫＋bump 1.9.0＋generate（§V.2 四步、獨立 commit）。★accepted 前 base-web **既有檔**零 diff（含 locale backend 子樹、`app.d.ts`、`request/index.ts`）；純新增檔（兩頁 view 與模組、`rev6-audit.{ts,d.ts}`）不受此閘。
+授權鏈＝ADR-00099（proposed；條文字面 plan 期已逐款親決）→U0 銜接字面 diff 呈 user→accepted＋§III.2 兩新列與 I18N (i) 紀律欄改寫＋bump 1.9.0＋generate（§V.2 四步、獨立 commit）。★accepted 前 base-web **既有檔**零 diff（含 locale backend 子樹、`app.d.ts`、`request/index.ts`）；純新增檔（兩頁 view 與模組、`rev6-audit.{ts,d.ts}`）不受此閘。
 
 ### 1.2 ★軌道逐處登記（spec 登記表 9 列＋本 plan 補 1 列）
 

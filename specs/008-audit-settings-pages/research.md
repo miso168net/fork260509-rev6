@@ -258,7 +258,7 @@
 5. **contract（承決＝spec FR-069）**：五支 case＋覆蓋閘雙向＋case_key 綁定＋授權態矩陣（Super 通、Admin／User `5003`、未帶權杖 `8888`、動詞不符 `4040`）；兩新鍵各至少一案實發；可授出集 30→35 釘值。
 6. **島 J 不變式測（承決＝spec FR-068）**：J1 讀端零寫入（唯讀交易負向＋計數不變）、J2 未認證零列／fail-open／`5003` 照記、J3 清理唯一形＋原子自記（含排程）、J4 打碼單點、J5 所指島 E 兩點之既有測照舊。
 
-## R19 Amendment 要點與 U0 待親決清單（ADR①；spec FR-060）
+## R19 Amendment 要點與親決清單（ADR①；spec FR-060）
 
 - **版本**：MINOR 1.8.1→1.9.0（§V.3「行為島隨刀進場」「軌道授權邊界擴展」）；獨立 commit；accepted 前 base-web 既有檔零 diff（新增檔不受此閘）。
 - **條文面**：①§I.7 島 J（J1～J5；起草輸入＝brainstorm ㉓；J1 補回 rev4 島 J1 分句、J2 以 rev4 島 J2 字面為底、J3 含排程清理與自記列形、J4 打碼、J5 指島 E 末兩點）②§I.6 變體 B 括號句改 J3 交叉指針 ③§I.7 表尾句 J2 空缺位處置、MAJOR 射程九島→十島、承襲指針 J 列尾註 ④§III.2 `BASE-WEB-MANAGE-PAGE-WIRING` (ix)(x) 兩新列 ⑤★§III.2 `BASE-WEB-I18N-WIRING` (i) 紀律欄「錯誤明細轉譯只限兩鍵」→三鍵（新增清理下限天數、具名插值；R24 E2）⑥Amendment log 列、島 J 標頭與島末常數句（README 不設憲法版本鏡像＝ADR-00074）。
@@ -296,7 +296,7 @@ ADR 草稿於本 plan 落 feature branch（`proposed`；proposed 期 `supersedes
 
 | 單元 | 內容 | 前置 |
 |---|---|---|
-| U0 | 前置體檢；Amendment 親決（ADR-00099＋憲法 1.9.0）；施工前提 ADR accepted（ADR-00100／00101／00102／00104／00105／00107／00108） | — |
+| U0 | 前置體檢；Amendment 落字（ADR-00099 條文字面已於 plan 期逐款定稿、銜接字面一份 diff 呈 user；憲法 1.9.0）；施工前提 ADR accepted（ADR-00100／00101／00102／00104／00105／00107／00108） | — |
 | U1 | 工具前置：BL-00148 離線對賬腿（對 m0003 先綠）＋pre-commit 段；runtime-append 兩工具擴 `sys_access_log`＋還原集 | U0 |
 | U2 | 測試基建：`AccessLogRowsGuard`、`PurgeSelfAuditGuard`、在途計數 drain、app 建構 helper 帶守衛（兩層）、清理類前置斷言件 | U0 |
 | U3 | 骨架：ROUTES 61→66＋handler 空殼五支（形依 007 刀 U3 前例）＋contract 登記＋授權態矩陣＋可授出集 35＋docsync 釘值 | U2 |
