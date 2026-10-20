@@ -42,4 +42,5 @@
 - 剩餘 clarify 候選四題（皆非範圍或安全級、spec 以預設形承載）：對賬計數 metric 與告警規則之名稱與門檻；m0004 拆不拆兩支；pushgateway 推送之 HTTP 實作甲乙（若引入新依賴、版本另依全域 §6 兩源比對）；同值設定寫入照落稽核列。
 - brainstorm §6 所稱「spec 須含子句層需求追溯表」依 007 前例讀為：spec 以 FR-071 規定射程（全四類）與自證義務（ADR-00097 決定 2b），子句表本體住 tasks.md（承載對映於 tasks 期方可成表）。
 - m0004 屬一次性遷移：Risk／Guard／Rollback 三欄表已附（CLAUDE.md §2）；新列 id、冪等形與拆分與否留 plan 期定。
-- 憲法條文字面（島 J 各款、J2 回填字面、§I.6 括號句、用途 (ix)(x) 之範圍欄初值）不在本 spec 定稿：FR-060 只定範圍與必含項，字面於 U0 由 user 逐款親決。
+- 憲法條文字面（島 J 各款、J2 回填字面、§I.6 括號句、用途 (ix)(x) 之範圍欄初值）不在本 spec 定稿：FR-060 只定範圍與必含項，字面由 user 逐款親決（plan 期：user 2026-10-21 裁定、依 ADR-00089 決定 4／7）。
+- plan 期更正（2026-10-21；research R24）：上列第②點所稱設定域觸發器之「現行承載為 ADR-00080」已失準——ADR-00080 已被 ADR-00091 supersede，現行承載＝ADR-00091（spec FR-028 等處同改）；另 plan 期補 spec 修補 E2～E6（I18N (i) 三鍵入 Amendment、★軌道表補 `request/index.ts`、reaper 權限測形、心跳 metric 名、款數十七）。檢核項狀態不變。
