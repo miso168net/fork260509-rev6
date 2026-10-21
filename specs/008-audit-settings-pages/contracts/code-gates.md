@@ -24,7 +24,7 @@
 
 ### 1.4 變更檔集機器斷言
 
-各前端單元出口：`git -C base-web diff --name-only <基> HEAD` ⊆（1.2 表檔集 ∪ 1.3 新檔 ∪ rev6 自有檔）；收刀全量閘復跑。修改型標記只出現於授權三元組（fork-delta-lint 名冊斷言）。
+各前端單元出口：`git -C base-web diff --name-only <基> HEAD` ⊆（1.2 表檔集 ∪ 1.3 新檔 ∪ rev6 自有檔〔檔頭首行帶 `rev6-inline` 新增型新檔標記者、現算〕∪ 既有授權用途檔中只改既有圈界塊內註解行者〔ADR 現在式改指；逐檔列名、`tools/fork-delta-lint.py` rc 0 即證落既有圈界內〕）；後兩類之修改型 `原行:` 增量為 0；收刀全量閘復跑。修改型標記只出現於授權三元組（fork-delta-lint 名冊斷言）。
 
 ### 1.5 新增圈界塊「拔標記必紅」
 

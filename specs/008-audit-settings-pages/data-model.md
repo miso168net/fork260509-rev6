@@ -272,3 +272,11 @@
 | `clearPwdPolicyCache` | hook 出口 | `base-web/src/hooks/business/pwd-policy.ts` |
 | `obs017-policy-reconcile-orphans`、`obs017-reconcile-heartbeat-timeout`（uid ≤ 40 字元；title `policy-reconcile-heartbeat-timeout`） | 告警規則 | `deploy/grafana-provisioning/alerting/rules.yml` |
 | `reaper_orphan_policies{dimension}` | 心跳 gauge | reaper 推送 |
+| `AccessLogInFlight`（在途 RAII 憑證：`enter` 計數 +1、`Drop` −1） | 中介層 | `server/src/middleware/mod.rs`（U2 立、U8 中介層持有） |
+| `drain_access_log_writes`、`with_access_log_guard`、`guarded_app`、`stub_app_behind_dev_proxy`、`assert_only_planted_before_horizon`、`PURGE_TEST_*`、`SYSTEM_JOB_SENTINEL_IP`、`horizon_probe`、`plant_aged_audit_row` | 測試件 | `facade/test_kit.rs`（`drain_access_log_writes` 另有 tests 側同名鏡像＝`tests/common/mod.rs`） |
+| `HORIZON_PREDICATE` | 水平線式單一出處 | `facade/mod.rs` |
+| `SYSTEM_REAL_IP_SENTINEL`（私有） | 生產面哨兵常數 | `facade/sys_operation_log.rs` |
+| `sys_role::active_codes` | facade | 既有檔 |
+| `reaper::{Job::ALL, mode_label, DEFAULT_GRACE_DAYS, record_orphan_gauges}` | reaper 件 | `server/src/reaper.rs` |
+
+（末六列為 tasks 期定名之跨單元件。）
