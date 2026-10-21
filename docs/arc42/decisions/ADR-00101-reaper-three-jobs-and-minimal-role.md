@@ -36,16 +36,16 @@ tags: [audit, reaper, retention, authz-governance, observability, dependency]
 5. **排程清理自記列**：`created_by` NULL、`real_ip`＝`0.0.0.0`、`peer_ip`／`x_forwarded_for`／`ip_confidence` NULL、`payload_after`＝`{table, before_days, deleted_count, job}`；刪 0 列照落（每輪四列）。寫入經系統程序具名型（封閉 enum、只收碼內字面）與 facade 專屬入口；哨兵常數只住該 facade。★哨兵＝無網路來源之標記，只用於無操作者之系統程序自記列；非島 F 之 F3① 與島 E 末點所禁之「有操作者而取不到其位址時以佔位位址補足」——HTTP 寫端照舊只轉錄請求上下文、缺席拒寫 `5000`（001 data-model 前瞻註之兌現）。
 6. **policy-reconcile**：唯讀三維（選單、按鈕、端點）計數孤兒授權列（候選外或角色無主；每列每維至多計一次）；有無 `--execute` 皆零寫入；結構化日誌指名三維計數；不自動刪。處置＝RUNBOOK（非 seed 角色＝刪除角色經連動歸檔；seed 角色或逐列清＝維運 SQL 範本：先匯出待刪列留存再刪、不手寫歸檔列）。
 7. **心跳**：grouping key `…/metrics/job/reaper/reaper_job/<job>`（PUT 整組替換）；`reaper_last_success_timestamp{mode}`（三 job）、`reaper_deleted_total{mode}`（token-reap、audit-retention）、`reaper_orphan_policies{dimension}`（policy-reconcile）；完跑後推、best-effort、全程時限 10 秒、失敗不改退出碼。
-8. **HTTP 實作**：ureq（`default-features = false`；rev4 藍本形）；版本＝3.4.2（user 2026-10-21 plan 期擇定；全域 §6 兩源：rev4 lockfile 3.3.0、crates.io 最新穩定 3.4.2）、完整版號釘於 workspace（`ureq = { version = "3.4.2", default-features = false }`）；lockfile 連帶解析 `ureq-proto` 0.6.5、`base64` 0.23.1（與既有 0.22.1 兩大版本並存）。
+8. **HTTP 實作**：ureq（`default-features = false`；rev4 藍本形）；版本＝3.4.2（user 2026-10-21 plan 期擇定；全域 §6 兩源：rev4 lockfile 3.3.0、crates.io 最新穩定 3.4.2）、完整版號釘於 workspace（`ureq = { version = "3.4.2", default-features = false }`）；lockfile 連帶解析 `ureq-proto` 0.6.5、`utf8-zero`、`base64` 0.23.1（既有 `base64` 0.13.1〔captcha 之依賴〕與 0.22.1 之外再並存 0.23.1＝三版本；以實作單元之 `cargo tree -i base64` 實得為準）。
 9. **連線與 role**：以 `reaper_database_url`（`reaper` role）連線、不掛 `database_url`；連線字串解析取 Result 形（拒空值與範本佔位值）。role 由 m0004 建（ADR-00108）、`deploy/setup-reaper-role.py` 設密。
-10. **告警**：⑤⑤b⑥⑥b 現況註改有源；新增 `obs017-policy-reconcile-orphans`（任一維 > 0）與 `obs017-policy-reconcile-heartbeat-timeout`（> 172800）；④ audit-capacity 現況註改述（處置路＝稽核頁清理或排程清理）。
+10. **告警**：⑤⑤b⑥⑥b 現況註改有源；新增 `obs017-policy-reconcile-orphans`（任一維 > 0）與 `obs017-reconcile-heartbeat-timeout`（> 172800；Grafana 告警規則 uid 上限 40 字元、title 保留 `policy-reconcile-heartbeat-timeout`）；④ audit-capacity 現況註改述（處置路＝稽核頁清理或排程清理）。
 11. **compose**：兩檔 reaper 段現況改 as-built；dev loop 依序三 job、`;` 分隔（失敗互不阻斷）。
 12. **碼位**：job 本體住 lib `server/src/reaper.rs`；`server/src/bin/reaper.rs` 只為進場點（契約＝本刀 contracts/reaper-cli.md）；真庫測試直接呼叫 lib 之 job 函式、以參數注入天數（替代案 6）。
 
 ## 後果
 
 - 自記列永久豁免＝每年約 1,460 列不可清（g5）。
-- 新增四支純 Rust crate（ureq 3.4.2、ureq-proto 0.6.5、utf8-zero、base64 0.23.1）；base64 兩大版本並存、ureq-proto 0.6.5 為 2026-10-17 新發布版。
+- 新增四支純 Rust crate（ureq 3.4.2、ureq-proto 0.6.5、utf8-zero、base64 0.23.1）；base64 三版本並存（0.13.1、0.22.1、0.23.1）、ureq-proto 0.6.5 為 2026-10-17 新發布版。
 - 走查與真庫測試期間不起 jobs profile（R4）；reaper 真庫案以函式參數注入天數並帶前置斷言（防刪 dev 庫真實舊列）。
 - 對賬非零只告警、處置仰賴維運者照 RUNBOOK。
 
@@ -75,4 +75,4 @@ tags: [audit, reaper, retention, authz-governance, observability, dependency]
 | 決定 11 | 承決 | spec FR-038 | compose 說明改成現況，開發環境每輪跑三個工作。 |
 | 決定 12 | 工程 | 碼位（替代案 6；research R11） | 工作的本體寫在共用程式庫，執行檔只負責啟動。 |
 
-- **親決紀錄**：（plan 期）待決 1 款（決定 8）於 plan 期 AskUserQuestion 一題：user 2026-10-21 答「3.4.2，官方最新穩定版」（非建議項；建議項＝rev4 驗證過之 3.3.0＋ureq-proto 0.6.0；作答時 HEAD＝`926b359`、本 ADR 草稿未入版控），同日改標承決、版本與連帶依賴入款文與後果。獨立核對（ADR-00089 決定 5；2026-10-21）：11 列中相符 10（決定 1～6、8～11；決定 8 之待決標註）、改正 1（決定 7 含 spec 承決之心跳語意、原標工程＝依混類取最高改標承決並補 FR-030／FR-037）、漏列 1（標題「job 本體住 lib」無對應款＝補決定 12〔工程〕並入表）；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。
+- **親決紀錄**：（plan 期）待決 1 款（決定 8）於 plan 期 AskUserQuestion 一題：user 2026-10-21 答「3.4.2，官方最新穩定版」（非建議項；建議項＝rev4 驗證過之 3.3.0＋ureq-proto 0.6.0；作答時 HEAD＝`926b359`、本 ADR 草稿未入版控），同日改標承決、版本與連帶依賴入款文與後果。獨立核對（ADR-00089 決定 5；2026-10-21）：11 列中相符 10（決定 1～6、8～11；決定 8 之待決標註）、改正 1（決定 7 含 spec 承決之心跳語意、原標工程＝依混類取最高改標承決並補 FR-030／FR-037）、漏列 1（標題「job 本體住 lib」無對應款＝補決定 12〔工程〕並入表）；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。tasks 期改字（2026-10-21；tasks 起草稿實證）：決定 8 之連帶依賴句與後果同句（`rust-api/Cargo.lock` 既有 base64 0.13.1 與 0.22.1 兩版＝加 0.23.1 後三版本；補 `utf8-zero`）＝作答後改字、依決定 6① 於 U0 重問一題；決定 10 之 ⑦b uid 改 `obs017-reconcile-heartbeat-timeout`（原名 41 字元超 Grafana 告警規則 uid 上限 40；repo 既有最長恰 40）＝承決款改字（規則名屬工程）、依決定 6② 復核。

@@ -43,8 +43,8 @@
 
 ### 2.2 `tools/schema-gate.py offline`（BL-00148；新子命令、零 docker）
 
-- 輸入：`rust-api/migration/src/m000[3-9]*.rs`、`docs/ops/reference-src/schema-evolution.json`、`rust-api/migration/src/m0002_baseline_seeds.rs`。
-- 判準：①SQL 常數解析（`const` 字串、`concat!`、檔內 `macro_rules!` 字面；他形＝rc 2）②語句分類（seed DML／`setval`／權限面 DDL；未分類＝紅）③seed DML ↔ 該刀演進帳逐筆（表、pk、set／values 全欄）④前值 ↔ 凍結 seed（UPDATE 之 WHERE 前值、DELETE 全欄）⑤權限面 DDL 結構化列出（語句數、受權物件集）。
+- 輸入：`rust-api/migration/src/` 下 `m<四碼>_….rs`（四碼 ≥ 0003、依數值排序）、`docs/ops/reference-src/schema-evolution.json`、前值左源＝`specs/001-schema-baseline/fixtures/seed.sql` 之 COPY 段（m0002 之凍結證據；m0002 本身為多列 INSERT、無 COPY 段）⊕ 前序 delta 已配對之登記。
+- 判準：①SQL 常數解析（`const` 字串、`concat!`、檔內 `macro_rules!` 字面；他形＝rc 2；SQL 之家限 `fn up`／`fn down` 本體內 `execute_unprepared(<SQL>)` 之引數與 `expect_rows(…)` 第三引數、本體他句形＝rc 2、未被引用之常數不入分類）②語句分類（seed DML／`setval`／權限面 DDL；未分類＝紅）③seed DML ↔ 該刀演進帳逐筆（表、pk、set／values 全欄）④前值 ↔ 前值左源（凍結 seed ⊕ 前序 delta 已配對之登記；UPDATE 與 DELETE 之 WHERE 所列各欄逐欄等於左源該列之值、不要求列全欄）⑤權限面 DDL 結構化列出（語句數、受權物件集）。
 - 自測：真 repo 綠（m0003、m0004）；改壞常數值、少登一筆、改壞凍結前值、植未分類 DDL 各紅；逐判準停用變異各紅。
 - 掛點：pre-commit 新段 `schema-offline`（`rust-api`、`tools/schema-gate.py`、`docs/ops/reference-src/schema-evolution.json` 任一 staged 時）；`check`（需 docker）不進常跑鏈。
 - 時序：撰寫 m0004 之單元前落地、先對 m0003 綠。
@@ -95,10 +95,10 @@ routes 生成表重算（66 條）；真 repo 釘值測 +5 列；動 ROUTES 之�
 
 ## §4 測試基建（U2 先於一切寫稽核表之單元）
 
-- `AccessLogRowsGuard`、`PurgeSelfAuditGuard`（data-model §10）；`tests/common` 鏡像逐字對賬。
-- 在途計數 drain：`middleware::access_log_pending()`；守衛 Drop 先 drain（上界 5 秒、逾時 panic 指名）。
-- app 建構 helper 回傳帶 `AccessLogRowsGuard` 之包裝（`test_kit` 與 `tests/common` 兩層）；驗收＝全量測試前後 `sys_access_log` 列數相等。
-- 清理原子性注入：retention 共用核之泛型連線內部件＋「自記必敗」注入連線；拆回滾即紅之變異。
+- `AccessLogRowsGuard`、`PurgeSelfAuditGuard`（data-model §10）；`tests/common` 鏡像（`AccessLogWriteGuard`、`PurgeSelfAuditWriteGuard`）逐字對賬。
+- 在途計數 drain：`middleware::access_log_pending()`；drain 於帶守衛 app 之逐回應層（上界 5 秒、逾時 panic 指名）；守衛 Drop 先確認在途歸零再清（current-thread 在途非零＝先清後 fail-loud）。
+- app 建構 helper 內部帶守衛（`test_kit` 與 `tests/common` 兩層；守衛隨 Router clone 走、呼叫點零改寫）；驗收＝全量測試前後 `sys_access_log` 列數相等。
+- 清理原子性注入：`test_kit::occupy_next_audit_id` 預佔操作日誌下一 id（自記必敗；手動與排程兩臂各一案、由清理寫端與排程清理單元自持）；拆回滾即紅之變異。
 - reaper 權限測：`SET LOCAL ROLE reaper` 正負向（允許：四稽核表 SELECT／DELETE、`sys_operation_log` INSERT、`sys_token` SELECT／DELETE、授權三表 SELECT；拒：`sys_user` 任意寫、授權三表 INSERT／UPDATE／DELETE、`system_settings` 讀寫——SQLSTATE 42501）。
 - 清理類真庫案前置斷言（R8.7）；reaper 真庫案以參數注入天數。
 
@@ -110,8 +110,8 @@ routes 生成表重算（66 條）；真 repo 釘值測 +5 列；動 ROUTES 之�
 ## §6 觀測與告警
 
 - rules.yml：③d 註解改現況（expr 不動）、④ 註解改述、⑤⑤b⑥⑥b 現況註改有源、⑦⑦b 新增（reaper-cli §8）。
-- 儀表板：`rust-api.json` 刪面板 10／11／14、面板 13 移位擴寬；`reaper.json` 四面板與 `master-overview.json` 面板 5 描述改 as-built；`audit-log.json` 面板 3 與變數 `trace_id` 描述改述。
-- 活體驗證（可選）：obs／metrics profile 起後以 jobs 一輪觀察三組心跳。
+- 儀表板：`rust-api.json` 刪面板 10／11／14、面板 13 移位擴寬；`reaper.json` 三面板（id 1／2／4）與 `master-overview.json` 面板 5 描述改 as-built（legend 以 `reaper_job` 分序列）；`audit-log.json` 面板 3 與變數 `trace_id` 描述改述。
+- 活體驗證：觀測層單元可選起 obs／metrics profile、以合成推送證規則面；驗收單元之 jobs profile 活體一輪 metrics profile 必起（觀察三組心跳、⑤⑥⑦b inactive、⑦ 值 0）、obs 可選（未起時 Loki 規則之 health error 依 RUNBOOK §11.3 判為環境未起）。
 
 ## §7 ADR 與帳本
 

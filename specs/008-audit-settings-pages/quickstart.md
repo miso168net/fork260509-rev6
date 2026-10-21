@@ -13,7 +13,7 @@ dc ps && dc up -d --wait
 BASE=http://127.0.0.1:32080/api; SM=$BASE/systemManage; J='content-type: application/json'
 SQL() { dc exec -T postgres sh -lc "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -At -c \"$1\""; }
 SQL "SELECT version FROM seaql_migrations ORDER BY version"
-#   m0001～m0004 四列；缺 m0004＝撰寫 m0004 之單元收尾步（取 user 放行）：dc run --rm migrate → dc restart rust-api（判定面開機載入）
+#   m0001～m0004 四列；缺 m0004＝撰寫 m0004 之單元收尾步（取 user 放行）：dc run --rm migrate → dc up -d --force-recreate --no-deps rust-api（判定面開機載入；`restart` 不重掛單檔 bind mount＝RUNBOOK §2／§10、LL-00095）
 python3 tools/walkthrough-baseline.py snapshot "<走查基準檔（不入版控之工作區）>"   # rc 0（RUNBOOK §9c）
 TOKEN() { curl -s -X POST $BASE/auth/login -H "$J" -d "{\"userName\":\"$1\",\"password\":\"$2\"}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["data"]["token"])'; }
 ST=$(TOKEN Super "$SEED_PW"); AT=$(TOKEN Admin "$SEED_PW")      # SEED_PW＝dev seed 密碼（RUNBOOK §14；不落字面）
@@ -48,7 +48,7 @@ curl -s "$SM/getOperationLog?entityTable=sys_user&operation=update&size=1" -H "$
 ## 3. 手動清理（SC-005；FR-015～FR-020）
 
 ```bash
-SQL "SELECT count(*) FROM sys_access_log WHERE created_at < now() - interval '3650 days'"   # 植列前須為 0；植列後須恰為自植數
+SQL "SELECT count(*) FROM sys_access_log WHERE created_at < now() - interval '3650 days'"   # 不植列（經 API 造不出 3650 天前之列、psql 只下 SELECT）：得 N（期望 0）＝下方 deletedCount；實刪由清理寫端與排程清理之真庫測試承擔
 curl -s -X POST "$SM/purgeAuditLog" -H "$(H $ST)" -H "$J" -d '{"table":"accessLog","beforeDays":29}'
 #   2222、msg biz.audit.purgeBelowFloor、data {"minDays":30}
 curl -s -X POST "$SM/purgeAuditLog" -H "$(H $ST)" -H "$J" -d '{"table":"sys_user","beforeDays":10}'
@@ -121,6 +121,8 @@ python3 tools/schema-gate.py check                                    # 需 dock
 - 機器面：`pnpm typecheck`（容器內）、`python3 tools/fork-delta-lint.py`、`route-artifact-gate.py check`、`seed-view-gate.py check`、`view-render-guard.py check`、`zh-tw-lint.py check`、`msg-key-gate.py check`。
 
 ## 9. 測試殘列（R3 驗收）
+
+前置：量測期間 rev6 stack 零活體已登入流量（32080 分頁與 CDP 會話全關）——守衛以 id 水位清列，活體列會被一併清除、且使前後比對失準。
 
 ```bash
 B=$(SQL "SELECT count(*) FROM sys_access_log"); <容器內全量 cargo test --test-threads=1>; A=$(SQL "SELECT count(*) FROM sys_access_log"); test "$B" = "$A"

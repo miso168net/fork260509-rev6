@@ -21,11 +21,11 @@
 
 ### 1.2 `sys_access_log`（變體 B；本刀首個寫入者與讀端）
 
-`id`、`created_at`、`created_by` bigint **NN**（＝`Identity.uid`；結構上只已認證請求落列）、`http_status` int4（HTTP 狀態碼；rev6 實際只見 200 與 403＝research R9.6）、`http_method` varchar、`http_path` varchar（`uri().path()`、不含 query）、`real_ip` inet NN、`peer_ip`／`x_forwarded_for`／`ip_confidence` 可空、`region`／`trace_id` 恆 NULL。
+`id`、`created_at`、`created_by` bigint **NN**（＝`Identity.uid`；結構上只已認證請求落列）、`http_status` int4（HTTP 狀態碼；rev6 實際只見 200 與 403＝research R9.6）、`http_method` text、`http_path` text（`uri().path()`、不含 query）、`real_ip` inet NN、`peer_ip`／`x_forwarded_for`／`ip_confidence` 可空、`region`／`trace_id` 恆 NULL。
 
 ### 1.3 `sys_login_attempt`（變體 B；既有寫入者＝登入路徑；本刀首個讀端與刪除者）
 
-`attempted_user_name`（部分字串過濾）、`success`（嚴格二值過濾）、`real_ip`（精確等值過濾）、`created_by` 恆 NULL（無操作者維）、來源四欄、`region`／`trace_id`。節流短路遭拒不落表（表語意）。
+`attempted_user_name`（部分字串過濾）、`success`（嚴格二值過濾）、`real_ip`（精確等值過濾）、`created_by` 可空（帳號查得到時為其 uid；讀端不設操作者過濾維、不上 wire＝spec FR-010）、來源四欄、`region`／`trace_id`。節流短路遭拒不落表（表語意）。
 
 ### 1.4 `session_event`（變體 B；表名無 `sys_` 前綴；本刀首個讀端與刪除者）
 
@@ -118,7 +118,7 @@
 
 ### 3.2 updateSystemSetting
 
-①上下文（`5000`）→②`settingKey`／`settingValue` 必填（缺席或 null＝`2222 invalidValue`）→③交易內鎖讀（查無或軟刪＝`2222 notFound`）→④型別一致性（`5000`）→⑤registry 驗值（`2222 invalidValue`）→⑥更新（`RETURNING`）→⑦同交易稽核→commit→`0000`＋`data:null`。
+①上下文（`5000`；先於 body 抽取之拒——handler 收 `Result<UpdateSystemSettingReq, AppError>`、上下文判定後才取 body）→①′body 抽取（壞形＝既有抽取器之 `2222`）→②`settingKey`／`settingValue` 必填（缺席或 null＝`2222 invalidValue`）→③交易內鎖讀（查無或軟刪＝`2222 notFound`）→④型別一致性（`5000`）→⑤registry 驗值（`2222 invalidValue`）→⑥更新（`RETURNING`）→⑦同交易稽核→commit→`0000`＋`data:null`。
 
 ### 3.3 reaper 參數與環境
 
@@ -173,7 +173,7 @@
 | `LoginAttempt` | `id`、`createTime`、`attemptedUserName`、`success`、`realIp`、`peerIp`、`xForwardedFor`、`ipConfidence`、`region`、`traceId` |
 | `SessionEvent` | `id`、`createTime`、`userId`(i64 守衛)、`userName`、`sid`、`eventType`、`reason`、`operatorId`、`operatorName`、`sourceIp` |
 | `PurgeAuditLogRes` | `deletedCount`(u64、不入 2^53 守衛面) |
-| `PurgeBelowFloorDetail` | `minDays`(i64) |
+| `PurgeBelowFloorDetail` | `minDays`(u64；值＝`PURGE_MIN_DAYS.unsigned_abs()`；不入 2^53 守衛面、先例 `PwdSetTooFrequentDetail`) |
 
 `Api.SystemManage.SystemSetting` 擴三欄：`declared`(boolean、恆在)、`rangeMin`／`rangeMax`(number、只在宣告之 number 鍵在場)。分頁信封 `PageRes<T>` 不變。
 
@@ -228,8 +228,8 @@
 
 | 件 | 圈界 |
 |---|---|
-| `AccessLogRowsGuard` | `max(id)` 水位；Drop 先 drain 在途寫入（上界 5 秒）再刪 `id >` 水位 |
-| `PurgeSelfAuditGuard` | HTTP 路：合成操作者 uid＋水位；系統路：`created_by IS NULL AND real_ip = '0.0.0.0'` ＋水位 |
+| `AccessLogRowsGuard`（tests 側 `AccessLogWriteGuard`） | `max(id)` 水位、不動序列；drain 於帶守衛 app 之逐回應層（await 在途歸零、上界 5 秒）；Drop 先確認在途歸零（current-thread 在途非零＝先清後 fail-loud）再刪 `id >` 水位 |
+| `PurgeSelfAuditGuard`（tests 側 `PurgeSelfAuditWriteGuard`） | HTTP 路：合成操作者 uid＋水位；系統路：`created_by IS NULL AND real_ip = '0.0.0.0'` ＋水位 |
 | 清理類真庫案 | 水平線 3650 天、植列 4000 天前、執行前斷言水平線前恰本案所植 N 列（否則拒跑） |
 | 操作者 | 合成 uid ≥ `SYNTHETIC_UID_FLOOR`（9_300_000_000）；號段依 `ID_RANGES` 增列 |
 | reaper 權限 | 交易內 `SET LOCAL ROLE reaper`、語句後回滾 |
@@ -262,13 +262,13 @@
 | `system_settings::{find_by_key_for_update, update_by_key_in_txn}` | facade | 既有檔 |
 | `access_log_mw`、`AccessLogLayer`、`ACCESS_LOG_WRITE_CONCURRENCY`（2）、`access_log_pending` | 中介層 | `server/src/middleware/mod.rs` |
 | `access_log_write_failed`／`access_log_write_failed_total` | 觀測 | `server/src/obs.rs` |
-| `reaper::{Args, parse_args, Job, dispatch_job, classify_retention_days, resolve_retention_days, grace_days_from, resolve_database_url, run_token_reap, run_audit_retention, run_policy_reconcile, OrphanCounts}` | reaper 本體 | `server/src/reaper.rs` |
+| `reaper::{Args, parse_args, Job, dispatch_job, classify_retention_days, resolve_retention_days, grace_days_from, resolve_database_url, run_token_reap, run_audit_retention, run_policy_reconcile, OrphanCounts}`（`OrphanCounts` 為再匯出、定義住 facade `sys_casbin_policy.rs`＝facade 不反向依賴 job 模組） | reaper 本體 | `server/src/reaper.rs` |
 | `reaper` bin（`push_heartbeat`、`HEARTBEAT_TIMEOUT_SECS` 10、`PUSHGATEWAY_URL_BASE`） | bin | `server/src/bin/reaper.rs` |
 | `msg_key::{BIZ_AUDIT_INVALID_TABLE, BIZ_AUDIT_PURGE_BELOW_FLOOR}` | 名冊 | `server/src/error.rs` |
 | `SettingItem.{declared, range_min, range_max}` | wire 擴欄 | `handler/system_settings.rs` |
-| `AccessLogRowsGuard`、`PurgeSelfAuditGuard` | 測試守衛 | `facade/test_kit.rs`＋`tests/common/mod.rs` |
+| `AccessLogRowsGuard`、`PurgeSelfAuditGuard`；tests 側 `AccessLogWriteGuard`、`PurgeSelfAuditWriteGuard`（`*WriteGuard` 慣例） | 測試守衛 | `facade/test_kit.rs`；`tests/common/mod.rs` |
 | `rev6-audit.ts`（`fetchGetOperationLog`／`fetchGetAccessLog`／`fetchGetLoginAttempt`／`fetchGetSessionEvent`／`fetchPurgeAuditLog`） | wrapper | `base-web/src/service/api/` |
 | `rev6-audit.d.ts`（`Api.Audit.*`） | typings | `base-web/src/typings/api/` |
 | `clearPwdPolicyCache` | hook 出口 | `base-web/src/hooks/business/pwd-policy.ts` |
-| `obs017-policy-reconcile-orphans`、`obs017-policy-reconcile-heartbeat-timeout` | 告警規則 | `deploy/grafana-provisioning/alerting/rules.yml` |
+| `obs017-policy-reconcile-orphans`、`obs017-reconcile-heartbeat-timeout`（uid ≤ 40 字元；title `policy-reconcile-heartbeat-timeout`） | 告警規則 | `deploy/grafana-provisioning/alerting/rules.yml` |
 | `reaper_orphan_policies{dimension}` | 心跳 gauge | reaper 推送 |

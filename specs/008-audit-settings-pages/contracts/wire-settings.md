@@ -13,7 +13,7 @@
 
 - rust：`SettingItem` 增 `declared: bool`、`range_min: Option<i64>`、`range_max: Option<i64>`（後兩者 `skip_serializing_if = "Option::is_none"`）；宣告集外列＝`declared: false`、兩界缺席。
 - typings：`base-web/src/typings/api/rev6-settings.d.ts` 之 `Api.SystemManage.SystemSetting` 增 `declared: boolean; rangeMin?: number; rangeMax?: number;`（rev6 自有檔、檔頭標記既在）。
-- wire 裁判：`tests/wire_schema.rs` 之 `SystemSetting` 受審案擴三欄正向＋反例（`declared` 缺席、界值非整數）；快照重抽。
+- wire 裁判：`tests/wire_schema.rs` 之 `SystemSetting` 受審案擴三欄正向＋反例（`declared` 缺席、界值非數值〔字串〕、界值為 `null`；整數性由 rust 側 `Option<i64>` 型別＋序列化後 `is_i64()` 釘值承擔——快照抽自 TS `number`、判不出小數）；快照重抽。
 - 守衛照舊：庫中型別不在認識集或與宣告不一致＝整支 `5000`。
 - 16 鍵之界值（REGISTRY 現值）：`password_min_length` 1～128、`password_max_length` 1～256、`login_throttle_max_fails` 1～100、`login_throttle_window_minutes` 1～1440、`login_throttle_captcha_after` 1～100、`ip_captcha_after` 1～100、`ip_max_fails` 1～100、`ip_window_minutes` 1～1440、`password_change_min_interval` 0～86400、`session_idle_timeout` 5～1440；六個二值 enum 鍵無界。
 

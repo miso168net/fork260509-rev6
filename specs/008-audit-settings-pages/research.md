@@ -118,7 +118,7 @@
 ## R7 四源讀端與打碼（島 J1、J4；spec FR-006～FR-014）
 
 1. **決定（承決＝spec FR-007～FR-012；形照 rev5）**：四支讀端只讀、零寫入；固定序 `created_at DESC, id DESC`；分頁 `page_params`；時間 RFC3339 閉開、畸形＝未設、顛倒＝空頁短路（不下 SQL）；人員過濾 id 優先、名→含已軟刪同名全集、零命中＝空頁短路；等值欄空字串＝未設；路徑與帳號名部分字串（ILIKE、`%`／`_`／`\` 字面化）；登入嘗試來源 IP 精確等值（`IpNetwork::from(IpAddr)`＝/32、/128）；成敗嚴格 `true`／`false`。
-2. **只讀交易（工程）**：四支以 `begin_with_config(None, Some(AccessMode::ReadOnly))` 開唯讀交易包住清單與計數兩查詢（同一快照、總數與列一致）；J1 之機器守＝測試以寫入計數前後相等＋唯讀交易內任何寫入被資料庫拒之負向案。判準：J1「純唯讀」由資料庫強制最硬、不靠自律。
+2. **只讀交易（工程）**：四支以 `begin_with_config(Some(IsolationLevel::RepeatableRead), Some(AccessMode::ReadOnly))` 開唯讀交易包住清單與計數兩查詢（可重複讀＝兩句同一快照、總數與列一致；預設之 READ COMMITTED 每句各取快照，存取日誌每請求一寫下總數與列可不一致）；J1 之機器守＝測試以寫入計數前後相等＋唯讀交易內任何寫入被資料庫拒之負向案。判準：J1「純唯讀」由資料庫強制最硬、不靠自律。
 3. **打碼（承決＝D9、spec FR-013）**：`mask_pii_payload` 單點、讀端序列化前對 `payload_before`／`payload_after` 各一次；鍵常數 `userPhone`／`userEmail`（rev6 使用者寫端快照鍵＝`handler/user.rs` 之 `audit_snapshot` 現讀）；手機 `chars().count() > 5`＝前 3＋`****`＋後 2、否則 `****`；信箱含 `@`＝首字＋`***`＋`@網域`、否則首字＋`***`；非字串、缺席、巢狀、非物件快照原樣。拆除即紅之機器守＝讀端案斷言打碼後字面（非 vacuous：植列含兩鍵）。
 4. **IP 欄 wire 形（形照 rev5）**：INET 單址欄去前綴（`ip().to_string()`）；`session_event.source_ip` 為 `varchar(45)` 字串照回。
 5. **授權拒絕與存取日誌**：讀端自身之請求亦經存取日誌中介層落列（R9）；J1 之測試射程＝讀端 handler 與其交易（spec FR-007）。
@@ -126,7 +126,7 @@
 ## R8 水平線清理（手動）與 retention 共用核（島 J3；spec FR-015～FR-020、FR-033、FR-036）
 
 1. **固定序（承決＝spec FR-016）**：①`table` 白名單→②`beforeDays ≥ PURGE_MIN_DAYS`→③操作者解析→④單交易。①②③皆不觸 DB。`PurgeAuditLogReq` 寬鬆收單（`json_or_default`；壞形收斂成 `table` 缺席＝①拒）。
-2. **共用核（工程）**：`model::retention::purge_with_self_record(db, table, before_days, actor) -> Result<u64, DbErr>`——開交易→`table.purge_before(&txn, days)`（四源 facade 分派；操作日誌版帶 `operation <> 'purge'` 豁免臂、豁免字面取 `AuditOperation::Purge.as_str()`）→同交易自記→commit→回刪除數。handler 之④與 reaper audit-retention 之逐表執行皆經此一支。判準：J3「手動與排程同一條規則」以單一實作承擔、不靠兩處對齊。
+2. **共用核（工程）**：`model::retention::purge_with_self_record(db, table, before_days, actor) -> Result<u64, AppError>`（自記經操作日誌 facade 之寫入入口、屬「落 log 再翻 `Internal`」制；四源 `purge_before`／`count_before` 原樣回 `DbErr`，由共用核落 `target: audit` 之 error〔帶 step、表名、天數〕再翻 `Internal`）——開交易→`table.purge_before(&txn, days)`（四源 facade 分派；操作日誌版帶 `operation <> 'purge'` 豁免臂、豁免字面取 `AuditOperation::Purge.as_str()`）→同交易自記（內部件收 `&DatabaseTransaction`；HTTP 路經 `sys_operation_log::write_in_txn`、系統路經 `write_system_in_txn`）→commit→回刪除數。handler 之④與 reaper audit-retention 之逐表執行皆經此一支。判準：J3「手動與排程同一條規則」以單一實作承擔、不靠兩處對齊。
 3. **謂詞（形照 rev5）**：`created_at < now() - ($1 * interval '1 day')`（SQL `now()`＝交易時戳、免時鐘偏移）；`count_before` 與 `purge_before` 共用同一謂詞字串常數（dry-run 候刪數＝將刪數）。極大天數致時間不可表示＝資料庫拒（interval overflow）→整筆回滾→handler `5000`／reaper 該表失敗退出（spec Edge Cases）；以 `before_days = i64::MAX` 之真庫案釘住不崩潰。
 4. **自記兩路（承決＝g2、g5、spec FR-036；形制＝工程）**：
    - HTTP 寫端：`AuditEvent { operator: AuditOperator, operation: Purge, entity_table: 目標表名, entity_id: None, before: None, after: {table, before_days, deleted_count} }` 經既有 `write_in_txn`。
@@ -134,7 +134,7 @@
    - `PurgeActor { Operator(AuditOperator), System(SystemJob) }` 由呼叫端給定；HTTP 寫端「上下文缺席拒寫 `5000`」照舊（`AuditOperator::from_context` 唯一建構點不動）。`model/audit.rs` 檔頭「沒有『自己填一個位址』的路」句改述為兩路現在式：HTTP 路恆轉錄請求上下文；系統路恆為哨兵且操作者空——兩路之構造點互斥、皆無自由位址參數。
    - 判準：哨兵只能經「無操作者之系統程序」構造（型別層），HTTP 路徑物理上拿不到哨兵（R13 之防外溢）。
 5. **刪 0 列照落（承決＝g5）**：共用核不因 `deleted == 0` 早退。
-6. **原子性 fault-injection（承決＝spec FR-018；形制＝工程）**：共用核以泛型連線之內部件承載注入點（同 `sys_operation_log::insert_row` 之「泛型連線只為測試注入」形）——測試以「刪除成功、自記必敗」之注入連線（自記語句命中時回合成 `DbErr`）跑一次，斷言回錯誤、零刪除（植列仍在）、零自記；並以拆除「自記失敗即回滾」之變異證案轉紅（RL-0080）。不新增 `AppState` 建構字面（測試側沿用 `test_kit` 既有建構件）。
+6. **原子性 fault-injection（承決＝spec FR-018；形制＝工程）**：注入點＝真庫佔位：測試以 `test_kit::occupy_next_audit_id` 預佔操作日誌下一個 id（自記 INSERT 必撞主鍵＝「刪除成功、自記必敗」）跑一次（手動與排程兩臂各一案；不另立泛型注入連線與第四支寫入入口＝ADR-00104 款 3 入口三支照舊），斷言回錯誤、零刪除（植列仍在）、零自記；並以拆除「自記失敗即回滾」之變異證案轉紅（RL-0080）。不新增 `AppState` 建構字面（測試側沿用 `test_kit` 既有建構件）。
 7. **真庫保護（工程；承 `rev5:` 形）**：清理類真庫案一律①長水平線（3650 天）②植列 4000 天前③執行前斷言「水平線前恰為本案所植之 N 列」、不等即拒跑（防刪到 dev 庫之真實舊稽核列）④操作者取合成 uid（≥ `SYNTHETIC_UID_FLOOR`）圈自記列。reaper audit-retention 之真庫案同形（以函式參數注入天數、不經環境變數）。
 8. **永久豁免與量**：每日一輪排程清理每年約 1,460 列自記不可清（g5）；操作日誌分頁可依動作或操作者篩除。
 
@@ -145,7 +145,7 @@
 3. **非同步與 fail-open（承決＝spec FR-023；形照 rev4）**：`next.run` 取回應→擷取欄位→`tokio::spawn` 寫入→回應立即返回；身分或上下文缺席＝跳過（debug 事件、不 panic、不 500）；寫入失敗＝`tracing::warn!(target: "audit.access_log", degraded = "access_log_write", error = %e, …)`＋`obs::access_log_write_failed()`（計數 `access_log_write_failed_total`），業務回應零影響。
 4. **R3 對策（工程）**：
    - **連線池壓力**：層狀態持 `Arc<Semaphore>`（許可 2＝碼內常數 `ACCESS_LOG_WRITE_CONCURRENCY`）；spawn 之任務內 `acquire().await` 後才取連線寫入——存取日誌同時佔用之連線數上界 2、業務請求不被寫入洪峰擠滿；不丟列（等待許可、非 `try_acquire`）。連線池設定零改動（BL-00147 之臂不觸）。判準：上界常數化＝可推理之最壞佔用；丟列違「每筆一列」。代價＝庫故障時待寫任務於記憶體排隊（同期業務請求亦失敗、恢復後消化）＝記入 ADR② 後果。
-   - **測試收尾**：中介層維護在途計數（spawn 前 +1、任務結束 −1；`middleware::access_log_pending()` 讀值）；`test_kit` 與 `tests/common` 各增 `AccessLogRowsGuard`（arm 取 `max(id)` 水位；Drop 先等在途歸零〔上界 5 秒、逾時 panic 指名〕再刪 `id >` 水位之列；兩份逐字對賬）；app 建構 helper 回傳帶守衛之包裝（全套件零殘列；呼叫點約 150 處為機械改寫、於測試基建單元一次落）。驗收＝全量測試前後 `sys_access_log` 列數相等（quickstart §9）。
+   - **測試收尾**：中介層維護在途計數（spawn 前 +1、任務結束 −1；`middleware::access_log_pending()` 讀值）；`test_kit` 增 `AccessLogRowsGuard`、`tests/common` 增 `AccessLogWriteGuard`（arm 取 `max(id)` 水位、不動序列；兩份逐字對賬）：drain 落在帶守衛 app 之逐回應層（每筆回應交回前 await 在途歸零、上界 5 秒、逾時 panic 指名——`#[tokio::test]` 預設 current-thread runtime，同步 Drop 內等待恆逾時）；Drop 先確認在途歸零（多執行緒 runtime 有界輪詢；current-thread 在途非零＝先清水位後之列再 fail-loud）再刪 `id >` 水位之列；守衛隨 Router clone 走、app 建構 helper 內部帶守衛（全套件零殘列；呼叫點零改寫，直呼與 stub 案由測試基建單元現算處置）。驗收＝全量測試前後 `sys_access_log` 列數相等（quickstart §9）。
    - **斷言形**：存取日誌案取水位窗＋合成 uid 圈列、先 drain 再斷言；不寫絕對計數（FR-070）。
 5. **runtime-append 兩工具（承決＝spec FR-025）**：`tools/schema-gate.py` 與 `tools/walkthrough-baseline.py` 之 `RUNTIME_APPEND_TABLES` 同值擴入 `"sys_access_log": "sys_access_log_id_seq"`；walkthrough 之 `RESTORE_TABLES` 同批納入（該工具自測斷言 runtime-append 集 ⊆ 還原集）；兩工具名冊對賬自測照跑。
 6. **狀態欄之 as-built 語意（R24 E1）**：rev6 之 `4040` 只由 `router.rs` 兩道 fallback 構造（`AppError::NotFound` 之生產構造點恰兩處、業務 handler 零構造），而 fallback 不經記錄層——存取日誌之狀態欄實際只見 200 與 403。告示文案只提 403（msg-keys contract；緣起＝user 2026-10-21 轉來 side agent 提醒、與主線取證同結論；user 2026-10-21 plan 期 AskUserQuestion 親決「只提 403」）。
@@ -180,10 +180,10 @@
    | 丁 | 既有 `hyper` 1.11.0 之低階 client（`client::conn::http1::handshake`＋`TokioIo`） | 零（既有 crate 開 `client` feature） | 可：需手寫連線、Host 標頭、body 型與逾時約 30 行 | 棄：偏離 rev4 藍本、自寫 HTTP 管線之審查面大於三支小 crate |
 
    對所選方案跑同一反例（RL-0013）：「推送端黑洞時卡死 loop」於乙是否成立？不成立——`timeout_global` 給端到端上界、逾時走 `Err`＝error 事件＋照常返回。「推送失敗改變退出碼」？不成立——推送在 job 完跑後呼叫、結果只入日誌。「新增 crate 擴大供應鏈」？成立（擇 3.4.2＝四支：`ureq`、`ureq-proto`、`utf8-zero`、`base64` 0.23；純 Rust、無 TLS）——接受，版本依全域 §6 交 user（R20 待決題、已答）。
-   **版本兩源**：參照專案（rev4）lockfile＝`ureq 3.3.0`（其下 `ureq-proto 0.6.0`）；crates.io 最新穩定＝`3.4.2`（2026-09-13 發布；其 `ureq-proto ^0.6.3` 之最新相容版 0.6.5 為 2026-10-17 發布、要求 `base64 ^0.23.1`）。兩源分歧＝依全域 §6 呈 user 擇一：user 2026-10-21 plan 期 AskUserQuestion 擇「3.4.2，官方最新穩定版」（非建議項；建議項為 rev4 驗證過之 3.3.0＋`ureq-proto` 0.6.0）——workspace 釘 `ureq = { version = "3.4.2", default-features = false }`、lockfile 解析 `ureq-proto` 0.6.5 與 `base64` 0.23.1（與既有 `base64` 0.22.1 兩大版本並存）；答覆記 ADR③（ADR-00101）親決紀錄。
+   **版本兩源**：參照專案（rev4）lockfile＝`ureq 3.3.0`（其下 `ureq-proto 0.6.0`）；crates.io 最新穩定＝`3.4.2`（2026-09-13 發布；其 `ureq-proto ^0.6.3` 之最新相容版 0.6.5 為 2026-10-17 發布、要求 `base64 ^0.23.1`）。兩源分歧＝依全域 §6 呈 user 擇一：user 2026-10-21 plan 期 AskUserQuestion 擇「3.4.2，官方最新穩定版」（非建議項；建議項為 rev4 驗證過之 3.3.0＋`ureq-proto` 0.6.0）——workspace 釘 `ureq = { version = "3.4.2", default-features = false }`、lockfile 解析 `ureq-proto` 0.6.5、`utf8-zero` 與 `base64` 0.23.1（既有 `base64` 0.13.1〔captcha 之依賴〕與 0.22.1 之外再並存 0.23.1＝三版本）；答覆記 ADR③（ADR-00101）親決紀錄。
 7. **心跳形（承決＝spec FR-037；名＝工程）**：grouping key `…/metrics/job/reaper/reaper_job/<job>`、PUT 整組替換；`reaper_last_success_timestamp{mode}`（三 job）、`reaper_deleted_total{mode}`（token-reap 與 audit-retention；dry-run＝候刪數）、`reaper_orphan_policies{dimension}`（policy-reconcile）；推送 best-effort、只在完跑後、失敗只 error 事件。
 8. **連線（承決＝spec FR-031）**：`APP_DATABASE_URL_FILE`（compose 既設為 `reaper_database_url`）優先、`APP_DATABASE_URL` 次之；Result 形解析（R5-29）。
-9. **reaper role 權限測（工程；R24 E4）**：rust-api 容器不持 reaper 憑證——權限之正負向測以 `soybean`（bootstrap 超級使用者）連線、交易內 `SET LOCAL ROLE reaper` 後執行允許語句（成功）與權限外語句（`permission denied`、SQLSTATE 42501）再回滾；以 reaper 憑證之實連驗證由 `deploy/setup-reaper-role.py` 之自驗（`SELECT 1`）與 jobs profile 活體一輪承擔（quickstart §12）。判準：測試射程是角色之權限集、非密碼；把 reaper 憑證掛進 server 容器違最小權限分離。
+9. **reaper role 權限測（工程；R24 E4）**：rust-api 容器不持 reaper 憑證——權限之正負向測以 `soybean`（bootstrap 超級使用者）連線、交易內 `SET LOCAL ROLE reaper` 後執行允許語句（成功）與權限外語句（`permission denied`、SQLSTATE 42501）再回滾；以 reaper 憑證之實連驗證由 `deploy/setup-reaper-role.py` 之自驗（`SELECT 1`）與 jobs profile 活體一輪承擔（quickstart §6）。判準：測試射程是角色之權限集、非密碼；把 reaper 憑證掛進 server 容器違最小權限分離。
 
 ## R12 m0004、演進帳、序號合成、BL-00148 離線對賬腿（ADR⑨；spec FR-039～FR-042）
 
@@ -199,7 +199,7 @@
 3. **演進帳（承決＝spec FR-040）**：`E-010` `seed_update` `sys_menu` `{pk:{id:77}, set:{buttons:"[{\"code\": \"audit:purge\", \"desc\": \"清理日誌\"}]"}}`；`E-011` `seed_add` `casbin_rule` `{pk:["id"], values:{id:165, …, created_at:"2026-08-05 00:00:00+00", created_by:null}}`；`knife`＝`008-audit-settings-pages`、`next_id` 10→12。角色與 GRANT 不入演進帳（八 kind 無權限面、schema 閘照相不及；權限面由 R11.9 之測承擔）。
 4. **連動改對（承決＝spec FR-042）**：授權列 163→164、序號 164→165、受保護 25 不變、R_SUPER 按鈕碼 21→22、選單 77 按鈕清單；seed 錨定測、getUserInfo 三帳號按鈕集（Super 多 `audit:purge`；Admin／User 不變）、m0003 之 setval 期望與 schema 閘之序號合成期望值。
 5. **BL-00148 離線對賬腿（承決＝⑫、spec FR-041；掛點與 DDL 處理＝工程）**：
-   - 載體＝`tools/schema-gate.py` 新子命令 `offline`（零 docker、純讀檔）：①解析 `rust-api/migration/src/m000[3-9]*.rs` 之 `const <名>: &str = …;`（含 `concat!` 與檔內 `macro_rules!` 字面展開；展開器只認兩形、其餘形＝rc 2 指名）②逐語句分類：seed DML（`INSERT INTO`／`UPDATE`／`DELETE FROM` 於 seed 表）、序列（`setval`）、權限面 DDL（`CREATE ROLE`〔含 `DO $$` 包裝〕／`GRANT`／`REVOKE`／`DROP ROLE`）、其餘＝無法分類即紅 ③seed DML 與演進帳該刀登記逐筆對賬（表、pk、set／values 全欄）、與凍結 seed（`m0002_baseline_seeds.rs` 之 COPY 段）之前值對賬（UPDATE 之 WHERE 前值、DELETE 之全欄比對）④權限面 DDL 結構化列出（逐支語句數與受權物件集、不入演進帳；不對賬）——判準：權限面之真偽由 R11.9 之權限測承擔，離線腿只保證「語句類別可辨、seed 面與帳一致」。
+   - 載體＝`tools/schema-gate.py` 新子命令 `offline`（零 docker、純讀檔）：①解析 `rust-api/migration/src/` 下檔名 `m<四碼>_….rs`、四碼 ≥ 0003 者（依數值排序；跨十位不出射程）之 `const <名>: &str = …;`（含 `concat!` 與檔內 `macro_rules!` 字面展開；展開器只認兩形、其餘形＝rc 2 指名）；SQL 之家限 `fn up`／`fn down` 本體內 `execute_unprepared(<SQL>)` 之引數與 `expect_rows(…)` 第三引數（常數名或字面）、本體他句形＝rc 2、未被引用之常數不入分類 ②逐語句分類：seed DML（`INSERT INTO`／`UPDATE`／`DELETE FROM` 於 seed 表）、序列（`setval`）、權限面 DDL（`CREATE ROLE`〔含 `DO $$` 包裝〕／`GRANT`／`REVOKE`／`DROP ROLE`）、其餘＝無法分類即紅 ③seed DML 與演進帳該刀登記逐筆對賬（表、pk、set／values 全欄）、與前值左源（凍結 seed＝`specs/001-schema-baseline/fixtures/seed.sql` 之 COPY 段〔m0002 為多列 INSERT、其檔頭自述之凍結證據即此檔〕⊕ 前序 delta 已配對之登記）之前值對賬（UPDATE 與 DELETE 之 WHERE 所列各欄逐欄等於左源該列之值；不要求 WHERE 列全欄）④權限面 DDL 結構化列出（逐支語句數與受權物件集、不入演進帳；不對賬）——判準：權限面之真偽由 R11.9 之權限測承擔，離線腿只保證「語句類別可辨、seed 面與帳一致」。
    - 一正一反＋逐判準停用變異（RL-0080）：真 repo 綠；改壞 SQL 常數之值、少登一筆、改壞凍結 seed 前值、植一句未分類 DDL 各紅；逐判準停用（DML 對帳、前值對帳、分類器）各一支變異皆紅。
    - 掛點：pre-commit 新段（`rust-api` pin bump、`tools/schema-gate.py`、`docs/ops/reference-src/schema-evolution.json` 任一 staged 時跑 `schema-gate.py offline`；零 docker、秒級）＋`schema-gate.py test` 自測納入新案；需 docker 之 `check` 維持不進常跑鏈（工程判斷⑫）。接線字面入 `tools/docsync/tests/test_hook_wiring.py` 之機器守。
    - 時序：本腿於撰寫 m0004 之單元前落地，並先對 m0003 綠（BL-00148 觸發條件）。
@@ -209,7 +209,7 @@
 ## R13 錯誤明細通道第三鍵與 msg 鍵（D7、ADR④；spec FR-004）
 
 1. **新鍵（承決＝spec FR-004；鍵名＝rev5 名冊形）**：`biz.audit.invalidTable`（純 key）、`biz.audit.purgeBelowFloor`（攜 `{minDays}`）；`MSG_KEYS` 68→70、尾端追加；`msg_key::BIZ_AUDIT_INVALID_TABLE`／`BIZ_AUDIT_PURGE_BELOW_FLOOR`；`AppError` 變體數維持 11、13 碼矩陣不變。
-2. **明細型（工程）**：`PurgeBelowFloorDetail { min_days: i64 }`（`#[serde(rename_all = "camelCase")]`、欄位不掛 serde 屬性）＋單一組裝件 `purge_below_floor_err()`（生產區 `BizData` 構造點恰一）。
+2. **明細型（工程）**：`PurgeBelowFloorDetail { min_days: u64 }`（`#[serde(rename_all = "camelCase")]`、欄位不掛 serde 屬性；值＝`PURGE_MIN_DAYS.unsigned_abs()`——i64 之 wire 欄須掛 2^53 守衛 serde 屬性或入 `EXEMPT_FIELDS`〔名冊語意＝非 wire〕，與 msg-key-gate「明細型欄位零 serde 屬性」互斥；先例 `PwdSetTooFrequentDetail` 之 u64）＋單一組裝件 `purge_below_floor_err()`（生產區 `BizData` 構造點恰一）。
 3. **msg-key-gate 擴（工程；RL-0080 判讀）**：`BIZ_DATA_KEYS` 增第三鍵→型名；`DETAIL_HOME`（單檔）改逐鍵之家之對映（`handler/user.rs` 兩鍵、`handler/audit.rs` 一鍵）；不改任何模組層 `RE_*` 常數。判讀：名冊與家之擴列屬判準之資料面、非新增判準；但佔位符對賬多一條讀檔途徑＝射程宣稱逐途徑配變異（新家之明細型欄改名即紅、明細型移出其家即紅），並重跑與新途徑共用輸出面之既有對賬案（RL-0080「每增判準即重跑」之保守讀法）。正則未動＝FR-062 之 regex-mutants 前置不觸發（若實作期需改 `RE_*`，該單元先跑 `python3 tools/regex-mutants.py run`）。
 4. **閘面連動（工程）**：pre-commit submodule-sync 段之 rust 側閘面增 `rust-api/server/src/handler/audit.rs`（明細型之家）；`tools/docsync/tests/test_hook_wiring.py` 之閘面對賬同批。
 5. **前端轉譯（工程；須 Amendment）**：`translateBackendMsg` 既有圈界塊內增第三分支（`msg === 'biz.audit.purgeBelowFloor' && typeof fields.minDays === 'number'`）；`fields` 之型聯集增 `Api.Audit.PurgeBelowFloorDetail`；不增圈界塊、無修改型行。
@@ -220,9 +220,9 @@
 1. **重錨（承決＝spec FR-043）**：③d 之 expr 已合 as-built 欄形（target `audit.access_log`＋`fields_degraded="access_log_write"`）＝註解改現況、規則體不動；⑤⑤b／⑥⑥b 之「無事件源」現況註改有源現況；④ audit-capacity 之「rev6 尚無該 handler」改述（稽核頁清理＋reaper 排程清理即處置路）。
 2. **新告警兩條（承決＝主線工程判斷、clarify 步定案；名＝工程）**：
    - `obs017-policy-reconcile-orphans`：`max(reaper_orphan_policies{reaper_job="policy-reconcile"}) > 0`；
-   - `obs017-policy-reconcile-heartbeat-timeout`：`time() - reaper_last_success_timestamp{mode="execute", reaper_job="policy-reconcile"} > 172800`；
+   - `obs017-reconcile-heartbeat-timeout`（Grafana 告警規則 uid 上限 40 字元、全名 41 字元超限；title 保留 `policy-reconcile-heartbeat-timeout`）：`time() - reaper_last_success_timestamp{mode="execute", reaper_job="policy-reconcile"} > 172800`；
    兩條沿⑤／⑥之 datasource、labels、noDataState 形；172800 納入三檔互錨註（compose 兩檔＋rules.yml）。前綴取 `obs017`（reaper 排程作業族；⑥⑥b 同族）。
-3. **儀表板（承決＝B5、spec FR-044）**：`rust-api.json` 刪面板 10、11（兩支 HLL）與 14（設定讀取頻次）、面板 13（軟區命中）移至原 10 之版位並擴寬（重排；無空洞）；`reaper.json` 四面板與 `master-overview.json` 面板 5 之描述改 rev6 as-built（三 job、grouping key、心跳形）；`audit-log.json` 面板 3 與變數 `trace_id` 之描述改「rev6 稽核列此欄恆空」。可選起 obs／metrics profile 活體驗證。
+3. **儀表板（承決＝B5、spec FR-044）**：`rust-api.json` 刪面板 10、11（兩支 HLL）與 14（設定讀取頻次）、面板 13（軟區命中）移至原 10 之版位並擴寬（重排；無空洞）；`reaper.json` 查 `reaper_*` 之三面板（id 1／2／4；id 3＝`up{job="pushgateway"}` 現已合 as-built）與 `master-overview.json` 面板 5 之描述改 rev6 as-built（三 job、grouping key、心跳形；legend 以 `reaper_job` 分序列）；`audit-log.json` 面板 3 與變數 `trace_id` 之描述改「rev6 稽核列此欄恆空」。可選起 obs／metrics profile 活體驗證。
 4. **compose（承決＝spec FR-038）**：兩檔之「rev6 無 reaper bin／role、起了也跑不動」句改 as-built；dev loop 加 `cargo run --bin reaper -- --job policy-reconcile --execute`（`;` 分隔）；互錨註補 policy-reconcile。
 
 ## R15 前端：系統設定頁（§III.2 (ix)；spec FR-045～FR-050）
@@ -237,7 +237,7 @@
 ## R16 前端：稽核頁（§III.2 (x)；spec FR-051～FR-056）
 
 1. **形（承決＝spec FR-051、FR-052；照 rev5）**：主頁＋四搜尋卡＋清理浮層＋時間區間 composable；四分頁欄集照 rev5（traceId 三分頁、region 存取／登入兩分頁、XFF 三分頁純文字插值＋ellipsis tooltip、會話事件無 XFF）；`scroll-x`＝各分頁欄寬總和（碼註列算式）。
-2. **快照浮層（承決＝spec FR-053）**：`NModal`＋`<pre>` 文字插值 `JSON.stringify(…, null, 2)`；無快照提示。
+2. **快照浮層（承決＝spec FR-053）**：naive 對話框（`window.$dialog.info`、dialog preset；rev5 HEAD 形）內兩段 `<pre>` 文字插值 `JSON.stringify(…, null, 2)`；無快照提示。
 3. **清理（承決＝spec FR-054、D6）**：清理鈕 `v-if="hasAuth('audit:purge')"`、每分頁一顆、單例浮層；浮層 `NInputNumber :min="30"`（碼註：UX 護欄、權威在後端 `PURGE_MIN_DAYS`）、每開重置 30、確認泡泡；成功提示帶 `deletedCount`、刷新該分頁。
 4. **告示（承決＝spec FR-055、clarify Q2；文案＝R24 E1）**：存取分頁一句（只提 403）；登入嘗試分頁一句（節流短路遭拒不落表、不承諾上限）。
 5. **自由文字欄**：一律 `{{ }}` 插值或 render 之文字節點；新目錄自動入 view-render-guard 腿①掃描；本頁不用共用表頭元件＝不入腿②錨表（rev5 形：一般 `NButton`）。
@@ -288,7 +288,7 @@ ADR 草稿於本 plan 落 feature branch（`proposed`；proposed 期 `supersedes
 ## R21 as-built 改寫義務（RL-0011；spec FR-063～FR-065）
 
 - **errata 種子**：spec FR-065 所列 26 詞，另加本 plan 新增 `ADR-00080`（設定域承載改指 ADR-00091 後之殘留）、`只限兩鍵`、`恰二鍵`、`射程恰兩鍵`、`找不到 404`。
-- **碼註**：`model/audit.rs`（檔頭「沒有『自己填一個位址』的路」、「`rev5:008` 追加之 `purge` 不帶」）、四支稽核 facade 之「讀端與水平線清理屬後刀增量、不帶」「沒有 delete」、`handler/auth/logout.rs` 同類句、`handler/system_settings.rs`／`facade/system_settings.rs` 之「無 op-log」「rev5 後刀的同 txn op-log 不帶回」三行、`error.rs` 檔頭「攜明細之射程恰二鍵」、`envelope.rs` 之錯誤 data 例外句（若述「兩鍵」）、`router.rs` 之 Authed／Policy 成員句與層序 doc、`docker-compose{,.dev}.yml` 兩處現況句、`rules.yml` 五處現況註。
+- **碼註**：`model/audit.rs`（檔頭「沒有『自己填一個位址』的路」、「`rev5:008` 追加之 `purge` 不帶」）、四支稽核 facade 之「讀端與水平線清理屬後刀增量、不帶」「沒有 delete」、`handler/auth/logout.rs` 同類句、`handler/system_settings.rs`／`facade/system_settings.rs` 之「無 op-log」「rev5 後刀的同 txn op-log 不帶回」三行、`error.rs` 檔頭「攜明細之射程恰二鍵」、`envelope.rs` 之錯誤 data 例外句（若述「兩鍵」）、`router.rs` 之 Authed／Policy 成員句與層序 doc、`docker-compose{,.dev}.yml` 兩處現況句、`rules.yml` 六處現況註（「無事件源」五處＋④ audit-capacity「rev6 尚無該 handler」一處）。
 - **活書與 RUNBOOK**：spec FR-064 所列；RUNBOOK 孤兒授權處置節落 §8「reaper 操作」之下新子節（§8.1）；存取日誌狀態欄已知態落 RUNBOOK §11 新子節（§11.4 稽核容量與存取日誌）與活書 08。
 - **ADR 現在式改指**：ADR-00076／ADR-00081／ADR-00082／ADR-00091 之現在式引用面於各續行 ADR accepted 後改指（機器枚舉、改完復掃）。
 
@@ -298,26 +298,26 @@ ADR 草稿於本 plan 落 feature branch（`proposed`；proposed 期 `supersedes
 |---|---|---|
 | U0 | 前置體檢；Amendment 落字（ADR-00099 條文字面已於 plan 期逐款定稿、銜接字面一份 diff 呈 user；憲法 1.9.0）；施工前提 ADR accepted（ADR-00100／00101／00102／00104／00105／00107／00108） | — |
 | U1 | 工具前置：BL-00148 離線對賬腿（對 m0003 先綠）＋pre-commit 段；runtime-append 兩工具擴 `sys_access_log`＋還原集 | U0 |
-| U2 | 測試基建：`AccessLogRowsGuard`、`PurgeSelfAuditGuard`、在途計數 drain、app 建構 helper 帶守衛（兩層）、清理類前置斷言件 | U0 |
+| U2 | 測試基建：`AccessLogRowsGuard`、`PurgeSelfAuditGuard`（tests 側 `*WriteGuard`）、在途計數件與 drain、app 建構 helper 帶守衛（兩層）、清理類前置斷言件 | U0、U1 |
 | U3 | 骨架：ROUTES 61→66＋handler 空殼五支（形依 007 刀 U3 前例）＋contract 登記＋授權態矩陣＋可授出集 35＋docsync 釘值 | U2 |
 | U4 | m0004＋演進帳 E-010／E-011＋序號合成＋seed 錨定測改對＋reaper 權限測（`SET LOCAL ROLE`） | U1、U3 |
-| U5 | 四源讀端 facade（`list`）＋`model/audit_query.rs`（時間、人員、打碼）＋`sys_user` 名對應件 | U3 |
+| U5 | 四源讀端 facade（`list`）＋`model/audit_query.rs`（時間、人員、打碼）＋`sys_user` 名對應件 | U1、U2、U3 |
 | U6 | 讀端 handler 四支＋DTO＋`Api.Audit` 讀型（`rev6-audit.d.ts` 新檔）＋wire 裁判 | U5 |
 | U7 | retention 共用核＋四源 `purge_before`／`count_before`＋purge handler＋兩新鍵＋第三攜參鍵＋msg-key-gate／submodule-sync 閘面＋三語 backend 子樹＋`translateBackendMsg` 第三分支 | U6 |
-| U8 | 存取日誌中介層＋`sys_access_log::insert`＋號誌與在途計數＋降級計數＋層序釘 | U2、U3 |
-| U9 | 設定寫端稽核＋讀 wire 擴三欄＋`rev6-settings.d.ts`＋wire 快照＋碼註順改 | U3 |
+| U8 | 存取日誌中介層＋`sys_access_log::insert`＋號誌與在途計數接線（計數件 U2 落）＋降級計數＋層序釘 | U2、U3、U5 |
+| U9 | 設定寫端稽核＋讀 wire 擴三欄＋`rev6-settings.d.ts`＋wire 快照＋碼註順改 | U3、U7、U8 |
 | U10 | reaper 骨架＋token-reap＋心跳（ureq）＋`sys_token` 兩件 | U4 |
 | U11 | audit-retention（`SystemJob`、`write_system_in_txn`、環境變數三分語意） | U7、U10 |
-| U12 | policy-reconcile（三維計數件、gauge） | U4、U10 |
+| U12 | policy-reconcile（三維計數件、gauge） | U4、U10、U11 |
 | U13 | 觀測層（rules.yml 重錨＋對賬兩告警、儀表板 B5、compose 現況與 dev loop） | U8、U11、U12 |
-| U14 | 系統設定頁（view＋route／page 譯文＋`app.d.ts`＋hook 清除函式＋seed-view-gate 摘列 9＋路由產物） | U0、U9 |
+| U14 | 系統設定頁（view＋route／page 譯文＋`app.d.ts`＋hook 清除函式＋seed-view-gate 摘列 9＋路由產物） | U0、U7、U9 |
 | U15 | 稽核頁（view＋五模組＋`rev6-audit.ts`＋譯文＋seed-view-gate 摘列 77＋路由產物） | U0、U6、U7 |
 | U16 | 走查還原工具與測試守衛之 reaper／存取日誌影響評估收尾 | U8、U11 |
 | U17 | 文件：活書、C4、RUNBOOK、ADR 現在式改指、假述掃除 | U13～U16 |
-| U18 | CDP 三方對照（兩頁、側欄、浮層）＋繁中全頁審讀＋jobs profile 活體一輪；ADR-00103／ADR-00106 實測後定稿 | U14、U15 |
+| U18 | CDP 三方對照（兩頁、側欄、浮層）＋繁中全頁審讀＋jobs profile 活體一輪；ADR-00103／ADR-00106 實測後定稿 | U14～U17 |
 | U19 | 收刀前承載體檢＋Day-1 三步＋PATCH Amendment 實數化＋子句表逐列核 | U17、U18 |
 
-高風險共享檔序列鏈（同檔單元不並發）：`router.rs`／`tests/contract.rs`（U3、U8）；`error.rs`＋三檔 locale＋`app.d.ts`（U7、U14、U15）；`model/facade/test_kit.rs`／`tests/common/mod.rs`（U2 起）；`tools/schema-gate.py`（U1、U4）；`model/facade/sys_operation_log.rs`（U5、U7、U11）。
+高風險共享檔序列鏈（同檔單元不並發；單元一律依號序列派發）：`router.rs`（U3、U8、U12）；`tests/contract.rs`（U2、U3、U4、U6、U7、U9、U18）；`error.rs`＋三檔 locale＋`app.d.ts`（U7、U14、U15）；`model/facade/test_kit.rs`／`tests/common/mod.rs`（U2 起）；`tools/schema-gate.py`（U1、U4）；`model/facade/sys_operation_log.rs`（U5、U7、U9、U11）；其餘同檔多單元者（facade 諸檔、`handler/{audit,common}.rs`、wire 裁判三件、reaper 兩檔、pre-commit 與接線測、RUNBOOK 等）逐檔列於 tasks.md。
 
 ## R23 RL-0013 棄案反例回跑
 

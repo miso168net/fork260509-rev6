@@ -161,6 +161,7 @@
 - XFF 值建構點已保證 ≤1024 字元、零 CR／LF；欄內截尾、懸停看全文；空值「-」；會話事件分頁無此欄。
 - 來源欄：traceId 三分頁渲染、值恆「-」；region 存取與登入兩分頁渲染（恆「-」）、操作分頁不渲染；peerIp、ipConfidence 上 wire 但不渲染；讀端照原字面回、容忍 003 期 `nginx_peer` 舊信心值。日後若渲染 ipConfidence，`chain_rejected` 須分表判讀（登入嘗試上恆為被拒列、操作日誌上為標記而照常服務）。
 - 打碼封閉定義：只打快照頂層 `userPhone`／`userEmail`、深度一層；非字串值、缺席、巢狀同名鍵一律原樣；快照本身非物件原樣；無「無法打碼即洩原值」之路。
+- 快照其餘欄照原文上 wire，含 007 刀使用者域整列快照之管理員記事 `userMemo`：007 刀 FR-019「記事欄不得出現在下拉、引用或對外之其他 API」之射程為業務 API，稽核快照屬只授超管之唯讀證據面、不在其射程（user 2026-10-21 tasks 期裁定）。
 - 排程清理自記列：操作者顯「-」、來源 IP 顯 `0.0.0.0`；設定變更列標的 id 顯「-」（g2、g4）；與解鎖列「無列可指」之既有前例同形。
 - 被授予稽核頁選單可見性（政策列 142、非受保護）而未授端點之非超管：頁可見、四分頁讀取得 `5003`（頁內形由 ADR⑤ 另立一款）。
 
@@ -180,6 +181,7 @@
 - 不入登入路徑（不觸 BL-00145「改動判定次序」臂）。
 - 寫入失敗只告警、不擋＝fail-open（島 J2）；與 HTTP 寫端「上下文缺席拒寫」方向相反屬刻意（存取日誌為請求後之觀測紀錄、操作稽核為與業務同交易之紀錄）。
 - 狀態欄＝HTTP 狀態碼、實際只見 200 與 403：只權限不足（403）可辨，業務拒絕（`2222`）與系統錯誤（`5000`）皆為 200、與成功無從區分＝已知態（rev4 欄形；clarify Q2）；找不到（`4040`：未註冊路徑、動詞不符）由路由最外層 fallback 處理、不經記錄層＝零列；被拒之業務操作亦不落操作日誌——業務成敗不在稽核頁之射程；存取分頁以告示說明。
+- 被 IP 存取閘擋下之請求零列（閘在驗章之前＝未認證、島 J2「未認證零列」；帶有效權杖亦然）：阻擋紀錄住閘門之結構化告警（target `security.ipgate`、帶命中網段與來源 IP）與 `ipgate_blocked_total`（004 刀 FR-024）。回應產生前即被丟棄之已認證請求（用戶端中斷、逾時）零列（寫入於回應產生後才排程；rev4 形）。兩者皆屬已知態。
 
 **系統設定**
 
@@ -287,7 +289,7 @@
 - **FR-026**: 設定讀端 wire MUST 擴充：每列下發登記表宣告界（number 型之上下界）與「是否在登記表宣告集內」旗標；宣告集外列 MUST 不下發界值；wire-schema 快照同步；不另立界值真源（ADR-00054 翻案觸發器不成立）、前端 MUST NOT 抄鍵集（ADR-00057）。
 - **FR-027**: updateSystemSetting MUST 於同交易落一列操作日誌：動作 `update`、`entity_table`＝`system_settings`、`entity_id` 空、變更前與變更後各為整列快照（鍵在快照內；g4）；操作者取自請求上下文、缺席＝拒寫 `5000`、MUST NOT 以佔位補列；寫入被拒（拒因）＝零寫入、零稽核；後端既有「設定寫入零稽核」測試 MUST 反轉。
 - **FR-028**: ADR-00091（續行 ADR-00080；plan 期更正：spec 原指 ADR-00080、該 ADR 已被 ADR-00091 supersede）之設定域觸發器（「系統設定寫端被重寫」）MUST 重評並寫入續行 ADR：結論＝維持——設定值逐鍵驗型與界、空字串於 number 與二值 enum 型皆不合法（`2222`）、不新增「清空」語意；同值寫入照寫並照落一列稽核（本刀起與角色選單域同形；ADR⑧′＝續行並 supersede ADR-00091、改寫其決定 8 逐域差異表之設定域格）。
-- **FR-029**: 系統設定兩檔碼註之前代歸因 MUST 順改（工程判斷⑬）：「rev5 後刀的同 txn op-log 不帶回」改述為 rev4 之同交易稽核不帶回、裸引之 research 條號補 `rev5:` 前綴；連 assert 訊息一併改時以容器 cargo 驗。
+- **FR-029**: 系統設定兩檔碼註之前代歸因 MUST 順改（工程判斷⑬）：「rev5 後刀的同 txn op-log 不帶回」改為現在式 as-built（同交易落 `update` 稽核）＋史述一句（002 刀不帶 rev4 之同交易稽核、本刀 D1 翻案）；裸引之 research 條號所指為 rev5 者補 `rev5:` 前綴（所指為本庫 002 刀 research 同號條者維持）；連 assert 訊息一併改時以容器 cargo 驗。
 
 **F. reaper 三 job（B1、B4、D8）**
 
@@ -352,7 +354,7 @@
   ①§I.7 島 J 入憲 J1～J5：J1 以 `rev5:ADR 0077` 字面為底、補回 rev4 島 J1「存取日誌由統一記錄層承載、非查詢職責」分句（不補則「稽核查詢純唯讀」與「稽核讀端之請求亦落存取日誌列」表面互斥）；J2 以 rev4 島 J2 字面為底回填（存取日誌寫入失敗不擋請求只告警、不記請求內文與查詢字串、未認證零列、位址取信任錨）；J3 射程含 reaper 排程清理與其自記列形（哨兵 `0.0.0.0`、操作者空、刪 0 列照落）；J4 個資打碼（讀端單點）；J5 一句指針指島 E 末兩點（ADR-00042）
   ②§I.6 變體 B 括號句改 J3 交叉指針；§I.7 表尾句之 J2 空缺位處置；MAJOR 射程句「九島」改十島；承襲指針 J 列補 rev6 入憲載體
   ③§III.2 `BASE-WEB-MANAGE-PAGE-WIRING` 新用途 (ix) 系統設定頁進場、(x) 稽核頁進場（形照 (i)／(iv)：範圍欄只列 upstream 既有檔＝`{en-us,zh-cn}.ts` 之 `route:`／`page:` 新增型塊、`app.d.ts` 型節、路由產物四檔；`zh-tw.ts` 為 rev6 自有之整檔新增型檔、不入範圍欄，三語由行為欄「三語鍵集 MUST 相等」與型別守承擔；(x) 寫明 `audit:purge` 顯隱）
-  ④活書 06／10 補島 J 情境；generate。⑤（plan 期補）§III.2 `BASE-WEB-I18N-WIRING` (i) 紀律欄「錯誤明細轉譯只限兩鍵」改三鍵——增稽核清理下限天數之具名插值；`src/service/request/index.ts` 之改動落既有新增型圈界塊內、範圍欄處數不變。範圍欄初值依表外宣告 1 例外路徑預估、收刀前 PATCH 實數化（前例 ADR-00051）。Amendment accepted 前 base-web 既有檔 MUST 零 diff。
+  ④活書狀態句同顆改現在式（10 §10.2 導言與 frontmatter、C4-E2 保留期段之「未入憲」句等）、generate；活書 06／10 之島 J 情境本體屬 as-built，依 FR-064 於行為落地後寫（RL-0048；007 刀 S-a 前例）。⑤（plan 期補）§III.2 `BASE-WEB-I18N-WIRING` (i) 紀律欄「錯誤明細轉譯只限兩鍵」改三鍵——增稽核清理下限天數之具名插值；`src/service/request/index.ts` 之改動落既有新增型圈界塊內、範圍欄處數不變。範圍欄初值依表外宣告 1 例外路徑預估、收刀前 PATCH 實數化（前例 ADR-00051）。Amendment accepted 前 base-web 既有檔 MUST 零 diff。
 - **FR-061**: ADR MUST 於 plan 期起草（feature branch 內、序號接續；proposed 期不宣告 supersedes、accepted 同顆補；親決依 ADR-00089 分類）＋收刀前 PATCH Amendment 一支（配號＝當下下一號、plan 期不起草）：①島 J 入憲與 §III.2 (ix)(x)（Amendment；provenance `rev5:ADR 0077`；FR-060）②存取日誌寫入（解除 `rev5:R2-9`；FR-021～FR-025）③reaper 三 job 與最小權限 role（哨兵與刪 0 列照落、孤兒授權列只報不刪＋RUNBOOK 處置、心跳與告警重錨、HTTP 依賴取捨與版本；FR-030～FR-038）④錯誤明細通道三鍵（整顆 supersede ADR-00076〔其標題「射程恰兩鍵」被推翻〕；另一款釐清 ADR-00076／ADR-00090 決定 1「照提示秒數重試必過」於牆鐘回撥不成立；FR-004）⑤ADR-00081 續行（角色與選單已知態：款 2／款 6 解除；款 9 可授出集 30→35；款 10 改述＝設定頁「看得到、讀寫 `5003`」與稽核頁 `audit:purge` 碼顯隱之可見效果；稽核選單維〔政策列 142〕之非超管頁內形另立一款；ADR-00066 射程款複核結論；活書 11「十八款」改十七款〔款 2、6 解除、另立款 22〕）⑥ADR-00082 續行（IP 域已知態：款 3 寫入者全集與動作詞彙八→九；FR-020）⑦授權歸檔表永久保留（B3 by-design；歸檔列除經復原外永久保留、零碼改；ADR-00065 代價句之承接）⑧設定頁進場複核（ADR-00079 觸發器＝前端即時提示不擋；ADR-00054 觸發器不成立；ADR-00057 宣告集外列之呈現與判別；ADR-00091 設定域觸發器重評結論〔FR-028；另立⑧′續行 ADR-00091〕；ADR-00064 不下放；密碼政策快取清除與數字框 10 鍵一律鉗界〔clarify Q1〕之刻意分岔）⑨m0004 seed 與 role（演進帳登記、序號合成、Day-1 三步；ADR-00008 delta 第二支；FR-039～FR-042）⑩刻意分岔登記（可併入本 spec 分岔表、是否另立 ADR 於 plan 期定）。
   親決時點：Amendment 顆只含 ADR① 與其連動條文、其餘另顆。
 - **FR-062**: 工具 MUST：走查還原工具與測試守衛評估 reaper 與存取日誌之影響（走查期間不起 jobs；FR-025）；子句表檢核工具（FR-071）；本刀若改動既有 python 閘之正則判準（msg-key-gate 模組層 `RE_*`、zh-tw-lint、fork-delta-lint 等），該單元 MUST 先以 `python3 tools/regex-mutants.py run` 取全成分清單、存活者逐支補殺案或附等價證明並預估代價（工程判斷⑲；既有存活數 zh-tw-lint 30／46、fork-delta-lint 9／13 為 maint-pre008-carriers 實測、repo 未記；LL-00097 前例代價）。
@@ -387,7 +389,7 @@
 | `src/router/elegant/routes.ts` | 同上 | 產物檔 | 同上：兩頁路由條目 | 1／4 | 中 |
 | `src/router/elegant/transform.ts` | 同上 | 產物檔 | 同上：路由名與路徑映射 | 1／5 | 中 |
 | `src/typings/elegant-router.d.ts` | 同上 | 產物檔 | 同上：路由鍵型 | 1／5 | 中 |
-| `src/typings/components.d.ts`（候選、plan 期定） | §III 生成檔紀律（不入用途名單） | 產物檔 | 若引入新元件則工具重算（宣告行增刪） | 8／16 | **高** |
+| `src/typings/components.d.ts`（確定：稽核頁搜尋卡需 `NDatePicker`、現檔未宣告；tasks 期定） | §III 生成檔紀律（不入用途名單） | 產物檔 | 若引入新元件則工具重算（宣告行增刪） | 8／16 | **高** |
 | `src/locales/langs/zh-tw.ts`（rev6 錨點檔） | `BASE-WEB-I18N-WIRING(iii)`＋各用途（rev6 自有之整檔新增型檔、不入範圍欄） | 新增型 | 兩頁 `route:`／`page:` 與 backend 新鍵之繁中（臺灣用語） | —— | 低 |
 | `src/service/request/index.ts`（plan 期補） | `BASE-WEB-I18N-WIRING(i)` | 新增型 | 既有圈界塊內 `translateBackendMsg` 補第三分支（`{minDays}` 具名插值；不增塊、零修改型行） | 0／3 | 低 |
 

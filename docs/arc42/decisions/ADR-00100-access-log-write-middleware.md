@@ -34,7 +34,7 @@ tags: [audit, access-log, middleware, island-j, observability]
 3. **非同步**：回應先回；寫入於 `tokio::spawn` 任務內進行；身分或上下文缺席＝跳過（不 panic、不 500）。
 4. **併發上界**：層狀態持號誌（許可 2；碼內常數）；任務內等待許可後才取連線寫入；連線池設定零改動（BL-00147 之臂不觸）。
 5. **fail-open**：寫入失敗＝`tracing::warn!(target: "audit.access_log", degraded = "access_log_write", …)`＋`access_log_write_failed_total` +1；業務回應零影響。告警 ③d（loki、target 與 degraded 欄）依此 as-built 欄形重錨（規則體不動、現況註改）。
-6. **測試面**：在途計數（spawn 前 +1、任務結束 −1）供測試 drain；`AccessLogRowsGuard`（水位、Drop 先 drain 再清）兩層各一；app 建構 helper 帶守衛＝全套件零殘列（驗收＝全量測試前後列數相等）。
+6. **測試面**：在途計數（spawn 前 +1、任務結束 −1）供測試 drain；`AccessLogRowsGuard`（tests 側 `AccessLogWriteGuard`；`max(id)` 水位、不動序列）兩層各一；drain 於帶守衛 app 之逐回應層（await 在途歸零）、Drop 先確認在途歸零再清（`#[tokio::test]` 預設 current-thread runtime、同步 Drop 內等待恆逾時）；app 建構 helper 內部帶守衛＝全套件零殘列（驗收＝全量測試前後列數相等）。
 7. **狀態欄語意**：只見 200 與 403（業務拒因與系統錯誤皆 200；`4040` 不經記錄層＝零列）＝已知態；存取分頁告示只提 403；spec、活書 08 與 RUNBOOK §11 寫明。
 8. **runtime-append**：`tools/schema-gate.py` 與 `tools/walkthrough-baseline.py` 之 `RUNTIME_APPEND_TABLES` 同值擴入 `sys_access_log`、還原集同批。
 9. **解除**：004 刀 research 防回歸清單 B 之 `rev5:R2-9` 自本 ADR accepted 起不再適用（射程＝本 ADR 決定 1～8 之形；rev4 之 region 解析與 xdb 不帶）。
@@ -43,7 +43,7 @@ tags: [audit, access-log, middleware, island-j, observability]
 
 - 存取日誌每已認證請求一列：量隨流量線性成長，audit-capacity 告警（四表 > 1,000,000）之觸發可能較早——處置＝稽核頁清理或 reaper 排程清理（RUNBOOK §11）。
 - 資料庫故障期間待寫任務於記憶體排隊（同期業務請求亦失敗）；恢復後消化。
-- 測試基建需一次機械改寫 app 建構 helper（約 150 呼叫點）。
+- 測試基建一次落：守衛隨 Router clone 走、app 建構 helper 內部帶守衛（呼叫點零改寫；直呼與 stub 案由測試基建單元現算處置）。
 - 稽核頁可見自身請求（無豁免名單）。
 
 ## 翻案觸發器
@@ -68,4 +68,4 @@ tags: [audit, access-log, middleware, island-j, observability]
 | 決定 8 | 承決 | spec FR-025 | 走查與結構閘工具把存取日誌當成會自然長資料的表。 |
 | 決定 9 | 承決 | brainstorm B2；spec FR-024 | 前代「不搬存取軌跡中介層」的限制解除。 |
 
-- **親決紀錄**：（plan 期）待決 1 款（決定 7）於 plan 期 AskUserQuestion 一題：user 2026-10-21 答「只提 403（建議）」（作答時 HEAD＝`926b359`、本 ADR 草稿未入版控），同日套入 spec（E1）並改標承決。獨立核對（ADR-00089 決定 5；2026-10-21）：9 列中相符 7（決定 1～3、5、6、8、9）、改正 2（決定 4 依混類取最高改標承決並補 spec 出處；provenance 之 E1 註記早於作答即寫成已套、今作答後套入）、升待決 0。改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。
+- **親決紀錄**：（plan 期）待決 1 款（決定 7）於 plan 期 AskUserQuestion 一題：user 2026-10-21 答「只提 403（建議）」（作答時 HEAD＝`926b359`、本 ADR 草稿未入版控），同日套入 spec（E1）並改標承決。獨立核對（ADR-00089 決定 5；2026-10-21）：9 列中相符 7（決定 1～3、5、6、8、9）、改正 2（決定 4 依混類取最高改標承決並補 spec 出處；provenance 之 E1 註記早於作答即寫成已套、今作答後套入）、升待決 0。改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。tasks 期改字（2026-10-21；tasks 起草稿實證）：決定 6 之 drain 位置（逐回應層）與 Drop 語意、後果之 helper 改寫句＝工程款改字、依決定 6② 復核。

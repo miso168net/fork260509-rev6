@@ -14,7 +14,7 @@
 
 **Language/Version**: Rust 1.96.1（edition 2024；容器內 build／test 全程 serial）＋TypeScript 6.0.3／Vue 3.5.34（base-web：兩頁 view 與模組新檔、MANAGE (ix)(x) 與 I18N (i)(ii)(iii) 既有檔）＋Python 3 標準庫（`tools/schema-gate.py offline` 新子命令、`tools/msg-key-gate.py` 逐鍵之家、runtime-append 兩工具、`tools/seed-view-gate.py` 摘列）
 
-**Primary Dependencies**: 既有不變——axum 0.8.9、sea-orm 1.1.20、tokio 1.53.1、metrics 0.24.6、metrics-exporter-prometheus 0.18.3（`default-features = false`；reaper 以 `install_recorder`＋`render` 組心跳 body）、naive-ui 2.44.1、vue-i18n 11.4.2；**新增**＝`ureq` 3.4.2（`default-features = false`；兩源分歧〔rev4 lockfile 3.3.0 對 crates.io 最新穩定 3.4.2〕經 user 2026-10-21 plan 期擇 3.4.2；lockfile 連帶新增 `ureq-proto` 0.6.5、`utf8-zero`、`base64` 0.23.1〔與既有 0.22.1 並存〕）
+**Primary Dependencies**: 既有不變——axum 0.8.9、sea-orm 1.1.20、tokio 1.53.1、metrics 0.24.6、metrics-exporter-prometheus 0.18.3（`default-features = false`；reaper 以區域 recorder〔`build_recorder`＋`metrics::with_local_recorder`＋`handle().render()`〕組心跳 body）、naive-ui 2.44.1、vue-i18n 11.4.2；**新增**＝`ureq` 3.4.2（`default-features = false`；兩源分歧〔rev4 lockfile 3.3.0 對 crates.io 最新穩定 3.4.2〕經 user 2026-10-21 plan 期擇 3.4.2；lockfile 連帶新增 `ureq-proto` 0.6.5、`utf8-zero`、`base64` 0.23.1〔與既有 0.13.1、0.22.1 並存＝三版本〕）
 
 **Storage**: PostgreSQL 18.4（四稽核表與 `sys_token` 首個刪除者、`sys_access_log` 首個寫入者、`system_settings` 寫端交易化；唯一 DDL＝m0004 之 `reaper` 角色與 GRANT）；pushgateway（compose metrics profile、心跳接收端）
 

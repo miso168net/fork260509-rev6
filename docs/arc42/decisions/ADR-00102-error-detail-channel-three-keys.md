@@ -27,7 +27,7 @@ tags: [error-envelope, i18n, audit, msg-key-gate]
 
 本 ADR 續行並將 supersede ADR-00076（accepted 同顆補 `supersedes: ["ADR-00076"]`、ADR-00076 status 改 superseded）。ADR-00076 決定 1～7 對應本 ADR 同號：
 
-1. **射程恰三鍵、其餘恆純 key（改寫）**：①`biz.user.passwordPolicy`（`violations`；續行）②`biz.user.pwdSetTooFrequent`（`remainingSeconds`＝`min(max(I−⌊Δ⌋, 1), I)`；續行，惟將「時鐘回撥時上限 I——照提示秒數重試必過」改寫為「下限 1、上限 I；提示秒數為等待之估計——牆鐘單調且冷卻設定未改時照提示秒數重試即過，牆鐘回撥或設定調大時可再被擋、回新的剩餘秒數」）③**`biz.audit.purgeBelowFloor`**（`minDays`＝`PURGE_MIN_DAYS`；新增；構造點＝purge 固定序②、組裝件 `purge_below_floor_err`、明細型 `PurgeBelowFloorDetail { min_days: i64 }`＋struct 級 `rename_all = "camelCase"`、住 `handler/audit.rs`）。
+1. **射程恰三鍵、其餘恆純 key（改寫）**：①`biz.user.passwordPolicy`（`violations`；續行）②`biz.user.pwdSetTooFrequent`（`remainingSeconds`＝`min(max(I−⌊Δ⌋, 1), I)`；續行，惟將「時鐘回撥時上限 I——照提示秒數重試必過」改寫為「下限 1、上限 I；提示秒數為等待之估計——牆鐘單調且冷卻設定未改時照提示秒數重試即過，牆鐘回撥或設定調大時可再被擋、回新的剩餘秒數」）③**`biz.audit.purgeBelowFloor`**（`minDays`＝`PURGE_MIN_DAYS`；新增；構造點＝purge 固定序②、組裝件 `purge_below_floor_err`、明細型 `PurgeBelowFloorDetail { min_days: u64 }`（值＝`PURGE_MIN_DAYS.unsigned_abs()`；先例 `PwdSetTooFrequentDetail` 之 u64）＋struct 級 `rename_all = "camelCase"`、住 `handler/audit.rs`）。
 2. **受眾判準（續行）**：明細描述操作者自己剛送出之輸入的評估；第三鍵之下限天數為系統常數、不含他人資訊。
 3. **錯誤變體（續行）**：`AppError::BizData`，變體數不變。
 4. **信封出口分離（續行）**：`Res::from_err_with_data` 為攜明細之唯一出口。
@@ -62,4 +62,4 @@ tags: [error-envelope, i18n, audit, msg-key-gate]
 | 決定 7 | 工程 | research R13.3～R13.4（機器守之資料面擴列與變異） | 檢查工具認得第三支、它的定義位置與前端用到它的地方。 |
 | 決定 8 | 承決 | brainstorm D7（另一款釐清 ADR-00090 決定 1） | 另一份 ADR 的「必過」同樣這樣讀，不另改它。 |
 
-- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：8 列中相符 5（決定 2～5、8）、改正 2（決定 1 出處補憲法跨島總則；決定 7 補 contract、wire 裁判兩腿與斷言 3 名冊之續行）、升待決 1（決定 6：改寫只剩一句、ADR-00076 決定 6 其餘子項無續行字面＝對出處少寫）、漏列 1（決定節導言）。處置：決定 6 改為「兩鍵→三鍵、其餘子項原文續行」後回承決（出處＝ADR-00076 決定 6、免問）、補導言列；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。
+- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：8 列中相符 5（決定 2～5、8）、改正 2（決定 1 出處補憲法跨島總則；決定 7 補 contract、wire 裁判兩腿與斷言 3 名冊之續行）、升待決 1（決定 6：改寫只剩一句、ADR-00076 決定 6 其餘子項無續行字面＝對出處少寫）、漏列 1（決定節導言）。處置：決定 6 改為「兩鍵→三鍵、其餘子項原文續行」後回承決（出處＝ADR-00076 決定 6、免問）、補導言列；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。tasks 期改字（2026-10-21；tasks 起草稿實證）：決定 1③ 明細欄型 i64→u64（`tests/wire_i64_guard_lint.rs` 要 i64 wire 欄掛 2^53 守衛 serde 屬性或入 `EXEMPT_FIELDS`〔名冊語意＝非 wire〕，msg-key-gate 要明細型欄位零 serde 屬性＝兩者互斥）＝承決款改字（型別屬工程）、依決定 6② 復核。

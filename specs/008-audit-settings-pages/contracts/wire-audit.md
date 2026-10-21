@@ -19,7 +19,7 @@
 - 四列型欄序＝data-model §6；i64 欄經 `serialize_i64_number_guarded`／`serialize_opt_i64_number_guarded`。
 - 四 query 型：`OperationLogSearchParams`、`AccessLogSearchParams`、`LoginAttemptSearchParams`、`SessionEventSearchParams`＝`CommonType.RecordNullable<…>`（rev5 形）；鍵＝data-model §4 之 wire 鍵＋`current`／`size`。
 - `PurgeAuditTable`＝`'operationLog' | 'accessLog' | 'loginAttempt' | 'sessionEvent'`；`PurgeAuditLogReq`＝`{ table: PurgeAuditTable; beforeDays: number }`；`PurgeAuditLogRes`＝`{ deletedCount: number }`；`PurgeBelowFloorDetail`＝`{ minDays: number }`。
-- 受審（`rust-api/server/tests/wire_schema.rs`）：四列型、`PurgeAuditLogRes`、`PurgeBelowFloorDetail` 正向各一＋反例（缺欄、多欄、i64 型錯）；`PurgeAuditTable` 枚舉集以後端 `RetentionTable::ALL` 之 wire 值為真源。
+- 受審（`rust-api/server/tests/wire_schema.rs`）：四列型、四 query 型與 `PurgeAuditLogReq`（請求端冊；spec FR-005）、`PurgeAuditLogRes`、`PurgeBelowFloorDetail` 正向各一＋反例（缺欄、多欄、i64 型錯）；`PurgeAuditTable` 枚舉集以後端 `RetentionTable::ALL` 之 wire 值為真源。
 
 ## 讀端共同語意（端點 1～4）
 
@@ -68,5 +68,5 @@
 
 ## 拒寫事件與觀測
 
-- purge 操作者缺席：`tracing::error!(target: "audit", refused = "operator_context_absent", endpoint = "purgeAuditLog", …)`；不推 `degraded` 欄（拒寫不屬降級）。
+- purge 操作者缺席：`tracing::error!(target: "audit", refused = "request_context_absent", endpoint = "purgeAuditLog", …)`；不推 `degraded` 欄（拒寫不屬降級）。
 - 讀端查詢失敗：error 事件（端點標籤）＋`5000`。

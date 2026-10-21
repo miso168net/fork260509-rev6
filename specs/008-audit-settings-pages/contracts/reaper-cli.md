@@ -36,6 +36,7 @@ reaper [--execute] [--job token-reap|audit-retention|policy-reconcile]
 | 寬限畸形 | warn | `raw`、`default` |
 | 連線字串／連線失敗 | error | `job`、`error` |
 | token-reap 完跑 | info | `job`、`mode`、`grace_days`、`deleted`｜`candidates` |
+| token-reap 失敗 | error | `job`、`mode`、`error` |
 | audit-retention 逐表完跑 | info | `job`、`mode`、`table`（wire 值）、`retention_days`、`deleted`｜`candidates` |
 | audit-retention 逐表失敗 | error | `job`、`mode`、`table`、`error` |
 | audit-retention 摘要 | info | `job`、`mode`、`deleted_total`｜`candidates_total` |
@@ -55,7 +56,7 @@ reaper [--execute] [--job token-reap|audit-retention|policy-reconcile]
 
 ## §6 心跳
 
-- 端點：`PUT http://pushgateway:9091/metrics/job/reaper/reaper_job/<job>`（整組替換）；本程序內以 `PrometheusBuilder::install_recorder()` 取 handle、`render()` 為 body；HTTP client＝ureq（版本見 ADR③ 親決紀錄）、`timeout_global` 10 秒、`default-features = false`。
+- 端點：`PUT http://pushgateway:9091/metrics/job/reaper/reaper_job/<job>`（整組替換）；本程序內以 `PrometheusBuilder::build_recorder()` 建區域 recorder、`metrics::with_local_recorder` 設值、`handle().render()` 為 body（全域 recorder 一行程只能裝一次、且會夾帶他處註冊之序列）；HTTP client＝ureq（版本見 ADR③ 親決紀錄）、`timeout_global` 10 秒、`default-features = false`。
 - 序列：
 
 | metric | 標籤 | job | 值 |
@@ -81,6 +82,6 @@ reaper [--execute] [--job token-reap|audit-retention|policy-reconcile]
 | ⑥ | `obs017-audit-retention-heartbeat-timeout` | audit-retention 同形 | 同上 |
 | ⑥b | `obs017-audit-retention-mode-misconfig` | audit-retention 同形 | 同上 |
 | ⑦ | `obs017-policy-reconcile-orphans`（新） | `max(reaper_orphan_policies{reaper_job="policy-reconcile"}) > 0` | 新增 |
-| ⑦b | `obs017-policy-reconcile-heartbeat-timeout`（新） | `time() - reaper_last_success_timestamp{mode="execute", reaper_job="policy-reconcile"} > 172800` | 新增；納入三檔互錨 |
+| ⑦b | `obs017-reconcile-heartbeat-timeout`（新；uid ≤ 40 字元、title `policy-reconcile-heartbeat-timeout`） | `time() - reaper_last_success_timestamp{mode="execute", reaper_job="policy-reconcile"} > 172800` | 新增；納入三檔互錨 |
 
 RUNBOOK §8 補對賬非零之處置子節（判讀＋兩路處置：非 seed 角色＝刪除該角色經連動歸檔；seed 角色或逐列清＝維運 SQL 範本〔先匯出待刪列留存再刪、不手寫歸檔列〕）。
