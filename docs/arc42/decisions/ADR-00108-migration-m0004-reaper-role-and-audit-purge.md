@@ -34,7 +34,7 @@ tags: [migration, seed, reaper, authz-governance, schema-gate]
 5. **演進帳**：E-010（`seed_update` `sys_menu` 77 `buttons`）、E-011（`seed_add` `casbin_rule` 165）；`knife`＝`008-audit-settings-pages`；序號合成依 E-011 推進期望值；角色與 GRANT 不入演進帳；schema-definition 不前進（ADR-00087）。
 6. **連動改對**：授權列 163→164、序號 165、受保護 25 不變、R_SUPER 按鈕碼 21→22、Super 之帳號資訊按鈕集含 `audit:purge`；seed 錨定測與現在式文件同批。
 7. **權限測**：容器全量測試內以 `soybean` 連線、交易內 `SET LOCAL ROLE reaper` 執行允許語句（成功）與權限外語句（SQLSTATE 42501）後回滾；以 reaper 憑證實連之驗證＝設密腳本自驗＋jobs profile 活體一輪。
-8. **BL-00148 前置**：零 docker 離線對賬腿（`tools/schema-gate.py offline`；語句分類＋seed DML 對帳＋凍結前值對帳＋權限面結構化列出；pre-commit `schema-offline` 段）於撰寫 m0004 之單元前落地並先對 m0003 綠；`check` 不進常跑鏈。
+8. **BL-00148 前置**：零 docker 離線對賬腿（`tools/schema-gate.py offline`；語句分類＋seed DML 對賬＋凍結前值對賬＋權限面結構化列出；pre-commit `schema-offline` 段）於撰寫 m0004 之單元前落地並先對 m0003 綠；`check` 不進常跑鏈。
 9. **Day-1 登記三步**：收刀前 RUNBOOK §10（第 3 步以一次性 pristine 庫驗；角色於該叢集新建）。
 
 ## 後果
@@ -61,7 +61,7 @@ tags: [migration, seed, reaper, authz-governance, schema-gate]
 | 決定 5 | 承決 | spec FR-040 | 兩筆資料改動登入演進帳，權限面不登。 |
 | 決定 6 | 承決 | spec FR-042 | 依新列數與按鈕碼修正測試與文件。 |
 | 決定 7 | 工程 | research R11.9；spec 修補 E4 | 用切換角色的方式測權限，實際帳號登入另外跑一輪驗。 |
-| 決定 8 | 承決 | brainstorm ⑫；spec FR-041；BL-00148 觸發條件 | 先補不用 docker 的遷移對帳檢查，再寫這支遷移。 |
+| 決定 8 | 承決 | brainstorm ⑫；spec FR-041；BL-00148 觸發條件 | 先補不用 docker 的遷移對賬檢查，再寫這支遷移。 |
 | 決定 9 | 承決 | spec FR-040 | 收刀前照手冊做三步登記。 |
 
 - **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：9 列中相符 7（決定 1、4～9）、升待決 2——決定 2（選單 77 按鈕說明字面為新 seed 字面、無 user 出處；另「GRANT 七條」與所列六組不一致）、決定 3（反向遷移屬 migration 內容、原標工程；款文無條件 DROP ROLE 偏離 spec 三欄表「角色無依賴時刪除」）。處置：決定 2 改「GRANT 六條」、說明字面於 plan 期 AskUserQuestion 一題——user 2026-10-21 答「清理日誌（建議）」（作答時 HEAD＝`926b359`、草稿未入版控），改標承決；決定 3 對齊 spec 三欄表改「角色無依賴時刪除」、改標承決（出處＝spec 條目、免問）；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。

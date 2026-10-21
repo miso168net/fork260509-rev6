@@ -24,7 +24,7 @@ tags: [partial-update, system-settings, audit]
 
 ## 決定
 
-本 ADR 續行並將 supersede ADR-00091（accepted 同顆補 `supersedes: ["ADR-00091"]`、ADR-00091 status 改 superseded）。ADR-00091 決定 1～9 對應本 ADR 同號：決定 1～7 原文續行；決定 8 改寫設定域兩格；決定 9 改寫改指對象。
+本 ADR 續行並將 supersede ADR-00091（accepted 同顆補 `supersedes: ["ADR-00091"]`、ADR-00091 status 改 superseded）。ADR-00091 決定 1～9 對應本 ADR 同號：決定 1～7 原文續行；決定 8 改寫設定域「同值出現」格、並於導句補設定寫端自本刀起讀上下文；決定 9 改寫改指對象；決定 10 新增。
 
 8. **逐域差異表（改寫設定域）**：請求上下文缺席＝`5000` 拒寫、先於一切守門與早退（各域同；設定寫端自本刀起讀上下文）。設定域欄：可空文字欄之空字串＝設值（`description` 落空字串；續行）；JSON null＝nullable 欄落 NULL、`settingValue` null＝`2222`（續行）；除 `id` 外全缺席＝不適用（必填欄缺席＝`2222`；續行）；**同值出現＝照寫（審計欄重寫）、稽核 `update` 一列（前後整列快照）**（改寫）；body 缺席或壞形＝收斂後必填欄缺席＝`2222`（續行）。其餘三域各欄原文續行。
 9. **現在式改指（改寫）**：現在式面 ADR-00091 改指本 ADR（機器枚舉、改完復掃）。

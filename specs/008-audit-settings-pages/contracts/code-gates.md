@@ -14,13 +14,13 @@
 | `src/locales/langs/en-us.ts` | 同上 | 新增型 | 同上 |
 | `src/typings/app.d.ts` | (ix)(x)＋I18N (iii) | 新增型 | (ix) 1 塊、(x) 1 塊；backend 型節於既有塊內＝0 增塊 |
 | `src/router/elegant/{imports,routes,transform}.ts`、`src/typings/elegant-router.d.ts` | 產物檔（沿 (i) 列授權） | 產物 | 重算冪等；產物檔集斷言 |
-| `src/typings/components.d.ts` | 生成檔紀律 | 產物 | 若引入新元件＝工具重算形 |
+| `src/typings/components.d.ts` | 生成檔紀律 | 產物 | 稽核頁引入 `NDatePicker`（現檔未宣告）＝工具重算形（宣告行增） |
 | `src/locales/langs/zh-tw.ts` | I18N (iii)＋各用途（rev6 自有檔） | 新增型 | 不入範圍欄 |
 | **`src/service/request/index.ts`**（補） | I18N (i) | 新增型（既有圈界塊內補分支） | 範圍欄「2 處修改型＋2 塊新增型」不變；12m 0／24m 3＝低 |
 
 ### 1.3 新增型新檔（不入表、檔頭一行標記）
 
-`src/views/manage/system-settings/index.vue`；`src/views/manage/audit/index.vue`；`src/views/manage/audit/modules/{audit-search-operation,audit-search-access,audit-search-login,audit-search-session,audit-purge-modal}.vue`、`use-audit-search-date-range.ts`；`src/service/api/rev6-audit.ts`；`src/typings/api/rev6-audit.d.ts`。rev6 自有檔之改動（`rev6-settings.d.ts` 擴欄、`hooks/business/pwd-policy.ts` 增清除函式、`views/manage/user/modules/user-reset-pwd-modal.vue` 檔頭句改述）不入表。
+`src/views/manage/system-settings/index.vue`；`src/views/manage/audit/index.vue`；`src/views/manage/audit/modules/{audit-search-operation,audit-search-access,audit-search-login,audit-search-session,audit-purge-modal}.vue`、`use-audit-search-date-range.ts`；`src/service/api/rev6-audit.ts`；`src/typings/api/rev6-audit.d.ts`。rev6 自有檔之改動（`rev6-settings.d.ts` 擴欄、`hooks/business/pwd-policy.ts` 增清除函式、`views/manage/user/modules/user-reset-pwd-modal.vue` 檔頭句改述、`service/api/rev6-settings.ts` 碼註改現在式、`typings/api/rev6-user-center.d.ts` 明細型 JSDoc 改三鍵、`typings/api/rev6-{menu,role,user}-admin.d.ts` 與 `views/manage/ip-rule/index.vue` 之 ADR 改指註解；以檔頭 `rev6-inline` 新增型標記現算為準）不入表。
 
 ### 1.4 變更檔集機器斷言
 
@@ -36,7 +36,7 @@
 
 - `BIZ_DATA_KEYS` 增 `"biz.audit.purgeBelowFloor": "PurgeBelowFloorDetail"`。
 - `FRONTEND_MSG_CONSUMERS` 增 `("service/request/index.ts", "biz.audit.purgeBelowFloor"): 1`（請求層明細轉譯第三分支之 msg 字面消費點；斷言 3 雙向全等、與前端分支同批落）。
-- `DETAIL_HOME`（單檔）改逐鍵之家對映：兩既有鍵→`handler/user.rs`、新鍵→`handler/audit.rs`；`DEFAULT_DETAIL` 與佔位符對賬讀檔改依鍵取家。
+- `DETAIL_HOME`（單檔）改逐鍵之家對映：兩既有鍵→`handler/user.rs`、新鍵→`handler/audit.rs`；`DEFAULT_DETAIL` 改名 `DEFAULT_DETAILS`（各家之 repo 根相對形、去重排序 tuple），與佔位符對賬讀檔同改依鍵取家。
 - 射程守四句不變；不改模組層 `RE_*`。
 - 自證（RL-0080）：新鍵之明細型欄改名＝佔位符對賬紅；新型移出其家＝紅；第三鍵構造點零處或兩處＝紅；既有兩鍵之對賬案重跑綠。
 - pre-commit `submodule-sync` 段閘面增 `rust-api/server/src/handler/audit.rs`；`tools/docsync/tests/test_hook_wiring.py` 之閘面對賬同批。
@@ -51,7 +51,7 @@
 
 ### 2.3 runtime-append 兩工具（同值互釘）
 
-`tools/schema-gate.py` 與 `tools/walkthrough-baseline.py` 之 `RUNTIME_APPEND_TABLES` 增 `"sys_access_log": "sys_access_log_id_seq"`；walkthrough `RESTORE_TABLES` 同批增 `sys_access_log`；名冊對賬自測（相等、⊆ 還原集、`SEED_SETVAL_SEQUENCES` 推導）綠；RUNBOOK §9c／§12 與 schema 閘收窄射程字面同批。
+`tools/schema-gate.py` 與 `tools/walkthrough-baseline.py` 之 `RUNTIME_APPEND_TABLES` 增 `"sys_access_log": "sys_access_log_id_seq"`；walkthrough `RESTORE_TABLES` 同批增 `sys_access_log`、`RESTORE_SEQUENCES` 同批增 `sys_access_log_id_seq`（基準檔模式 setval 回基準、seed 模式不復位）；名冊對賬自測（相等、⊆ 還原集、`SEED_SETVAL_SEQUENCES` 推導）綠；RUNBOOK §9c／§12 與 schema 閘收窄射程字面同批。
 
 ### 2.4 `tools/seed-view-gate.py`
 
@@ -67,7 +67,7 @@
 
 ### 2.7 `tools/zh-tw-lint.py`
 
-新增之 zh-tw 字面綠；若需改其正則判準＝該單元先跑 `python3 tools/regex-mutants.py run`（spec FR-062）。
+新增之 zh-tw 字面綠；動三檔 locale 之單元（U7、U14、U15）由腿②逼出 zh-cn 與 zh-tw 兩檔之未分類新字，逐字人審後只增列五張表值（`SIMPLIFIED_CHARS`／`_APPROVED_PLAIN`／`_APPROVED_HOMOGRAPHS`／`_HOMOGRAPH_TERMS`／`_HOMOGRAPHS_NO_TERM`）與其旁註、判準函式與模組層 `RE_*` 零改；腿①③命中一律改 `zh-tw.ts` 譯文、`EXEMPT` 維持 0 筆；若需改其正則判準＝該單元先跑 `python3 tools/regex-mutants.py run`（spec FR-062）。
 
 ### 2.8 `tools/fork-delta-lint.py`
 
@@ -92,6 +92,10 @@ routes 生成表重算（66 條）；真 repo 釘值測 +5 列；動 ROUTES 之�
 | `obs.rs` 序列名具名腿 | `access_log_write_failed_total` 只由出口與預註冊具名 |
 | `error.rs` 名冊與矩陣 | `MSG_KEYS` 70、變體 11、13 碼不變 |
 | `model/audit.rs` 字面釘 | 九詞 |
+| `tests/system_audit_entry_lint.rs`（新；排程清理單元立） | 系統程序自記入口名冊兩判準：生產面 `write_system_in_txn` 只在 `model/facade/sys_operation_log.rs`（定義）與 `model/retention.rs`（恰一處呼叫）；`SystemJob` 生產面只在 `model/audit.rs`、`model/retention.rs`、`model/facade/sys_operation_log.rs`、`reaper.rs` 四檔；各判準掃描面非空＋植入反例＋停用變異 |
+| `handler/common.rs` 之 `each_domain_keeps_its_own_log_literals`、`EXTRACTION_SITES` | 入冊 `audit.rs`（拒寫事件字面＋body 收斂腿）與 `system_settings.rs`（拒寫事件字面）；抽取點 14→15（稽核讀端 `lenient_query`） |
+| `handler/ip_rule.rs` 之 `production_code_emits_no_degraded_field` | 入冊 `audit.rs`、`system_settings.rs` |
+| `tests/contract.rs` 之 `write_refusals_add_no_context_absent_leg_real_seed` | 寫端清單增 `purge-audit-log`、`update-system-setting` |
 
 ## §4 測試基建（U2 先於一切寫稽核表之單元）
 

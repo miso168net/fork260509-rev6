@@ -12,7 +12,7 @@ tags: [error-envelope, i18n, audit, msg-key-gate]
 ## 背景
 
 - ADR-00076 標題與決定 1 定射程「恰兩鍵」；D7 拍板清理下限拒因攜 `{minDays}`＝射程擴為三鍵，ADR-00076 之標題句被推翻。
-- ADR-00076 決定 1 冷卻列與 ADR-00090 決定 1 皆寫「時鐘回撥時上限 I——照提示秒數重試必過」；牆鐘回撥使經過秒數可為負，等待提示秒數後伺服端計得之經過仍可能不足、或冷卻設定於等待期間被調大——「必過」不成立。
+- ADR-00076 決定 1 冷卻列寫「時鐘回撥時上限 I——照提示秒數重試必過」、ADR-00090 決定 1 寫「時鐘回撥上限 I——照提示秒數重試必過」；牆鐘回撥使經過秒數可為負，等待提示秒數後伺服端計得之經過仍可能不足、或冷卻設定於等待期間被調大——「必過」不成立。
 - msg-key-gate 之佔位符對賬讀明細型序列化欄名，明細型之家寫死單檔（`handler/user.rs`）。
 
 ## 考慮過的替代案
@@ -34,7 +34,7 @@ tags: [error-envelope, i18n, audit, msg-key-gate]
 5. **002 wire 契約之現行讀法（續行）**：錯誤 data 恆 null，惟本 ADR 決定 1 三鍵例外。
 6. **前端（改寫）**：ADR-00076 決定 6 三子項續行，惟請求層明細轉譯「只認兩鍵」改「只認三鍵」——`translateBackendMsg` 第三分支以 `Api.Audit.PurgeBelowFloorDetail` 收窄、具名插值 `{minDays}`；其餘子項原文續行（其餘錯誤續呈純 key 提示、轉譯未命中一律 graceful fallback；違規子鍵單一共用命名空間 `page.passwordPolicy.*`；backend 子樹譯文之具名佔位名＝明細鍵名、`data` 形不合即退回純 key、backend 子樹只放 `MSG_KEYS` 成員）；條文字面由 ADR-00099 決定 11 承載（ADR-00076 決定 6 之「由 ADR-00074 親決」改讀此）。
 7. **機器守（改寫）**：msg-key-gate `BIZ_DATA_KEYS` 三鍵、明細型之家逐鍵對映（兩鍵→`handler/user.rs`、一鍵→`handler/audit.rs`）；射程守四句與佔位符對賬照舊；斷言 3 之 `FRONTEND_MSG_CONSUMERS` 照舊、擴第三鍵之請求層消費點；contract 腿（每鍵至少一案實發並斷言 `data` 形）與 wire 裁判腿（明細信封之 wire 型入受審名冊、配正向＋反例）照舊、擴第三鍵；pre-commit submodule-sync 閘面增新家；各腿一正一反（RL-0080；新家之欄改名與移家各一支變異）。
-8. **ADR-00090 決定 1 之釐清款（新增；不 supersede）**：其「時鐘回撥時上限 I——照提示秒數重試必過」讀作本 ADR 決定 1②之改寫字面；ADR-00090 其餘決定與後果不變。
+8. **ADR-00090 決定 1 之釐清款（新增；不 supersede）**：其「時鐘回撥上限 I——照提示秒數重試必過」讀作本 ADR 決定 1②之改寫字面；ADR-00090 其餘決定與後果不變。
 
 ## 後果
 

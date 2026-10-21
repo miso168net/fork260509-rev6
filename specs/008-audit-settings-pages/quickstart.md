@@ -2,7 +2,7 @@
 
 > 目的＝以 dev stack 端到端證明本刀可用（SC-001～SC-015 之走查面與機器命令；SC-016 屬簿記後驗、本檔只列假述掃除之命令形）；不含實作碼與測試全文。承 007 刀 quickstart 形。★一律指向 rev6 stack（UI 32080／API 經 front-nginx 之 `/api`／`/metrics` 直連 32079／PG 35432）、一律 127.0.0.1，絕不指向 rev5 對照 stack（2xxxx）。前置＝ADR-00099 accepted（憲法 1.9.0）且 m0004 已套進 dev 庫（§0）。
 > ★逐欄定義以 `contracts/wire-audit.md`／`contracts/wire-settings.md` 為準、拒因鍵以 `contracts/msg-keys.md`、固定序與稽核列形以 `data-model.md` §3／§7、reaper 以 `contracts/reaper-cli.md` 為準；不符時以 contracts／data-model 為準並同批改本檔。
-> ★dev 庫寫入放行（LL-00053）：§3 清理、§5 設定寫入、§6 reaper execute、§11 restore 各段起手前由主線取 user 放行。★清理只對**本段自植之舊列**與長水平線（3650 天）執行；執行前以 §3 首行之 SELECT 確認水平線前恰為自植列。★jobs profile 只在 §6 指定步驟起、跑完即停；走查期間不起。
+> ★dev 庫寫入放行（LL-00053）：§0 取票登入與其後之已登入請求（落 `sys_token`／`session_event`／`sys_login_attempt`／`sys_access_log` 列）、§3 清理、§5 設定寫入、§6 設密腳本（`ALTER ROLE … LOGIN PASSWORD`）與 reaper execute、§8 之 32080 走查寫入、§11 restore 各段起手前由主線取 user 放行（一點一題；點序以 tasks 各★主線 task 為準）。★清理只以長水平線（3650 天）執行、不植列（經 API 造不出 3650 天前之列）；執行前以 §3 首行之 SELECT 取水平線前列數（期望 0）、所得即其後之 deletedCount。★jobs profile 只在 §6 指定步驟起、跑完即停；走查期間不起。
 
 ## 0. 前置
 
@@ -23,7 +23,7 @@ H() { echo "Authorization: Bearer $1"; }
 ## 1. 路由與授權態（SC-001；FR-001／FR-002）
 
 ```bash
-python3 tools/docsync generate && grep -c '^| ' docs/generated/reference/routes.md   # 表列數含表頭＝66 條＋表頭兩行
+grep -c '^| /' docs/generated/reference/routes.md   # 66（只數路由列；表頭與分隔列不計；生成表由各單元收尾 generate 維持、本步不另 generate＝T164）
 for p in getOperationLog getAccessLog getLoginAttempt getSessionEvent; do
   curl -s "$SM/$p" -H "$(H $ST)" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["code"])'   # 0000
   curl -s "$SM/$p" -H "$(H $AT)" -o /dev/null -w '%{http_code}\n'                                       # 403（5003）
@@ -62,13 +62,15 @@ SQL "SELECT operation, entity_table, entity_id, payload_after FROM sys_operation
 
 ## 4. 存取日誌（SC-006；FR-021～FR-025）
 
+前置：同 §9——量測期間 rev6 stack 零其他已登入流量（32080 分頁與 CDP 會話全關），否則水位後之「恰兩列」會混入活體列。
+
 ```bash
 W=$(SQL "SELECT coalesce(max(id),0) FROM sys_access_log")
 curl -s "$SM/getRoleList?current=1&size=1&x=1" -H "$(H $ST)" >/dev/null                # 已登入請求
 curl -s "$SM/getOperationLog" -H "$(H $AT)" >/dev/null                                  # 5003
 curl -s "$BASE/auth/loginCaptcha?userName=x" >/dev/null                                  # 公開端點
 curl -s "$SM/noSuchEndpoint" -H "$(H $ST)" >/dev/null                                    # 未註冊（4040）
-sleep 1; SQL "SELECT http_method, http_path, http_status, created_by FROM sys_access_log WHERE id > $W ORDER BY id"
+end=$((SECONDS+5)); until [ "$(SQL "SELECT count(*) FROM sys_access_log WHERE id > $W")" -ge 2 ] || [ $SECONDS -ge $end ]; do sleep 0.2; done; SQL "SELECT http_method, http_path, http_status, created_by FROM sys_access_log WHERE id > $W ORDER BY id"   # 先輪詢在途寫入落地（上界 5 秒、以牆鐘為輪詢條件＝LL-00020）
 #   恰兩列：GET /systemManage/getRoleList 200（路徑不含 query）／GET /systemManage/getOperationLog 403；公開端點與未註冊路徑零列
 ```
 
@@ -91,7 +93,7 @@ SQL "SELECT operation, entity_table, entity_id FROM sys_operation_log WHERE id >
 ```bash
 python3 deploy/setup-reaper-role.py                                  # 首次：設密＋LOGIN＋reaper 憑證 SELECT 1 自驗
 dc --profile jobs run --rm reaper dry-run                            # token-reap dry-run：candidates 事件、零變動
-dc --profile jobs run --rm reaper --job audit-retention              # 四表候刪數、零自記
+dc --profile jobs run --rm -e AUDIT_RETENTION_OPERATION_LOG_DAYS=3650 -e AUDIT_RETENTION_ACCESS_LOG_DAYS=3650 -e AUDIT_RETENTION_LOGIN_ATTEMPT_DAYS=3650 -e AUDIT_RETENTION_SESSION_EVENT_DAYS=3650 reaper --job audit-retention   # 四表候刪數（天數與 execute 同取 3650＝候刪數可與實刪數比對）、零自記
 dc --profile jobs run --rm reaper --job policy-reconcile             # menu=0 button=0 endpoint=0
 AUDIT_RETENTION_ACCESS_LOG_DAYS=10 dc --profile jobs run --rm -e AUDIT_RETENTION_ACCESS_LOG_DAYS reaper --job audit-retention   # 退出 1、指名鍵值、零連線
 dc --profile jobs run --rm reaper --job nope; echo "rc=$?"           # rc 1
@@ -137,8 +139,8 @@ zh-tw-lint 綠＋型別檢查綠＋AI 逐頁審讀紀錄（全部接真頁面：
 ```bash
 python3 tools/walkthrough-baseline.py diff "<基準檔>"; python3 tools/walkthrough-baseline.py restore "<基準檔>"   # 還原後 diff rc 0
 python3 tools/docsync check && python3 tools/docsync lint
-for w in BL-00045 BL-00043 BL-00133 BL-00139 BL-00148 seed-view-gate 恰兩列 "008 刀" "島 J" 未入憲 只限兩鍵 恰二鍵 "找不到 404"; do python3 tools/docsync errata "$w"; done
-#   種子全集＝spec FR-065＋research R21 追加詞；現在式面命中逐條判讀（RL-0084）
+for w in BL-00045 BL-00043 BL-00133 BL-00139 BL-00148 seed-view-gate 恰兩列 "008 刀" "島 J" 未入憲 稽核域行為島 保留期 purge_before "沒有 delete" "尚無該 handler" rev5:008 死項 "view 未進場" "設定頁 view 刀" "view 刀" 裸鍵 只增不清 起了也跑不動 無事件源 "reaper bin" access_log_mw ADR-00080 只限兩鍵 恰二鍵 射程恰兩鍵 "找不到 404"; do python3 tools/docsync errata "$w"; done
+#   上列為節錄；種子全集＝spec FR-065 二十六詞＋research R21 追加五詞（逐詞照跑）；現在式面命中逐條判讀（RL-0084）
 ```
 
 Day-1 登記三步（RUNBOOK §10；第 3 步 pristine 庫）於收刀前承載體檢單元執行。

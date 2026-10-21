@@ -4,11 +4,11 @@
 
 | 鍵 | 常數 | 碼 | data | zh-tw | zh-cn | en-us |
 |---|---|---|---|---|---|---|
-| `biz.audit.invalidTable` | `BIZ_AUDIT_INVALID_TABLE` | 2222 | null | 清理標的無效 | 清理目标无效 | Invalid purge target |
-| `biz.audit.purgeBelowFloor` | `BIZ_AUDIT_PURGE_BELOW_FLOOR` | 2222 | `{minDays}` | 保留天數不得少於 {minDays} 天 | 保留天数不得少于 {minDays} 天 | Retention must be at least {minDays} days |
+| `biz.audit.invalidTable` | `BIZ_AUDIT_INVALID_TABLE` | 2222 | null | 清理目標不在允許清單內 | 清理目标不在允许清单内 | The purge target is not in the allowed list |
+| `biz.audit.purgeBelowFloor` | `BIZ_AUDIT_PURGE_BELOW_FLOOR` | 2222 | `{minDays}` | 清理保留天數不可低於 {minDays} 天 | 清理保留天数不可低于 {minDays} 天 | Retention days cannot be below {minDays} days |
 
 - 落地時序：兩鍵隨 purge 寫端單元（U7）一次落——`error.rs` 名冊、三檔 locale backend 子樹（I18N (ii)）、`app.d.ts` backend 型節（I18N (iii)）同批；contract 案各至少一案實發（名冊雙向閘）。
-- 語意要求：invalidTable 不回聲原值；purgeBelowFloor 之譯文只放佔位符 `{minDays}`、不寫死 30。
+- 語意要求：invalidTable 不回聲原值；purgeBelowFloor 之譯文只放佔位符 `{minDays}`、不寫死 30；zh-cn／en-us 逐字取 rev5 HEAD（＝rev4）譯文（toast 屬 SC-011 提示文案對照面，另設即不等）；zh-tw 同義對譯。
 
 ## §2 攜參明細通道（恰三鍵）
 
@@ -39,7 +39,7 @@ zh-tw 草案（實作期得潤飾、語意不得改）：密碼對＝「密碼�
 | 子鍵 | 內容 |
 |---|---|
 | `title` | 頁卡標題（rev5 HEAD 同形） |
-| `tab.{operation,access,login,session}` | 四分頁標題 |
+| `tab.{operation,access,login,session}` | 四分頁標題（zh-tw 依既有譯法 session＝工作階段，例「工作階段事件」；zh-tw 新增值不得含「會話」；spec 之「會話事件」為來源術語、非 zh-tw 畫面字面） |
 | `search.*` | 四搜尋卡欄位 label 與 placeholder（動作欄範例用庫內小寫字面，如 `update`、`kick`） |
 | `column.*` | 四分頁欄標題＋登入成敗兩值標籤 |
 | `snapshot.{entry,title,before,after,empty}` | 快照浮層 |

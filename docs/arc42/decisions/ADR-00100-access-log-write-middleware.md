@@ -45,6 +45,8 @@ tags: [audit, access-log, middleware, island-j, observability]
 - 資料庫故障期間待寫任務於記憶體排隊（同期業務請求亦失敗）；恢復後消化。
 - 測試基建一次落：守衛隨 Router clone 走、app 建構 helper 內部帶守衛（呼叫點零改寫；直呼與 stub 案由測試基建單元現算處置）。
 - 稽核頁可見自身請求（無豁免名單）。
+- 零列已知態兩則（by-design）：被 IP 存取閘擋下之請求（閘在驗章之前＝未認證；帶有效權杖亦然）與回應產生前即被丟棄之已認證請求（用戶端中斷、逾時；寫入於回應產生後才排程）皆不落存取日誌列——阻擋紀錄住閘門結構化告警（target `security.ipgate`）與 `ipgate_blocked_total`（spec Edge Cases「存取日誌」末條）。
+- 停機丟棄在途寫入（by-design）：行程停機（graceful shutdown）時尚在等候號誌許可或寫入中之任務隨 runtime 結束被丟棄＝該列不落；在途 RAII 件未結案即 Drop 時補發與寫入失敗同形之 warn 並計入 `access_log_write_failed_total`（J2「寫入失敗 MUST 只發結構化告警」；`server/src/main.rs` 零改、不延長停機）。
 
 ## 翻案觸發器
 

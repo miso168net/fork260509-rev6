@@ -26,7 +26,7 @@ ADR-00082 款 3 以現行全集重述操作稽核寫入者並定封閉詞彙八�
 - **寫入者全集**＝ADR-00082 款 3 所列各寫端（IP 規則四寫端、解鎖端點兩維、角色寫端、選單寫端、三維授權寫端、授權回收桶復原、使用者域寫端八支、個人中心改密）＋**系統設定寫端**（`update`、`system_settings`、`entity_id` NULL、整列快照）＋**手動清理**（`purge`、目標表名、`entity_id` NULL、`{table, before_days, deleted_count}`）＋**排程清理**（`purge`、同上加 `job`；操作者空、來源位址哨兵 `0.0.0.0`＝ADR-00101 決定 5）。
 - **封閉詞彙九詞**：`add`、`update`、`delete`、`restore`、`unlock`、`kick`、`reset_password`、`change_password`、`purge`（只在尾端追加；字面釘值測同改）。
 - 入口三支：交易內 `write_in_txn`、裸連線 `write`（解鎖來源維）、系統程序 `write_system_in_txn`（排程清理）。
-- **非寫入者**（改寫 ADR-00082 款 3 同段）：刪「既有系統設定寫端維持不落稽核列」；m0003 與 m0004 之 seed 基線層改列不落操作稽核（島 G 之 G2 末句；ADR-00085、ADR-00108 決定 4）；token-reap 不落自記（ADR-00101 決定 3）；policy-reconcile 零寫入（ADR-00101 決定 6）；讀端（含 getPasswordPolicy 與稽核四讀端）不落；包含規則、seed 保護、本人規則與各業務守門之拒絕腿皆零列（續行）。⇒ 查詢端不得據此表宣稱「所有管理操作皆有稽核」（續行）。
+- **非寫入者**（改寫 ADR-00082 款 3 同段）：刪「既有系統設定寫端維持不落稽核列」；m0003 與 m0004 之 seed 基線層改列不落操作稽核（m0003 之受保護集變更＝島 G 之 G2 末句、m0004 之非受保護兩筆與之同層；ADR-00085、ADR-00108 決定 4）；token-reap 不落自記（ADR-00101 決定 3）；policy-reconcile 零寫入（ADR-00101 決定 6）；讀端（含 getPasswordPolicy 與稽核四讀端）不落；包含規則、seed 保護、本人規則與各業務守門之拒絕腿皆零列（續行）。⇒ 查詢端不得據此表宣稱「所有管理操作皆有稽核」（續行）。
 
 ## 後果
 

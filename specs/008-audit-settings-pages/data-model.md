@@ -74,11 +74,14 @@
 | 條件 | 結果 |
 |---|---|
 | 公開子路由、兩道 fallback（`4040`） | 不經記錄層＝零列 |
+| 被 IP 存取閘擋下（閘在 `enforce_mw` 外側；帶有效權杖亦然） | 不經記錄層＝零列（已知態；阻擋紀錄住 `security.ipgate` 告警與 `ipgate_blocked_total`） |
+| 回應產生前即被丟棄（用戶端中斷、逾時） | 寫入排程於回應產生之後＝零列（已知態） |
 | 認證失敗（`8888`／`3333`／`7777`） | enforce_mw 早退＝零列 |
 | 認證通過、身分或上下文缺席 | 跳過寫入（debug 事件） |
 | 認證通過、授權拒絕（`5003`） | 回應先回；非同步一列、`http_status = 403` |
 | 認證通過、handler 完成（含業務拒因 `2222`、系統錯誤 `5000`） | 回應先回；非同步一列、`http_status = 200` |
 | 寫入失敗 | warn 事件（`target = audit.access_log`、`degraded = access_log_write`）＋`access_log_write_failed_total` +1；回應不變 |
+| 行程停機時寫入任務未完成（等候許可或寫入中） | 該列不落；在途 RAII 件未結案即 Drop＝補發同形 warn＋計數 +1（已知態） |
 
 寫入併發上界＝號誌 2（等待許可、不丟列）；在途計數供測試 drain。
 
@@ -127,8 +130,9 @@
 | 原值 | 判定 | 結果 |
 |---|---|---|
 | 缺席 | Absent | 90 |
-| 無法解析為非負整數（含負數、非數字、空字串） | Malformed | warn（指名鍵與原值）＋90 |
+| 非數字、空字串或負數 | Malformed | warn（指名鍵與原值）＋90 |
 | 解析成功且 < 30（含 0） | 違規 | 前置全拒 |
+| 全數字而逾 i64 上界（極大值） | 違規 | 前置全拒（指名鍵與原值；不退 90） |
 | 解析成功且 ≥ 30 | Adopt | 採該值 |
 
 `REAPER_GRACE_DAYS`：缺席 7；畸形 warn＋7。`REAPER_INTERVAL_SECS`：只由 compose dev loop 消費（缺席 86400）。
@@ -158,8 +162,8 @@
 |---|---|
 | `userPhone` 字串、字元數 > 5 | 前 3 字元＋`****`＋後 2 字元 |
 | `userPhone` 字串、字元數 ≤ 5 | `****` |
-| `userEmail` 字串、含 `@` | 首字元＋`***`＋`@`＋網域 |
-| `userEmail` 字串、無 `@` | 首字元＋`***` |
+| `userEmail` 字串、含 `@` | 以第一個 `@` 切分：local-part 首字元（local-part 空則無）＋`***`＋自該 `@` 起之其餘（例：`@example.com`→`***@example.com`、`a@b@c`→`a***@b@c`） |
+| `userEmail` 字串、無 `@` | 首字元＋`***`（空字串＝`***`）；字元一律以 Unicode 字元計 |
 | 兩鍵之非字串值、缺席、巢狀同名鍵、快照非物件 | 原樣 |
 
 `payload_before` 與 `payload_after` 各一次；資料庫原值不動。
@@ -187,7 +191,7 @@
 | 手動清理（purgeAuditLog） | `purge` | 目標表名 | NULL | NULL | `{table, before_days, deleted_count}` | 請求上下文 |
 | 排程清理（audit-retention） | `purge` | 目標表名 | NULL | NULL | `{table, before_days, deleted_count, job}` | `created_by` NULL、`real_ip` `0.0.0.0`、餘 NULL |
 
-整列快照（設定）＝`{settingKey, settingValue, settingType, description, createdAt, createdBy, updatedAt, updatedBy, deletedAt, deletedBy}`。`table` 取 wire 值（`operationLog`…）；`job`＝`audit-retention`。
+整列快照（設定）＝`{settingKey, settingValue, settingType, description, createdAt, createdBy, updatedAt, updatedBy, deletedAt, deletedBy}`。`table` 取 wire 值（`operationLog`…）；`job`＝`audit-retention`（排程列 after 多帶之 `job` 鍵屬島 J3「含…」之超集、不改「同自記形」；讀法之家＝ADR-00101 決定 4）。
 
 ## §8 m0004 與演進帳
 
@@ -251,7 +255,7 @@
 | `OperationLogQuery`／`AccessLogQuery`／`LoginAttemptQuery`／`SessionEventQuery`／`PurgeAuditLogReq` | 請求型 | 同上 |
 | `OperationLogDto`／`AccessLogDto`／`LoginAttemptDto`／`SessionEventDto`／`PurgeAuditLogRes`／`PurgeBelowFloorDetail`、`purge_below_floor_err` | 回應型與組裝件 | 同上 |
 | `TimeRange`、`parse_time_range`、`PersonFilter`、`resolve_person_filter`、`mask_pii_payload` | 讀端件 | `server/src/model/audit_query.rs` |
-| `PURGE_MIN_DAYS`（30）、`RetentionTable`（`ALL`、`wire`、`entity_table`、`env_key`）、`PurgeActor`、`purge_with_self_record`、`count_before` | retention 共用核 | `server/src/model/retention.rs` |
+| `PURGE_MIN_DAYS`（30）、`RetentionTable`（`ALL`、`wire`、`entity_table`、`env_key`）、`PurgeActor`（排程清理單元增 `System(SystemJob)` 變體）、`purge_with_self_record`、`count_before`；檔內私有 `purge_and_record`（收 `&DatabaseTransaction`；排程清理單元增 System 臂）、`settle`（清理寫端單元立、其後不擴） | retention 共用核 | `server/src/model/retention.rs` |
 | `AuditOperation::Purge`、`SystemJob`（`AuditRetention`）、`SystemAuditEvent` | 稽核型 | `server/src/model/audit.rs` |
 | `write_system_in_txn`、`list`、`purge_before`、`count_before` | facade | `facade/sys_operation_log.rs` |
 | `sys_access_log::{insert, list, purge_before, count_before}`、`NewAccessLog` | facade | `facade/sys_access_log.rs`（新） |
@@ -263,7 +267,7 @@
 | `access_log_mw`、`AccessLogLayer`、`ACCESS_LOG_WRITE_CONCURRENCY`（2）、`access_log_pending` | 中介層 | `server/src/middleware/mod.rs` |
 | `access_log_write_failed`／`access_log_write_failed_total` | 觀測 | `server/src/obs.rs` |
 | `reaper::{Args, parse_args, Job, dispatch_job, classify_retention_days, resolve_retention_days, grace_days_from, resolve_database_url, run_token_reap, run_audit_retention, run_policy_reconcile, OrphanCounts}`（`OrphanCounts` 為再匯出、定義住 facade `sys_casbin_policy.rs`＝facade 不反向依賴 job 模組） | reaper 本體 | `server/src/reaper.rs` |
-| `reaper` bin（`push_heartbeat`、`HEARTBEAT_TIMEOUT_SECS` 10、`PUSHGATEWAY_URL_BASE`） | bin | `server/src/bin/reaper.rs` |
+| `reaper` bin（`run_cli`、`run_on_conn`〔收 `&DatabaseConnection`；排程清理單元增保留天數參數 `Option<[i64; 4]>`〕、`push_heartbeat`、`heartbeat_body`、`HEARTBEAT_TIMEOUT_SECS` 10、`PUSHGATEWAY_URL_BASE`） | bin | `server/src/bin/reaper.rs` |
 | `msg_key::{BIZ_AUDIT_INVALID_TABLE, BIZ_AUDIT_PURGE_BELOW_FLOOR}` | 名冊 | `server/src/error.rs` |
 | `SettingItem.{declared, range_min, range_max}` | wire 擴欄 | `handler/system_settings.rs` |
 | `AccessLogRowsGuard`、`PurgeSelfAuditGuard`；tests 側 `AccessLogWriteGuard`、`PurgeSelfAuditWriteGuard`（`*WriteGuard` 慣例） | 測試守衛 | `facade/test_kit.rs`；`tests/common/mod.rs` |
@@ -273,10 +277,14 @@
 | `obs017-policy-reconcile-orphans`、`obs017-reconcile-heartbeat-timeout`（uid ≤ 40 字元；title `policy-reconcile-heartbeat-timeout`） | 告警規則 | `deploy/grafana-provisioning/alerting/rules.yml` |
 | `reaper_orphan_policies{dimension}` | 心跳 gauge | reaper 推送 |
 | `AccessLogInFlight`（在途 RAII 憑證：`enter` 計數 +1、`Drop` −1） | 中介層 | `server/src/middleware/mod.rs`（U2 立、U8 中介層持有） |
-| `drain_access_log_writes`、`with_access_log_guard`、`guarded_app`、`stub_app_behind_dev_proxy`、`assert_only_planted_before_horizon`、`PURGE_TEST_*`、`SYSTEM_JOB_SENTINEL_IP`、`horizon_probe`、`plant_aged_audit_row` | 測試件 | `facade/test_kit.rs`（`drain_access_log_writes` 另有 tests 側同名鏡像＝`tests/common/mod.rs`） |
+| `drain_access_log_writes`、`ACCESS_LOG_DRAIN_TIMEOUT`、`with_access_log_guard`、`guarded_app`、`stub_app_behind_dev_proxy`、`assert_only_planted_before_horizon`、`PURGE_TEST_*`、`SYSTEM_JOB_SENTINEL_IP`、`horizon_probe`、`plant_aged_audit_row` | 測試件 | `facade/test_kit.rs`（`drain_access_log_writes`、`with_access_log_guard`、`ACCESS_LOG_DRAIN_TIMEOUT`〔src 側檔內私有常數〕、`SYSTEM_JOB_SENTINEL_IP` 另有 tests 側同名鏡像或自持字面＝`tests/common/mod.rs`） |
 | `HORIZON_PREDICATE` | 水平線式單一出處 | `facade/mod.rs` |
 | `SYSTEM_REAL_IP_SENTINEL`（私有） | 生產面哨兵常數 | `facade/sys_operation_log.rs` |
 | `sys_role::active_codes` | facade | 既有檔 |
 | `reaper::{Job::ALL, mode_label, DEFAULT_GRACE_DAYS, record_orphan_gauges}` | reaper 件 | `server/src/reaper.rs` |
+| `OperationLogFilter`／`AccessLogFilter`／`LoginAttemptFilter`／`SessionEventFilter` | 讀端過濾型（handler 組成、facade `list` 收） | 四支稽核 facade 各檔 |
+| `OrphanCounts::{total, by_dimension}` | 對賬計數方法（`by_dimension`＝心跳 `dimension` 標籤值之單一出處） | `facade/sys_casbin_policy.rs` |
+| `reaper::{RetentionDays, DEFAULT_RETENTION_DAYS（90）, Job::as_str}`、`SystemJob::{ALL, as_str}` | reaper 與系統稽核型件 | `server/src/reaper.rs`；`server/src/model/audit.rs` |
+| `PurgeSelfAuditGuard::{arm_operator, arm_system}` | 測試守衛建構形 | `facade/test_kit.rs`（tests 側 `PurgeSelfAuditWriteGuard` 同名） |
 
-（末六列為 tasks 期定名之跨單元件。）
+（末十列為 tasks 期定名之跨單元件；`reaper` bin 與 retention 共用核兩列之 tasks 期補名見各列括注。）

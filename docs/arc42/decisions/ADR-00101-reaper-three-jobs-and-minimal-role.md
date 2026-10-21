@@ -21,7 +21,7 @@ tags: [audit, reaper, retention, authz-governance, observability, dependency]
 1. **reaper 鏡像 handler 常數與白名單（rev4 形）**——兩側漂移靠雙側斷言；否決（同 crate 直接引用共用核）。
 2. **自記列來源位址用 `127.0.0.1`**——dev 真請求可能同址、無從區分；否決（g2）。
 3. **系統自記沿用 `AuditOperator` 加一個「系統」建構點**——HTTP 寫端拿得到該建構點＝哨兵可外溢；否決（另立具名型）。
-4. **對賬自動刪除孤兒列**——畫面無清理路、誤刪不可回；否決（B4／g3）。
+4. **對賬自動刪除孤兒授權列**——畫面無清理路、誤刪不可回；否決（B4／g3）。
 5. **心跳推送用甲（exporter 內建 push-gateway）**——永不返回之迴圈、成敗不回報、panic 路徑改退出碼；否決。用丁（hyper 低階 client）——偏離藍本、自寫 HTTP 管線；否決。
 6. **job 本體全在 bin（rev4 形）**——真庫測試無法用 lib 之測試基建；否決。
 
@@ -32,9 +32,9 @@ tags: [audit, reaper, retention, authz-governance, observability, dependency]
 1. **CLI 與退出碼**：`--execute`（缺席＝dry-run）＋`--job token-reap|audit-retention|policy-reconcile`（預設 token-reap）；未知參數與 job 嚴拒；0＝完跑（含 0 列）、1＝任一步失敗；失敗不推心跳（契約＝本刀 contracts/reaper-cli.md）。
 2. **環境變數**：四表保留天數三分語意（缺席 90、畸形告警退 90、解析成功且 < `PURGE_MIN_DAYS` 前置全拒且先於連線）；`REAPER_GRACE_DAYS` 缺席或畸形退 7；dev loop 每日一輪（`REAPER_INTERVAL_SECS` 缺席 86400）與告警門檻 172800 互為 2× 錨（三檔同步）。
 3. **token-reap**：判準 `expires_at < now() − G 天`（rev4 形、不分 status）、單語句刪除；不落操作日誌自記（會話域、非稽核表之水平線清理）。
-4. **audit-retention**：固定表序四表、逐表經 retention 共用核單交易「刪＋自記」（與手動清理同謂詞同自記形；下限直接引用 `PURGE_MIN_DAYS`、不鏡像）；任一表失敗＝退出 1、已 commit 之表維持。
-5. **排程清理自記列**：`created_by` NULL、`real_ip`＝`0.0.0.0`、`peer_ip`／`x_forwarded_for`／`ip_confidence` NULL、`payload_after`＝`{table, before_days, deleted_count, job}`；刪 0 列照落（每輪四列）。寫入經系統程序具名型（封閉 enum、只收碼內字面）與 facade 專屬入口；哨兵常數只住該 facade。★哨兵＝無網路來源之標記，只用於無操作者之系統程序自記列；非島 F 之 F3① 與島 E 末點所禁之「有操作者而取不到其位址時以佔位位址補足」——HTTP 寫端照舊只轉錄請求上下文、缺席拒寫 `5000`（001 data-model 前瞻註之兌現）。
-6. **policy-reconcile**：唯讀三維（選單、按鈕、端點）計數孤兒授權列（候選外或角色無主；每列每維至多計一次）；有無 `--execute` 皆零寫入；結構化日誌指名三維計數；不自動刪。處置＝RUNBOOK（非 seed 角色＝刪除角色經連動歸檔；seed 角色或逐列清＝維運 SQL 範本：先匯出待刪列留存再刪、不手寫歸檔列）。
+4. **audit-retention**：固定表序四表、逐表經 retention 共用核單交易「刪＋自記」（與手動清理同謂詞同自記形；下限直接引用 `PURGE_MIN_DAYS`、不鏡像）；任一表失敗＝退出 1、已 commit 之表維持。島 J3 讀法：「每次 purge」與「整筆回滾」之單位＝每表一次 purge 之單一交易（逐表全有或全無、表間不共交易）；跨表不回滾＝部分完成＋整體報錯＋下輪冪等，非 J3 方向反轉括號所禁之「容忍部分成功」。「同謂詞同自記形」＝動作 `purge`、`entity_table` 為目標表名、`entity_id` 與變更前快照皆空、變更後快照含 {`table`, `before_days`, `deleted_count`}；排程列多帶之 `job` 鍵（決定 5）屬 J3「含…」之超集、不改自記形。
+5. **排程清理自記列**：`created_by` NULL、`real_ip`＝`0.0.0.0`、`peer_ip`／`x_forwarded_for`／`ip_confidence` NULL、`payload_after`＝`{table, before_days, deleted_count, job}`；刪 0 列照落（每輪四列）。寫入經系統程序具名型（封閉 enum、只收碼內字面）與 facade 專屬入口；生產面哨兵常數只住該 facade（測試守衛之圈界字面另立、以同值釘綁定）。★哨兵＝無網路來源之標記，只用於無操作者之系統程序自記列；非島 F 之 F3① 與島 E 末點所禁之「有操作者而取不到其位址時以佔位位址補足」——HTTP 寫端照舊只轉錄請求上下文、缺席拒寫 `5000`（001 data-model 前瞻註之兌現）。
+6. **policy-reconcile**：唯讀三維（選單、按鈕、端點）計數孤兒授權列（候選外或角色無主；每列每維至多計一次）；有無 `--execute` 皆零寫入；結構化日誌指名三維計數；不自動刪。處置＝RUNBOOK（非 seed 角色＝刪除角色經連動歸檔；seed 角色或逐列清＝維運 SQL 範本：先匯出待刪列留存再刪、不手寫歸檔列）。★憲法射程判讀：島 G 之 G1（授權變更與其操作稽核同交易、commit 後同步）與 G3（撤銷必歸檔）約束應用之授權寫端；本維運 SQL 為資料庫層人工處置、不經一般管理介面（同形前例＝RUNBOOK §9c 走查還原、§10 手動重放直改 `casbin_rule` 後重啟），以「先匯出待刪列留存」代歸檔快照、以重啟 rust-api 代判定面同步，受保護列命中即停手（G2；seed 基線層決策＝新 ADR）。
 7. **心跳**：grouping key `…/metrics/job/reaper/reaper_job/<job>`（PUT 整組替換）；`reaper_last_success_timestamp{mode}`（三 job）、`reaper_deleted_total{mode}`（token-reap、audit-retention）、`reaper_orphan_policies{dimension}`（policy-reconcile）；完跑後推、best-effort、全程時限 10 秒、失敗不改退出碼。
 8. **HTTP 實作**：ureq（`default-features = false`；rev4 藍本形）；版本＝3.4.2（user 2026-10-21 plan 期擇定；全域 §6 兩源：rev4 lockfile 3.3.0、crates.io 最新穩定 3.4.2）、完整版號釘於 workspace（`ureq = { version = "3.4.2", default-features = false }`）；lockfile 連帶解析 `ureq-proto` 0.6.5、`utf8-zero`、`base64` 0.23.1（既有 `base64` 0.13.1〔captcha 之依賴〕與 0.22.1 之外再並存 0.23.1＝三版本；以實作單元之 `cargo tree -i base64` 實得為準）。
 9. **連線與 role**：以 `reaper_database_url`（`reaper` role）連線、不掛 `database_url`；連線字串解析取 Result 形（拒空值與範本佔位值）。role 由 m0004 建（ADR-00108）、`deploy/setup-reaper-role.py` 設密。

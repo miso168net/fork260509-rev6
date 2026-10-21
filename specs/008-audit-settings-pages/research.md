@@ -41,7 +41,7 @@
 | `views/manage/audit/modules/use-audit-search-date-range.ts` | 時間區間本地輸入→UTC ISO（`timeFrom`／`timeTo`） | 同名新檔 | — |
 | `views/manage/audit/modules/audit-purge-modal.vue` | 清理浮層（標題帶表名、唯一欄保留天數、每開重置 30、無上界、浮層＋確認泡泡二段） | 同名新檔 | — |
 | `service/api/rev5-audit.ts`／`typings/api/rev5-audit.d.ts` | 五支 fetcher、`Api.Audit` 型 | `rev6-audit.ts`／`rev6-audit.d.ts`（新；不入 barrel） | ㉒ |
-| `service/api/rev5-settings.ts`／`typings/api/rev5-settings.d.ts` | 兩支 fetcher、`Api.SystemManage.SystemSetting` 四欄 | rev6 既有 `rev6-settings.ts`（零改）／`rev6-settings.d.ts`（擴三欄） | ⑬ |
+| `service/api/rev5-settings.ts`／`typings/api/rev5-settings.d.ts` | 兩支 fetcher、`Api.SystemManage.SystemSetting` 四欄 | rev6 既有 `rev6-settings.ts`（fetcher 零改；檔頭 barrel 排除註與 JSDoc 之「view 刀」類句隨 errata 改現在式）／`rev6-settings.d.ts`（擴三欄） | ⑬ |
 | `locales/langs/{zh-cn,en-us}.ts` 之 `route:`／`page.manage.{systemSettings,audit}`／backend `biz.audit.*` | 兩語譯文 | rev6 三語（含 `zh-tw.ts`） | ㉓ |
 | `typings/app.d.ts` 之 `Schema.page` 兩頁型節 | 型節 | 同 | — |
 | `service/request/index.ts` 之明細轉譯 | 第三鍵 `{minDays}` 插值 | rev6 `translateBackendMsg` 之既有新增型圈界塊內補一分支 | ㉔ |
@@ -119,7 +119,7 @@
 
 1. **決定（承決＝spec FR-007～FR-012；形照 rev5）**：四支讀端只讀、零寫入；固定序 `created_at DESC, id DESC`；分頁 `page_params`；時間 RFC3339 閉開、畸形＝未設、顛倒＝空頁短路（不下 SQL）；人員過濾 id 優先、名→含已軟刪同名全集、零命中＝空頁短路；等值欄空字串＝未設；路徑與帳號名部分字串（ILIKE、`%`／`_`／`\` 字面化）；登入嘗試來源 IP 精確等值（`IpNetwork::from(IpAddr)`＝/32、/128）；成敗嚴格 `true`／`false`。
 2. **只讀交易（工程）**：四支以 `begin_with_config(Some(IsolationLevel::RepeatableRead), Some(AccessMode::ReadOnly))` 開唯讀交易包住清單與計數兩查詢（可重複讀＝兩句同一快照、總數與列一致；預設之 READ COMMITTED 每句各取快照，存取日誌每請求一寫下總數與列可不一致）；J1 之機器守＝測試以寫入計數前後相等＋唯讀交易內任何寫入被資料庫拒之負向案。判準：J1「純唯讀」由資料庫強制最硬、不靠自律。
-3. **打碼（承決＝D9、spec FR-013）**：`mask_pii_payload` 單點、讀端序列化前對 `payload_before`／`payload_after` 各一次；鍵常數 `userPhone`／`userEmail`（rev6 使用者寫端快照鍵＝`handler/user.rs` 之 `audit_snapshot` 現讀）；手機 `chars().count() > 5`＝前 3＋`****`＋後 2、否則 `****`；信箱含 `@`＝首字＋`***`＋`@網域`、否則首字＋`***`；非字串、缺席、巢狀、非物件快照原樣。拆除即紅之機器守＝讀端案斷言打碼後字面（非 vacuous：植列含兩鍵）。
+3. **打碼（承決＝D9、spec FR-013）**：`mask_pii_payload` 單點、讀端序列化前對 `payload_before`／`payload_after` 各一次；鍵常數 `userPhone`／`userEmail`（rev6 使用者寫端快照鍵＝`handler/user.rs` 之 `audit_snapshot` 現讀）；手機 `chars().count() > 5`＝前 3＋`****`＋後 2、否則 `****`；信箱以第一個 `@` 切分＝local-part 首字元（空則無）＋`***`＋自該 `@` 起之其餘、無 `@`＝首字元＋`***`（空字串＝`***`；字元以 Unicode 字元計）；非字串、缺席、巢狀、非物件快照原樣。拆除即紅之機器守＝讀端案斷言打碼後字面（非 vacuous：植列含兩鍵）。
 4. **IP 欄 wire 形（形照 rev5）**：INET 單址欄去前綴（`ip().to_string()`）；`session_event.source_ip` 為 `varchar(45)` 字串照回。
 5. **授權拒絕與存取日誌**：讀端自身之請求亦經存取日誌中介層落列（R9）；J1 之測試射程＝讀端 handler 與其交易（spec FR-007）。
 
@@ -130,7 +130,7 @@
 3. **謂詞（形照 rev5）**：`created_at < now() - ($1 * interval '1 day')`（SQL `now()`＝交易時戳、免時鐘偏移）；`count_before` 與 `purge_before` 共用同一謂詞字串常數（dry-run 候刪數＝將刪數）。極大天數致時間不可表示＝資料庫拒（interval overflow）→整筆回滾→handler `5000`／reaper 該表失敗退出（spec Edge Cases）；以 `before_days = i64::MAX` 之真庫案釘住不崩潰。
 4. **自記兩路（承決＝g2、g5、spec FR-036；形制＝工程）**：
    - HTTP 寫端：`AuditEvent { operator: AuditOperator, operation: Purge, entity_table: 目標表名, entity_id: None, before: None, after: {table, before_days, deleted_count} }` 經既有 `write_in_txn`。
-   - 系統程序：新型 `SystemJob`（封閉 enum、現恰一值 `AuditRetention`＝`"audit-retention"`；欄位私有、無自由字串建構點）＋`SystemAuditEvent { job, operation, entity_table, entity_id, before, after }` 經新入口 `sys_operation_log::write_system_in_txn(txn, event)`——落 `created_by` NULL、`real_ip`＝哨兵 `0.0.0.0`（常數只住該 facade）、`peer_ip`／`x_forwarded_for`／`ip_confidence` NULL；`after` 由共用核組為 `{table, before_days, deleted_count, job}`。
+   - 系統程序：新型 `SystemJob`（封閉 enum、現恰一值 `AuditRetention`＝`"audit-retention"`；欄位私有、無自由字串建構點）＋`SystemAuditEvent { job, operation, entity_table, entity_id, before, after }` 經新入口 `sys_operation_log::write_system_in_txn(txn, event)`——落 `created_by` NULL、`real_ip`＝哨兵 `0.0.0.0`（生產面常數只住該 facade；測試守衛之圈界字面另立、以同值釘綁定）、`peer_ip`／`x_forwarded_for`／`ip_confidence` NULL；`after` 由共用核組為 `{table, before_days, deleted_count, job}`。
    - `PurgeActor { Operator(AuditOperator), System(SystemJob) }` 由呼叫端給定；HTTP 寫端「上下文缺席拒寫 `5000`」照舊（`AuditOperator::from_context` 唯一建構點不動）。`model/audit.rs` 檔頭「沒有『自己填一個位址』的路」句改述為兩路現在式：HTTP 路恆轉錄請求上下文；系統路恆為哨兵且操作者空——兩路之構造點互斥、皆無自由位址參數。
    - 判準：哨兵只能經「無操作者之系統程序」構造（型別層），HTTP 路徑物理上拿不到哨兵（R13 之防外溢）。
 5. **刪 0 列照落（承決＝g5）**：共用核不因 `deleted == 0` 早退。
@@ -157,7 +157,7 @@
 2. **同值寫入（承決＝D1 字面、spec FR-028）**：照寫（審計欄重寫）並照落一列稽核（前後快照之業務四欄相同、審計欄不同）。
 3. **讀 wire 擴充（承決＝工程判斷③、spec FR-026；欄名＝工程）**：`SettingItem` 增 `declared: bool`（恆在場；鍵在 registry 宣告集內＝true）、`range_min`／`range_max: Option<i64>`（`skip_serializing_if = "Option::is_none"`；只在 `declared ∧ number` 時給值；值取 `validation::range_of`＝REGISTRY 單一權威）。`rev6-settings.d.ts` 之 `SystemSetting` 同批擴 `declared: boolean`、`rangeMin?: number`、`rangeMax?: number`；wire-schema 快照重抽；ADR-00054 翻案觸發器不成立（不另立界值真源）。
 4. **碼註順改（承決＝⑬、spec FR-029）**：「rev5 後刀的同 txn op-log 不帶回」改述為「rev4 之同交易稽核不帶回」之史述已失真——本刀起設定寫端即同交易落稽核；裸引之 research 條號補前綴。改 assert 訊息時容器 cargo 驗。
-5. **部分更新語意之續行（工程；R24 E3）**：設定域之翻案觸發器（「系統設定寫端重寫或出現清空 UI 需求」）現行承載＝ADR-00091（續行 ADR-00080）；其決定 8 逐域差異表為「單一出處」、設定域「同值出現」格「照寫、零稽核」於 D1 後失真＝須新 ADR 續行並 supersede ADR-00091（ADR-00107 草稿：決定 1～7、9 原文續行、決定 8 設定域兩格改寫、觸發器重評結論＝空字串語意維持）。
+5. **部分更新語意之續行（工程；R24 E3）**：設定域之翻案觸發器（「系統設定寫端重寫或出現清空 UI 需求」）現行承載＝ADR-00091（續行 ADR-00080）；其決定 8 逐域差異表為「單一出處」、設定域「同值出現」格「照寫、零稽核」於 D1 後失真＝須新 ADR 續行並 supersede ADR-00091（ADR-00107 草稿：決定 1～7 原文續行、決定 8 改寫設定域同值出現格並於導句補設定寫端讀上下文、決定 9 改寫改指對象、決定 10 觸發器重評結論＝空字串語意維持）。
 6. **設定頁授權不下放（承決＝工程判斷④）**：設定兩端點（列 66／67）續為封死集；選單維可見性可授（ADR-00081 款 10 改述）。
 
 ## R11 reaper 三 job（B1、B4、D8、ADR③；spec FR-030～FR-038）
@@ -200,7 +200,7 @@
 4. **連動改對（承決＝spec FR-042）**：授權列 163→164、序號 164→165、受保護 25 不變、R_SUPER 按鈕碼 21→22、選單 77 按鈕清單；seed 錨定測、getUserInfo 三帳號按鈕集（Super 多 `audit:purge`；Admin／User 不變）、m0003 之 setval 期望與 schema 閘之序號合成期望值。
 5. **BL-00148 離線對賬腿（承決＝⑫、spec FR-041；掛點與 DDL 處理＝工程）**：
    - 載體＝`tools/schema-gate.py` 新子命令 `offline`（零 docker、純讀檔）：①解析 `rust-api/migration/src/` 下檔名 `m<四碼>_….rs`、四碼 ≥ 0003 者（依數值排序；跨十位不出射程）之 `const <名>: &str = …;`（含 `concat!` 與檔內 `macro_rules!` 字面展開；展開器只認兩形、其餘形＝rc 2 指名）；SQL 之家限 `fn up`／`fn down` 本體內 `execute_unprepared(<SQL>)` 之引數與 `expect_rows(…)` 第三引數（常數名或字面）、本體他句形＝rc 2、未被引用之常數不入分類 ②逐語句分類：seed DML（`INSERT INTO`／`UPDATE`／`DELETE FROM` 於 seed 表）、序列（`setval`）、權限面 DDL（`CREATE ROLE`〔含 `DO $$` 包裝〕／`GRANT`／`REVOKE`／`DROP ROLE`）、其餘＝無法分類即紅 ③seed DML 與演進帳該刀登記逐筆對賬（表、pk、set／values 全欄）、與前值左源（凍結 seed＝`specs/001-schema-baseline/fixtures/seed.sql` 之 COPY 段〔m0002 為多列 INSERT、其檔頭自述之凍結證據即此檔〕⊕ 前序 delta 已配對之登記）之前值對賬（UPDATE 與 DELETE 之 WHERE 所列各欄逐欄等於左源該列之值；不要求 WHERE 列全欄）④權限面 DDL 結構化列出（逐支語句數與受權物件集、不入演進帳；不對賬）——判準：權限面之真偽由 R11.9 之權限測承擔，離線腿只保證「語句類別可辨、seed 面與帳一致」。
-   - 一正一反＋逐判準停用變異（RL-0080）：真 repo 綠；改壞 SQL 常數之值、少登一筆、改壞凍結 seed 前值、植一句未分類 DDL 各紅；逐判準停用（DML 對帳、前值對帳、分類器）各一支變異皆紅。
+   - 一正一反＋逐判準停用變異（RL-0080）：真 repo 綠；改壞 SQL 常數之值、少登一筆、改壞凍結 seed 前值、植一句未分類 DDL 各紅；逐判準停用（DML 對賬、前值對賬、分類器）各一支變異皆紅。
    - 掛點：pre-commit 新段（`rust-api` pin bump、`tools/schema-gate.py`、`docs/ops/reference-src/schema-evolution.json` 任一 staged 時跑 `schema-gate.py offline`；零 docker、秒級）＋`schema-gate.py test` 自測納入新案；需 docker 之 `check` 維持不進常跑鏈（工程判斷⑫）。接線字面入 `tools/docsync/tests/test_hook_wiring.py` 之機器守。
    - 時序：本腿於撰寫 m0004 之單元前落地，並先對 m0003 綠（BL-00148 觸發條件）。
 6. **schema 閘（承決＝spec FR-040、ADR-00087）**：全新庫 m0001～m0004 重放後三閘綠；序號合成依 E-011 推進 `casbin_rule_id_seq` 期望；拆合成即 gate2 紅之變異照跑；schema-definition 不前進。
@@ -213,7 +213,7 @@
 3. **msg-key-gate 擴（工程；RL-0080 判讀）**：`BIZ_DATA_KEYS` 增第三鍵→型名；`DETAIL_HOME`（單檔）改逐鍵之家之對映（`handler/user.rs` 兩鍵、`handler/audit.rs` 一鍵）；不改任何模組層 `RE_*` 常數。判讀：名冊與家之擴列屬判準之資料面、非新增判準；但佔位符對賬多一條讀檔途徑＝射程宣稱逐途徑配變異（新家之明細型欄改名即紅、明細型移出其家即紅），並重跑與新途徑共用輸出面之既有對賬案（RL-0080「每增判準即重跑」之保守讀法）。正則未動＝FR-062 之 regex-mutants 前置不觸發（若實作期需改 `RE_*`，該單元先跑 `python3 tools/regex-mutants.py run`）。
 4. **閘面連動（工程）**：pre-commit submodule-sync 段之 rust 側閘面增 `rust-api/server/src/handler/audit.rs`（明細型之家）；`tools/docsync/tests/test_hook_wiring.py` 之閘面對賬同批。
 5. **前端轉譯（工程；須 Amendment）**：`translateBackendMsg` 既有圈界塊內增第三分支（`msg === 'biz.audit.purgeBelowFloor' && typeof fields.minDays === 'number'`）；`fields` 之型聯集增 `Api.Audit.PurgeBelowFloorDetail`；不增圈界塊、無修改型行。
-6. **釐清款（承決＝D7）**：ADR-00076 決定 2 列與 ADR-00090 決定 1 之「時鐘回撥時上限 I——照提示秒數重試必過」——牆鐘回撥使「距上次設密之經過秒數」可為負，提示之秒數為上界而非必過之保證；ADR④ 以新字面續行 ADR-00076、並對 ADR-00090 決定 1 立釐清款（射程釐清不 supersede；前例 ADR-00090 決定 5）。
+6. **釐清款（承決＝D7）**：ADR-00076 決定 1 冷卻列之「時鐘回撥時上限 I——照提示秒數重試必過」與 ADR-00090 決定 1 之「時鐘回撥上限 I——照提示秒數重試必過」——牆鐘回撥使「距上次設密之經過秒數」可為負，提示之秒數為上界而非必過之保證；ADR④ 以新字面續行 ADR-00076、並對 ADR-00090 決定 1 立釐清款（射程釐清不 supersede；前例 ADR-00090 決定 5）。
 
 ## R14 觀測層（B5、重錨；spec FR-043、FR-044）
 
@@ -231,7 +231,7 @@
 2. **控件與提交（承決＝spec FR-046）**：`settingType` 二值 enum→`NSwitch`、number→`NInputNumber`（`:min`／`:max` 取 `rangeMin`／`rangeMax`、`@blur`／Enter 提交、值未變不送、清空不送）、其他→唯讀；`declared = false`＝唯讀＋排組尾＋description；提交後成敗皆回讀全列。
 3. **矛盾提示（承決＝D2、spec FR-047）**：三對嚴格不等式、computed 自兩現值導出、警示落該對所屬組卡片（`NAlert` warning）、三語文案寫後果；不阻存。
 4. **政策快取清除（承決＝D3、spec FR-048）**：`pwd-policy.ts` 增 `clearPwdPolicyCache()`（模組層 `cachedPolicy` 置 null）；設定頁寫入政策七鍵任一成功後呼叫；檔頭「只增不清」「寫入者唯一」句與重設密碼浮層檔頭之快取句同批改述；RUNBOOK §11.3 改設定頁首選。
-5. **譯文（承決＝spec FR-049）**：`page.manage.systemSettings` 節＝四組標題、16 鍵 label＋help、矛盾提示三則、成功提示；節流兩組 help 不承諾嚴格上限。
+5. **譯文（承決＝spec FR-049）**：`page.manage.systemSettings` 節＝四組標題、16 鍵 label＋help、矛盾提示三則、宣告集外列標示 `readonlyTag`；頁標題由 `route.manage_system-settings` 呈現、成功提示沿用 `common.updateSuccess`（皆不另設鍵；contracts/msg-keys.md §3）；節流兩組 help 不承諾嚴格上限。
 6. **授權面**：頁內零按鈕級 gating；非超管被授可見性＝進頁後讀取 `5003`（既有請求層提示）。
 
 ## R16 前端：稽核頁（§III.2 (x)；spec FR-051～FR-056）
@@ -311,7 +311,7 @@ ADR 草稿於本 plan 落 feature branch（`proposed`；proposed 期 `supersedes
 | U12 | policy-reconcile（三維計數件、gauge） | U4、U10、U11 |
 | U13 | 觀測層（rules.yml 重錨＋對賬兩告警、儀表板 B5、compose 現況與 dev loop） | U8、U11、U12 |
 | U14 | 系統設定頁（view＋route／page 譯文＋`app.d.ts`＋hook 清除函式＋seed-view-gate 摘列 9＋路由產物） | U0、U7、U9 |
-| U15 | 稽核頁（view＋五模組＋`rev6-audit.ts`＋譯文＋seed-view-gate 摘列 77＋路由產物） | U0、U6、U7 |
+| U15 | 稽核頁（view＋五模組＋`rev6-audit.ts`＋譯文＋seed-view-gate 摘列 77＋路由產物） | U0、U6、U7、U14 |
 | U16 | 走查還原工具與測試守衛之 reaper／存取日誌影響評估收尾 | U8、U11 |
 | U17 | 文件：活書、C4、RUNBOOK、ADR 現在式改指、假述掃除 | U13～U16 |
 | U18 | CDP 三方對照（兩頁、側欄、浮層）＋繁中全頁審讀＋jobs profile 活體一輪；ADR-00103／ADR-00106 實測後定稿 | U14～U17 |

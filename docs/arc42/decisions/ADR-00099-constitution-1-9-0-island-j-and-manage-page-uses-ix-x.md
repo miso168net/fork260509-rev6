@@ -12,7 +12,7 @@ tags: [constitution, amendment, audit, island-j, fork-delta, i18n]
 ## 背景
 
 - 憲法 §I.7 承襲指針表島 J（稽核域 retention 與 reporting）未入憲；本刀交付稽核四源讀端、水平線清理（手動＋reaper 排程）、存取日誌寫入與讀端打碼——島 J 之行為面全數 as-built，依 §I.7 進場規則以 MINOR Amendment 入憲（D10：全島 J1～J5）。
-- rev5 之 J2 位空缺（存取軌跡寫入不做）；本刀 B2 使存取日誌寫入成立，J2 回填。rev5 之 J1「handler 零業務寫入」若不補回 rev4 之「存取日誌由統一記錄層承載、非查詢職責」分句，則與「稽核讀端之請求亦落存取日誌列」表面互斥（brainstorm ㉓）。
+- rev5 之 J2 位空缺（存取軌跡寫入不做）；本刀 B2 使存取日誌寫入成立，J2 回填。rev5 之 J1「handler 零業務寫入」若不補回 rev4 之「存取軌跡由統一記錄層承載、非查詢職責」分句（rev6 字面改稱存取日誌），則與「稽核讀端之請求亦落存取日誌列」表面互斥（brainstorm ㉓）。
 - rev6 已把前代 rev5 J5（解鎖稽核先於生效）放在島 E 末兩點（ADR-00042）；J5 改為一句指針、不重述。
 - §I.6 變體 B 括號句預告「權威釋義隨稽核域行為島進場時以交叉指針回填」——本刀兌現。
 - 兩頁進場屬 ★`BASE-WEB-MANAGE-PAGE-WIRING` 新用途（rev6 (i)～(viii) 已用；rev5 號 (vii)(viii) 對應 rev6 (ix)(x)）。
@@ -36,9 +36,9 @@ tags: [constitution, amendment, audit, island-j, fork-delta, i18n]
 5. **J4 字面**（逐字同 rev5 J4）：「**J4 PII 顯示打碼單點**：稽核讀端 payload 之個資遮蔽 MUST 於後端序列化單點完成（前端 MUST NOT 經手原值）；遮蔽鍵清單＝常數（擴充＝改常數＋補測試）；落庫面白名單（密碼明文／雜湊永不入列、島 I5）為政策本體、不回溯清洗。★方向反轉（拆單點、改前端打碼）＝MAJOR。」
 6. **J5 字面**：「**J5 解鎖稽核先於生效**：見島 E 末兩點（ADR-00042）；本島不重述。」
 7. **§I.6 變體 B 括號句**：改為「（retention 水平線刪除不屬『竄改』——權威釋義＝§I.7 島 J3）」。
-8. **銜接字面**（主線自擬、一份 diff 呈 user）：§I.7「方向性反轉自此為 MAJOR」射程句九島→十島（已入憲島列表序言無總島數字面、不動）；表尾「刻意空缺位（rev5 之 I6、J2）」句改為只餘 I6；承襲指針 J 列尾註；島 J 標頭（進場刀、出處與差異申報）與島末常數句（形照前代、成員依 rev6 現況）；Amendment log 列。同顆連帶（非憲法字面）：活書狀態句改現在式（10 §10.2 導言與 frontmatter、C4-E2 保留期段之「未入憲」句等）、generate；活書 06／10 之島 J 情境本體屬 as-built，依 spec FR-064 於行為落地後由文件單元寫（RL-0048；007 刀 S-a 前例；FR-060④）。
+8. **銜接字面**（主線自擬、一份 diff 呈 user）：§I.7「方向性反轉自此為 MAJOR」射程句九島→十島（已入憲島列表序言無總島數字面、不動）；表尾「刻意空缺位（rev5 之 I6、J2）」句改為只餘 I6、同句「隨各島進場時一併重審、不預裁」改為十島皆已進場後之現在式（跨島刻意不一致之重審留給日後新行為島進場、I6 處置指島 I 標頭）；承襲指針 J 列尾註；島 J 標頭（進場刀、出處與差異申報）與島末常數句（形照前代、成員依 rev6 現況）；Amendment log 列。同顆連帶（非憲法字面）：活書狀態句改現在式（10 §10.2 導言與 frontmatter、C4-E2 保留期段之「未入憲」句等）、generate；活書 06／10 之島 J 情境本體屬 as-built，依 spec FR-064 於行為落地後由文件單元寫（RL-0048；007 刀 S-a 前例；FR-060④）。
 9. **§III.2 (ix) 系統設定頁進場**（列字面；範圍欄塊數為預估、收刀前 PATCH 實數化）：「| **★BASE-WEB-MANAGE-PAGE-WIRING** | (ix) 系統設定頁進場 | `src/locales/langs/{en-us,zh-cn}.ts`（各預估 2 塊，新增型：`route:` 樹與 `page:` 樹各一）／`src/typings/app.d.ts`（預估 1 塊，新增型：`Schema.page` 之 `manage.systemSettings` 型節） | 形照 (i)：`en-us`／`zh-cn` 兩檔 locale 只在 `route:`（鍵 `manage_system-settings`）與 `page:`（`manage.systemSettings` 子樹）各插一塊新增型圈界、三語鍵集 MUST 相等；`app.d.ts` 只補 `page.manage.systemSettings` 型節（★必需）；路由外掛產物四檔之授權沿 (i) 列（產物檔紀律＋重算冪等＋產物檔集斷言）、本列不重複列名；頁面為新增型新檔、不入本表；頁內零按鈕級 gating（設定兩端點屬封死集、門＝頁級選單維授權）；後端宣告集外之設定列唯讀；`zh-tw.ts` 為 rev6 自有之整檔新增型檔、不入本表（三語由「三語鍵集 MUST 相等」與型別守承擔） |」
-10. **§III.2 (x) 稽核頁進場**（列字面；範圍欄塊數為預估）：「| **★BASE-WEB-MANAGE-PAGE-WIRING** | (x) 稽核頁進場 | `src/locales/langs/{en-us,zh-cn}.ts`（各預估 2 塊，新增型：`route:` 樹與 `page:` 樹各一）／`src/typings/app.d.ts`（預估 1 塊，新增型：`Schema.page` 之 `manage.audit` 型節） | 形照 (i)：`en-us`／`zh-cn` 兩檔 locale 只在 `route:`（鍵 `manage_audit`）與 `page:`（`manage.audit` 子樹）各插一塊新增型圈界、三語鍵集 MUST 相等；`app.d.ts` 只補 `page.manage.audit` 型節（★必需）；路由外掛產物四檔之授權沿 (i) 列、本列不重複列名；清理入口 MUST 依按鈕碼 `audit:purge` 顯隱（碼與清理端點授權各自獨立）；自由文字欄（XFF、快照內容）一律純文字插值、MUST NOT 以 HTML 渲染；頁面、其模組（四張搜尋卡、清理與快照浮層）、`rev6-audit.{ts,d.ts}` 為新增型新檔、不入本表；`zh-tw.ts` 同 (ix) |」
+10. **§III.2 (x) 稽核頁進場**（列字面；範圍欄塊數為預估）：「| **★BASE-WEB-MANAGE-PAGE-WIRING** | (x) 稽核頁進場 | `src/locales/langs/{en-us,zh-cn}.ts`（各預估 2 塊，新增型：`route:` 樹與 `page:` 樹各一）／`src/typings/app.d.ts`（預估 1 塊，新增型：`Schema.page` 之 `manage.audit` 型節） | 形照 (i)：`en-us`／`zh-cn` 兩檔 locale 只在 `route:`（鍵 `manage_audit`）與 `page:`（`manage.audit` 子樹）各插一塊新增型圈界、三語鍵集 MUST 相等；`app.d.ts` 只補 `page.manage.audit` 型節（★必需）；路由外掛產物四檔之授權沿 (i) 列、本列不重複列名；清理入口 MUST 依按鈕碼 `audit:purge` 顯隱（碼與清理端點授權各自獨立）；自由文字欄（XFF、快照內容）一律純文字插值、MUST NOT 以 HTML 渲染；頁面（含頁內快照對話框、無獨立檔）、其模組（四張搜尋卡、清理浮層、時間區間 composable）、`rev6-audit.{ts,d.ts}` 為新增型新檔、不入本表；`zh-tw.ts` 同 (ix) |」
 11. **§III.2 I18N (i) 紀律欄改寫**：「★錯誤明細轉譯**只限兩鍵**——密碼政策違規（攜違規碼清單、逐碼譯為 `page.passwordPolicy` 子鍵）與設密冷卻（攜剩餘秒數、具名插值）」改「★錯誤明細轉譯**恰三鍵**——密碼政策違規（攜違規碼清單、逐碼譯為 `page.passwordPolicy` 子鍵）、設密冷卻（攜剩餘秒數、具名插值）與稽核清理下限（攜下限天數、具名插值）」；其後子句（其餘錯誤信封 `data` 恆 null、違規子鍵單一共用命名空間、三語鍵集相等）不變；末句「明細通道射程與受眾＝ADR-00076」改指 ADR-00102（ADR-00102 accepted 時 supersede ADR-00076；憲法全檔引 ADR-00076 恰此一處）；範圍欄處數不變（改動落既有新增型圈界塊內）。
 12. **版本**：MINOR 1.8.1→1.9.0（§V.3「行為島隨刀進場」「軌道授權邊界擴展」）；範圍欄預估、收刀前 PATCH 實數化（表外宣告 1 例外路徑；前例 ADR-00051／ADR-00072／ADR-00092）。
 
@@ -52,7 +52,7 @@ tags: [constitution, amendment, audit, island-j, fork-delta, i18n]
 
 - 存取日誌寫入改為同步或擋請求、或記錄內文之需求 ⇒ J2 方向反轉＝MAJOR。
 - 出現挑列刪除或保留期由使用者逐列決定之需求 ⇒ J3 方向反轉＝MAJOR。
-- 範圍欄實數與預估不符 ⇒ 收刀前 PATCH 實數化（非翻案）。
+- ★收刀前 §V.2 PATCH Amendment MUST 將 (ix)(x) 兩列範圍欄之預估值實數化（表外宣告 1 例外路徑之回填義務；實數與預估相符亦須去「預估」使其轉入對賬；前例 ADR-00074 翻案觸發器第三條）；實數與預估不符屬實數化、非翻案。
 
 ## 親決分類
 
