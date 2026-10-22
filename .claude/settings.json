@@ -30,6 +30,16 @@
             "command": "python3 .claude/hooks/pre-workflow-gate.py"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-auq-draft-gate.py",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [

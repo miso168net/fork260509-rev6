@@ -65,7 +65,7 @@ fork260509-rev6/
 ├── .githooks-submodule/             兩 worktree 專用 hooks（pre-commit／pre-push；bootstrap 以絕對路徑設 hooksPath）
 ├── .claude/                         Claude Code 接線
 │   ├── settings.json                hook 註冊（SessionStart：健檢／compact 回灌；PreToolUse(Workflow)；PostToolUse：Workflow 配對提醒／全工具 context 級距提醒；PreCompact）＋自動壓縮視窗 `autoCompactWindow`
-│   ├── hooks/                       session-start.sh、pre-workflow-gate.py（zh-TW＋RULES-VERSION 對賬）、post-workflow-reminder.py、compact-hook.py（context 壓縮三模式：注入規則與快照／compact 回灌／級距提醒）
+│   ├── hooks/                       session-start.sh、pre-workflow-gate.py（zh-TW＋RULES-VERSION 對賬）、pre-auq-draft-gate.py（AskUserQuestion 送出前逐欄比對最新擬稿）、post-workflow-reminder.py、compact-hook.py（context 壓縮三模式：注入規則與快照／compact 回灌／級距提醒）
 │   └── skills/                      spec-kit 1.0.3 產物（第三方面；speckit-* 十五支）
 ├── .gitleaks.toml                   betterleaks 設定（extend 預設＋rev6-dsn-credential-url；allowlist 逐條雙向實證後才收）
 ├── docker-compose*.yml              dev stack 三檔：base 層／dev override／example 參照實例（host 埠 3xxxx＝ADR-00001）
