@@ -101,7 +101,7 @@
 | ADR-00096 | accepted | 2026-10-16 | batchDeleteUser 不設批量上界——超大批可耗盡 PostgreSQL 共用鎖表而整批回 5000，記為 by-design 已知態；畫面前提＝每頁上限 30、勾選跨頁保留 | 輕量軌｜maint-backlog-139-140-145-147 | — | — |
 | ADR-00097 | accepted | 2026-10-16 | 子句層需求追溯不定為通則（續行 ADR-00094）——是否沿用與射程非強制、一經沿用即須自證檢核工具；翻案觸發器綁 008 刀收刀承載體檢 | 輕量軌｜maint-adr-00094-wording | ADR-00094 | — |
 | ADR-00098 | accepted | 2026-10-16 | 包含規則對本人標的照判——非超管操作者本人持停用角色時，改本人非角色欄或解鎖本人得 5003，記為 by-design 已知態 | 獨立輪｜spec-compliance-007 | — | — |
-| ADR-00099 | proposed | 2026-10-21 | 憲法 1.9.0 Amendment——島 J（稽核域）J1～J5 入憲（J2 回填存取日誌寫入、J3 含排程清理與其自記列形、J5 指島 E 末兩點）、§I.6 變體 B 括號句改 J3 交叉指針、§III.2 管理頁軌道新用途 (ix) 系統設定頁與 (x) 稽核頁、I18N (i) 明細轉譯兩鍵→三鍵 | — | — | — |
+| ADR-00099 | accepted | 2026-10-21 | 憲法 1.9.0 Amendment——島 J（稽核域）J1～J5 入憲（J2 回填存取日誌寫入、J3 含排程清理與其自記列形、J5 指島 E 末兩點）、§I.6 變體 B 括號句改 J3 交叉指針、§III.2 管理頁軌道新用途 (ix) 系統設定頁與 (x) 稽核頁、I18N (i) 明細轉譯兩鍵→三鍵 | — | — | — |
 | ADR-00100 | proposed | 2026-10-21 | 存取日誌寫入中介層——掛兩受保護子 router 之 enforce_mw 內側（包住授權判定、`5003` 照記為 403）、回應先回後非同步寫、寫入併發號誌上界 2（等待不丟列）、fail-open（warn＋降級計數）；狀態欄只見 200 與 403；解除 004 刀防回歸清單 B 之 `rev5:R2-9` | — | — | — |
 | ADR-00101 | proposed | 2026-10-21 | reaper 三 job（token-reap、audit-retention、policy-reconcile）與最小權限 role——rev4 CLI 形重打、job 本體住 lib；排程清理經 retention 共用核（自記列操作者空、來源位址哨兵 `0.0.0.0`、刪 0 列照落）；孤兒授權列只報不刪＋RUNBOOK 處置；心跳 pushgateway（ureq）與告警重錨＋對賬告警兩條 | — | — | — |
 | ADR-00102 | proposed | 2026-10-21 | 錯誤明細通道射程恰三鍵（續行 ADR-00076）——新增 `biz.audit.purgeBelowFloor` 攜 `{minDays}`（具名明細型 `PurgeBelowFloorDetail`、單一組裝件、家＝稽核 handler）；msg-key-gate 明細型之家改逐鍵對映；並釐清「照提示秒數重試必過」只在牆鐘單調且冷卻設定未改時成立（ADR-00076 決定 1 冷卻列改寫、ADR-00090 決定 1 立釐清款不 supersede） | — | — | — |
