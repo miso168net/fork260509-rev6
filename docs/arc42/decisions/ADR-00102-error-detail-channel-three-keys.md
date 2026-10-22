@@ -27,13 +27,13 @@ tags: [error-envelope, i18n, audit, msg-key-gate]
 
 本 ADR 續行並將 supersede ADR-00076（accepted 同顆補 `supersedes: ["ADR-00076"]`、ADR-00076 status 改 superseded）。ADR-00076 決定 1～7 對應本 ADR 同號：
 
-1. **射程恰三鍵、其餘恆純 key（改寫）**：①`biz.user.passwordPolicy`（`violations`；續行）②`biz.user.pwdSetTooFrequent`（`remainingSeconds`＝`min(max(I−⌊Δ⌋, 1), I)`；續行，惟將「時鐘回撥時上限 I——照提示秒數重試必過」改寫為「下限 1、上限 I；提示秒數為等待之估計——牆鐘單調且冷卻設定未改時照提示秒數重試即過，牆鐘回撥或設定調大時可再被擋、回新的剩餘秒數」）③**`biz.audit.purgeBelowFloor`**（`minDays`＝`PURGE_MIN_DAYS`；新增；構造點＝purge 固定序②、組裝件 `purge_below_floor_err`、明細型 `PurgeBelowFloorDetail { min_days: u64 }`（值＝`PURGE_MIN_DAYS.unsigned_abs()`；先例 `PwdSetTooFrequentDetail` 之 u64）＋struct 級 `rename_all = "camelCase"`、住 `handler/audit.rs`）。
+1. **射程恰三鍵、其餘恆純 key（改寫）**：①`biz.user.passwordPolicy`（`violations`；續行）②`biz.user.pwdSetTooFrequent`（`remainingSeconds`＝`min(max(I−⌊Δ⌋, 1), I)`；續行，惟將「時鐘回撥時上限 I——照提示秒數重試必過」改寫為「上限 I；提示秒數為等待之估計——牆鐘單調且冷卻設定未改時照提示秒數重試即過，牆鐘回撥或設定調大時可再被擋、回新的剩餘秒數」）③**`biz.audit.purgeBelowFloor`**（`minDays`＝`PURGE_MIN_DAYS`；新增；構造點＝purge 固定序②、組裝件 `purge_below_floor_err`、明細型 `PurgeBelowFloorDetail { min_days: u64 }`（值＝`PURGE_MIN_DAYS.unsigned_abs()`；先例 `PwdSetTooFrequentDetail` 之 u64）＋struct 級 `rename_all = "camelCase"`、住 `handler/audit.rs`）。
 2. **受眾判準（續行）**：明細描述操作者自己剛送出之輸入的評估；第三鍵之下限天數為系統常數、不含他人資訊。
 3. **錯誤變體（續行）**：`AppError::BizData`，變體數不變。
 4. **信封出口分離（續行）**：`Res::from_err_with_data` 為攜明細之唯一出口。
 5. **002 wire 契約之現行讀法（續行）**：錯誤 data 恆 null，惟本 ADR 決定 1 三鍵例外。
-6. **前端（改寫）**：ADR-00076 決定 6 三子項續行，惟請求層明細轉譯「只認兩鍵」改「只認三鍵」——`translateBackendMsg` 第三分支以 `Api.Audit.PurgeBelowFloorDetail` 收窄、具名插值 `{minDays}`；其餘子項原文續行（其餘錯誤續呈純 key 提示、轉譯未命中一律 graceful fallback；違規子鍵單一共用命名空間 `page.passwordPolicy.*`；backend 子樹譯文之具名佔位名＝明細鍵名、`data` 形不合即退回純 key、backend 子樹只放 `MSG_KEYS` 成員）；條文字面由 ADR-00099 決定 11 承載（ADR-00076 決定 6 之「由 ADR-00074 親決」改讀此）。
-7. **機器守（改寫）**：msg-key-gate `BIZ_DATA_KEYS` 三鍵、明細型之家逐鍵對映（兩鍵→`handler/user.rs`、一鍵→`handler/audit.rs`）；射程守四句與佔位符對賬照舊；斷言 3 之 `FRONTEND_MSG_CONSUMERS` 照舊、擴第三鍵之請求層消費點；contract 腿（每鍵至少一案實發並斷言 `data` 形）與 wire 裁判腿（明細信封之 wire 型入受審名冊、配正向＋反例）照舊、擴第三鍵；pre-commit submodule-sync 閘面增新家；各腿一正一反（RL-0080；新家之欄改名與移家各一支變異）。
+6. **前端（改寫）**：ADR-00076 決定 6 三子項續行，惟其中兩處「兩鍵」改「三鍵」——請求層明細轉譯「只認兩鍵」改「只認三鍵」（`translateBackendMsg` 第三分支以 `Api.Audit.PurgeBelowFloorDetail` 收窄、具名插值 `{minDays}`）；「兩鍵之 backend 子樹譯文帶具名插值佔位」改「三鍵之 backend 子樹譯文帶具名插值佔位」（第三鍵各語字面見 008 刀 contracts msg-keys §1）；其餘原文續行（其餘錯誤續呈純 key 提示、轉譯未命中一律 graceful fallback；違規子鍵單一共用命名空間 `page.passwordPolicy.*`；backend 子樹譯文之具名佔位名＝明細鍵名、`data` 形不合即退回純 key、backend 子樹只放 `MSG_KEYS` 成員）；條文字面由 ADR-00099 決定 11 承載（ADR-00076 決定 6 之「由 ADR-00074 親決」改讀此）。
+7. **機器守（改寫）**：msg-key-gate `BIZ_DATA_KEYS` 三鍵、明細型之家逐鍵對映（兩鍵→`handler/user.rs`、一鍵→`handler/audit.rs`）；斷言 2 之 BizData 構造形判準（首引數須為 `Cow::Borrowed(字面｜msg_key::NAME)`、解出鍵 ∈ 名冊、動態構造＝紅）、射程守四句與佔位符對賬照舊；斷言 3 之 `FRONTEND_MSG_CONSUMERS` 照舊、擴第三鍵之請求層消費點；contract 腿（每鍵至少一案實發並斷言 `data` 形；其餘拒因續以 `assert_error_envelope` 斷 data null、名冊雙向閘照舊）與 wire 裁判腿（明細信封之 wire 型入受審名冊、配正向＋反例）照舊、擴第三鍵；pre-commit submodule-sync 閘面增新家；各腿一正一反（RL-0080；新家之欄改名與移家各一支變異）。
 8. **ADR-00090 決定 1 之釐清款（新增；不 supersede）**：其「時鐘回撥上限 I——照提示秒數重試必過」讀作本 ADR 決定 1②之改寫字面；ADR-00090 其餘決定與後果不變。
 
 ## 後果
