@@ -1,5 +1,5 @@
 #!/bin/sh
-# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → bootstrap-roster（tools/bootstrap.sh staged 時只跑 test_hook_wiring 單檔、秒級）→ rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ view-render-guard（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——工作樹或射程缺席＝rc 2）→ route-artifact-gate（base-web pin bump、工具本體或憲法 staged 時條件實跑；docker 缺或 base-web 容器未起＝工具內具名跳過）→ seed-view-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ zh-tw-lint（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ submodule-sync（rust-api／base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
+# rev6 pre-commit：機密掃描（樣式層 betterleaks）→ docsync check（GT-01）＋lint（其餘閘）→ staged 工具自測 → bootstrap-roster（tools/bootstrap.sh staged 時只跑 test_hook_wiring 單檔、秒級）→ rust-fmt／wire-schema／fork-delta（rust-api／base-web pin bump、工具本體或憲法 staged 時條件實跑；碼面閘名冊＝RUNBOOK §12 碼面閘表）→ msg-key-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支）→ view-render-guard（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——工作樹或射程缺席＝rc 2）→ route-artifact-gate（base-web pin bump、工具本體或憲法 staged 時條件實跑；docker 缺或 base-web 容器未起＝工具內具名跳過）→ seed-view-gate（rust-api／base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ zh-tw-lint（base-web pin bump 或工具本體 staged 時條件實跑；零 docker、無環境跳過分支——讀面缺席＝rc 2）→ submodule-sync（rust-api／base-web pin bump 時兩子庫工作樹之雙側閘閘面須無未 commit 改動（含未追蹤新檔）＝跨子庫同步律粗判；零 docker）→ entity-drift（rust-api pin bump／schema 快照 staged 時條件實跑；快照缺席即紅）→ schema-frozen（凍結 fixtures／data-model／schema-definition staged 時條件實跑）→ schema-offline（rust-api pin bump、schema-gate 本體或演進帳 staged 時條件實跑；零 docker、純讀檔、無環境跳過分支——讀面缺席＝rc 2）→ orchestration（tools/orchestration/ 之 *.js|*.mjs|*.py staged 時以三支入庫範例組裝＋harness）。★接線字面由 tools/docsync/tests/test_hook_wiring.py 機器守（BL-00023；hook 本體 staged 時自跑 docsync test）。
 # 範圍字串（GT-12 三處名冊同源之一）：GT-01～GT-12
 # 被擋時：錯誤訊息附去處；同回合修復後重試。
 #
@@ -176,6 +176,15 @@ fi
 #   原「不設閘」取捨的成本前提（離線閘昂貴）經量測不成立（doccheck 0.17 秒），故補此條件觸發。
 if echo "$staged" | grep -qE '^(specs/001-schema-baseline/(fixtures/|data-model\.md$)|docs/ops/reference-src/schema-definition\.md$)'; then
   pc_run "schema-frozen" python3 "$HOOK_DIR/../tools/schema-gate.py" test
+fi
+# 離線對賬段（BL-00148；ADR-00108 決定 8；碼面閘 tools/schema-gate.py 之 offline 子命令、不增 GT 錨與碼面閘表列）：rust-api gitlink 變動（pin bump）、
+# schema-gate 本體或演進帳 docs/ops/reference-src/schema-evolution.json staged 時跑——delta migration（rust-api 工作樹 migration/src/ 之 m0003 起四碼檔）之
+# SQL 解析與分類、seed DML ↔ 演進帳逐筆對賬、前值 ↔ 凍結 seed ⊕ 前序配對登記；權限面只結構化列出。零 docker、純讀檔、秒級。
+# ★本段零條件判斷、不設跳過分支（ADR-00019 決定 3／4）：讀面缺席＝工具 rc 2 fail-loud。讀面＝rust-api 工作樹 migration/src/＋外層演進帳與凍結
+# fixtures——子庫工作樹之 migration/src/ 屬 (b) 閘面外、無兜底（ADR-00055；連 pin bump 時也照讀工作樹）。
+# ★需 docker 之 check 子命令維持不進常跑鏈（護雙錨門檻；test_hook_wiring 釘非註解行零命中）；self-test 走上方 for 迴圈形。
+if echo "$staged" | grep -qxF -e 'rust-api' -e 'tools/schema-gate.py' -e 'docs/ops/reference-src/schema-evolution.json'; then
+  pc_run "schema-offline" python3 "$HOOK_DIR/../tools/schema-gate.py" offline
 fi
 # 編排骨架段（BL-00023 併入項）：暫存區含 tools/orchestration/ 之 *.js|*.mjs|*.py（含生成物 _sk_rules.js＝RULES 改動亦重驗）時，以三支入庫範例組裝到
 # 暫存目錄並跑對應 harness（assemble.py 三道自檢＝RULES-VERSION 對賬／node --check／harness-test spec＋quality 或 harness-review）；產物只落 ${PC_TMP}、trap 清除。

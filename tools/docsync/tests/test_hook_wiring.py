@@ -1,9 +1,9 @@
 """語料面：hook 接線機器守衛（BL-00023；承 rev5:tools/docs-sync.py TestGateWiring 乾跑案形）——讀真五檔（HOOKS 名冊＝.githooks/pre-commit／
 .githooks/pre-push／.githooks-submodule/pre-commit／.githooks-submodule/pre-push／.githooks/lib/scan-range.sh）、真 tools/bootstrap.sh、真 README.md 與兩支雙側閘工具常數，六支純函式各守一面：
 ①pre-commit 面 check_hook_wiring(text, codegate_tools, non_gate_tools) 逐段斷言：固定鏈（betterleaks→docsync check＋lint→staged 取得→pc_join→雙錨常數）、
-十四條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
+十五條件段（selftest-docsync／bootstrap-roster〔tools/bootstrap.sh staged 時只跑本檔〕／rust-fmt／wire-schema〔雙側：base-web typings 面＋rust-api 快照面〕／fork-delta／msg-key-gate／
 view-render-guard〔零條件段：工作樹或射程缺席＝工具 rc 2、不設跳過分支（ADR-00019 決定 3／4）〕／route-artifact-gate〔第三觸發源＝憲法〕／seed-view-gate〔雙側：rust-api seed 面＋base-web view 面；
-零條件段、讀面缺席＝工具 rc 2（ADR-00071）〕／zh-tw-lint〔base-web pin bump 觸發、不寫子庫檔路徑字面；零條件段、讀面缺席＝工具 rc 2（ADR-00084）〕／submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
+零條件段、讀面缺席＝工具 rc 2（ADR-00071）〕／zh-tw-lint〔base-web pin bump 觸發、不寫子庫檔路徑字面；零條件段、讀面缺席＝工具 rc 2（ADR-00084）〕／submodule-sync〔跨子庫同步律：兩子庫雙側閘閘面須無未 commit 改動（含未追蹤新檔）〕／entity-drift／schema-frozen／schema-offline〔零 docker 離線對賬腿：rust-api pin bump、schema-gate 本體或演進帳 staged 時跑；零條件段、讀面缺席＝工具 rc 2（ADR-00108 決定 8）；需 docker 之 check 子命令不進常跑鏈＝非註解行零命中〕／orchestration）各自的觸發字面（同段 `if echo "$staged" | grep` 行）
 與命令字面（`pc_run` 行）、`for` 自測名冊 ⊇ RUNBOOK 碼面閘表工具集 ∪ NON_GATE_TOOLS 與其依賴觸發兩字面（walkthrough-baseline ⇐ schema-gate／演進帳）、pc_run 標籤集＝登記集（未登記段即紅＝新段須同批入本名冊）。
 一正（真檔零 finding）多反（刪段／改觸發字面／抽名冊一支／改命令子命令／幽靈段／刪 pc_join→紅指名）。
 ②pre-push 面 check_push_hooks(outer, sub, lib)（BL-00037①；憲法 §I.8 並列為機器閘）：外層／子庫 pre-push 各三字面（source lib 相對路徑形／SCAN_CONFIG／
@@ -68,6 +68,7 @@ SEGMENTS = (
     ("submodule-sync", ["-e 'rust-api'", "-e 'base-web'"], 'unset $(git rev-parse --local-env-vars); git --no-optional-locks -C "$h/../$s" status --porcelain --untracked-files=all -- $ps'),
     ("entity-drift", ["-e 'rust-api'", "-e 'docs/ops/reference-src/schema-snapshot.json'"], 'python3 "$HOOK_DIR/../tools/entity-drift-gate.py" check'),
     ("schema-frozen", ["'^(specs/001-schema-baseline/(fixtures/|data-model\\.md$)|docs/ops/reference-src/schema-definition\\.md$)'"], 'python3 "$HOOK_DIR/../tools/schema-gate.py" test'),
+    ("schema-offline", ["-e 'rust-api'", "-e 'tools/schema-gate.py'", "-e 'docs/ops/reference-src/schema-evolution.json'"], 'python3 "$HOOK_DIR/../tools/schema-gate.py" offline'),
     ("orchestration", ["'^tools/orchestration/.*\\.(js|mjs|py)$'"], "tools/orchestration/assemble.py"),
 )
 ORCH_EXAMPLES = ("EXAMPLE-tdd-unitdef", "EXAMPLE-review-unitdef", "EXAMPLE-review-verify-unitdef")
@@ -96,6 +97,7 @@ MIRROR_WORDS = {
     "submodule-sync": "submodule-sync",
     "entity-drift": "entity-drift",
     "schema-frozen": "schema-frozen",
+    "schema-offline": "schema-offline",
     "orchestration": "orchestration",
 }
 # 三處人寫鏡像：(面名, repo 相對路徑, 鏡像行起首字面)——各取首個以該字面起首之行為比對面；行缺席＝紅（掃描面空集合；RL-0051）。
@@ -398,6 +400,15 @@ class TestHookWiring(unittest.TestCase):
         hook, cg, ng = real_inputs()
         mutated = hook.replace('pc_run "schema-frozen" python3 "$HOOK_DIR/../tools/schema-gate.py" test', 'pc_run "schema-frozen" python3 "$HOOK_DIR/../tools/schema-gate.py" check', 1)
         self.assertIn("schema-frozen", " ".join(check_hook_wiring(mutated, cg, ng)))
+
+    def test_schema_gate_check_never_in_precommit(self):
+        """需 docker 之 `tools/schema-gate.py check` 不進常跑鏈（ADR-00108 決定 8；護雙錨門檻）：.githooks/pre-commit 全部非註解行零命中
+        其命令字面——離線對賬走 schema-offline 段之 `offline` 子命令、凍結面走 schema-frozen 段之 `test` 子命令；命中＝紅並指名行號與該行。"""
+        with open(HOOKS["pre-commit"], encoding="utf-8") as f:
+            lines = f.read().split("\n")
+        hits = [f"第 {i} 行：{ln.strip()}" for i, ln in enumerate(lines, 1)
+                if 'tools/schema-gate.py" check' in ln and not ln.lstrip().startswith("#")]
+        self.assertEqual(hits, [], "需 docker 之 schema-gate check 進了 pre-commit 常跑鏈")
 
     def test_ghost_segment_and_missing_join_red(self):
         hook, cg, ng = real_inputs()

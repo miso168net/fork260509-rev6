@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00100 -->
+<!-- next: LL-00101 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -105,3 +105,4 @@
 | LL-00097 | 既有正則閘補判別案並依 RL-0080 重跑逐判準停用變異：「各算一條」之顆粒度留給各支 agent 自判——implementer 一個字元類算一條、審查員逐成員逐出現處逐 token 算，規格對照與碼品質合計十輪才收斂；RL-0080 兩度擴寫且已烤入 prompt 後再犯（maint-pre008-carriers U1；2026-10-18） | RL-0080 | code | [LL-00097-regex-mutation-granularity-left-to-judgement-review-rounds-escalate.md](LESSONS/LL-00097-regex-mutation-granularity-left-to-judgement-review-rounds-escalate.md) |
 | LL-00098 | 手寫 review workflow 把送給下游評審之改稿陣列截斷而未標明：完整性評審以截斷後之清單判「lens 改稿漏項」，產出兩組與反駁定稿重複之合併稿與兩則覆議（008 刀 `/speckit-analyze`；2026-10-21） | none：手寫 review workflow 之摘要函式屬工作區產生器、RULES 無對應條；防法落產生器範本與主線套用前之區段重疊檢核 | none | [LL-00098-review-workflow-summary-truncated-arrays-misread-as-missing.md](LESSONS/LL-00098-review-workflow-summary-truncated-arrays-misread-as-missing.md) |
 | LL-00099 | AskUserQuestion 參數之中文偶發錯成鄰近碼位：送出後解碼核對抓得到，但 user 作答時已看到錯字；「刻意直寫」之文字守法亦未擋住（同根第四起；008 刀 U0；2026-10-23） | none：碼位漂移發生在參數生成面、非流程規則可守；「刻意直寫」與「送出後解碼核」兩道文字守法皆未在送出前擋住，補法改為送出前機器比對（`.claude/hooks/pre-auq-draft-gate.py`） | code | [LL-00099-askuserquestion-params-drift-to-adjacent-codepoints.md](LESSONS/LL-00099-askuserquestion-params-drift-to-adjacent-codepoints.md) |
+| LL-00100 | 手寫掃描器之離線對賬腿：RL-0080 未定義手寫判準（非正則之分支碼）之途徑顆粒度，LL-00076 之刻意規避形準則亦未入 RULES、未烤入單元定義——審查兩支 run 皆未收斂（29 筆 blocker、牆鐘約 10.6 小時；RL-0080 同根第 7 次；008 刀 U1） | RL-0080 | rules | [LL-00100-handwritten-judgment-paths-undefined-and-evasion-criterion-unpromoted.md](LESSONS/LL-00100-handwritten-judgment-paths-undefined-and-evasion-criterion-unpromoted.md) |

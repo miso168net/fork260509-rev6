@@ -632,8 +632,10 @@ def gt_11(ctx):
 
 
 def errata_scan(ctx, keyword):
-    """跨檔假述枚舉：外層 tracked 文字檔（大小寫不敏感子串）＋兩子庫 pin 樹 git grep；回 [(rel, lineno, line)]。
-    子庫缺席不入本表（CLI 另印「掃描未執行」警示、rc 3——未執行≠零命中）。"""
+    """跨檔假述枚舉：外層 tracked 文字檔（大小寫不敏感子串）＋兩子庫工作樹（含未追蹤之新檔）git grep；回 [(rel, lineno, line)]。
+    子庫面讀工作樹（`--untracked`＝含未追蹤之新檔、照子庫 .gitignore 排除；`-I`＝略過二進位檔）——勘誤改的是工作樹、commit 前復掃
+    須見改後態（user 2026-10-21 裁定；讀 pin 樹＝未 commit 之改字恆報舊字、新建檔恆漏）。子庫缺席不入本表（CLI 另印「掃描未執行」
+    警示、rc 3——未執行≠零命中）。"""
     kw = keyword.lower()
     hits = []
     for rel in ctx.tracked:
@@ -653,14 +655,14 @@ def errata_scan(ctx, keyword):
     for sub in SUBMODULES:
         if not ctx.exists(os.path.join(sub, ".git")):
             continue
-        rc, stdout = ctx.git_try("grep", "-n", "-i", "-F", "-e", keyword, "HEAD", "--", cwd=os.path.join(ctx.root, sub))
+        rc, stdout = ctx.git_try("grep", "-n", "-i", "-F", "-I", "--untracked", "-e", keyword, "--", cwd=os.path.join(ctx.root, sub))
         if rc == 0:
             for l in stdout.split("\n"):
                 if not l:
                     continue
-                parts = l.split(":", 3)
-                if len(parts) >= 4 and parts[0].startswith("HEAD"):
-                    hits.append((f"{sub}/{parts[1]}", int(parts[2]), parts[3]))
+                parts = l.split(":", 2)     # 工作樹形＝`路徑:行號:內容`（無 `HEAD:` 前綴）
+                if len(parts) == 3 and parts[1].isdigit():
+                    hits.append((f"{sub}/{parts[0]}", int(parts[1]), parts[2]))
     return hits
 
 

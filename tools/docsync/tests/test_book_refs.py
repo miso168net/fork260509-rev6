@@ -122,6 +122,26 @@ class TestErrata(unittest.TestCase):
         self.assertTrue(any(h[0] == "base-web/s.ts" and h[1] == 1 for h in hits))
         self.assertEqual(book.errata_scan(tmprepo.Ctx(root), "zzz"), [])
 
+    def test_submodule_face_reads_worktree_including_untracked_and_honouring_gitignore(self):
+        """子庫面讀工作樹（user 2026-10-21 裁定；008 刀 U1）：子庫已 commit 之檔含舊字、工作樹改為新字而不 commit；另建未追蹤新檔含
+        新字、子庫 .gitignore 列管之檔含新字。反例＝舊字之子庫面零命中（讀 pin 樹會命中已被改掉之舊字）；正例＝新字命中工作樹檔與
+        未追蹤新檔、被忽略之檔零命中。"""
+        root = tmprepo.make_repo({"a.md": "外層\n"})
+        sub = os.path.join(root, "base-web")
+        os.makedirs(sub)
+        tmprepo.git(sub, "init", "-q", "-b", "main")
+        tmprepo.write(sub, "s.ts", "// oldword here\n")
+        tmprepo.write(sub, ".gitignore", "ignored.ts\n")
+        tmprepo.git(sub, "add", "-A")
+        tmprepo.git(sub, "commit", "-qm", "x")
+        tmprepo.write(sub, "s.ts", "// newword here\n")
+        tmprepo.write(sub, "n.ts", "newword in new file\n")
+        tmprepo.write(sub, "ignored.ts", "newword ignored\n")
+        ctx = tmprepo.Ctx(root)
+        self.assertEqual([h for h in book.errata_scan(ctx, "oldword") if h[0].startswith("base-web/")], [])
+        sub_hits = sorted(h for h in book.errata_scan(ctx, "newword") if h[0].startswith("base-web/"))
+        self.assertEqual(sub_hits, [("base-web/n.ts", 1, "newword in new file"), ("base-web/s.ts", 1, "// newword here")])
+
 
 if __name__ == "__main__":
     unittest.main()
