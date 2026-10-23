@@ -2,8 +2,8 @@
 id: "ADR-00102"
 title: 錯誤明細通道射程恰三鍵（續行 ADR-00076）——新增 `biz.audit.purgeBelowFloor` 攜 `{minDays}`（具名明細型 `PurgeBelowFloorDetail`、單一組裝件、家＝稽核 handler）；msg-key-gate 明細型之家改逐鍵對映；並釐清「照提示秒數重試必過」只在牆鐘單調且冷卻設定未改時成立（ADR-00076 決定 1 冷卻列改寫、ADR-00090 決定 1 立釐清款不 supersede）
 date: 2026-10-21
-status: proposed
-supersedes: []
+status: accepted
+supersedes: ["ADR-00076"]
 superseded_by: []
 provenance: "008-audit-settings-pages 之 spec FR-004、FR-016②、US3 第 1 條、SC-002；brainstorm §0 D7（照 rev5：拒因攜 `{minDays}`；新 ADR 整顆 supersede ADR-00076、另一款釐清 ADR-00076／ADR-00090 決定 1 之「必過」）、主線工程判斷⑲（RL-0080 判讀於 plan 期定）；plan 期 research R13；被續行面＝ADR-00076 決定 1～7（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5）；被釐清面＝ADR-00090 決定 1（射程釐清不 supersede；前例 ADR-00090 決定 5）；LL-00054（牆鐘回撥）；藍本＝rev5:server/src/handler/audit.rs 之 purge 固定序②（`rev5:B-139` 之第三攜參鍵）"
 tags: [error-envelope, i18n, audit, msg-key-gate]
@@ -62,4 +62,4 @@ tags: [error-envelope, i18n, audit, msg-key-gate]
 | 決定 7 | 工程 | research R13.3～R13.4（機器守之資料面擴列與變異） | 檢查工具認得第三支、它的定義位置與前端用到它的地方。 |
 | 決定 8 | 承決 | brainstorm D7（另一款釐清 ADR-00090 決定 1） | 另一份 ADR 的「必過」同樣這樣讀，不另改它。 |
 
-- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：8 列中相符 5（決定 2～5、8）、改正 2（決定 1 出處補憲法跨島總則；決定 7 補 contract、wire 裁判兩腿與斷言 3 名冊之續行）、升待決 1（決定 6：改寫只剩一句、ADR-00076 決定 6 其餘子項無續行字面＝對出處少寫）、漏列 1（決定節導言）。處置：決定 6 改為「兩鍵→三鍵、其餘子項原文續行」後回承決（出處＝ADR-00076 決定 6、免問）、補導言列；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。tasks 期改字（2026-10-21；tasks 起草稿實證）：決定 1③ 明細欄型 i64→u64（`tests/wire_i64_guard_lint.rs` 要 i64 wire 欄掛 2^53 守衛 serde 屬性或入 `EXEMPT_FIELDS`〔名冊語意＝非 wire〕，msg-key-gate 要明細型欄位零 serde 屬性＝兩者互斥）＝承決款改字（型別屬工程）、依決定 6② 復核。
+- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：8 列中相符 5（決定 2～5、8）、改正 2（決定 1 出處補憲法跨島總則；決定 7 補 contract、wire 裁判兩腿與斷言 3 名冊之續行）、升待決 1（決定 6：改寫只剩一句、ADR-00076 決定 6 其餘子項無續行字面＝對出處少寫）、漏列 1（決定節導言）。處置：決定 6 改為「兩鍵→三鍵、其餘子項原文續行」後回承決（出處＝ADR-00076 決定 6、免問）、補導言列；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。tasks 期改字（2026-10-21；tasks 起草稿實證）：決定 1③ 明細欄型 i64→u64（`tests/wire_i64_guard_lint.rs` 要 i64 wire 欄掛 2^53 守衛 serde 屬性或入 `EXEMPT_FIELDS`〔名冊語意＝非 wire〕，msg-key-gate 要明細型欄位零 serde 屬性＝兩者互斥）＝承決款改字（型別屬工程）、依決定 6② 復核。analyze 期改字（2026-10-21；`62f8a4c`、user 核可 analyze 修補全套）：背景與決定 8 所引 ADR-00090 決定 1 改為其原字面「時鐘回撥上限 I——照提示秒數重試必過」（原稿誤作 ADR-00076 決定 1 冷卻列之「時鐘回撥時上限 I」），背景同句另列 ADR-00076 決定 1 冷卻列原字面＝背景為非款文、決定 8 為承決款改字、依決定 6② 復核。U0 T002 停手升級改正（2026-10-23；`c091448`；user 2026-10-22 裁定「T003 前另落一顆只改 ADR-00102（建議）」，作答時 HEAD＝`6036cb9`）：決定 6 兩處「兩鍵」皆改「三鍵」（第三鍵各語字面指 008 刀 contracts msg-keys §1）、決定 1② 替換文去起首「下限 1、」、決定 7 補回斷言 2 之 BizData 構造形判準與 contract 腿之 `assert_error_envelope`／名冊雙向閘；改後復核輪（三 lens＋逐 lens 反駁＋完整性 critic）判決定 1、2、6、7、8 與全檔一致、無停手升級事項。U0 收尾（2026-10-23；008 刀 tasks T003／T004；ADR-00089 決定 6）：分類（以對照表現算）＝9 列：工程 2、承決 7、待決 0。①作答後改字之重問：無。②復核：T002 首輪之停手升級事項（決定 6、決定 1 冗字、決定 7 漏兩腿）＝`c091448` 改正（見上），改正後復核輪相符；T004 復核輪（本 ADR 親決紀錄改字史）相符、決定 1、2、6 對 `8ceadb5` 零改動。③對照表收尾一題（T003 第 4 題；作答時 HEAD `be11a3d`）答「照表定稿（建議）」、拉出 0 款（決定 1、2、6 為憲法 I18N (i) 末句所指，於 Amendment 顆 `8ceadb5` 之前定稿）。實問題數＝U0 2 題（停手升級處置 1、收尾 1）；plan 期 0 題。出題錯字（user 所見）0。T004 ④ 時序：Amendment 顆 `8ceadb5` 起，憲法 I18N (i) 末句已指本 ADR（其時 proposed）；本 ADR 於施工前提顆 accepted 後才指向現行 ADR；兩顆之間零施工單元，為唯一之 proposed 指向窗。決定 1、2、6 對 Amendment 顆零改動（status、supersedes 與親決紀錄除外）。

@@ -334,7 +334,7 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
    - ②的 `warnings` 含三類不算降級的告警（設定檔有不認得的鍵、訪客位址標頭名不合法〔§16.2〕、載入完成但零受信網段）；這三類不進④的計數，所以④全 0 不等於零告警——以②③為準，非 0 時逐行讀③命中行的 `kind`／`scope`／`reason` 欄。
    - ③看印出的數、不看 rc：`grep -c` 零命中時印 `0` 而 rc 為 1。③橫跨容器 log 內歷次啟動；只看最近一段就在 `logs` 後加 `--since <時間>`（如 `--since 24h`）。
    - 告警規則 `ipgate-degraded`（`deploy/grafana-provisioning/alerting/rules.yml`）也涵蓋載入降級，但啟動端事件每次啟動只發一次、紅一個評估窗即復歸——部署當下以②③④為準、不等告警。
-5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00082 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
+5. **dev 的分界**：dev 只宣告 `internal_default`，經反向代理端到端可達的來源信心態恰三：`fallback` 與 `proxy_clean`（兩者由信任模型決定）、`chain_rejected`（轉發鏈原始非空欄數逾上界即成立、判準不依賴信任模型；登入端點拒絕並落一列登入稽核），其餘五態由整合測試直餵信任模型覆蓋（已知態＝ADR-00104 款 2）。要在 dev 追加可達態＝加設定、不改判定碼。★dev-only 邊界：`internal_default` 取 docker 橋接的上位段，docker 閘道位址也落在其內——經 rust-api 直連埠（只綁 `127.0.0.1`）打進來的請求其對端受信、`X-Forwarded-For` 會被採信，來源位址由請求端指定（走查與整合測試正是靠這條路構造來源；2026-09-20 實測落列 `proxy_clean`、對端＝docker 閘道位址）。prod 的 `internal_default` 不得涵蓋任何可由外部直達 API 埠的位址、且 API 埠不對外。
 
 ### 16.2 CDN 邊緣網段：兩處各存一份、必須同步更新
 
@@ -371,6 +371,6 @@ prod 不入 roadmap（rev6 尚未自立拍板、暫承 rev5:ADR 0014 為預設�
 | 設密雜湊與換發鎖內快取往返之資源耗用無上界 | 滯後卷 BL-00147 |
 | 首登強制改密 | 滯後卷 BL-00140（prod 硬化與實際需求兩臂、先到者） |
 | 非安全來源（http 且非 localhost／127.0.0.1）下 Clipboard API 不存在＝產密浮層「複製」如實報失敗（rev5 另有 `execCommand` 退路、rev6 不帶回） | base-web `src/components/custom/pwd-gen-modal.vue` 檔頭 rev6 差異註；走 https 即不觸及 |
-| redis 持久化 | 維持不開（已知態＝ADR-00082 款 5） |
+| redis 持久化 | 維持不開（已知態＝ADR-00104 款 5） |
 | rust-api 行程數 | ★只准單一行程：casbin 判定面同步只換上本行程（ADR-00043 決定 9）；多行程或多實例部署前須先補跨行程同步通知（翻案觸發、風險見活書 §11.1） |
 | 機密輪替與 prod 值 | §7、§15 |

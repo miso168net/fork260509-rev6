@@ -2,7 +2,7 @@
 id: "ADR-00108"
 title: delta migration m0004（rev6 第二支 delta）——建 `reaper` 最小權限 role（NOLOGIN、已存在即略過）＋GRANT（`sys_token` 與四稽核表 SELECT／DELETE、操作日誌 INSERT＋序列、授權域三表 SELECT）；選單 77 按鈕清單增 `audit:purge`、R_SUPER 按鈕授權列 165（不受保護）；演進帳 E-010／E-011、序號合成；權限面不入演進帳；BL-00148 離線對賬腿為其前置
 date: 2026-10-21
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "008-audit-settings-pages 之 spec FR-039～FR-042、US6 第 2～4 條、SC-010、Edge Cases「m0004 與 seed」、一次性遷移三欄表；brainstorm §0 B1、B4（授權域唯讀）、D6（`audit:purge` 併入 m0004）、主線工程判斷⑪⑫；clarify 步主線工程判斷（m0004 一支）；plan 期 research R12（語句、新列 id 與冪等、演進帳兩筆、離線腿判準與掛點）、R11.9（權限測形）、spec 修補 E4；藍本＝rev4:migration/src/m012_reaper_role.rs、rev4:migration/src/m013_reaper_audit_grants.rs；rev6 前例＝ADR-00085（m0003 形：影響列數斷言、顯式新列 id、setval GREATEST）、ADR-00087（schema-definition 不前進）、ADR-00008／ADR-00010（四碼檔名、delta 自 m0003 起）；BL-00148（下一支 delta 進場之單元起手前補零 docker 離線對賬腿）"
@@ -28,7 +28,7 @@ tags: [migration, seed, reaper, authz-governance, schema-gate]
 ## 決定
 
 1. **檔與序**：`rust-api/migration/src/m0004_reaper_role_and_audit_purge.rs`；`lib.rs` 遷移向量第四支；以 compose `database_url` 身分執行（具建立角色之權）。
-2. **up**：角色（`DO` 塊、`duplicate_object` 略過）→GRANT 六條（schema USAGE；`sys_token` SELECT, DELETE；四稽核表 SELECT, DELETE；`sys_operation_log` INSERT；`sys_operation_log_id_seq` USAGE；`casbin_rule`、`sys_menu`、`sys_role` SELECT）→選單 77 `buttons` NULL→`[{"code":"audit:purge","desc":"清理日誌"}]`（期望 1 列）→`casbin_rule` 列 165（`R_SUPER`／`audit:purge`／`button`、受保護 FALSE、治理欄照 seed 形；期望 1 列）→`setval('casbin_rule_id_seq', GREATEST(165, last_value), true)`；影響列數不符＝整支回滾。
+2. **up**：角色（`CREATE ROLE reaper NOLOGIN`、零密碼；`DO` 塊、`duplicate_object` 略過）→GRANT 六條（schema USAGE；`sys_token` SELECT, DELETE；四稽核表 SELECT, DELETE；`sys_operation_log` INSERT；`sys_operation_log_id_seq` USAGE；`casbin_rule`、`sys_menu`、`sys_role` SELECT）→選單 77 `buttons` NULL→`[{"code":"audit:purge","desc":"清理日誌"}]`（期望 1 列）→`casbin_rule` 列 165（`R_SUPER`／`audit:purge`／`button`、受保護 FALSE、治理欄照 seed 形；期望 1 列）→`setval('casbin_rule_id_seq', GREATEST(165, last_value), true)`；影響列數不符＝整支回滾。
 3. **down**：刪列 165（全欄比對、期望 1）→選單 77 回 NULL（比對新值、期望 1）→逐條 REVOKE→角色無依賴時刪除（`DO` 塊內 `DROP ROLE IF EXISTS reaper`、捕 `dependent_objects_still_exist`〔叢集內他庫仍有其授權或物件〕即略過並 `RAISE NOTICE`，整支 down 不因此失敗；`rev4:m012` 之無條件 DROP 不帶）→序列回推（m0003 形）。
 4. **seed 基線層**：seed 兩筆屬 seed 基線層級決策（島 G 之 G2 末句同層）——直接改列、不走執行期撤銷歸檔與操作稽核；`audit:purge` 不受保護（可撤、可授）。
 5. **演進帳**：E-010（`seed_update` `sys_menu` 77 `buttons`）、E-011（`seed_add` `casbin_rule` 165）；`knife`＝`008-audit-settings-pages`；序號合成依 E-011 推進期望值；角色與 GRANT 不入演進帳；schema-definition 不前進（ADR-00087）。
@@ -55,7 +55,7 @@ tags: [migration, seed, reaper, authz-governance, schema-gate]
 | 款 | 類別 | 出處或理由 | 白話一句 |
 |---|---|---|---|
 | 決定 1 | 承決 | brainstorm ⑪；spec FR-039（一支）、Edge Cases「m0004 與 seed」 | 一支遷移，用有建角色權的身分跑。 |
-| 決定 2 | 承決 | brainstorm B1、B4、D6；spec FR-039 表；按鈕說明字面「清理日誌」＝user 2026-10-21 plan 第 3 題答（建議；原草稿字面「清理稽核紀錄」為新 seed 字面、無 user 出處＝待決） | 建清理專用帳號並只給必要權限，加清理按鈕碼（說明「清理日誌」）與超管授權。 |
+| 決定 2 | 承決 | brainstorm B1、B4、D6；spec FR-039 表；按鈕說明字面「清理日誌」＝user 2026-10-21 plan 第 3 題答（建議；原草稿字面「清理稽核紀錄」為新 seed 字面、無 user 出處＝待決）；角色形（NOLOGIN、零密碼）＝brainstorm ⑪、user 2026-10-23 U0 T004 第 5 題答「補入「NOLOGIN、零密碼」（建議）」（T002 升待決：對出處少寫；同題重問、說明字面不變） | 建清理專用帳號（遷移只建不能登入、沒有密碼的角色，由設密腳本開放登入）並只給必要權限，加清理按鈕碼（說明「清理日誌」）與超管授權。 |
 | 決定 3 | 承決 | spec 一次性遷移三欄表 Rollback 欄（撤 GRANT、角色無依賴時刪除、刪新列、選單 77 按鈕清單回 NULL）；`DO` 塊與例外捕捉屬款內工程細節 | 退回時刪掉新增的兩筆資料、撤銷權限，reaper 角色沒有其他依賴時一併刪除。 |
 | 決定 4 | 承決 | spec FR-039 末段、Edge Cases（`audit:purge` 不受保護） | 這兩筆是基線資料的直接修改，按鈕碼可撤可授。 |
 | 決定 5 | 承決 | spec FR-040 | 兩筆資料改動登入演進帳，權限面不登。 |
@@ -64,4 +64,4 @@ tags: [migration, seed, reaper, authz-governance, schema-gate]
 | 決定 8 | 承決 | brainstorm ⑫；spec FR-041；BL-00148 觸發條件 | 先補不用 docker 的遷移對賬檢查，再寫這支遷移。 |
 | 決定 9 | 承決 | spec FR-040 | 收刀前照手冊做三步登記。 |
 
-- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：9 列中相符 7（決定 1、4～9）、升待決 2——決定 2（選單 77 按鈕說明字面為新 seed 字面、無 user 出處；另「GRANT 七條」與所列六組不一致）、決定 3（反向遷移屬 migration 內容、原標工程；款文無條件 DROP ROLE 偏離 spec 三欄表「角色無依賴時刪除」）。處置：決定 2 改「GRANT 六條」、說明字面於 plan 期 AskUserQuestion 一題——user 2026-10-21 答「清理日誌（建議）」（作答時 HEAD＝`926b359`、草稿未入版控），改標承決；決定 3 對齊 spec 三欄表改「角色無依賴時刪除」、改標承決（出處＝spec 條目、免問）；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。
+- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：9 列中相符 7（決定 1、4～9）、升待決 2——決定 2（選單 77 按鈕說明字面為新 seed 字面、無 user 出處；另「GRANT 七條」與所列六組不一致）、決定 3（反向遷移屬 migration 內容、原標工程；款文無條件 DROP ROLE 偏離 spec 三欄表「角色無依賴時刪除」）。處置：決定 2 改「GRANT 六條」、說明字面於 plan 期 AskUserQuestion 一題——user 2026-10-21 答「清理日誌（建議）」（作答時 HEAD＝`926b359`、草稿未入版控），改標承決；決定 3 對齊 spec 三欄表改「角色無依賴時刪除」、改標承決（出處＝spec 條目、免問）；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。analyze 期改字（2026-10-21；`62f8a4c`、user 核可 analyze 修補全套）：決定 8 與其對照表列「對帳」改「對賬」（用字統一、語意不變）＝承決款字面改字、依決定 6② 復核。U0 收尾（2026-10-23；008 刀 tasks T004；ADR-00089 決定 6）：分類（以對照表現算）＝9 列：承決 8、工程 1、待決 0。①T002 升待決一款：決定 2（T004 第 5 題；同題重問、說明字面不變）答「補入「NOLOGIN、零密碼」（建議）」→依答覆補字、出處欄與白話記之（作答時 HEAD `8ceadb5`）。②復核：T002 首輪本 ADR 升待決 1（上列）、僅記錄 2（決定 3 括注、plan 第 3 題題面背景句）；T004 復核輪決定 2 改字逐字等於題面所呈補入後字面、零 findings。③對照表收尾一題（T004 第 11 題）答「照表定稿（建議）」、拉出 0 款。實問題數＝U0 2 題（升待決 1、收尾 1）；連同 plan 期 1 題共 3 題。出題錯字（user 所見）0。

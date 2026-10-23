@@ -2,9 +2,9 @@
 id: "ADR-00091"
 title: 部分更新語意（續行 ADR-00080）——決定 1～6、8 原文續行；決定 7 改寫：使用者編輯抽屜之會話政策呼叫被拒（更新呼叫已生效）後留原地重試時，`status`／`roleIds` 之改動判定改以已生效值為比對基準；決定 9 改寫：現在式面 ADR-00080 改指本 ADR、與本 ADR 轉 accepted 同顆
 date: 2026-10-14
-status: accepted
+status: superseded
 supersedes: ["ADR-00080"]
-superseded_by: []
+superseded_by: [ADR-00107]
 provenance: "007-user-password-admin 之 U17 碼品質審查第 3 輪非 blocker 觀察 1（會話政策失敗後留原地重試、狀態與角色仍比對開抽屜時之列快照；rev5 同形）；user 2026-10-14 親決（AskUserQuestion 兩問：首問答「修」；主線更正改指代價〔現在式引用 74 處〕後重問、答「修，改指併入 U22」）；spec 刻意分岔登記表「抽屜會話政策被拒後之重試」列；tasks T115（U18c）與 T103（U22：轉 accepted 與改指）；被續行面＝ADR-00080 全九決定（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5 先例；續行鏈 ADR-00015→ADR-00047→ADR-00080→本 ADR）；前代出處＝rev5:src/views/manage/user/modules/user-operate-drawer.vue（狀態與角色恆比對開抽屜時之列、會話政策另打其端點）"
 tags: [wire, envelope, serde, role-menu-crud, user-password-admin]
 ---

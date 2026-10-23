@@ -2,7 +2,7 @@
 id: "ADR-00105"
 title: 授權歸檔表 `sys_casbin_policy_archive` 永久保留（by-design）——歸檔列除經授權回收桶復原外永久保留、零碼改；手動清理白名單與 reaper 排程清理只含四張稽核表
 date: 2026-10-21
-status: proposed
+status: accepted
 supersedes: []
 superseded_by: []
 provenance: "008-audit-settings-pages 之 spec FR-061⑦、FR-066（BL-00133 收單）、Out of Scope 首條；brainstorm §0 B3（user 2026-10-20：永久保留、立 by-design ADR）；BL-00133 前半（歸檔表保留期之延後義務）；ADR-00065 後果之代價句（歸檔列除經復原外永久保留之承接）；前代＝`rev5:B-016`（歸檔表 retention 不入）"
@@ -11,7 +11,7 @@ tags: [authz-governance, retention, by-design]
 
 ## 背景
 
-BL-00133 以授權歸檔表之保留期與清理為延後義務；ADR-00065 後果記「歸檔列除經復原外永久保留」為代價。本刀交付稽核四表之水平線清理，需明定歸檔表是否同列。
+BL-00133 以授權歸檔表之保留期與清理為延後義務；ADR-00065 後果記「歸檔列除經復原（Applied／NoOp）消費外永不刪除」為代價。本刀交付稽核四表之水平線清理，需明定歸檔表是否同列。
 
 ## 考慮過的替代案
 
@@ -44,4 +44,4 @@ BL-00133 以授權歸檔表之保留期與清理為延後義務；ADR-00065 後�
 | 決定 2 | 承決 | brainstorm B3；spec FR-015、Out of Scope 首條 | 清理只管四張稽核表。 |
 | 決定 3 | 承決 | brainstorm B3／B4；spec FR-066 | BL-00133 兩半各有歸屬。 |
 
-- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：3 列中相符 2（決定 2、3）、改正 1（決定 1 括注漏 NoOp 腿）；處置＝括注改「Applied 回灌並刪、NoOp 只刪」並補出處；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。
+- **親決紀錄**：（plan 期）獨立核對（ADR-00089 決定 5；2026-10-21）：3 列中相符 2（決定 2、3）、改正 1（決定 1 括注漏 NoOp 腿）；處置＝括注改「Applied 回灌並刪、NoOp 只刪」並補出處；改過之款於轉 accepted 前依 ADR-00089 決定 6② 復核。U0 收尾（2026-10-23；008 刀 tasks T004；ADR-00089 決定 6）：分類（以對照表現算）＝3 列：承決 3。①作答後改字之重問：無。②復核：T002 首輪本 ADR 兩筆＝改正 1（背景引文改 ADR-00065 後果原句）、不成立 1（決定 1 出處欄補列）；T004 復核輪背景改正相符、一筆僅記錄（frontmatter 出處括注沿 brainstorm B3 措辭、屬承接非引文）。③對照表收尾一題（T004 第 9 題；作答時 HEAD `8ceadb5`）答「照表定稿（建議）」、拉出 0 款。實問題數＝U0 1 題；plan 期 0 題。出題錯字（user 所見）0。
