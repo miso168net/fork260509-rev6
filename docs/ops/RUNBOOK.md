@@ -49,7 +49,7 @@ SD="$(sed -n 's/^SECRETS_DIR=//p' .env)"; [ -n "$SD" ] || { echo "FAIL：.env �
 
 ## 8. reaper 操作
 
-`python3 deploy/setup-reaper-role.py`（reaper role 設密、走 `docker compose exec psql`）。隨 jobs 軌刀補實文。★現況：rev6 無 reaper role（migration m0001～m0003 零 reaper）與 reaper bin——本腳本前置「role 已存在」不成立、執行即 psql 非零退出；承載＝BL-00043。
+`python3 deploy/setup-reaper-role.py`（reaper role 設密、走 `docker compose exec psql`）。隨 jobs 軌刀補實文。★現況：reaper role 已由 m0004 建（NOLOGIN、零密碼）、本腳本前置「role 已存在」成立；rev6 無 reaper bin；承載＝BL-00043。
 
 ## 9. 維運端點與 DB 直連
 

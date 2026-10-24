@@ -411,6 +411,8 @@
 | 稽核頁清理鈕 | 頁內零按鈕級 gating | 依 `audit:purge` 碼顯隱（Super 持碼＝畫面同 rev5） | D6、FR-054、FR-039 |
 | 排程清理自記列 | 無 reaper（`rev5:B-016` 不入） | 起 jobs 時操作日誌出現 `purge` 自記列（操作者「-」、來源 IP `0.0.0.0`） | B1、g2、g5、FR-036 |
 | 繁中畫面 | runtime 兩語 | 兩頁全樹繁中（無 rev5 基準、驗收照 D12） | D12、FR-074 |
+| 角色頁按鈕彈窗候選碼 | 無 `audit:purge` | 多「清理日誌」（`audit:purge`；m0004 增於選單 77） | D6、FR-039、ADR-00108 |
+| 選單頁「稽核」按鈕清單 | 空 | 一碼 `audit:purge`「清理日誌」 | D6、FR-039、ADR-00108 |
 | 實作期新發現者 | —— | 逐項追加、CDP 開跑前凍結；CDP 中新發現者須經 user 親決（AskUserQuestion）才可入表、否則依 SC-011 判紅 | CDP 三方對照單元 |
 
 **一次性遷移三欄表（m0004；CLAUDE.md §2）**

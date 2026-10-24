@@ -3189,7 +3189,7 @@ class TestSelfTest(unittest.TestCase):
 class TestNegativeInjection(unittest.TestCase):
     """SC-003 五類假漂移注入、全數必紅（比對器先自證；test 子命令承載面）：①結構②欄序
     ③seed 值④sequence 落值⑤假 delta 登記合成（對真凍結面、test_5；seed_add 序號姊妹案
-    ＝test_5b）。"""
+    ＝test_5b、真演進帳之序號推進鏈＝test_5c）。"""
 
     def setUp(self):
         self.fix = _st_fixtures()
@@ -3327,6 +3327,37 @@ class TestNegativeInjection(unittest.TestCase):
         # 登記後＝綠（合成期望之資料列與序列落值皆＝注入後 dump）
         self.assertEqual(compare_seed(apply_seed_entries(frozen_norm, [entry]),
                                       injected_dump), [])
+
+    def test_5c_real_ledger_seed_add_chain_advances_sequence(self):
+        """第五案之真帳姊妹案（008 刀 U4a、T032 ③；GR9 形同 test_5b）：**真凍結 fixtures ⊕ 真演進帳全部 entries** 經
+        apply_seed_entries 後三件成立——①`casbin_rule_id_seq` 之 setval 期望行恰一行＝(取大值, true)，取大值＝凍結落值與帳上
+        casbin_rule 各筆 seed_add 之 values.id 之最大者（期望側以帳現算、不寫死；且須高於凍結落值＝帳上確有推進）②合成 COPY 段
+        含每筆 seed_add 之列（依該段欄序之 COPY 文字形）③sys_menu 列 77 之 buttons 欄＝帳上該列 seed_update 之 set 值。
+        拆 apply_seed_entries 內之序號推進一句＝①紅（setval 留凍結落值）。"""
+        fx = load_fixtures(REPO_ROOT)
+        entries = load_ledger(REPO_ROOT)["entries"]
+        frozen_norm = normalize_seed_dump(fx["seed"])
+        frozen_sv = [m for m in map(RE_SETVAL.match, frozen_norm.splitlines())
+                     if m and m.group(1) == "casbin_rule_id_seq"]
+        self.assertEqual(len(frozen_sv), 1)
+        self.assertEqual(frozen_sv[0].group(3), "true")       # 凍結形已發（取大值之凍結端＝其落值）
+        adds = [e for e in entries if e["kind"] == "seed_add" and e["table"] == "casbin_rule"]
+        want = max([int(frozen_sv[0].group(2))] + [e["detail"]["values"]["id"] for e in adds])
+        self.assertGreater(want, int(frozen_sv[0].group(2)), msg="帳上無高於凍結落值之 casbin_rule seed_add——本案 vacuous")
+        lines = apply_seed_entries(frozen_norm, entries).splitlines()
+        got_sv = [m.group(0) for m in map(RE_SETVAL.match, lines) if m and m.group(1) == "casbin_rule_id_seq"]
+        self.assertEqual(got_sv, [f"SELECT pg_catalog.setval('public.casbin_rule_id_seq', {want}, true);"])
+        blocks = _copy_blocks(lines)
+        for e in (e for e in entries if e["kind"] == "seed_add"):
+            cols, start, end = blocks[e["table"]]
+            self.assertIn("\t".join(copy_literal(e["detail"]["values"][c]) for c in cols), lines[start:end], msg=e["id"])
+        menu77 = [e for e in entries
+                  if e["kind"] == "seed_update" and e["table"] == "sys_menu" and e["detail"]["pk"] == {"id": 77}]
+        self.assertEqual(len(menu77), 1)
+        cols, start, end = blocks["sys_menu"]
+        rows = [r.split("\t") for r in lines[start:end] if r.split("\t")[cols.index("id")] == "77"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][cols.index("buttons")], copy_literal(menu77[0]["detail"]["set"]["buttons"]))
 
 
 class TestLedgerAssertions(unittest.TestCase):
@@ -5312,6 +5343,11 @@ _OFFLINE_M0004_MENU_78 = (
     "        expect_rows(db, \"up S8b\", UP_8B_MENU_78, 1, UP_TAIL).await?;\n"
     "        db.execute_unprepared(UP_10_SETVAL).await?;\n")
 
+# 真 m0004（008 刀 U4a、T032 ②）：真檔副本之暫存根另抄 m0004 真檔與 008 刀帳段（真帳濾刀名＝E-010～E-011；理由同
+# _OFFLINE_M0003_KNIFE）。合成樣本（_OFFLINE_M0004_RS）承載形制之一正多反；本組承載「真檔＋真帳」之綠與變造即紅。
+_OFFLINE_M0004_REAL = os.path.join(OFFLINE_MIGRATION_DIR, "m0004_reaper_role_and_audit_purge.rs")
+_OFFLINE_M0004_KNIFE = "008-audit-settings-pages"
+
 
 def _offline_base(tc, d, rs_edits=(), seed_edits=()):
     """植入用暫存根：m0003 真檔副本（套 rs_edits）、凍結 fixtures 四件（seed_edits 套 seed.sql）、演進帳之 m0003
@@ -5381,10 +5417,20 @@ class _OfflineRoots:
         _offline_write(d, _OFFLINE_M0004, text)
         return d
 
+    def _real_m0004(self, rs_edits=(), ledger=None):
+        """暫存根＋真 m0004 副本（套 rs_edits；改點須唯一命中）＋演進帳之 m0003 與 008 刀帳段（ledger 再改寫）。"""
+        d = self._plant()
+        _offline_write(d, _OFFLINE_M0004_REAL, _offline_edited(self, _OFFLINE_M0004_REAL, rs_edits))
+        data = _load_json(os.path.join(REPO_ROOT, LEDGER), "演進帳")
+        entries = [e for e in data["entries"] if e["knife"] in (_OFFLINE_M0003_KNIFE, _OFFLINE_M0004_KNIFE)]
+        _offline_set_ledger(d, ledger(entries) if ledger else entries)
+        return d
+
 
 class TestOfflineLeg(_OfflineRoots, unittest.TestCase):
     """offline 判準②～⑤＋cmd_offline 佈線（T007）：真 repo 案讀真檔；植入案一律於暫存根（m0003 副本、演進帳之
-    m0003 帳段、凍結 fixtures 四件）改副本後以 cmd_offline(root=暫存根) 跑，真檔零改。"""
+    m0003 帳段、凍結 fixtures 四件；真 m0004 案另抄 m0004 真檔與 008 刀帳段）改副本後以 cmd_offline(root=暫存根) 跑，
+    真檔零改。"""
 
     def test_0_planted_base_green(self):
         """對照組：暫存根原封不動＝rc 0（否則以下各植入案之紅無鑑別力）。"""
@@ -5679,6 +5725,63 @@ class TestOfflineLeg(_OfflineRoots, unittest.TestCase):
                 if want_rc:
                     self.assertIn("[offline·前值] m0004_reaper_role_sample.rs up 第 10 句（UP_8B_MENU_78）", msg)
                     self.assertIn("欄 buttons", msg)
+
+    def test_offline_real_m0004_green_and_mutants_red(self):
+        """真 m0004（008 刀 U4a、T032 ②）：暫存根抄 m0003 與 m0004 真檔、凍結 fixtures 四件與演進帳之 007／008 刀帳段，真檔零改。
+        ①原封＝rc 0、零 finding、兩帳段之 seed_* 全數配對（008 刀帳段恰 E-010、E-011）；權限面結構化列出 up＝CREATE ROLE 1＋
+        GRANT 6、down＝REVOKE 6＋DROP ROLE 1，受權物件→權限整份恰為所列（物件 10＝schema public、sys_token、四稽核表〔sys_operation_log 之 INSERT
+        計於同一物件〕、sys_operation_log_id_seq、授權域三表）。②變造五發（各一暫存根）各 rc 1、finding 數恰為所列且逐條指名：
+        帳刪 E-011（列 165 之 seed DML 無登記）、S8 新值改一字（與 E-010 set 不符）、S8 前值改非 NULL 字面（與凍結 seed 選單 77
+        之 \\N 不符）、植一句 ALTER TABLE 常數（未分類）、S9 之 id 改 166（與 E-011 values.id 不符＝未登之句＋多出之登記）。"""
+        name = "m0004_reaper_role_and_audit_purge"
+        d = self._real_m0004()
+        rc, msg = _offline_run(d)
+        self.assertEqual(rc, 0, msg=msg)
+        findings, summary = offline_report(d)
+        self.assertEqual(findings, [])
+        self.assertEqual(summary["files"], ["m0003_seed_button_governance", name])
+        ledger = _offline_ledger(d)
+        self.assertEqual([e["id"] for e in ledger if e["knife"] == _OFFLINE_M0004_KNIFE], ["E-010", "E-011"])
+        self.assertEqual(summary["pair_ids"], [e["id"] for e in ledger if e["kind"].startswith("seed_")])
+        perm = summary["perm"][name]
+        self.assertEqual(dict(perm["up"]["kinds"]), {"CREATE ROLE": 1, "GRANT": 6})
+        self.assertEqual(dict(perm["down"]["kinds"]), {"REVOKE": 6, "DROP ROLE": 1})
+        sd = {"SELECT", "DELETE"}
+        want = {("SCHEMA", "public"): {"USAGE"}, ("TABLE", "sys_token"): sd,
+                ("TABLE", "sys_operation_log"): sd | {"INSERT"}, ("TABLE", "sys_access_log"): sd,
+                ("TABLE", "sys_login_attempt"): sd, ("TABLE", "session_event"): sd,
+                ("SEQUENCE", "sys_operation_log_id_seq"): {"USAGE"}, ("TABLE", "casbin_rule"): {"SELECT"},
+                ("TABLE", "sys_menu"): {"SELECT"}, ("TABLE", "sys_role"): {"SELECT"}}
+        self.assertEqual(dict(perm["up"]["objects"]), want)       # 物件→權限整份釘死（多授一權即紅）
+        self.assertEqual(dict(perm["down"]["objects"]), want)
+        self.assertEqual((perm["up"]["roles"], perm["down"]["roles"]), ({"reaper"}, {"reaper"}))
+        self.assertIn(f"權限面（只列不對賬）{name}｜up：CREATE ROLE 1、GRANT 6；角色 reaper；受權物件 10＝", msg)
+        s10 = "        db.execute_unprepared(UP_S10_SETVAL).await?;\n"
+        cases = (
+            ("帳刪 E-011", dict(ledger=lambda es: [e for e in es if e["id"] != "E-011"]),
+             [f"[offline·對賬] 未登之句：{name}.rs up 第 9 句（UP_S9_INSERT_165） seed_add casbin_rule id=165"]),
+            ("S8 新值改一字", dict(rs_edits=[('r#"[{"code":"audit:purge","desc":"清理日誌"}]"#',
+                                          'r#"[{"code":"audit:purgX","desc":"清理日誌"}]"#')]),
+             [f"[offline·對賬] E-010（seed_update sys_menu id=77；{name}.rs up 第 8 句（UP_S8_MENU_77））｜欄 buttons："]),
+            ("S8 前值改非 NULL 字面", dict(rs_edits=[("AND buttons IS NULL\"", "AND buttons = '[]'::jsonb\"")]),
+             [f"[offline·前值] {name}.rs up 第 8 句（UP_S8_MENU_77） seed_update sys_menu id=77｜欄 buttons：WHERE＝'[]'、"
+              "左源＝None"]),
+            ("植未分類 ALTER 常數", dict(rs_edits=[
+                (s10, s10 + "        db.execute_unprepared(UP_X_ALTER).await?;\n"),
+                ("const DOWN_5_SETVAL: &str", 'const UP_X_ALTER: &str = "ALTER TABLE sys_menu ADD COLUMN x int";\n\n'
+                                              "const DOWN_5_SETVAL: &str")]),
+             [f"[offline·分類] {name}.rs up 第 11 句（UP_X_ALTER） 未分類——句首「ALTER TABLE sys_menu ADD COLUMN x int」"]),
+            ("S9 之 id 改 166", dict(rs_edits=[("VALUES (165, 'p'", "VALUES (166, 'p'")]),
+             [f"[offline·對賬] 未登之句：{name}.rs up 第 9 句（UP_S9_INSERT_165） seed_add casbin_rule id=166",
+              "[offline·對賬] 多出之登記 E-011（seed_add casbin_rule）"]),
+        )
+        for label, kw, needles in cases:
+            with self.subTest(label=label):
+                rc, msg = _offline_run(self._real_m0004(**kw))
+                self.assertEqual(rc, 1, msg=msg)
+                self.assertEqual(msg.count("    [offline·"), len(needles), msg=msg)
+                for needle in needles:
+                    self.assertIn(needle, msg)
 
     def test_7_do_block_hiding_dml_unclassified(self):
         """⑦`DO $$ BEGIN UPDATE sys_menu …; END $$` 藏 DML → rc 1 未分類。"""

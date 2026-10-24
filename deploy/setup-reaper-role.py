@@ -8,12 +8,12 @@ deploy/secrets_common.py（同 preflight／decrypt／generate 先例，落點解
 隨之收斂到共用庫版本，rc 與串流不變）。
 
 分工（rev4:016-observability data-model §5、rev4:research R5、rev4:ADR 0072）：
-  rev4:m012 migration＝CREATE ROLE reaper NOLOGIN＋GRANT（零密碼）；本腳本＝ALTER ROLE reaper
-  LOGIN PASSWORD（密碼讀自 $SECRETS_DIR/reaper_password.txt；★rev4:019 rev4:US3 起落點由 repo
-  根 .env 的 SECRETS_DIR 決定、未設才回退 repo 內 deploy/secrets——解析口徑見共用庫）。
+  migration m0004（ADR-00108；藍本 rev4:m012／rev4:m013）＝CREATE ROLE reaper NOLOGIN＋GRANT（零密碼）；
+  本腳本＝ALTER ROLE reaper LOGIN PASSWORD（密碼讀自 $SECRETS_DIR/reaper_password.txt；★rev4:019
+  rev4:US3 起落點由 repo 根 .env 的 SECRETS_DIR 決定、未設才回退 repo 內 deploy/secrets——解析口徑見共用庫）。
 密碼紀律（rev4:FR-013）：SQL 走 psql stdin——密碼零進 host process list、零進版本庫；
   輸出只印狀態不印值。可重跑（ALTER ROLE 冪等）。
-前置：stack 已 up（postgres healthy）＋rev4:m012 已套用（role 不存在→psql 非零退出 fail-loud）
+前置：stack 已 up（postgres healthy）＋m0004 已套用（role 不存在→psql 非零退出 fail-loud）
   ＋deploy/generate-secrets.py 已產 reaper_password.txt。
 
 用法：python3 deploy/setup-reaper-role.py
