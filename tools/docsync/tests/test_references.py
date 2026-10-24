@@ -579,7 +579,7 @@ class TestRoutes(unittest.TestCase):
             references.gen_reference_routes(stub({}))
 
     # 真 repo 釘值＝ROUTES 現行列集逐列全等（002 刀 U1 兩列＋U3 之 getSystemSettings 列＋U4 之 updateSystemSetting 列＋
-    # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub＝003 刀 data-model §12 終態十六列＋004 刀 U7 五列＝IP 規則管理五端點＋004 刀 U10 一列＝解鎖端點＋005 刀 U1 十七列＝角色管理八端點＋選單管理九端點＋006 刀 U1 十列＝授權治理十端點〔三維授權讀寫六、授權回收桶二、候選讀端二〕＋007 刀 U3 十二列＝使用者管理十端點＋個人中心兩端點；現行六十一列）。★釘值形刻意保留——逐列全等是各單元的
+    # 003 刀 U5 五列＝auth 兩條／route 三條＋U6 一列＝/auth/refreshToken＋U7 一列＝/auth/logout＋U8 一列＝/auth/loginCaptcha＋U9 四列＝替代登入 stub＝003 刀 data-model §12 終態十六列＋004 刀 U7 五列＝IP 規則管理五端點＋004 刀 U10 一列＝解鎖端點＋005 刀 U1 十七列＝角色管理八端點＋選單管理九端點＋006 刀 U1 十列＝授權治理十端點〔三維授權讀寫六、授權回收桶二、候選讀端二〕＋007 刀 U3 十二列＝使用者管理十端點＋個人中心兩端點＋008 刀 U3 五列＝稽核五端點〔四源讀端四、水平線清理一〕；現行六十六列）。★釘值形刻意保留——逐列全等是各單元的
     # 驗收面，不以「非空＋包含」弱化；日後增列、刪列或改序 route 時本測釘值須同批改。
     # ★紅而不自明的窗口：pre-commit 只在 staged 含 tools/docsync/ 時才跑 selftest-docsync（.githooks/pre-commit 同段），
     #   而 GT-01 漂移在 U3 跑過 generate 後即消——故本測不同批改＝一路綠燈到有人跑 docsync test／bootstrap 才浮出。
@@ -645,7 +645,12 @@ class TestRoutes(unittest.TestCase):
                                 ("/systemManage/resetUserPassword", "POST", "Policy", "reset-user-password", False),
                                 ("/systemManage/updateUserSessionPolicy", "POST", "Policy", "update-user-session-policy", False),
                                 ("/userCenter/getPasswordPolicy", "GET", "Authed", "user-center-get-password-policy", False),
-                                ("/userCenter/changePassword", "POST", "Authed", "user-center-change-password", False)])
+                                ("/userCenter/changePassword", "POST", "Authed", "user-center-change-password", False),
+                                ("/systemManage/getOperationLog", "GET", "Policy", "get-operation-log", False),
+                                ("/systemManage/getAccessLog", "GET", "Policy", "get-access-log", False),
+                                ("/systemManage/getLoginAttempt", "GET", "Policy", "get-login-attempt", False),
+                                ("/systemManage/getSessionEvent", "GET", "Policy", "get-session-event", False),
+                                ("/systemManage/purgeAuditLog", "POST", "Policy", "purge-audit-log", False)])
         out = references.gen_reference_routes(ctx)
         self.assertEqual([ln for ln in out.split("\n") if ln.startswith("| /")],
                          ["| /health | GET | Public | health | 是 |", "| /metrics | GET | Public | metrics | 是 |",
@@ -707,7 +712,12 @@ class TestRoutes(unittest.TestCase):
                           "| /systemManage/resetUserPassword | POST | Policy | reset-user-password | 否 |",
                           "| /systemManage/updateUserSessionPolicy | POST | Policy | update-user-session-policy | 否 |",
                           "| /userCenter/getPasswordPolicy | GET | Authed | user-center-get-password-policy | 否 |",
-                          "| /userCenter/changePassword | POST | Authed | user-center-change-password | 否 |"])
+                          "| /userCenter/changePassword | POST | Authed | user-center-change-password | 否 |",
+                          "| /systemManage/getOperationLog | GET | Policy | get-operation-log | 否 |",
+                          "| /systemManage/getAccessLog | GET | Policy | get-access-log | 否 |",
+                          "| /systemManage/getLoginAttempt | GET | Policy | get-login-attempt | 否 |",
+                          "| /systemManage/getSessionEvent | GET | Policy | get-session-event | 否 |",
+                          "| /systemManage/purgeAuditLog | POST | Policy | purge-audit-log | 否 |"])
         self.assertIn("docs/generated/reference/routes.md", references.compute_generated(ctx))
 
 
