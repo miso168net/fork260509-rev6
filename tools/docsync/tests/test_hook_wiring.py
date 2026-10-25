@@ -13,7 +13,7 @@ scan_push_ranges || exit 1）＋lib 之 betterleaks 呼叫與四種範圍推導�
 ④段序枚舉鏡像面 check_mirror_words(hook, readme)（BL-00055）：段名冊 MIRROR_LABELS（FIXED 之 pc_run 固定段＋SEGMENTS；hook 靜態 pc_run 標籤須 ⊆ 之）每段之字樣（MIRROR_WORDS）
 須在三處人寫鏡像行（pre-commit 檔頭段序／README 樹 `.githooks/` 列／README 守門條目）各恰出現一次（ASCII 詞界計數）；一正多反（逐面×逐段刪該一處→恰一條紅指名檔、面與段／
 他段夾帶→紅／路徑內嵌不計／鏡像行缺席／段未宣告字樣／hook 段未入名冊）。
-⑤跨子庫同步律段閘面路徑對賬 check_sync_paths(hook, want)（BL-00057）：submodule-sync 段路徑字面集 ⇔ msg-key-gate DEFAULT_RUST／DEFAULT_DETAIL（佔位符對賬之明細型之家）／DEFAULT_LOCALES／DEFAULT_SRC（前端消費點掃描面）
+⑤跨子庫同步律段閘面路徑對賬 check_sync_paths(hook, want)（BL-00057）：submodule-sync 段路徑字面集 ⇔ msg-key-gate DEFAULT_RUST／DEFAULT_DETAILS（佔位符對賬之明細型之家、逐元素）／DEFAULT_LOCALES／DEFAULT_SRC（前端消費點掃描面）
 ∪ wire-schema TYPINGS_PATHSPECS／SNAPSHOT_PATHSPECS（正規化為 repo 根相對）；一正多反（hook 少一／多一／常數多一／段缺席）。
 ⑥子庫 pre-commit 面 check_sub_precommit(text)（spec-compliance-003 L3-2）：兩源倉 commit 期唯一機密掃描——betterleaks 呼叫緊接 `rc=$?`、rc 0 放行、
 rc 2 命中分支、非零收尾 `exit 1`；一正多反（刪任一字面→紅指名該檔與字面）。
@@ -276,7 +276,7 @@ def load_tool(name):
 
 def gate_face_paths(msg_key_gate, wire_schema):
     """兩雙側閘常數 → repo 根相對、`/` 分隔之閘面路徑集（正規化理由見 SYNC_LABEL 上方註）。"""
-    return ({p.replace(os.sep, "/") for p in (msg_key_gate.DEFAULT_RUST, msg_key_gate.DEFAULT_DETAIL, msg_key_gate.DEFAULT_LOCALES,
+    return ({p.replace(os.sep, "/") for p in (msg_key_gate.DEFAULT_RUST, *msg_key_gate.DEFAULT_DETAILS, msg_key_gate.DEFAULT_LOCALES,
                                               msg_key_gate.DEFAULT_SRC)}
             | {"base-web/" + p for p in wire_schema.TYPINGS_PATHSPECS}
             | {"rust-api/" + p for p in wire_schema.SNAPSHOT_PATHSPECS})
@@ -505,6 +505,8 @@ class TestSubmoduleSyncPaths(unittest.TestCase):
     def test_real_paths_match_tool_constants(self):
         hook, want = self._real()
         self.assertTrue(any(p.startswith("rust-api/") for p in want) and any(p.startswith("base-web/") for p in want), want)
+        # 明細型之家逐鍵對映（008 刀 U7）：DEFAULT_DETAILS 兩家皆入閘面（逐元素讀；只讀首元素或整 tuple 當單一路徑即缺一家）
+        self.assertLessEqual({"rust-api/server/src/handler/user.rs", "rust-api/server/src/handler/audit.rs"}, want)
         self.assertEqual(check_sync_paths(hook, want), [])
 
     def test_path_drift_red(self):
@@ -512,6 +514,10 @@ class TestSubmoduleSyncPaths(unittest.TestCase):
         dropped = hook.replace(" 'base-web/src/typings/api'", "", 1)
         self.assertNotEqual(dropped, hook)
         self.assertIn(f"段 {SYNC_LABEL} 缺閘面路徑 base-web/src/typings/api（兩雙側閘常數有、hook 段無）", check_sync_paths(dropped, want))
+        no_home = hook.replace(" 'rust-api/server/src/handler/audit.rs'", "", 1)
+        self.assertNotEqual(no_home, hook)
+        self.assertIn(f"段 {SYNC_LABEL} 缺閘面路徑 rust-api/server/src/handler/audit.rs（兩雙側閘常數有、hook 段無）",
+                      check_sync_paths(no_home, want))
         extra = hook.replace(" 'rust-api/server/src/error.rs'", " 'rust-api/server/src/error.rs' 'rust-api/server/src/lib.rs'", 1)
         self.assertIn(f"段 {SYNC_LABEL} 多閘面路徑 rust-api/server/src/lib.rs（hook 段有、兩雙側閘常數無）", check_sync_paths(extra, want))
         self.assertIn(f"段 {SYNC_LABEL} 缺閘面路徑 base-web/src/typings/app.d.ts（兩雙側閘常數有、hook 段無）",
