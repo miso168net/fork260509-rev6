@@ -3,7 +3,7 @@
 
 ## git
 - default branch：rev6-admin-root（常數＝tools/docsync/__init__.py；bootstrap 同值斷言）
-- pins：base-web=cdfbfff｜rust-api=b4288d1
+- pins：base-web=8c624fb｜rust-api=c462345
 
 ## 現在波
 - 波：6（docs/ops/NOTES.md 首行標記）
