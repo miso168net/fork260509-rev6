@@ -142,14 +142,19 @@ await run('案8 fix agent blocked → 立即 return', (label) => {
   return CLEAN
 }, (o) => { noThrow(o); status(o, 'unresolved'); stage(o); reason(o, 'fix agent blocked'); count(o, PRE + 2) })
 
-// 案9：保險絲——該段 review 每輪不同 blocker、跑滿且確認輪仍有 blocker → 在該段 return、不逾保險絲
+// 案9：保險絲——該段 review 每輪不同 blocker、跑滿且確認輪仍有 blocker → 在該段 return、不逾保險絲；
+//   implementer 樁回 done_with_escalation：unresolved 形亦須逐支帶回 implStatuses 與 implementer 之 escalations（LL-00102）
 let n9 = 0
-await run('案9 該段跑滿（確認輪仍有 blocker）→ 在該段 return、不逾保險絲', (label) => {
-  if (label.includes('implementer')) return OKW
+await run('案9 該段跑滿（確認輪仍有 blocker）→ 在該段 return、不逾保險絲；unresolved 形帶回 implementer 升級項（LL-00102）', (label) => {
+  if (label.includes('implementer')) return { status: 'done_with_escalation', report: 'r', filesChanged: ['f.ts'], escalations: ['清單外待辦一條'] }
   if (isRev(label)) { n9++; return B('缺陷' + n9) }
   if (isFix(label)) return OKW
   return CLEAN
-}, (o) => { noThrow(o); status(o, 'unresolved'); stage(o); reason(o, '確認輪仍有 blocker'); count(o, PRE + 7) })
+}, (o) => {
+  noThrow(o); status(o, 'unresolved'); stage(o); reason(o, '確認輪仍有 blocker'); count(o, PRE + 7)
+  expect(Array.isArray(o.r.implStatuses) && o.r.implStatuses.length === N && o.r.implStatuses.every((s) => s === 'done_with_escalation'), 'unresolved 形帶回 implStatuses', JSON.stringify(o.r.implStatuses))
+  expect(Array.isArray(o.r.escalations) && o.r.escalations.filter((e) => e === '清單外待辦一條').length === N, 'unresolved 形逐支帶回 implementer escalations', JSON.stringify(o.r.escalations))
+})
 
 // 案10：★RL-0025（ADR-00013、承 rev5:L-078 改形）——fix 回 done_with_escalation 且零改動、零駁回 → 該段判收斂帶升級項、進下一段（不終止 run）
 const AFTER = TAG === 'quality' ? 0 : 1 // spec 模式：規格段收斂後尚有品質段一支 review

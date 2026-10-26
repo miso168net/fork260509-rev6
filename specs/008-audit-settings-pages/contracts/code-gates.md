@@ -92,7 +92,7 @@ routes 生成表重算（66 條）；真 repo 釘值測 +5 列；動 ROUTES 之�
 | `obs.rs` 序列名具名腿 | `access_log_write_failed_total` 只由出口與預註冊具名 |
 | `error.rs` 名冊與矩陣 | `MSG_KEYS` 70、變體 11、13 碼不變 |
 | `model/audit.rs` 字面釘 | 九詞 |
-| `tests/system_audit_entry_lint.rs`（新；排程清理單元立） | 系統程序自記入口名冊兩判準：生產面 `write_system_in_txn` 只在 `model/facade/sys_operation_log.rs`（定義）與 `model/retention.rs`（恰一處呼叫）；`SystemJob` 生產面只在 `model/audit.rs`、`model/retention.rs`、`model/facade/sys_operation_log.rs`、`reaper.rs` 四檔；各判準掃描面非空＋植入反例＋停用變異 |
+| `tests/system_audit_entry_lint.rs`（新；排程清理單元立） | 系統程序自記入口名冊三判準：生產面 `write_system_in_txn` 只在 `model/facade/sys_operation_log.rs`（定義）與 `model/retention.rs`（恰一處呼叫）；`SystemJob` 生產面只在 `model/audit.rs`、`model/retention.rs`、`model/facade/sys_operation_log.rs`、`reaper.rs` 四檔；`SystemJob` 零字串建構點（生產面 `impl … for SystemJob` 之 trait 零 `FromStr`／`From`／`TryFrom`／`Deserialize`、derive 零 `Deserialize`）；各判準掃描面非空＋植入反例＋停用變異 |
 | `handler/common.rs` 之 `each_domain_keeps_its_own_log_literals`、`EXTRACTION_SITES` | 入冊 `audit.rs`（拒寫事件字面＋body 收斂腿）與 `system_settings.rs`（拒寫事件字面）；抽取點 14→15（稽核讀端 `lenient_query`） |
 | `handler/ip_rule.rs` 之 `production_code_emits_no_degraded_field` | 入冊 `audit.rs`、`system_settings.rs` |
 | `tests/contract.rs` 之 `write_refusals_add_no_context_absent_leg_real_seed` | 寫端清單增 `purge-audit-log`、`update-system-setting` |

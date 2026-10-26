@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00102 -->
+<!-- next: LL-00103 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -107,3 +107,4 @@
 | LL-00099 | AskUserQuestion 參數之中文偶發錯成鄰近碼位：送出後解碼核對抓得到，但 user 作答時已看到錯字；「刻意直寫」之文字守法亦未擋住（同根第四起；008 刀 U0；2026-10-23） | none：碼位漂移發生在參數生成面、非流程規則可守；「刻意直寫」與「送出後解碼核」兩道文字守法皆未在送出前擋住，補法改為送出前機器比對（`.claude/hooks/pre-auq-draft-gate.py`） | code | [LL-00099-askuserquestion-params-drift-to-adjacent-codepoints.md](LESSONS/LL-00099-askuserquestion-params-drift-to-adjacent-codepoints.md) |
 | LL-00100 | 手寫掃描器之離線對賬腿：RL-0080 未定義手寫判準（非正則之分支碼）之途徑顆粒度，LL-00076 之刻意規避形準則亦未入 RULES、未烤入單元定義——審查兩支 run 皆未收斂（29 筆 blocker、牆鐘約 10.6 小時；RL-0080 同根第 7 次；008 刀 U1） | RL-0080 | rules | [LL-00100-handwritten-judgment-paths-undefined-and-evasion-criterion-unpromoted.md](LESSONS/LL-00100-handwritten-judgment-paths-undefined-and-evasion-criterion-unpromoted.md) |
 | LL-00101 | 子庫新檔於 commit 前以 `git -C <子庫> grep` 取 DoD 計數與零命中恆空掃：未追蹤檔不在掃描面，計數恆 0、零命中類否定證據結構性成立（008 刀 U10） | RL-0067 | none | [LL-00101-git-grep-blind-to-untracked-new-files-in-unit-dod.md](LESSONS/LL-00101-git-grep-blind-to-untracked-new-files-in-unit-dod.md) |
+| LL-00102 | TDD 骨架之 unresolved 回傳形漏帶 implementer 之 `implStatuses`／`escalations`：成功形才帶，單元以 unresolved 收場時 `done_with_escalation` 之清單外待辦只剩 journal 可查（008 刀 U11） | RL-0012 | code | [LL-00102-unresolved-return-dropped-implementer-escalations.md](LESSONS/LL-00102-unresolved-return-dropped-implementer-escalations.md) |

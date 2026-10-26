@@ -50,7 +50,7 @@ vars + plan + head + rules + context + review      （★plan 先於 head＝保�
 跑滿 fix→確認輪清空判收斂（rev5:L-011 變形②）／連兩輪同 blocker 攔／fix 連兩輪零改動攔／
 review `agentStatus=failed` 立即 return／**review 有 blocker 時 fix 必須真的跑**（rev5:L-011 變形①）／
 **implementer `done_with_escalation` 照常跑完審查**（rev5:L-035）／implementer `blocked` 立即 return 零審查／
-fix `blocked` 立即 return／最壞路徑支數 < `AGENT_FUSE`／**fix `done_with_escalation`＋零改動＝該段收斂帶升級項、進下一段**（RL-0025／ADR-00013；案 10）／**零改動升級＋駁回項續審、已升級項重報被過濾**（案 11）／**部分改動＋結構化 `escalatedFindings` 升級→次輪重報被過濾、第 2 輪收斂**（案 12；LL-00010）。
+fix `blocked` 立即 return／最壞路徑支數 < `AGENT_FUSE`（案 9；implementer 樁回 `done_with_escalation`，unresolved 形亦須逐支帶回 `implStatuses` 與 implementer 之 `escalations`＝LL-00102）／**fix `done_with_escalation`＋零改動＝該段收斂帶升級項、進下一段**（RL-0025／ADR-00013；案 10）／**零改動升級＋駁回項續審、已升級項重報被過濾**（案 11）／**部分改動＋結構化 `escalatedFindings` 升級→次輪重報被過濾、第 2 輪收斂**（案 12；LL-00010）。
 每案對派發支數、status、stage、reason 逐項斷言，任一不符 rc 1（000-r1 R1-082）；guard 在樁下照跑＝每支渲染後 prompt 的長度、`zh-TW`、冒煙 token、`RULES-VERSION` 同時被驗；案 11／12 另斷言次輪 review prompt 真的渲染了已駁回清單（RL-0071）與已升級清單（ADR-00013）。六反例（案 13～18、皆須零派發）：args 非空→防呆①／`SMOKE` 取字面 `test`→防呆②／`IMPLEMENTERS` 灌到結構最壞值逾 20→防呆③／**`UNIT` 清成空字串→防呆②**（`_vars` 段、head 判準）／**`CONTEXT` 清成空字串→防呆②**／**`ALLOWED_BLOCK` 清成空字串→防呆②**（後二者＝`_context`／`_allowed` 段、`_sk_main.js` 判準；BL-00039①——這三者空值都過得了 guard，`ALLOWED_BLOCK` 空更使 fix agent 拿到沒有允許清單的 prompt、六件套⑥ 空間邊界靜默失效）。第七反例＝案 19（模型家、ADR-00056）：逐一把 `IMPL_OPTS`／`REVIEW_OPTS`／`FIX_OPTS` 之 effort 改 max、再逐一把 model 改 sonnet（兩腿各有常駐反例），以同一全路徑樁重跑，案 1 的模型家偏離須非空且恰落在該角色（非零派發型；常數行形一改而變異未套用即紅；n=0 續跑形零 implementer、略過 `IMPL_OPTS` 兩發，該常數由入庫範例 IMPLEMENTERS=1 之組裝守）；案 1 另斷言每支 agent 之 model／effort＝`opus[1m]`／`xhigh`（字面寫死、不自常數推導），且每支 prompt 不帶深思關鍵詞（ADR-00088；字面寫死、不分大小寫）。
 
 ## 九案（review 形）在守什麼
