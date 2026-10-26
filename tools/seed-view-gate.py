@@ -30,11 +30,11 @@
   射程只及 seed 檔：超管經選單管理自建之選單、m0003 起之 delta migration 所寫選單列都不在內（ADR-00071）。
 
 具名豁免（[`EXEMPT`]）：
-  現行一列＝seed 列 77 之鍵（初建兩列＝seed 列 9 與列 77，列 9 已隨系統設定頁交付摘除），附 BL-00045 與解除謂詞；表是模組常數之唯讀檢視，
-  不接受 args、env 或讀檔來源。
+  現為空表（初建兩列＝seed 列 9 與列 77，已各隨系統設定頁、稽核頁交付摘除）；增列屬拍板級——須附 BACKLOG 指針與解除謂詞、並同批改
+  self-test 之空表斷言。表是模組常數之唯讀檢視，不接受 args、env 或讀檔來源。
   到期即紅＝被豁免之鍵已出現在 views 集（頁已交付而列未摘）；幽靈亦紅＝被豁免之鍵已不在 seed 集。兩者都逼人同批摘列——表只會縮。
   self-test 對本檔自身打五根釘、各封一條繞道、互不覆蓋：
-    鍵集恆定——表恰為現行列之鍵集、每列含指針與解除謂詞（多養一列＝當場紅；要養就得同批改斷言、在 diff 現形＝拍板級可見）；
+    鍵集恆定——表為空（多養一列＝當場紅；要養就得同批改斷言、在 diff 現形＝拍板級可見）；
     呼叫點原封傳入——run_check 內唯一的 judge 呼叫以 EXEMPT 本名為末實參（先併一份外來表再傳＝紅）；
     判定函式零外部取值形——三支解析函式與 judge 之原文不得出現讀檔、環境變數、命令列、stdin、json 之取值字面（run_check 只准讀檔）；
     呼叫端零就地改表——EXEMPT 為唯讀檢視、全檔恰一處綁定且無 global 宣告、測試類以外恰一處引用（即上述末實參；judge 或 main 另行直讀即多一處）；
@@ -93,10 +93,8 @@ RE_VIEWS_BLOCK = re.compile(r"^export const views\b[^\n]*\{\n(.*?)^\};", re.M | 
 RE_IMPORT_KEY = re.compile(r'^\s*(?:"([^"]+)"|([A-Za-z0-9_$]+))\s*:\s*\(\)\s*=>\s*import\(', re.M)
 
 # 具名豁免（ADR-00071 決定 2）：鍵＝seed component 字面；值＝指針與解除謂詞。唯讀檢視＝執行期無從就地增列；
-# 「恰為現行一列（seed 列 77）、各列含 BL-00045 與解除謂詞」由 self-test TestExemptInvariants 釘死（語意與五釘見檔頭）。
-EXEMPT = types.MappingProxyType({
-    "view.manage_audit": "BL-00045（seed 列 77 之稽核頁尚未交付）；解除謂詞＝本鍵之 view 出現於導出集即到期、同批摘列",
-})
+# 「表為空」由 self-test TestExemptInvariants 釘死；增列屬拍板級——須附 BACKLOG 指針與解除謂詞、並同批改該斷言（語意與五釘見檔頭）。
+EXEMPT = types.MappingProxyType({})
 
 
 class StructuralError(Exception):
@@ -394,20 +392,21 @@ class TestJudge(unittest.TestCase):
 
 
 class TestRunCheck(unittest.TestCase):
-    """check 全鏈（合成 repo 根）：真豁免表經 run_check 生效；三面缺席與各側空集皆 rc 2。"""
+    """check 全鏈（合成 repo 根）：真豁免表（空表）經 run_check、不遮蔽任何缺頁；三面缺席與各側空集皆 rc 2。"""
 
     ROWS = [(3, "view.manage_user"), (9, "view.manage_system-settings"), (11, "layout.base$view.about"), (77, "view.manage_audit")]
-    PAGES = ["manage/user/index.vue", "manage/system-settings/index.vue", "about/index.vue", "_builtin/login/index.vue"]
-    KEYS = {"manage_user", "manage_system-settings", "about", "login"}
+    PAGES = ["manage/user/index.vue", "manage/system-settings/index.vue", "manage/audit/index.vue", "about/index.vue",
+             "_builtin/login/index.vue"]
+    KEYS = {"manage_user", "manage_system-settings", "manage_audit", "about", "login"}
 
-    def test_green_lists_remaining_real_exemption(self):
-        """系統設定頁在場、稽核頁缺頁＝綠，輸出只印仍生效之 view.manage_audit 與 BL-00045、不印已摘之 view.manage_system-settings"""
+    def test_green_both_pages_present_with_empty_real_table(self):
+        """seed 列 9／77 兩頁皆在＝經真（空）表綠：輸出「0 個在具名豁免內」、無任何「豁免仍生效」行"""
         with tempfile.TemporaryDirectory() as tmp:
             rc, lines = run_check(_fake_repo(tmp, self.ROWS, self.PAGES, self.KEYS))
         text = "\n".join(lines)
         self.assertEqual(rc, 0, text)
-        self.assertTrue(any("view.manage_audit" in ln and "BL-00045" in ln for ln in lines), text)
-        self.assertNotIn("view.manage_system-settings", text)
+        self.assertIn("0 個在具名豁免內", text)
+        self.assertNotIn("豁免仍生效", text)
 
     def test_delivered_settings_page_is_no_longer_exempt(self):
         """系統設定頁缺頁＝紅：列 9 已自豁免表摘除，「缺 view」行指名 view.manage_system-settings 與 seed 列 id 9"""
@@ -419,13 +418,15 @@ class TestRunCheck(unittest.TestCase):
         self.assertEqual(rc, 1, text)
         self.assertTrue(any("view.manage_system-settings" in ln and "（列 9）" in ln for ln in lines), text)
 
-    def test_real_table_expires_through_check(self):
-        """稽核頁交付而豁免未摘＝經 run_check 到期即紅"""
+    def test_empty_real_table_does_not_mask_missing_page(self):
+        """稽核頁缺頁＝紅：真表為空、不遮蔽，「缺 view」行指名 view.manage_audit 與 seed 列 id 77"""
+        pages = [p for p in self.PAGES if p != "manage/audit/index.vue"]
+        keys = self.KEYS - {"manage_audit"}
         with tempfile.TemporaryDirectory() as tmp:
-            rc, lines = run_check(_fake_repo(tmp, self.ROWS, self.PAGES + ["manage/audit/index.vue"], self.KEYS | {"manage_audit"}))
+            rc, lines = run_check(_fake_repo(tmp, self.ROWS, pages, keys))
         text = "\n".join(lines)
         self.assertEqual(rc, 1, text)
-        self.assertIn("豁免到期：view.manage_audit", text)
+        self.assertTrue(any("view.manage_audit" in ln and "（列 77）" in ln for ln in lines), text)
 
     def test_absent_read_face_is_rc2_and_named(self):
         """seed 檔、views 目錄、imports.ts 任一缺席＝rc 2、指名該面"""
@@ -455,13 +456,10 @@ class TestExemptInvariants(unittest.TestCase):
     def _module_tree():
         return ast.parse(inspect.getsource(sys.modules[__name__]))
 
-    def test_table_is_exactly_one_row_with_pointer_and_predicate(self):
-        """鍵集恆定：恰為 seed 列 77 一鍵（列 9 已隨系統設定頁交付摘除），且每列含 BL-00045 與解除謂詞"""
-        self.assertEqual(set(EXEMPT), {"view.manage_audit"},
-                         "豁免表增減列屬拍板級——須同批改本斷言（ADR-00071 決定 2）")
-        for key, why in EXEMPT.items():
-            self.assertIn("BL-00045", why, key)
-            self.assertIn("解除謂詞", why, key)
+    def test_table_is_empty(self):
+        """鍵集恆定：表為空（初建之 seed 列 9、77 兩列已各隨系統設定頁、稽核頁交付摘除）；增列須附 BACKLOG 指針與解除謂詞"""
+        self.assertEqual(dict(EXEMPT), {},
+                         "豁免表增列屬拍板級——須同批改本斷言（ADR-00071 決定 2）")
 
     def test_check_passes_table_verbatim(self):
         """呼叫點原封傳入：run_check 內恰一處 judge 呼叫，四個位置實參、末實參為 EXEMPT 本名"""
@@ -527,7 +525,7 @@ def main(argv):
         ok = unittest.main(argv=[argv[0]], exit=False, verbosity=1).result.wasSuccessful()
         if ok:
             _say(f"{TAG} ✓ self-test 過（seed 塊內解析與塊外誘餌／導出規則逐形／imports 只收 views 塊／缺 view・豁免生效・到期・幽靈・"
-                 f"結構腿兩向各自單向・兩腿同報／check 全鏈經真豁免表綠與到期・三面缺席與三側空集 rc 2／豁免表五釘／用法守衛）")
+                 f"結構腿兩向各自單向・兩腿同報／check 全鏈經真（空）豁免表綠與不遮蔽缺頁・三面缺席與三側空集 rc 2／豁免表五釘／用法守衛）")
         return 0 if ok else 1
     rc, lines = run_check(REPO_ROOT)
     for ln in lines:

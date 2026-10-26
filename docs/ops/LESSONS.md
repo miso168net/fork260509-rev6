@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00106 -->
+<!-- next: LL-00107 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -111,3 +111,4 @@
 | LL-00103 | 告警與儀表板之狀態宣稱未對 pushgateway 組生命週期建模（留存至 DELETE、PUT 整組替換）：寫出「未起 jobs＝零序列」假述，並把對賬心跳逾時告警綁在對該 job 無語意之 `mode="execute"` 上（008 刀 U13） | RL-0013 | none | [LL-00103-pushgateway-group-lifecycle-unmodeled-in-alerts.md](LESSONS/LL-00103-pushgateway-group-lifecycle-unmodeled-in-alerts.md) |
 | LL-00104 | 審查員之變異探針以受測檔所在目錄推算「假 repo 根」，把兩份 locale 副本建進 base-web 工作樹；審查員自以 porcelain 雜湊比對發現並即刪，零後續影響（008 刀 U14） | RL-0043 | none | [LL-00104-review-probe-fake-repo-root-created-inside-worktree.md](LESSONS/LL-00104-review-probe-fake-repo-root-created-inside-worktree.md) |
 | LL-00105 | tasks DoD 預期「憲法 (ix) 列用途號改名→fork-delta-lint rc 1」，而新增型圈界標記之用途名依設計不入授權判定：變異結構上恆綠，到主線執行時才發現（008 刀 U14） | RL-0008 | rules | [LL-00105-dod-expected-red-outside-tool-judgment-scope.md](LESSONS/LL-00105-dod-expected-red-outside-tool-judgment-scope.md) |
+| LL-00106 | tasks DoD 要求「八支新檔 eslint rc 0」，而 base-web 之 eslint 設定只收 .vue：兩支 .ts 新檔只得「File ignored」警告、rc 0 恆綠；RL-0008 擴寫後首次派發前核對未列此類綠斷言（008 刀 U15） | RL-0008 | rules | [LL-00106-dod-lint-rc0-on-files-outside-tool-scope.md](LESSONS/LL-00106-dod-lint-rc0-on-files-outside-tool-scope.md) |
