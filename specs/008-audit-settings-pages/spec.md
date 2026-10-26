@@ -37,7 +37,7 @@
 2. **Given** 頁面已載入，**When** 切換開關型設定，**Then** 立即送出、成功提示、回讀全列；**When** 數字欄改值後失焦或按 Enter，**Then** 送出並回讀（值未變不送出）；**When** 清空數字欄後失焦，**Then** 不送出、回讀使畫面回退為伺服器現值；**When** 寫入被後端拒絕，**Then** 顯示可讀拒因（i18n 轉譯、非裸鍵）、回讀使畫面回退（數字框已鉗界＝畫面上送不出越界值；此分支以 CDP 攔截改寫送出之請求體驗之，如 `password_min_length` 送 999 得 `2222 biz.systemSettings.invalidValue`——plan 期未定、tasks U18 定）。
 3. **Given** 10 個數字鍵，**When** 輸入越界值後失焦，**Then** 框內值鉗至讀端下發之登記表宣告界後送出並存檔（如 `password_min_length` 界 1～128、輸入 999 存為 128；`session_idle_timeout` 界 5～1440、輸入 0 存為 5、操作日誌記 60→5）；界值之單一權威仍在後端登記表（ADR-00054）；其中 `ip_captcha_after`／`ip_max_fails`／`ip_window_minutes`／`password_change_min_interval`／`session_idle_timeout` 五鍵於 rev5 無前端界（越界送後端拒）＝刻意分岔（clarify Q1）。
 4. **Given** 庫中有一列型別合法但不在登記表宣告集內之設定（seed 態無此列），**When** 進頁，**Then** 該列唯讀顯示、排該組尾、標示其後端 description；直呼寫端仍回 `2222`（ADR-00057 已知態）。
-5. **Given** 三對跨鍵判準（皆嚴格不等式）——`password_min_length` ＞ `password_max_length`、`login_throttle_captcha_after` ＞ `login_throttle_max_fails`、`ip_captcha_after` ＞ `ip_max_fails`，**When** 任一對存成矛盾組合，**Then** 該對所屬之組卡片即時警示並寫明後果（密碼長度對＝三個設密入口一律拒；節流兩對＝後端該維三鍵整組退回出廠常數）、不阻擋存檔、後端照舊逐鍵驗；**When** 兩值相等，**Then** 不警示（相等合法：軟區寬度零）；**When** 改回非矛盾，**Then** 警示消失。
+5. **Given** 三對跨鍵判準（皆嚴格不等式）——`password_min_length` ＞ `password_max_length`、`login_throttle_captcha_after` ＞ `login_throttle_max_fails`、`ip_captcha_after` ＞ `ip_max_fails`，**When** 任一對存成矛盾組合，**Then** 該對所屬之組卡片即時警示並寫明後果（密碼長度對＝三個設密入口一律拒；節流兩對＝後端該維三鍵整組退回出廠常數）、不阻擋存檔、後端照舊逐鍵驗；**When** 兩值相等，**Then** 不警示（相等合法：密碼長度對＝定長密碼；節流兩對＝驗證碼軟區寬度零）；**When** 改回非矛盾，**Then** 警示消失。
 6. **Given** 同一分頁內已載入過密碼政策（使用者頁之重設或產密浮層、個人中心改密卡），**When** 於設定頁成功寫入政策七鍵任一（長度上下界、四類字元要求、禁止密碼與帳號相同），**Then** 該分頁之即時提示、產密構造界與送出前擋改用新值；其他已開分頁仍須重新整理（RUNBOOK §11.3 同批改述）。
 7. **Given** 任一次 updateSystemSetting 成功，**When** commit，**Then** 同交易已落一列操作日誌：動作 `update`、`entity_table`＝`system_settings`、`entity_id` 空（該表主鍵為字串鍵）、變更前與變更後各為整列快照（鍵在快照內）；稽核頁該列標的 id 顯「-」，點「查看快照」看得到鍵與舊值→新值（g4）；**When** 寫入被拒（拒因），**Then** 零寫入、零稽核。
 8. **Given** 以 Admin 或 User 登入，**When** 檢視側欄，**Then** 「系統設定」不可見；直呼兩支設定端點得 `5003`；**Given** 超管把設定頁之選單可見性授予自建角色，**When** 持該角色者進頁，**Then** 看得到頁、讀寫皆 `5003`（設定兩支端點屬封死集、不可授出；ADR-00064、ADR-00081 款 10）。
@@ -410,6 +410,8 @@
 | 存取日誌分頁告示 | 無（該分頁為空表） | 分頁上方一句告示：狀態欄為 HTTP 狀態碼，權限不足顯示 403、其餘請求（含業務拒絕與系統錯誤）皆顯示 200 | clarify Q2、FR-055 |
 | 稽核頁清理鈕 | 頁內零按鈕級 gating | 依 `audit:purge` 碼顯隱（Super 持碼＝畫面同 rev5） | D6、FR-054、FR-039 |
 | 排程清理自記列 | 無 reaper（`rev5:B-016` 不入） | 起 jobs 時操作日誌出現 `purge` 自記列（操作者「-」、來源 IP `0.0.0.0`） | B1、g2、g5、FR-036 |
+| 設定頁節流說明 | `ip_max_fails`／`ip_captcha_after`／`login_throttle_max_fails`／`login_throttle_captcha_after` 四鍵 help 為「失敗達此數即硬鎖／即鎖定／即進驗證碼軟區」之定數承諾形 | 四鍵 help 同句末補「（并发首波不严格）」（zh-cn 定稿字面；en-us 補「(not strict under concurrent first bursts)」）＝不承諾嚴格上限；其餘 label／help 與四組標題逐字同 rev5 | FR-049、BL-00145、工程判斷⑰ |
+| 設定頁數字框 Enter 送出被拒或清空 | 以 Enter（或步進鈕、上下方向鍵）發值後遭後端拒絕、或清空後按 Enter（不送、只回讀）：回讀值未變＝框內停在使用者輸入、失焦後才回退（`rev5:B-164` 實測 Enter 形） | 該框於回讀落定後重掛、框內即回退為伺服器現值（重掛後焦點離框）；送出成功不重掛＝同 rev5 | US1 第 2 條（寫入被拒→回讀使畫面回退）、FR-046（成敗皆回讀收斂畫面）、`rev5:B-164` 處置候選① |
 | 繁中畫面 | runtime 兩語 | 兩頁全樹繁中（無 rev5 基準、驗收照 D12） | D12、FR-074 |
 | 角色頁按鈕彈窗候選碼 | 無 `audit:purge` | 多「清理日誌」（`audit:purge`；m0004 增於選單 77） | D6、FR-039、ADR-00108 |
 | 選單頁「稽核」按鈕清單 | 空 | 一碼 `audit:purge`「清理日誌」 | D6、FR-039、ADR-00108 |

@@ -30,10 +30,11 @@
   射程只及 seed 檔：超管經選單管理自建之選單、m0003 起之 delta migration 所寫選單列都不在內（ADR-00071）。
 
 具名豁免（[`EXEMPT`]）：
-  恰兩列＝seed 列 9 與列 77 之兩鍵，各附 BL-00045 與解除謂詞；表是模組常數之唯讀檢視，不接受 args、env 或讀檔來源。
+  現行一列＝seed 列 77 之鍵（初建兩列＝seed 列 9 與列 77，列 9 已隨系統設定頁交付摘除），附 BL-00045 與解除謂詞；表是模組常數之唯讀檢視，
+  不接受 args、env 或讀檔來源。
   到期即紅＝被豁免之鍵已出現在 views 集（頁已交付而列未摘）；幽靈亦紅＝被豁免之鍵已不在 seed 集。兩者都逼人同批摘列——表只會縮。
   self-test 對本檔自身打五根釘、各封一條繞道、互不覆蓋：
-    鍵集恆定——表恰為那兩鍵、每列含指針與解除謂詞（多養一列＝當場紅；要養就得同批改斷言、在 diff 現形＝拍板級可見）；
+    鍵集恆定——表恰為現行列之鍵集、每列含指針與解除謂詞（多養一列＝當場紅；要養就得同批改斷言、在 diff 現形＝拍板級可見）；
     呼叫點原封傳入——run_check 內唯一的 judge 呼叫以 EXEMPT 本名為末實參（先併一份外來表再傳＝紅）；
     判定函式零外部取值形——三支解析函式與 judge 之原文不得出現讀檔、環境變數、命令列、stdin、json 之取值字面（run_check 只准讀檔）；
     呼叫端零就地改表——EXEMPT 為唯讀檢視、全檔恰一處綁定且無 global 宣告、測試類以外恰一處引用（即上述末實參；judge 或 main 另行直讀即多一處）；
@@ -92,9 +93,8 @@ RE_VIEWS_BLOCK = re.compile(r"^export const views\b[^\n]*\{\n(.*?)^\};", re.M | 
 RE_IMPORT_KEY = re.compile(r'^\s*(?:"([^"]+)"|([A-Za-z0-9_$]+))\s*:\s*\(\)\s*=>\s*import\(', re.M)
 
 # 具名豁免（ADR-00071 決定 2）：鍵＝seed component 字面；值＝指針與解除謂詞。唯讀檢視＝執行期無從就地增列；
-# 「恰兩列、各含 BL-00045 與解除謂詞」由 self-test TestExemptInvariants 釘死（語意與五釘見檔頭）。
+# 「恰為現行一列（seed 列 77）、各列含 BL-00045 與解除謂詞」由 self-test TestExemptInvariants 釘死（語意與五釘見檔頭）。
 EXEMPT = types.MappingProxyType({
-    "view.manage_system-settings": "BL-00045（seed 列 9 之系統設定頁尚未交付）；解除謂詞＝本鍵之 view 出現於導出集即到期、同批摘列",
     "view.manage_audit": "BL-00045（seed 列 77 之稽核頁尚未交付）；解除謂詞＝本鍵之 view 出現於導出集即到期、同批摘列",
 })
 
@@ -397,17 +397,27 @@ class TestRunCheck(unittest.TestCase):
     """check 全鏈（合成 repo 根）：真豁免表經 run_check 生效；三面缺席與各側空集皆 rc 2。"""
 
     ROWS = [(3, "view.manage_user"), (9, "view.manage_system-settings"), (11, "layout.base$view.about"), (77, "view.manage_audit")]
-    PAGES = ["manage/user/index.vue", "about/index.vue", "_builtin/login/index.vue"]
-    KEYS = {"manage_user", "about", "login"}
+    PAGES = ["manage/user/index.vue", "manage/system-settings/index.vue", "about/index.vue", "_builtin/login/index.vue"]
+    KEYS = {"manage_user", "manage_system-settings", "about", "login"}
 
-    def test_green_lists_both_real_exemptions(self):
-        """真豁免表兩鍵缺頁＝綠，輸出逐列印出兩鍵與 BL-00045"""
+    def test_green_lists_remaining_real_exemption(self):
+        """系統設定頁在場、稽核頁缺頁＝綠，輸出只印仍生效之 view.manage_audit 與 BL-00045、不印已摘之 view.manage_system-settings"""
         with tempfile.TemporaryDirectory() as tmp:
             rc, lines = run_check(_fake_repo(tmp, self.ROWS, self.PAGES, self.KEYS))
         text = "\n".join(lines)
         self.assertEqual(rc, 0, text)
-        for key in ("view.manage_system-settings", "view.manage_audit"):
-            self.assertTrue(any(key in ln and "BL-00045" in ln for ln in lines), text)
+        self.assertTrue(any("view.manage_audit" in ln and "BL-00045" in ln for ln in lines), text)
+        self.assertNotIn("view.manage_system-settings", text)
+
+    def test_delivered_settings_page_is_no_longer_exempt(self):
+        """系統設定頁缺頁＝紅：列 9 已自豁免表摘除，「缺 view」行指名 view.manage_system-settings 與 seed 列 id 9"""
+        pages = [p for p in self.PAGES if p != "manage/system-settings/index.vue"]
+        keys = self.KEYS - {"manage_system-settings"}
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, lines = run_check(_fake_repo(tmp, self.ROWS, pages, keys))
+        text = "\n".join(lines)
+        self.assertEqual(rc, 1, text)
+        self.assertTrue(any("view.manage_system-settings" in ln and "（列 9）" in ln for ln in lines), text)
 
     def test_real_table_expires_through_check(self):
         """稽核頁交付而豁免未摘＝經 run_check 到期即紅"""
@@ -445,9 +455,9 @@ class TestExemptInvariants(unittest.TestCase):
     def _module_tree():
         return ast.parse(inspect.getsource(sys.modules[__name__]))
 
-    def test_table_is_exactly_two_rows_with_pointer_and_predicate(self):
-        """鍵集恆定：恰為 seed 列 9／列 77 兩鍵，且每列含 BL-00045 與解除謂詞"""
-        self.assertEqual(set(EXEMPT), {"view.manage_system-settings", "view.manage_audit"},
+    def test_table_is_exactly_one_row_with_pointer_and_predicate(self):
+        """鍵集恆定：恰為 seed 列 77 一鍵（列 9 已隨系統設定頁交付摘除），且每列含 BL-00045 與解除謂詞"""
+        self.assertEqual(set(EXEMPT), {"view.manage_audit"},
                          "豁免表增減列屬拍板級——須同批改本斷言（ADR-00071 決定 2）")
         for key, why in EXEMPT.items():
             self.assertIn("BL-00045", why, key)

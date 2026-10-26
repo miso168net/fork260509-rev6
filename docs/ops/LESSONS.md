@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00104 -->
+<!-- next: LL-00106 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -109,3 +109,5 @@
 | LL-00101 | 子庫新檔於 commit 前以 `git -C <子庫> grep` 取 DoD 計數與零命中恆空掃：未追蹤檔不在掃描面，計數恆 0、零命中類否定證據結構性成立（008 刀 U10） | RL-0067 | none | [LL-00101-git-grep-blind-to-untracked-new-files-in-unit-dod.md](LESSONS/LL-00101-git-grep-blind-to-untracked-new-files-in-unit-dod.md) |
 | LL-00102 | TDD 骨架之 unresolved 回傳形漏帶 implementer 之 `implStatuses`／`escalations`：成功形才帶，單元以 unresolved 收場時 `done_with_escalation` 之清單外待辦只剩 journal 可查（008 刀 U11） | RL-0012 | code | [LL-00102-unresolved-return-dropped-implementer-escalations.md](LESSONS/LL-00102-unresolved-return-dropped-implementer-escalations.md) |
 | LL-00103 | 告警與儀表板之狀態宣稱未對 pushgateway 組生命週期建模（留存至 DELETE、PUT 整組替換）：寫出「未起 jobs＝零序列」假述，並把對賬心跳逾時告警綁在對該 job 無語意之 `mode="execute"` 上（008 刀 U13） | RL-0013 | none | [LL-00103-pushgateway-group-lifecycle-unmodeled-in-alerts.md](LESSONS/LL-00103-pushgateway-group-lifecycle-unmodeled-in-alerts.md) |
+| LL-00104 | 審查員之變異探針以受測檔所在目錄推算「假 repo 根」，把兩份 locale 副本建進 base-web 工作樹；審查員自以 porcelain 雜湊比對發現並即刪，零後續影響（008 刀 U14） | RL-0043 | none | [LL-00104-review-probe-fake-repo-root-created-inside-worktree.md](LESSONS/LL-00104-review-probe-fake-repo-root-created-inside-worktree.md) |
+| LL-00105 | tasks DoD 預期「憲法 (ix) 列用途號改名→fork-delta-lint rc 1」，而新增型圈界標記之用途名依設計不入授權判定：變異結構上恆綠，到主線執行時才發現（008 刀 U14） | RL-0008 | rules | [LL-00105-dod-expected-red-outside-tool-judgment-scope.md](LESSONS/LL-00105-dod-expected-red-outside-tool-judgment-scope.md) |
