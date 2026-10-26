@@ -82,6 +82,6 @@ reaper [--execute] [--job token-reap|audit-retention|policy-reconcile]
 | ⑥ | `obs017-audit-retention-heartbeat-timeout` | audit-retention 同形 | 同上 |
 | ⑥b | `obs017-audit-retention-mode-misconfig` | audit-retention 同形 | 同上 |
 | ⑦ | `obs017-policy-reconcile-orphans`（新） | `max(reaper_orphan_policies{reaper_job="policy-reconcile"}) > 0` | 新增 |
-| ⑦b | `obs017-reconcile-heartbeat-timeout`（新；uid ≤ 40 字元、title `policy-reconcile-heartbeat-timeout`） | `time() - reaper_last_success_timestamp{mode="execute", reaper_job="policy-reconcile"} > 172800` | 新增；納入三檔互錨 |
+| ⑦b | `obs017-reconcile-heartbeat-timeout`（新；uid ≤ 40 字元、title `policy-reconcile-heartbeat-timeout`） | `time() - reaper_last_success_timestamp{reaper_job="policy-reconcile"} > 172800`（不分 mode：`--execute` 只決定心跳 mode 標籤＝兩種心跳同證對賬已跑） | 新增；納入三檔互錨 |
 
 RUNBOOK §8 補對賬非零之處置子節（判讀＋兩路處置：非 seed 角色＝刪除該角色經連動歸檔；seed 角色或逐列清＝維運 SQL 範本〔先匯出待刪列留存再刪、不手寫歸檔列〕）。

@@ -362,7 +362,8 @@ services:
       - rev6_net
 
   # ═══ rev4:016-observability rev4:T025 jobs（reaper 回收 sidecar、profiles:[jobs] opt-in、一般 up 不啟）═══
-  # ★現況：rev6 無 reaper bin（rust-api 零 reaper 目標）；reaper role 由 m0004 建（NOLOGIN、零密碼；設密與 LOGIN＝`deploy/setup-reaper-role.py`）——jobs profile 起了也跑不動、心跳零發射；承載＝BL-00043。
+  # ★現況：reaper bin＝`rust-api/server/src/bin/reaper.rs`（進場點）、job 本體住 lib `rust-api/server/src/reaper.rs`、三 job＝token-reap／audit-retention／policy-reconcile（ADR-00101 決定 1、12）；reaper role 由 `rust-api/migration/src/m0004_reaper_role_and_audit_purge.rs` 建（NOLOGIN、零密碼；ADR-00108）、設密與 LOGIN＝`deploy/setup-reaper-role.py`。
+  # ★走查期間與真庫測試期間不起 jobs profile（audit-retention execute 刪舊列並落自記列、與測試守衛及走查基準互擾）。
   reaper:
     profiles: [jobs]
     build:
@@ -372,16 +373,17 @@ services:
     environment:
       TZ: UTC  # ADR-00059：容器時區明設 UTC
       # ★最小權限連線（rev4:FR-013／rev4:ADR 0072）：reaper_database_url＝reaper role 憑證（composite
-      #   secret；rev4:m012 建 role＋GRANT、deploy/setup-reaper-role.py 設密）——絕不掛 database_url
+      #   secret；m0004 建 role＋GRANT（`rev4:m012` 形）、deploy/setup-reaper-role.py 設密）——絕不掛 database_url
       #   （soybean 全權身分）。
       APP_DATABASE_URL_FILE: /run/secrets/reaper_database_url
       RUST_LOG: "info"
-      # REAPER_GRACE_DAYS 不設＝bin fail-default 7 天（rev4:FR-018）；
+      # REAPER_GRACE_DAYS 不設＝token-reap 寬限天數缺席或畸形退 7（畸形 warn；ADR-00101 決定 2）；
+      # 四表保留天數 AUDIT_RETENTION_{OPERATION_LOG,ACCESS_LOG,LOGIN_ATTEMPT,SESSION_EVENT}_DAYS 不設＝90（畸形〔空字串、非數字、負數〕warn 退 90；解析成功而 0～29、或全數字而逾 i64 上界＝開跑前四鍵全驗即退出 1、不連線、不推心跳）；
       # REAPER_INTERVAL_SECS 不設＝dev override loop 內 fallback 86400（每日一輪）——
-      # ★與 deploy/grafana-provisioning/alerting/rules.yml 告警⑤/⑥門檻 172800 互為 2× 錨
-      #   （172800 = 2 × 86400；涵蓋 token-reap 之⑤與 audit-retention 之⑥）：調 REAPER_INTERVAL_SECS
-      #   MUST 同步改⑤/⑥兩門檻——三檔同步：本檔＋docker-compose.dev.yml＋rules.yml
-      #   （契約＝specs/rev4:016-observability/contracts/reaper-cli.md＋
+      # ★與 deploy/grafana-provisioning/alerting/rules.yml 告警⑤／⑥／⑦b 三門檻 172800 互為 2× 錨
+      #   （172800 = 2 × 86400；涵蓋 token-reap 之⑤、audit-retention 之⑥、policy-reconcile 之⑦b）：調 REAPER_INTERVAL_SECS
+      #   MUST 同步改三門檻——三檔同步：本檔＋docker-compose.dev.yml＋rules.yml
+      #   （依據＝ADR-00101 決定 2、10、11；藍本＝specs/rev4:016-observability/contracts/reaper-cli.md＋
       #   specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
     secrets:
       - reaper_database_url
@@ -441,7 +443,7 @@ secrets:
   alert_webhook_url:
     file: ${SECRETS_DIR:-./deploy/secrets}/alert_webhook_url.txt
   # rev4:016-observability rev4:T025：reaper 最小權限 DB 憑證（composite＝postgres://reaper:…；
-  # rev4:m012 建 role、deploy/setup-reaper-role.py 設密；rev4:FR-013 密碼零進版本庫）
+  # m0004 建 role（`rev4:m012` 形）、deploy/setup-reaper-role.py 設密；rev4:FR-013 密碼零進版本庫）
   reaper_database_url:
     file: ${SECRETS_DIR:-./deploy/secrets}/reaper_database_url.txt
   # rev4:020-email-verify：SMTP 密碼（dev 亂數 leaf 未消費；prod 真值＝Gmail app password、RUNBOOK §15.4 回寫）

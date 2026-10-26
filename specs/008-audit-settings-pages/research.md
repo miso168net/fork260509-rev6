@@ -220,7 +220,7 @@
 1. **重錨（承決＝spec FR-043）**：③d 之 expr 已合 as-built 欄形（target `audit.access_log`＋`fields_degraded="access_log_write"`）＝註解改現況、規則體不動；⑤⑤b／⑥⑥b 之「無事件源」現況註改有源現況；④ audit-capacity 之「rev6 尚無該 handler」改述（稽核頁清理＋reaper 排程清理即處置路）。
 2. **新告警兩條（承決＝主線工程判斷、clarify 步定案；名＝工程）**：
    - `obs017-policy-reconcile-orphans`：`max(reaper_orphan_policies{reaper_job="policy-reconcile"}) > 0`；
-   - `obs017-reconcile-heartbeat-timeout`（Grafana 告警規則 uid 上限 40 字元、全名 41 字元超限；title 保留 `policy-reconcile-heartbeat-timeout`）：`time() - reaper_last_success_timestamp{mode="execute", reaper_job="policy-reconcile"} > 172800`；
+   - `obs017-reconcile-heartbeat-timeout`（Grafana 告警規則 uid 上限 40 字元、全名 41 字元超限；title 保留 `policy-reconcile-heartbeat-timeout`）：`time() - reaper_last_success_timestamp{reaper_job="policy-reconcile"} > 172800`（不分 mode：對賬之 `--execute` 只決定心跳 mode 標籤＝兩種心跳同證對賬已跑；U13 收尾主線裁定去 `mode="execute"` matcher）；
    兩條沿⑤／⑥之 datasource、labels、noDataState 形；172800 納入三檔互錨註（compose 兩檔＋rules.yml）。前綴取 `obs017`（reaper 排程作業族；⑥⑥b 同族）。
 3. **儀表板（承決＝B5、spec FR-044）**：`rust-api.json` 刪面板 10、11（兩支 HLL）與 14（設定讀取頻次）、面板 13（軟區命中）移至原 10 之版位並擴寬（重排；無空洞）；`reaper.json` 查 `reaper_*` 之三面板（id 1／2／4；id 3＝`up{job="pushgateway"}` 現已合 as-built）與 `master-overview.json` 面板 5 之描述改 rev6 as-built（三 job、grouping key、心跳形；legend 以 `reaper_job` 分序列）；`audit-log.json` 面板 3 與變數 `trace_id` 之描述改「rev6 稽核列此欄恆空」。可選起 obs／metrics profile 活體驗證。
 4. **compose（承決＝spec FR-038）**：兩檔之「rev6 無 reaper bin／role、起了也跑不動」句改 as-built；dev loop 加 `cargo run --bin reaper -- --job policy-reconcile --execute`（`;` 分隔）；互錨註補 policy-reconcile。

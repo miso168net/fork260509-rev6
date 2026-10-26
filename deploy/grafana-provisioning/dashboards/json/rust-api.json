@@ -479,136 +479,6 @@
       }
     },
     {
-      "id": 10,
-      "type": "stat",
-      "title": "本窗受壓制 distinct 帳號數 (HLL)",
-      "description": "throttle_hll_distinct{dim=\"user\"}；Redis PFCOUNT 於 /metrics scrape 現場求值、誤差約 1%（rev5:B-033殘；TTL＝login throttle 窗同源）。",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 23
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "throttle_hll_distinct{dim=\"user\"}",
-          "legendFormat": "user",
-          "instant": true,
-          "range": false
-        }
-      ]
-    },
-    {
-      "id": 11,
-      "type": "stat",
-      "title": "本窗受壓制 distinct 來源 IP 數 (HLL)",
-      "description": "throttle_hll_distinct{dim=\"ip\"}；Redis PFCOUNT 於 /metrics scrape 現場求值、誤差約 1%（rev5:B-033殘；TTL＝login throttle 窗同源）。",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 23
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "throttle_hll_distinct{dim=\"ip\"}",
-          "legendFormat": "ip",
-          "instant": true,
-          "range": false
-        }
-      ]
-    },
-    {
       "id": 12,
       "type": "stat",
       "title": "撤銷名單命中 (denylist_hit_total by source)",
@@ -680,9 +550,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
+        "w": 12,
         "x": 0,
-        "y": 29
+        "y": 23
       },
       "fieldConfig": {
         "defaults": {
@@ -731,62 +601,6 @@
           "legendFormat": "soft zone",
           "instant": true,
           "range": false
-        }
-      ]
-    },
-    {
-      "id": 14,
-      "type": "timeseries",
-      "title": "設定讀取頻次 (enforce_settings_select_total rate)",
-      "description": "rate(enforce_settings_select_total[5m])；ttl_from_settings 呼叫頻次（rev4:B-065 負載能見度：TTL 快取失效＝頻次飆升訊號）。",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 18,
-        "x": 6,
-        "y": 29
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2,
-            "showPoints": "never",
-            "stacking": {
-              "mode": "none"
-            }
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "rate(enforce_settings_select_total[5m])",
-          "legendFormat": "settings select/s"
         }
       ]
     }
