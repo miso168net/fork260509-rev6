@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00109 -->
+<!-- next: LL-00111 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -114,3 +114,5 @@
 | LL-00106 | 驗收斷言要求「八支新檔 eslint rc 0」（tasks T141 內文①與 U15 單元定義另加），而 base-web 之 eslint 設定只收 .vue：兩支 .ts 新檔只得「File ignored」警告、rc 0 恆綠；RL-0008 擴寫後首次派發前核對未列此類斷言（008 刀 U15） | RL-0008 | rules | [LL-00106-dod-lint-rc0-on-files-outside-tool-scope.md](LESSONS/LL-00106-dod-lint-rc0-on-files-outside-tool-scope.md) |
 | LL-00107 | 派發前清冊只切 tasks 粗體 DoD：單元定義另加之收尾必跑「`zh-tw-lint.py check` rc 0」對只改 RUNBOOK 之單元零判定力，task 內文編號步驟之斷言亦全數漏列（008 刀 U16） | RL-0008 | rules | [LL-00107-inventory-base-misses-unitdef-checks-and-body-steps.md](LESSONS/LL-00107-inventory-base-misses-unitdef-checks-and-body-steps.md) |
 | LL-00108 | 主線演練腳本背景跑全量測試期間，同 session 改了同一支腳本：bash 於續讀處解析錯、子命令退出碼成 2，而各步斷言之輸出皆已印完（008 刀 U16） | none：shell 執行模型之事實（bash 邊讀邊執行腳本檔），守法住本檔，非流程規則 | none | [LL-00108-background-script-edited-while-running-bash-parse-error.md](LESSONS/LL-00108-background-script-edited-while-running-bash-parse-error.md) |
+| LL-00109 | 派發前裁定註之事實宣稱照偵查 agent 之推理字面寫入、未對碼面與 ADR 原文取證：一則把分頁欄之解析行為推廣到過濾欄、一則把所引 ADR 之後果寫反——implementer 照註逐字落活書、DoD 只驗字面在場而不轉紅，碼品質審查兩輪各抓一則（008 刀 U17） | RL-0028 | none | [LL-00109-ruling-note-facts-copied-from-probe-reasoning-without-anchor.md](LESSONS/LL-00109-ruling-note-facts-copied-from-probe-reasoning-without-anchor.md) |
+| LL-00110 | 單元定義要 implementer 把 report 全文另存 `report.md` 供審查段讀：harness 拒絕 subagent 寫 report 類檔，審查段所指之讀檔路徑全數落空（008 刀 U17） | none：Claude Code harness 對 subagent 寫檔之限制（平台行為之事實），守法住本檔 | none | [LL-00110-harness-refuses-subagent-report-file-writes.md](LESSONS/LL-00110-harness-refuses-subagent-report-file-writes.md) |

@@ -11,7 +11,7 @@ rad_ai_map:
 ---
 # C4-E2 資料血緣 overlay
 
-資料血緣 overlay（疊加於 `C4-L2-container.md`、不另畫）的規則與表；目前無 AI 元件（截至 2026-09-03）；資料源清冊＝系統資料源三項（下節）、隱私流之稽核表欄位已填於隱私流節（保留期目前無、理由同節）；流程層對應＝文件血緣鏈（brainstorm→spec→ADR→events→generated）。
+資料血緣 overlay（疊加於 `C4-L2-container.md`、不另畫）的規則與表；目前無 AI 元件（截至 2026-09-03）；資料源清冊＝系統資料源三項（下節）、隱私流之稽核表欄位與保留期已填於隱私流節；流程層對應＝文件血緣鏈（brainstorm→spec→ADR→events→generated）。
 
 ### 資料源清冊
 
@@ -45,7 +45,7 @@ rad_ai_map:
 
 ### 隱私流
 
-稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族（★本節只寫語意、不抄欄名——欄名與欄型正典＝`docs/generated/reference/schema.md`，該表由 `python3 tools/docsync refresh` 照相後 generate 產、隨 delta 自動前進；本節逐族指向該表對應表節即可）：①**來源 IP**——四張皆帶（前三張與 `session_event` 的欄名不同源，一律以真表為準；全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另帶傳輸層對端位址、轉發鏈原文與 GeoIP 填值三欄③**帳號原文**——`sys_login_attempt` 帶登入嘗試輸入的帳號字面一欄④**實體快照**——`sys_operation_log` 帶實體變更前後兩欄（內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉。保留期：目前無——稽核表 append-only、無 retention 政策與清理排程（承 rev5 終態、rev5 留帳 `rev5:B-016`）；政策與權威釋義屬憲法 §I.7 **島 J**（稽核域行為島；retention 水平線刪除之權威釋義＝島 J3，憲法 §I.6 變體 B 句以交叉指針指向該條），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）。授權歸檔表（`sys_casbin_policy_archive`；archetype D 治理表、不屬上述變體 B 四張）列帶授予與歸檔的操作者識別，保留期同樣目前無：歸檔列只在授權回收桶復原（NoOp 與 Applied）時被消費刪除（ADR-00065 決定 5／決定 6），保留期與清理政策、軟刪×授權歸檔之事後對賬的工作帳＝BL-00133。
+稽核表欄位（個資級）——變體 B append-only 稽核表恰四張（`sys_operation_log`／`sys_access_log`／`sys_login_attempt`／`session_event`；憲法 §I.6、歸屬帳＝`docs/ops/reference-src/archetype-map.json`）。主要個資載體四族（★本節只寫語意、不抄欄名——欄名與欄型正典＝`docs/generated/reference/schema.md`，該表由 `python3 tools/docsync refresh` 照相後 generate 產、隨 delta 自動前進；本節逐族指向該表對應表節即可）：①**來源 IP**——四張皆帶（前三張與 `session_event` 的欄名不同源，一律以真表為準；全庫一律 NN 承 rev5 拍板、rev6 照收）②**IP 鏈與位置**——前三張另帶傳輸層對端位址、轉發鏈原文與 GeoIP 填值三欄③**帳號原文**——`sys_login_attempt` 帶登入嘗試輸入的帳號字面一欄④**實體快照**——`sys_operation_log` 帶實體變更前後兩欄（內容隨被稽核實體而定、可含個資欄）。以上為主要載體、非窮舉。保留期：四張稽核表皆以水平線清理為唯一刪除形——排程清理（reaper `audit-retention`，預設保留 90 天；四個環境變數 `AUDIT_RETENTION_{OPERATION_LOG,ACCESS_LOG,LOGIN_ATTEMPT,SESSION_EVENT}_DAYS` 逐表設定、三分語意＝缺席取 90／畸形 warn 後取 90／低於下限或逾 i64 上界＝開跑前全拒）與稽核頁手動清理，兩路下限皆為 `PURGE_MIN_DAYS`＝30、同一條規則；操作日誌之清理自記列永久保留（後設證據）。政策與權威釋義屬憲法 §I.7 **島 J3**（retention 水平線刪除之權威釋義；憲法 §I.6 變體 B 句以交叉指針指向該條），執行面工件＝reaper（RUNBOOK §8、compose `jobs` profile）與稽核頁清理浮層；讀端個資打碼＝島 J4 單點（操作日誌快照之 `userPhone`／`userEmail` 於讀端序列化單點遮蔽、資料庫原值不動）。授權歸檔表（`sys_casbin_policy_archive`；archetype D 治理表、不屬上述變體 B 四張）列帶授予與歸檔的操作者識別，保留期＝by-design 永久保留：除經授權回收桶復原（NoOp 與 Applied）消費刪除外（ADR-00065 決定 5／決定 6）不設清理、不在手動清理白名單與排程清理射程內（ADR-00105）；軟刪×授權歸檔之事後對賬＝reaper `policy-reconcile` 只報不刪（ADR-00101、處置＝RUNBOOK §8.1）。
 
 ### schema 登錄
 

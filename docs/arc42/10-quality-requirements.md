@@ -4,7 +4,7 @@ summary: 品質需求概覽與情境；E6 AI 品質情境的系統層落點
 rad_ai: [E6]
 rad_ai_stage: 2
 rev5_blueprint:
-  §10 品質要求: 不承襲：rev5 空節；rev6 §10 自 §1.2 品質目標展開、情境逐已入憲行為島一則（§10.2；島 J 目前無情境；島 G 情境藍本改取 rev5 活書 §8 授權慣例之三維授權治理段＋rev5:ADR 0053～rev5:ADR 0056，依憲法 §I.5 重打字）
+  §10 品質要求: 不承襲：rev5 空節；rev6 §10 自 §1.2 品質目標展開、情境逐已入憲行為島一則（§10.2；島 G 情境藍本改取 rev5 活書 §8 授權慣例之三維授權治理段＋rev5:ADR 0053～rev5:ADR 0056、島 J 情境藍本改取 rev5:ADR 0077 之島 J 字面＋rev4:server/src/middleware/mod.rs 之存取軌跡中介層與 rev4:server/src/bin/reaper.rs，依憲法 §I.5 重打字）
 ---
 # §10 品質需求
 
@@ -16,7 +16,7 @@ rev5_blueprint:
 | 契約一致性 | 契約守恆 | 每條 route 有 contract case、13 碼矩陣零偏離 | 憲法 §I.3；`rust-api/server/tests/contract.rs`（ROUTES×case 雙向覆蓋閘）／`src/error.rs` 13 碼矩陣斷言；wire 快照面另由 `tools/wire-schema.py`（碼面閘）守 |
 | 可重現性 | 可重現 | 任一外層 commit 的 pin＝子庫 worktree HEAD；新機 bootstrap rc 0 | GT-02；`tools/bootstrap.sh` |
 | 文件正確性 | 文件與碼零漂移 | generate 兩次同 bytes；名冊同源；預算表「內」 | GT-01／GT-12；STATE 預算對賬 |
-| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝view 未進場之兩支管理頁（system-settings／audit）之選單標題於側邊欄展開態與選單管理頁治理清單顯路由裸鍵（ADR-00081 款 2／款 6；帳＝BL-00045），收合態零差異；拒因 toast 之措辭差異限 ADR-00050 排除清單所列鍵；選單彈窗排序／頁籤固定序號兩欄限整數輸入（rev6 修正、rev5 可輸入小數）；繁中畫面無 rev5 基準＝刻意分岔——rev6 未選語言預設繁中、rev5 預設簡中，結構清單與 toast 文案之對照兩側一律顯式設簡中（寫 `lang` 儲存值；ADR-00084 決定 8） | 走查流程（CLAUDE.md §7） |
+| UI 一致性 | UI 與 rev5 一致 | **結構清單逐項全等才綠**——表格欄位集合與列序／搜尋器項目／按鈕集合與權限顯隱／抽屜欄位與校驗訊息／分頁／回收桶流程／toast 文案；截圖之間距、字體、顏色差異**只記入走查紀錄、不擋收刀**（判準自 004 刀 clarify 起適用）。已知例外＝拒因 toast 之措辭差異限 ADR-00050 排除清單所列鍵；選單彈窗排序／頁籤固定序號兩欄限整數輸入（rev6 修正、rev5 可輸入小數）；繁中畫面無 rev5 基準＝刻意分岔——rev6 未選語言預設繁中、rev5 預設簡中，結構清單與 toast 文案之對照兩側一律顯式設簡中（寫 `lang` 儲存值；ADR-00084 決定 8） | 走查流程（CLAUDE.md §7） |
 
 ## 10.2 品質情境
 
@@ -29,7 +29,7 @@ rev5_blueprint:
 | 量測 | 可斷言的值：碼、HTTP status、序列計數、時限 |
 | 守門 | 釘住該情境的測試或 lint |
 
-情境逐島一則＝憲法 §I.7 已入憲行為島 A～J（島 J 目前無情境；承襲指針表＝憲法 §I.7）。每則只釘該島最容易被「順手統一」抹掉的 fail-* 方向（方向之凍結面＝該島入憲條文；島 H 情境所釘之判定面同步失敗方向＝島 G1、經 H2 互引，授予面與復原之同步方向與兩窗反向症狀由島 G 情境承接）；流的完整敘述住 §6.1、碼表與每級語意的權威定義住 §8.2／§8.3，本節依上表格式只在回應欄寫方向、在量測欄引用該欄所定義的可斷言值，不重新定義語意。守門欄的案名皆可 `grep -rn "fn <名>" rust-api/server` 自證。
+情境逐島一則＝憲法 §I.7 已入憲行為島 A～J（承襲指針表＝憲法 §I.7）。每則只釘該島最容易被「順手統一」抹掉的 fail-* 方向（方向之凍結面＝該島入憲條文；島 H 情境所釘之判定面同步失敗方向＝島 G1、經 H2 互引，授予面與復原之同步方向與兩窗反向症狀由島 G 情境承接）；流的完整敘述住 §6.1、碼表與每級語意的權威定義住 §8.2／§8.3，本節依上表格式只在回應欄寫方向、在量測欄引用該欄所定義的可斷言值，不重新定義語意。守門欄的案名皆可逐「檔：案名」對以 `grep -cE "fn <名>\s*[(<]" rust-api/server/<該檔>` 自證（`<該檔>`＝守門欄所列檔、`tests/` 以外者前綴 `src/`；每對 ≥1）。
 
 ### 島 A token rotation——並發換發與 grace 不可用
 
@@ -111,6 +111,15 @@ rev5_blueprint:
 | 回應 | 政策矛盾＝三入口一律拒（不退預設；與島 E 設定壞值整組退常數方向相反）、每次設密驗證計一格並落 warn，登入不驗政策、不受影響；撤銷權威＝同交易撤票（`sys_token.status`），名單寫入失敗只結構化告警、回應不變——被撤者手上未過期之 access 至多 `access_secs` 內仍通得過 Authed 端點，換發由已撤之票列擋下（第一層）、撤票集外之票（含未經寫端之直改庫停用）由換發 active 腿之活性重驗擋下（第二層），不加每請求活性判定；被撤者所見碼三類各自對應、不互換（撤銷＝8888 回登入頁重登、不彈 modal；頂替與踢除同碼 7777 異文案）；包含規則違者 fail-closed 拒絕、零變更零稽核，A 或 T 讀庫故障不吞成空集；改密節流 redis 故障＝fail-open（加值防線）＋降級源計數 |
 | 量測 | 政策矛盾：三入口皆回 `2222`＋`biz.user.passwordPolicy`、明細違規碼含 `minLength` 或 `maxLength`，`password_policy_invalid_total` 每入口增 1、`security.password` warn 帶兩界現值；名單寫入失敗：寫端照回 `0000`、每被撤 sid 一則 `security.session` warn 帶 `degraded=denylist_write`，被撤者既有 access 打 Authed 端點仍 `0000`、至遲於存取權杖到期失效，換發被兩層擋下皆 `8888` 且零寫；直改庫停用者換發回 `8888` 且零寫；三類被撤者分別回 `8888` `auth.session.reLogin`／`7777` `auth.session.kicked`／`7777` `auth.session.kickedByAdmin`（名單值 `revoked`／`kicked`／`admin_kick`）；包含規則拒回 `5003`、帳號列與指派列逐欄不動、`sys_operation_log` 與 `session_event` 零新列、不新增觀測序列；A／T 讀庫故障回 `5000`；改密節流 redis `Err` 放行且 `throttle_degraded_total{source="redis_change_pwd"}` 增 |
 | 守門 | `model/password.rs`：`contradictory_policy_rejects_every_length_counts_and_warns_once_per_call`／`login_path_never_touches_the_password_policy`；`handler/user_center.rs`：`contradictory_policy_refuses_all_three_set_password_entries_and_counts_each_once`／`a_broken_cache_fails_open_and_counts_each_failed_bucket_step_under_redis_change_pwd`；`handler/user.rs`：`finish_user_write_denylist_write_failure_warns_per_sid_and_still_succeeds`／`finish_user_write_commits_before_the_first_denylist_write`／`disabled_accounts_are_denylisted_for_the_refresh_lifetime_and_their_next_request_gets_8888`／`kick_user_revokes_every_active_ticket_leaves_rotated_rows_and_the_victim_gets_7777_by_admin`／`inclusion_rule_refuses_two_ways_per_consumer_and_admits_peers_and_full_scope`／`guard_no_escalation_short_circuits_full_scope_and_fails_closed_on_db_errors`；`handler/throttle.rs`：`account_dimension_applies_the_inclusion_rule_and_refusals_write_nothing`；`handler/auth/refresh.rs`：`refresh_denylist_write_failure_old_access_lives_at_most_access_secs_and_both_layers_block_refresh`／`refresh_disabled_account_is_8888_with_zero_writes`／`refresh_revoked_row_dispatches_denylist_reason_three_ways`／`enforce_production_reads_no_sys_user_so_no_per_request_liveness_check`；`auth/enforce.rs`：`enforce_mw_denylist_admin_kick_7777_by_admin_counts_redis_source`；`obs.rs`：`pre_register_renders_password_policy_invalid_explicit_zero` |
+
+### 島 J 稽核域——存取日誌寫入 fail-open、清理全有或全無與讀端零寫入
+
+| 欄 | 內容 |
+|---|---|
+| 刺激 | 已認證請求完成後、存取日誌寫入時資料庫故障；手動清理送值域外表名、低於下限之天數、或於上下文缺席時送出（含同時違反多條）；清理同交易之自記寫入失敗（下一個稽核 id 被預佔）；稽核讀端交易內出現寫入語句；同一批逾期列先經 HTTP 清理寫端（上下文缺席）、再經系統程序清理入口清理 |
+| 回應 | 存取日誌寫入失敗＝fail-open：業務回應之狀態與本體不變，只發一則結構化告警並計數（與操作稽核寫端「取不到來源即拒寫」方向相反、刻意並陳）；授權拒絕照記為 403；清理固定序任一拒＝零刪除零自記、拒因於觸庫前判定（多重違反取先序腿）；自記失敗＝整筆回滾（零刪除、零自記）回 `5000`、重送即成；讀端交易唯讀、任何寫入由資料庫拒；無網路來源之哨兵只由系統程序入口落列，HTTP 寫端缺上下文照舊拒寫、不以哨兵或佔位位址補列 |
+| 量測 | 寫入失敗：好庫與壞庫兩形之 HTTP 狀態與 body 位元組全等，壞庫形 `access_log_write_failed_total` 恰增 1、warn 恰一則（target `audit.access_log`、`degraded=access_log_write`）、零列；授權拒絕回 `5003` 且恰一列 `http_status`＝403；清理拒：`2222`＋`biz.audit.invalidTable`／`biz.audit.purgeBelowFloor`（data `{minDays: 30}`）或上下文缺席 `5000`（拒寫事件一則），各案皆未觸庫（以必敗連線判：觸庫即 `5000` 且見 `step="begin"`）；自記注入失敗：`5000`、植列全在、零自記，重送回 `0000`＋`deletedCount` 等於植列數且恰一列自記；唯讀交易內 `INSERT` 與 `nextval` 皆回 SQLSTATE `25006`，四讀端呼叫前後稽核表列數與水位逐表相等；HTTP 路缺上下文回 `5000`、植列留存、窗內零 `purge` 列且零 `0.0.0.0` 列，系統路刪除植列並恰落一列哨兵形自記（操作者空、`real_ip`＝`0.0.0.0`、`payload_after` 帶 `job`）；操作日誌清理後歷史 `purge` 列留存 |
+| 守門 | `middleware/mod.rs`：`write_failure_keeps_the_response_and_takes_one_warn_and_one_count`／`policy_denied_request_is_logged_as_403`／`unauthenticated_failed_auth_fallback_and_gated_requests_leave_no_row`；`handler/audit.rs`：`fixed_order_refusals_never_touch_the_database`／`audit_insert_failure_voids_the_purge_and_a_resend_succeeds`／`read_only_txn_rejects_writes_real_db`／`read_handlers_leave_audit_tables_unchanged_real_db`／`http_purge_without_context_still_refuses_while_the_system_path_writes_the_sentinel`；`model/retention.rs`：`self_record_failure_rolls_back_the_whole_purge`／`system_purge_rolls_back_when_its_self_record_fails`／`operation_log_purge_keeps_historical_purge_rows`；`router.rs`：`layers_are_mounted_as_enforce_then_ip_gate_then_request_context`；`tests/contract.rs`：`audit_authz_matrix_real_seed`；`tests/system_audit_entry_lint.rs`：`system_entry_lives_only_in_the_facade_and_the_retention_core` |
 
 ## 10.3 E6 AI 品質情境
 

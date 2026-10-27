@@ -364,7 +364,7 @@ groups:
                     params: []
                   type: query
 
-      # ══ ③d accesslog-write-fail：loki、存取軌跡寫入故障事件（島 J2）══
+      # ══ ③d accesslog-write-fail：loki、存取日誌寫入故障事件（島 J2）══
       # 事件錨＝rust-api/server/src/middleware/mod.rs 之 access_log_mw 寫入任務的失敗腿（008 刀 U8 起；ADR-00100 決定 5）：
       #   在途件 PendingAccessLogWrite 之 report_failure 發 tracing::warn!，帶 target: "audit.access_log" 與欄
       #   degraded = "access_log_write"（寫入回 Err 與在途件未結案即被丟棄兩途共經）；同腿 access_log_write_failed_total +1
@@ -372,6 +372,7 @@ groups:
       # ★同 target 而不帶 degraded 欄者不命中：身分或請求上下文缺席（含上下文位址不可解析）之跳過腿＝debug 級
       #   （欄 identity_present／context_present）。
       # ★未認證請求、Public 子 router 與兩道 fallback 不經記錄層＝零事件（ADR-00100 決定 1、7）。
+      # ★判讀＝RUNBOOK §11.4（寫入失敗計數與存取列缺漏之已知態）。
       # ★只起 metrics 未起 obs 時本規則 health＝error（loki 源、查無 loki 主機＝環境未起；RUNBOOK §11.3 末條）。
       #   雙錨字面（target＋degraded="access_log_write"）與 expr 不動。
       - uid: obs016-accesslog-write-fail
@@ -383,7 +384,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'accesslog-write-fail：存取軌跡寫入故障（評估窗 5m 內事件 {{ $values.B }} 筆、判準 > 0）'
+          summary: 'accesslog-write-fail：存取日誌寫入故障（評估窗 5m 內事件 {{ $values.B }} 筆、判準 > 0）'
         data:
           - refId: A
             relativeTimeRange:
@@ -491,6 +492,7 @@ groups:
       #   （rust-api/server/src/model/retention.rs 之 RetentionTable::ALL；依序 sys_operation_log／sys_access_log／sys_login_attempt／session_event）。
       # ★處置路＝稽核頁清理（後端 purgeAuditLog；保留天數下限 30）或待 reaper audit-retention 下一輪（ADR-00101 決定 10）；
       #   存取日誌每已認證請求一列＝本告警可能較早觸發（ADR-00100 後果）。
+      # ★判讀與處置＝RUNBOOK §11.4。
       # for: 0s（n_live_tup 慢變量、無 flapping 風險、即紅即投遞）。
       - uid: obs016-audit-capacity
         title: audit-capacity
@@ -800,7 +802,7 @@ groups:
       # ★max 跨維取最大＝annotation 不帶維名；逐維數看 reaper 結構化事件（target reaper、policy-reconcile 完跑 info）之
       #   menu／button／endpoint 欄。
       # ★有無 --execute 皆推 gauge（--execute 只決定心跳 mode 標籤、行為恆唯讀）＝dry-run 部署照判；復歸＝下一輪對賬 PUT
-      #   整組替換（jobs 停跑時持久卷留存末次計數＝本規則停在末次判定、清組同⑤）；處置只報不刪（ADR-00101 決定 6）。
+      #   整組替換（jobs 停跑時持久卷留存末次計數＝本規則停在末次判定、清組同⑤）；處置只報不刪（ADR-00101 決定 6）；判讀與處置＝RUNBOOK §8.1。
       # ★noDataState=OK：pushgateway 無 policy-reconcile 組（例：從未推過心跳、或該組已 DELETE）＝零序列＝恆綠。
       - uid: obs017-policy-reconcile-orphans
         title: policy-reconcile-orphans
@@ -864,6 +866,7 @@ groups:
       # ★reaper_job="policy-reconcile" matcher 與⑤（token-reap 組）、⑥（audit-retention 組）射程互斥。noDataState=OK：
       #   pushgateway 無 policy-reconcile 組＝零序列＝恆綠；組留存而 jobs 停跑＝逾 172800 即紅（同⑤）。
       # ★uid 不取 title 全名：title 全名加 obs017- 前綴逾 Grafana 告警規則 uid 上限 40 字元（ADR-00101 決定 10）。
+      # ★判讀與處置＝RUNBOOK §8.1（本規則紅＝對賬沒在跑、孤兒授權列計數停在末次）。
       - uid: obs017-reconcile-heartbeat-timeout
         title: policy-reconcile-heartbeat-timeout
         condition: C
