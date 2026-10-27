@@ -2,9 +2,9 @@
 id: "ADR-00081"
 title: 角色與選單管理之已知態（續行 ADR-00068）——決定 4① 收回（觀察一律自建帳號持自建角色）；款 7 解除（`rev5:B-145` 結案）、款 18 解除（三頁按鈕依碼顯隱）；款 9 部分解除（使用者域寫端與 unlockLogin 帳號維受包含規則；可授出集重算為 30 支）；款 10、11、17、20 改述（按鈕碼顯隱後之可見效果／相異 R_SUPER 帳號可達／只授目錄之 `/403` 限排在個人中心之前者／UI 外送停用值生產可達並實測）；款 21 新增（seed 名稱照原字）；其餘款續行（現行十八款）
 date: 2026-10-05
-status: accepted
+status: superseded
 supersedes: ["ADR-00068"]
-superseded_by: []
+superseded_by: [ADR-00103]
 provenance: "007-user-password-admin 之 spec FR-056⑧、FR-001／FR-002（ROUTES 49→61、政策保護端點 35→45）、FR-020、FR-021～FR-024、FR-040、FR-042、FR-044、FR-048、FR-057、FR-058、FR-060（BL-00048 收）、FR-065（ADR-00070 觸發器④與本 ADR 款 20 可達性實測）、SC-004、SC-010、SC-014、US1 AS4／AS10、US4 AS1～AS11、Edge Cases「包含規則與委派」「前端與按鈕碼」「自鎖防護與 seed 基線」「測試與走查基建」、刻意分岔登記表（持停用角色之抽屜、角色頁與選單頁按鈕、R_SUPER 角色與選單六碼）；brainstorm §0 Q6／Q7／Q8／Q13、GR1a、§0 主線工程判斷⑥⑦⑬、§3 §1 ADR 待立⑧；被續行面＝ADR-00068 二十款與決定 1～4（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5；續行鏈 ADR-00045→ADR-00068→本 ADR）；ADR-00070 翻案觸發器第四條（使用者角色指派寫端落地＝誤擋面生產可達）；ADR-00064 決定 1／5／6（封死集謂詞與射程外兩項）；藍本＝rev5:B-145（持停用角色之指派於抽屜不可見、rev5 至凍結未解）、rev5:007 brainstorm Q10（使用者頁七碼逐鈕顯隱）、rev5:L-046／rev5:L-054（已知態須以實際操作觀察、無可觀察實例須附機器反證）；draft 於 plan 期落 feature branch、續行款沿 006 刀實測症狀、解除款之證據與改述款之症狀於本刀 CDP 三方對照單元實際觀察後定稿、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00068 狀態）；親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
 tags: [role-menu-crud, authz-governance, user-password-admin, known-state, by-design]
 ---

@@ -26,7 +26,7 @@
 | 子鍵 | 內容 |
 |---|---|
 | `group.{password,session,ip,account}` | 四組標題（密碼策略／工作階段／IP 源登入／帳號登入） |
-| `item.<setting_key>.{label,help}` | 16 鍵各一對；`login_throttle_*` 與 `ip_*` 之 help 不承諾嚴格上限（例：「窗內失敗達此數即鎖定（並發首波不嚴格）」或不寫上界） |
+| `item.<setting_key>.{label,help}` | 16 鍵各一對；`login_throttle_*` 與 `ip_*` 之 help 不承諾嚴格上限（例：「窗內失敗達此數即鎖定（並行首波不嚴格）」或不寫上界） |
 | `conflict.{password,account,ip}` | 三對矛盾提示（寫後果：密碼對＝新增使用者、重設密碼、修改密碼三入口一律拒；節流兩對＝該維三鍵整組退回出廠預設值） |
 | `readonlyTag` | 宣告集外列標示 |
 

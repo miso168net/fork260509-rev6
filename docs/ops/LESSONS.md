@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00111 -->
+<!-- next: LL-00115 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -116,3 +116,7 @@
 | LL-00108 | 主線演練腳本背景跑全量測試期間，同 session 改了同一支腳本：bash 於續讀處解析錯、子命令退出碼成 2，而各步斷言之輸出皆已印完（008 刀 U16） | none：shell 執行模型之事實（bash 邊讀邊執行腳本檔），守法住本檔，非流程規則 | none | [LL-00108-background-script-edited-while-running-bash-parse-error.md](LESSONS/LL-00108-background-script-edited-while-running-bash-parse-error.md) |
 | LL-00109 | 派發前裁定註之事實宣稱照偵查 agent 之推理字面寫入、未對碼面與 ADR 原文取證：一則把分頁欄之解析行為推廣到過濾欄、一則把所引 ADR 之後果寫反——implementer 照註逐字落活書、DoD 只驗字面在場而不轉紅，碼品質審查兩輪各抓一則（008 刀 U17） | RL-0028 | none | [LL-00109-ruling-note-facts-copied-from-probe-reasoning-without-anchor.md](LESSONS/LL-00109-ruling-note-facts-copied-from-probe-reasoning-without-anchor.md) |
 | LL-00110 | 單元定義要 implementer 把 report 全文另存 `report.md` 供審查段讀：harness 拒絕 subagent 寫 report 類檔，審查段所指之讀檔路徑全數落空（008 刀 U17） | none：Claude Code harness 對 subagent 寫檔之限制（平台行為之事實），守法住本檔 | none | [LL-00110-harness-refuses-subagent-report-file-writes.md](LESSONS/LL-00110-harness-refuses-subagent-report-file-writes.md) |
+| LL-00111 | 派發前裁定註之事實宣稱未取證（第三次）：T167 註⑥寫「重設後 query 不含清空欄之鍵」、註③之觀察窗亦失準——第三層清冊 run 於 CDP 派發前抓到、零損失，惟只因該次清冊 lens 恰把裁定註新步寫進射程（008 刀 U18） | RL-0008 | rules | [LL-00111-ruling-note-facts-unverified-third-recurrence-caught-by-layer3.md](LESSONS/LL-00111-ruling-note-facts-unverified-third-recurrence-caught-by-layer3.md) |
+| LL-00112 | CDP 生成器之設定 seed 值表取自全量測試進行中之 dev 庫：`single_session_default` 讀到測試暫態 `on`（真源 m0002 為 `off`），連帶放行點四擬稿寫出不存在之「seed 帳號單一會話互相頂替」句（008 刀 U18） | RL-0028 | none | [LL-00112-seed-read-from-dev-db-during-full-test-run-transient.md](LESSONS/LL-00112-seed-read-from-dev-db-during-full-test-run-transient.md) |
+| LL-00113 | 個人中心頁模板根層之修改型標記註解使該頁於開發模式成多根片段：版面 out-in 換頁過場無法完成，自個人中心點側欄他頁後內容區空白、重新整理才恢復——rev5 同形、兩代皆未察（008 刀 U18） | none：Vue 模板編譯與 Transition 之行為（框架事實），守法住本檔 | none | [LL-00113-template-root-comment-dev-fragment-blanks-next-page.md](LESSONS/LL-00113-template-root-comment-dev-fragment-blanks-next-page.md) |
+| LL-00114 | 設定頁數字框於送出被拒之回讀後以 key 重掛：仍有焦點之舊實例被移除時瀏覽器發失焦，naive-ui 失焦收尾以框內殘留之被拒值再發一次——自動重送一發，CDP 首跑因此真改出一列設定（008 刀 U18） | none：瀏覽器移除焦點元素時之失焦事件與 naive-ui 數字框失焦收尾（平台與元件庫行為之事實），守法住本檔 | none | [LL-00114-remount-of-focused-input-number-resends-rejected-value.md](LESSONS/LL-00114-remount-of-focused-input-number-resends-rejected-value.md) |

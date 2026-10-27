@@ -22,7 +22,7 @@
 
 ## 3. 觀測層 profiles（obs／metrics／jobs）
 
-compose profile 三組：`obs`（loki、alloy、socket-proxy、grafana）、`metrics`（prometheus、postgres_exporter、redis_exporter、pushgateway、grafana）、`jobs`（reaper）；起法 `--profile <名>` 追加於 §2 命令。`jobs`＝reaper 三 job（token-reap／audit-retention／policy-reconcile）之一次性 CLI 與 dev 常駐 loop，前置、命令與心跳＝§8；`obs`／`metrics` 所承告警與計數之判讀＝§11。★走查期間與真庫測試期間不起 jobs profile：audit-retention 之 execute 刪稽核四表舊列並落自記列、token-reap 之 execute 刪票，與走查基準及測試守衛互擾（走查期間之核對命令＝§9c 第 2 步）。
+compose profile 三組：`obs`（loki、alloy、socket-proxy、grafana）、`metrics`（prometheus、postgres_exporter、redis_exporter、pushgateway、grafana）、`jobs`（reaper）；起法 `--profile <名>` 追加於 §2 命令；停法須具名列出該 profile 之服務（不帶服務名之 `--profile metrics stop` 連同預設服務一起停）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile metrics stop prometheus postgres_exporter redis_exporter pushgateway grafana`。`jobs`＝reaper 三 job（token-reap／audit-retention／policy-reconcile）之一次性 CLI 與 dev 常駐 loop，前置、命令與心跳＝§8；`obs`／`metrics` 所承告警與計數之判讀＝§11。★走查期間與真庫測試期間不起 jobs profile：audit-retention 之 execute 刪稽核四表舊列並落自記列、token-reap 之 execute 刪票，與走查基準及測試守衛互擾（走查期間之核對命令＝§9c 第 2 步）。
 
 ## 4. ★人工必填清單（腳本不代辦）
 
@@ -57,10 +57,12 @@ reaper＝一次性維運 CLI（進場點 `rust-api/server/src/bin/reaper.rs`、j
 ```bash
 # 一次性：token-reap 之 dry-run（分派之 dry-run 分支只跑預設 job）
 docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile jobs run --rm reaper dry-run
-# 一次性：任一 job 之 dry-run（run 引數原樣交 bin）
-docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile jobs run --rm reaper --job <名>
+# 一次性：任一 job 之 dry-run（run 引數原樣交 bin；audit-retention 之 dry-run 亦以 -e 逐鍵注入四表天數）
+docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile jobs run --rm [-e <鍵>=<值> …] reaper --job <名>
 # 一次性實跑（★dev 庫寫入點，見本節末條）
 docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile jobs run --rm [-e <鍵>=<值> …] reaper --job <名> --execute
+# 一次性實跑之預設 job（`--job` 缺席＝token-reap；★同為寫入點）
+docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile jobs run --rm reaper --execute
 ```
 
 - **環境變數**（一次性形以 `-e <鍵>=<值>` 注入）：
@@ -68,7 +70,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile jobs ru
   - `REAPER_GRACE_DAYS`（token-reap 寬限天數；回收 `expires_at` 早於現刻減寬限天數之票、不分票狀態）：缺席＝7；畸形＝warn＋7。
   - `REAPER_INTERVAL_SECS`（只 dev 常駐 loop 消費、bin 不讀；缺席時之 fallback 住 `docker-compose.dev.yml` reaper 段）：告警⑤／⑥／⑦b 心跳門檻＝`REAPER_INTERVAL_SECS` 之 2 倍，三檔同步之家＝compose 兩檔 reaper 段註與 `deploy/grafana-provisioning/alerting/rules.yml`（調其一 MUST 同步改另兩處）。
   - 連線字串＝`APP_DATABASE_URL_FILE`（compose 已設、優先；讀檔去尾端換行）或 `APP_DATABASE_URL`；兩者皆缺、空值、`CHANGE-ME` 開頭＝error 事件＋退出 1。
-- **退出碼與心跳**：0＝完跑（含 0 列）；1＝參數錯、前置全拒、連線字串錯、連線失敗、任一步查詢或交易失敗（audit-retention 依固定表序〔操作日誌→存取日誌→登入嘗試→會話事件〕逐表、一表失敗即停，已 commit 之表維持、下輪冪等）。完跑後推心跳至 pushgateway（`PUT …/metrics/job/reaper/reaper_job/<job>`＝grouping key 按 job、整組替換；推送基底與全程時限＝碼內常數 `PUSHGATEWAY_URL_BASE`／`HEARTBEAT_TIMEOUT_SECS`、不重試）；失敗之 job 不推。三序列：`reaper_last_success_timestamp{mode}`（三 job）、`reaper_deleted_total{mode}`（token-reap、audit-retention；execute＝實刪、dry-run＝候刪）、`reaper_orphan_policies{dimension}`（policy-reconcile；`menu`／`button`／`endpoint` 三序列恆設、含 0）。推送失敗＝error 事件、退出碼不變。組生命週期之操作後果：①pushgateway 屬 `metrics` profile——未起＝每次推送失敗 error 事件而退出碼仍 0 ②整組替換——對同一 job 手跑一次 dry-run 即抹掉該組之 execute 序列（token-reap／audit-retention 之 mode-misconfig 告警⑤b／⑥b 隨之轉紅、至下一次 execute 心跳復歸）③持久卷留組——jobs 曾跑而後停跑，該組序列留存、時戳凍結，⑤／⑥／⑦b 逾門檻即紅；刻意停用 jobs 時之清組法住 rules.yml ⑤ 段註（LL-00103）。
+- **退出碼與心跳**：0＝完跑（含 0 列）；1＝參數錯、前置全拒、連線字串錯、連線失敗、任一步查詢或交易失敗（audit-retention 依固定表序〔操作日誌→存取日誌→登入嘗試→會話事件〕逐表、一表失敗即停，已 commit 之表維持、下輪冪等）。完跑後推心跳至 pushgateway（`PUT …/metrics/job/reaper/reaper_job/<job>`＝grouping key 按 job、整組替換；推送基底與全程時限＝碼內常數 `PUSHGATEWAY_URL_BASE`／`HEARTBEAT_TIMEOUT_SECS`、不重試）；失敗之 job 不推。三序列：`reaper_last_success_timestamp{mode}`（三 job）、`reaper_deleted_total{mode}`（token-reap、audit-retention；execute＝實刪、dry-run＝候刪）、`reaper_orphan_policies{dimension}`（policy-reconcile；`menu`／`button`／`endpoint` 三序列恆設、含 0）。推送失敗＝error 事件、退出碼不變。組生命週期之操作後果：①pushgateway 屬 `metrics` profile——未起＝每次推送失敗 error 事件而退出碼仍 0 ②整組替換——對同一 job 手跑一次 dry-run 即抹掉該組之 execute 序列（token-reap／audit-retention 之 mode-misconfig 告警⑤b／⑥b 隨之轉紅、至下一次 execute 心跳復歸）③持久卷留組——jobs 曾跑而後停跑，該組序列留存、時戳凍結，⑤／⑥／⑦b 逾門檻即紅；刻意停用 jobs 時之清組法住 rules.yml ⑤ 段註（LL-00103）；實跑形＝三 job 各發一次 `curl -s -o /dev/null -w '%{http_code}' -X DELETE http://127.0.0.1:39091/metrics/job/reaper/reaper_job/<job>`（回 `202`）。
 - ★`--execute` 真刪對 dev 庫＝寫入點（token-reap 刪票；audit-retention 刪四表水平線前之列並落四列自記），取 user 放行後才跑；四表天數一律以 `-e` 逐鍵顯式注入、不倚賴缺席預設。走查期間與真庫測試期間不起（§3）。
 
 ### 8.1 孤兒授權列處置
@@ -120,7 +122,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres 
 
 DB 直連（dev stack）：`docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T postgres psql -U soybean -d soybean_admin_rust`（rev6 stack、host 埠 35432；埠全表＝`docs/generated/reference/ports.md`；★rev6 的 psql 絕不指向 rev5 庫 25432）。
 
-管理員解鎖登入節流（`POST /systemManage/unlockLogin`；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後：帳號維受包含規則〔007 刀 U13〕、來源維無守門＝ADR-00081 款 9 之續存半〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥）。UI 有兩處入口、共用同一請求包裝（`base-web/src/service/api/rev6-user-admin.ts` 之 `fetchUnlockLogin`）：帳號維＝使用者清單列操作「解鎖登入」（按鈕碼 `user:unlock`；標的＝該列帳號名原文）、來源維＝IP 規則頁表頭「解鎖來源 IP」鈕（按鈕碼 `ipRule:unlock`；彈窗輸入位址字面）；兩入口皆不預查鎖定狀態。以下為 API 直打形。先以超管帳號登入取票，再擇一維度：
+管理員解鎖登入節流（`POST /systemManage/unlockLogin`；seed 預設只屬 `R_SUPER`、自 006 刀起可經端點權限彈窗授出非 `R_SUPER` 角色〔授出後：帳號維受包含規則〔007 刀 U13〕、來源維無守門＝ADR-00103 款 9 之續存半〕；契約與處理序＝活書 §6.1「登入失敗節流——島 E」⑥）。UI 有兩處入口、共用同一請求包裝（`base-web/src/service/api/rev6-user-admin.ts` 之 `fetchUnlockLogin`）：帳號維＝使用者清單列操作「解鎖登入」（按鈕碼 `user:unlock`；標的＝該列帳號名原文）、來源維＝IP 規則頁表頭「解鎖來源 IP」鈕（按鈕碼 `ipRule:unlock`；彈窗輸入位址字面）；兩入口皆不預查鎖定狀態。以下為 API 直打形。先以超管帳號登入取票，再擇一維度：
 
 ```bash
 BASE=http://127.0.0.1:32080/api
@@ -346,9 +348,9 @@ python3 -c "print(f'{float('$t1')-float('$t0'):.2f}')"   # ← 即 wall_s
 
 判定面過渡窗（授權寫端 commit 至判定面換上之間；ADR-00067 決定 6①）：窗內其他並行請求讀舊面——剛授予或剛復原之端點短暫仍回 `5003`（授予面反向症狀）、剛撤銷之端點短暫仍放行（撤銷殘留）；窗長＝一次重建＋失敗重試之退避＋排隊等候在途同步，換上即止（有界自癒、毋須處置）。發起寫端之請求於同步結束後才收到回應，單一操作者一般觀察不到此窗；窗不收（§11.2 `exhausted` 增）＝耗盡窗、處置沿下段「判定面同步耗盡」四步。
 
-排障錨「剛授予或剛復原之端點仍回 `5003`」依觀察時點分流（ADR-00067 決定 9）：①觀察早於發起寫端收到回應（他人並行之請求）＝過渡窗，稍後重送即通；②發起寫端已回成功後仍 `5003`＝不是過渡窗（回應於同步結束後才送出＝ADR-00067 決定 4），依序查——標的角色是否停用（角色管理頁狀態欄；停用不擋授權寫入與復原，停用即斷權出自授權讀端每請求濾角色狀態、重新啟用後下一請求即生效＝ADR-00065 決定 3 第⑤腿、ADR-00081 款 16，三維授予同理）→（限授予）寫端回應之 `effective` 是否含該（路徑, 方法）（不含＝所送之鍵不屬 getAllEndpoints 候選、已被 orphan skip 靜默略過＝ADR-00066 決定 2）→ 該鍵是否其後被撤（授權回收桶頁出現該角色該（路徑, 方法）且晚於該次寫端之 `endpoint_revoke` 歸檔列＝後送出之全量替換整份覆蓋＝ADR-00081 款 11；角色刪除受 in-use 守門所擋、持該角色者在場時不可達）→ §11.2 `exhausted` 增量（耗盡窗＝ADR-00067 決定 6②）、處置沿下段。
+排障錨「剛授予或剛復原之端點仍回 `5003`」依觀察時點分流（ADR-00067 決定 9）：①觀察早於發起寫端收到回應（他人並行之請求）＝過渡窗，稍後重送即通；②發起寫端已回成功後仍 `5003`＝不是過渡窗（回應於同步結束後才送出＝ADR-00067 決定 4），依序查——標的角色是否停用（角色管理頁狀態欄；停用不擋授權寫入與復原，停用即斷權出自授權讀端每請求濾角色狀態、重新啟用後下一請求即生效＝ADR-00065 決定 3 第⑤腿、ADR-00103 款 16，三維授予同理）→（限授予）寫端回應之 `effective` 是否含該（路徑, 方法）（不含＝所送之鍵不屬 getAllEndpoints 候選、已被 orphan skip 靜默略過＝ADR-00066 決定 2）→ 該鍵是否其後被撤（授權回收桶頁出現該角色該（路徑, 方法）且晚於該次寫端之 `endpoint_revoke` 歸檔列＝後送出之全量替換整份覆蓋＝ADR-00103 款 11；角色刪除受 in-use 守門所擋、持該角色者在場時不可達）→ §11.2 `exhausted` 增量（耗盡窗＝ADR-00067 決定 6②）、處置沿下段。
 
-授權回收桶某列復原鈕停用、或復原回 `2222 biz.policy.notRestorable`：一因一鍵、不揭露哪一腿（ADR-00065 決定 7），拒因亦不落 log——對照該列欄位依序自查：原因非 `endpoint_revoke`（選單維與按鈕維只剩閱覽，恢復＝於授權彈窗重勾＝ADR-00081 款 15）→ 來源角色不存在、已刪、已刪後以同代碼重建，或該列無來源角色 id（非同實例）→ 來源角色非 `R_SUPER` 而該（路徑, 方法）屬封死集 → 該（路徑, 方法）已不在路由表之政策保護端點全集；腿序與判準＝活書 §6.1「授權治理——島 G」④（旗標＝同段③）。清單顯示可復原、按下卻被拒＝旗標是列表當下之派生值，其後狀態已變或該列已被他人復原而消費（查無亦同鍵），重取清單再判；來源角色停用不擋復原（成功後仍 `5003`＝見上段排障錨）。
+授權回收桶某列復原鈕停用、或復原回 `2222 biz.policy.notRestorable`：一因一鍵、不揭露哪一腿（ADR-00065 決定 7），拒因亦不落 log——對照該列欄位依序自查：原因非 `endpoint_revoke`（選單維與按鈕維只剩閱覽，恢復＝於授權彈窗重勾＝ADR-00103 款 15）→ 來源角色不存在、已刪、已刪後以同代碼重建，或該列無來源角色 id（非同實例）→ 來源角色非 `R_SUPER` 而該（路徑, 方法）屬封死集 → 該（路徑, 方法）已不在路由表之政策保護端點全集；腿序與判準＝活書 §6.1「授權治理——島 G」④（旗標＝同段③）。清單顯示可復原、按下卻被拒＝旗標是列表當下之派生值，其後狀態已變或該列已被他人復原而消費（查無亦同鍵），重取清單再判；來源角色停用不擋復原（成功後仍 `5003`＝見上段排障錨）。
 
 判定面同步耗盡（§11.2 `casbin_reload_total{outcome="exhausted"}` 增、或 `casbin-reload-anomaly` 告警之 outcome＝exhausted）：寫端回應與 DB 皆已成功落地（原寫端不需重送），但現役判定面仍是上一份、本次已歸檔之授權仍在記憶體面生效——撤銷殘留（新撤之端點持續放行）、移除面之殘留繼承（同路由名重建之選單、同代碼重建之角色可經殘留面繼承）與授予面反向症狀（新授或剛復原之端點持續回 `5003`）並列（耗盡窗＝ADR-00043 決定 9；觸發面擴及授予面與復原、兩窗之定義＝ADR-00067 決定 6）。處置依序：
 
