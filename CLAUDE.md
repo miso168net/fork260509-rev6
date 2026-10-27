@@ -69,7 +69,7 @@
 　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事；rust-api 動到 ROUTES〔增列、刪列或改序〕之單元另跑 `python3 -B tools/docsync test`＝LL-00060）
 　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
 　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`（後三件＝`docs/generated/` 之外的 GENERATED_FILES 成員；`_sk_rules.js` 於 RULES 改動時才變）
-　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」、並逐條核 DoD 之判定點與射程，rev5:L-022、RL-0008）。
+　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」、並逐條核驗收斷言〔DoD 子句、內文編號步驟、單元定義另加之命令〕之判定點與射程，rev5:L-022、RL-0008）。
 　★③必須早於⑤：STATE.md 帳面統計與 pins 由 generate 現讀，反序即產出舊值且無 diff 可察（rev5:L-018）。
 ★單元一支接一支連續跑完、**不停下來等 user 首肯**；唯三種情形停：①拍板級問題（判準＝RULES 名詞段「拍板級」）②到了需要 push/merge 的時點③觸及 §6 硬禁令。
 全單元完成 → final holistic review → finishing-a-development-branch（push/merge 需 user 同意）→ 收刀簿記三步（events append＋NOTES＋generate）→
