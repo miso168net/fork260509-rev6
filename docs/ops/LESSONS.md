@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00115 -->
+<!-- next: LL-00116 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -120,3 +120,4 @@
 | LL-00112 | CDP 生成器之設定 seed 值表取自全量測試進行中之 dev 庫：`single_session_default` 讀到測試暫態 `on`（真源 m0002 為 `off`），連帶放行點四擬稿寫出不存在之「seed 帳號單一會話互相頂替」句（008 刀 U18） | RL-0028 | none | [LL-00112-seed-read-from-dev-db-during-full-test-run-transient.md](LESSONS/LL-00112-seed-read-from-dev-db-during-full-test-run-transient.md) |
 | LL-00113 | 個人中心頁模板根層之修改型標記註解使該頁於開發模式成多根片段：版面 out-in 換頁過場無法完成，自個人中心點側欄他頁後內容區空白、重新整理才恢復——rev5 同形、兩代皆未察（008 刀 U18） | none：Vue 模板編譯與 Transition 之行為（框架事實），守法住本檔 | none | [LL-00113-template-root-comment-dev-fragment-blanks-next-page.md](LESSONS/LL-00113-template-root-comment-dev-fragment-blanks-next-page.md) |
 | LL-00114 | 設定頁數字框於送出被拒之回讀後以 key 重掛：仍有焦點之舊實例被移除時瀏覽器發失焦，naive-ui 失焦收尾以框內殘留之被拒值再發一次——自動重送一發，CDP 首跑因此真改出一列設定（008 刀 U18） | none：瀏覽器移除焦點元素時之失焦事件與 naive-ui 數字框失焦收尾（平台與元件庫行為之事實），守法住本檔 | none | [LL-00114-remount-of-focused-input-number-resends-rejected-value.md](LESSONS/LL-00114-remount-of-focused-input-number-resends-rejected-value.md) |
+| LL-00115 | 單元收單 commit 訊息漏記 spec 指定之逐單元必記項（收刀計數三則）：五顆漏記經後顆補記後，同刀後段兩顆再漏——到收刀彙記前之派發前清冊才揭出（008 刀 U19） | none：單刀 spec 指定之逐單元收單訊息必記項（008 刀 spec FR-067），非 RULES 條；守法住本檔 | none | [LL-00115-unit-close-commit-message-omits-spec-mandated-per-unit-counters.md](LESSONS/LL-00115-unit-close-commit-message-omits-spec-mandated-per-unit-counters.md) |

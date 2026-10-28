@@ -11,7 +11,7 @@ rad_ai_map:
 ---
 # C4-E2 資料血緣 overlay
 
-資料血緣 overlay（疊加於 `C4-L2-container.md`、不另畫）的規則與表；目前無 AI 元件（截至 2026-09-03）；資料源清冊＝系統資料源三項（下節）、隱私流之稽核表欄位與保留期已填於隱私流節；流程層對應＝文件血緣鏈（brainstorm→spec→ADR→events→generated）。
+資料血緣 overlay（疊加於 `C4-L2-container.md`、不另畫）的規則與表；目前無 AI 元件（截至 2026-09-03）；資料源清冊＝系統資料源兩項（下節）、隱私流之稽核表欄位與保留期已填於隱私流節；流程層對應＝文件血緣鏈（brainstorm→spec→ADR→events→generated）。
 
 ### 資料源清冊
 
