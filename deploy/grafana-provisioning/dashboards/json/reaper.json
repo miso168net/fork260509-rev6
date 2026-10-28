@@ -26,7 +26,7 @@
       "id": 1,
       "type": "stat",
       "title": "上次 execute 成功距今 (age)",
-      "description": "time() - reaper_last_success_timestamp{mode=\"execute\"}；reaper 上次 execute 成功至今秒數（告警⑤同錨：僅認 execute、dry-run 不算；172800=2×86400、調 REAPER_INTERVAL_SECS 須同步）。rev4 pushgateway 持久卷、重啟不失憶（rev4:FR-008）。",
+      "description": "time() - reaper_last_success_timestamp{mode=\"execute\"}；三 job（token-reap／audit-retention／policy-reconcile）各一序列、以 pushgateway grouping 標籤 reaper_job 區分（grouping key /metrics/job/reaper/reaper_job/<job>、每次完跑 PUT 整組替換）；值＝該 job 上次 execute 完跑至今秒數（告警⑤／⑥同錨：僅認 execute、dry-run 不算；⑦b 同門檻而不分 mode〔對賬之 --execute 只決定心跳 mode 標籤〕＝dry-run 排程下本面板無 policy-reconcile 序列而⑦b 照判；172800=2×86400、調 REAPER_INTERVAL_SECS 須同步）。pushgateway 無某 job 組（例：從未推過心跳、或該組已 DELETE）＝該序列缺席、三組皆無＝No data，屬預期。pushgateway 持久卷（docker-compose.yml pushgateway 段之 --persistence.file 與 pushgateway_data 卷）、重啟不失憶（rev4:FR-008）：jobs 停跑後末次序列仍在、值持續增長（逾 172800 告警轉紅）。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -85,7 +85,7 @@
             "uid": "prometheus"
           },
           "expr": "time() - reaper_last_success_timestamp{mode=\"execute\"}",
-          "legendFormat": "age",
+          "legendFormat": "{{reaper_job}}",
           "instant": true,
           "range": false
         }
@@ -95,7 +95,7 @@
       "id": 2,
       "type": "stat",
       "title": "上次刪除列數 by mode (rows deleted)",
-      "description": "reaper_deleted_total{mode=dry-run|execute}；dry-run＝候刪數、execute＝實刪數（gauge、每輪覆寫）。",
+      "description": "reaper_deleted_total{mode=dry-run|execute}；token-reap 與 audit-retention 推本 metric（policy-reconcile 不推）、以 grouping 標籤 reaper_job 區分；dry-run＝候刪數、execute＝實刪數（audit-retention 之值＝四表合計）；gauge、每次完跑 PUT 整組替換。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -146,7 +146,7 @@
             "uid": "prometheus"
           },
           "expr": "reaper_deleted_total",
-          "legendFormat": "{{mode}}",
+          "legendFormat": "{{reaper_job}} {{mode}}",
           "instant": true,
           "range": false
         }
@@ -235,7 +235,7 @@
       "id": 4,
       "type": "timeseries",
       "title": "刪除列數趨勢 by mode (rows deleted over time)",
-      "description": "reaper_deleted_total{mode} 隨時間；rev4 pushgateway 持久卷、重啟不失憶（rev4:FR-008、rev3 in-memory 形有意識偏離）。",
+      "description": "reaper_deleted_total{mode} 隨時間；token-reap 與 audit-retention 推本 metric（policy-reconcile 不推）、以 grouping 標籤 reaper_job 區分；dry-run＝候刪數、execute＝實刪數（audit-retention 之值＝四表合計）；gauge、每次完跑 PUT 整組替換。pushgateway 持久卷（docker-compose.yml pushgateway 段之 --persistence.file 與 pushgateway_data 卷）、重啟不失憶（rev4:FR-008、rev3 in-memory 形有意識偏離）。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -283,7 +283,7 @@
             "uid": "prometheus"
           },
           "expr": "reaper_deleted_total",
-          "legendFormat": "{{mode}}"
+          "legendFormat": "{{reaper_job}} {{mode}}"
         }
       ]
     }

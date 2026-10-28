@@ -2,9 +2,9 @@
 id: "ADR-00082"
 title: IP 域已知態集（續行 ADR-00069）——款 1 解除（帳號維＝使用者列「解鎖登入」、來源維＝IP 規則頁「解鎖來源 IP」兩處入口共用同一包裝）、款 3 操作稽核寫入者集擴列使用者域寫端八支與個人中心改密並以現行全集重述（封閉詞彙五詞→八詞）、款 5 複核本刀新增之 redis 狀態皆可自癒、款 6 受審讀型擴列、款 2／4／7／8 續行（現行七款）
 date: 2026-10-05
-status: accepted
+status: superseded
 supersedes: ["ADR-00069"]
-superseded_by: []
+superseded_by: [ADR-00104]
 provenance: "007-user-password-admin 之 spec FR-056⑨、FR-006（稽核同交易、動作詞彙封閉五詞→八詞）、FR-021（unlockLogin 帳號維掛包含規則）、FR-026～FR-027（撤票原因 `admin_kick`）、FR-036～FR-037（改密與改密舊密節流 redis 桶、窗自癒）、FR-040（兩處解鎖入口、ADR-00069 款 1 解除、BL-00091 收）、FR-041（m0003 增 `ipRule:unlock`）、FR-059（「無 UI 按鈕」句等現在式假述掃除）、FR-064（新讀型入受審名冊）、SC-014、US4 AS9、Edge Cases「包含規則與委派」「斷權與會話」；brainstorm §0 Q9（非建議項）／Q20、GR3、GR4（非建議項）、§3 §1 ADR 待立⑨；被續行面＝ADR-00069 八款（body 已 accepted 不可變、rev6 無部分翻案機制＝ADR-00011 決定 5；續行鏈 ADR-00040→ADR-00046→ADR-00069→本 ADR）；前代出處＝rev5:ADR 0067（解鎖入口歸屬之前代訂正：實落使用者管理頁頁首、雙維一處）、rev5:server/src/model/audit.rs（動作詞彙增 `kick`／`reset_password`／`change_password` 三詞與其分家理由）——rev6 解鎖入口改為帳號維使用者列、來源維 IP 規則頁（Q9）；draft 於 plan 期落 feature branch、續行款沿 006 刀字面、解除款與改寫款之證據於本刀 CDP 三方對照單元與整合測試觀察後定稿、user 親決於治理單元（accepted 同顆補 supersedes 並改 ADR-00069 狀態）；親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
 tags: [ip-trust-anchor, user-password-admin, known-state, wont-fix, by-design]
 ---

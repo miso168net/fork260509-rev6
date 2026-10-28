@@ -16,7 +16,7 @@ rev5_blueprint:
 
 ## 7.2 基礎設施第二層
 
-- **compose 三檔的組合形**：`docker-compose.yml`（基底：front-nginx／base-web／rust-api／migrate／postgres／redis 與觀測層）＋`docker-compose.dev.yml`（dev 疊加：mailpit）＋`docker-compose.example.yml`（soybean example 原版基線、對照用）。
-- **profiles**：`obs`（loki／alloy／socket-proxy／grafana）、`metrics`（prometheus／exporters／pushgateway／grafana）、`jobs`（reaper；★現況：rev6 無 reaper bin、起了也不運行，承載＝BL-00043）；例行只 up／stop／ps。
+- **compose 三檔的組合形**：`docker-compose.yml`（基底：front-nginx／base-web／rust-api／migrate／postgres／redis 與觀測層）＋`docker-compose.dev.yml`（dev 疊加：mailpit、reaper dev override〔dev 建置階段、`cargo run` 姿態分派：`up` 即常駐 loop、`run --rm` 為一次性形〕）＋`docker-compose.example.yml`（soybean example 原版基線、對照用）。
+- **profiles**：`obs`（loki／alloy／socket-proxy／grafana）、`metrics`（prometheus／exporters／pushgateway／grafana）、`jobs`（reaper＝一次性維運 CLI、三 job〔token-reap／audit-retention／policy-reconcile〕；dev 疊加之 loop 每輪依序以 `--execute` 跑三 job 後 sleep `REAPER_INTERVAL_SECS`〔缺席＝每日一輪〕，該間隔與心跳告警門檻互錨為 2×、三檔同步之家＝compose 兩檔 reaper 段註與 `deploy/grafana-provisioning/alerting/rules.yml`；連線身分＝`reaper` role〔m0004 建、NOLOGIN；`deploy/setup-reaper-role.py` 設密＋LOGIN〕、compose 掛 `reaper_database_url`；完跑推心跳至 pushgateway〔`metrics` profile〕；走查與真庫測試期間不起；操作＝RUNBOOK §8）；例行只 up／stop／ps。
 - **卷與機密**：named volume 卷名帶 project 前綴（RUNBOOK §5）；機密＝sops×age 密文入版控、執行期解密到 SECRETS_DIR（`deploy/secrets/README.md`、RUNBOOK §15）。
 - **prod 形**：`/api/*` 前綴由 front-nginx strip 轉發、`/api/metrics` 擋塊（憲法 §II #3）；部署 checklist＝RUNBOOK §16。

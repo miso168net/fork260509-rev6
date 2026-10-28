@@ -1,7 +1,8 @@
 # rev4:016-observability rev4:T011 起造：告警 as-code（契約＝specs/rev4:016-observability/contracts/alerting-delivery.md）。
-# 現況＝告警五組 13 條（組號①③④⑤⑥；②空號、不回收）：rev4:016 四組 10 條＋rev4:017-audit-retention rev4:T010
+# 現況＝告警六組 15 條（組號①③④⑤⑥⑦；②空號、不回收）：rev4:016 四組 10 條＋rev4:017-audit-retention rev4:T010
 # 一組 2 條（⑥/⑥b 新增、⑤/⑤b expr 收斂 reaper_job matcher；契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）
-# ＋007 刀 U6 於③組增 ③e 一條（password-policy-invalid；ADR-00079 決定 5）。
+# ＋007 刀 U6 於③組增 ③e 一條（password-policy-invalid；ADR-00079 決定 5）
+# ＋008 刀 U13 增⑦組兩條（⑦ policy-reconcile-orphans、⑦b policy-reconcile-heartbeat-timeout；ADR-00101 決定 10）。
 # 母版＝rev3 as-built baseline 三條（rustapi-down／exporter-down／high-5xx）＋rev4:016 新增八條之七
 # （其②節流壓制規則不在本檔：rev6 節流鏈路沒有壓制量級事件的發射點、規則掛著也永不觸發）。
 #
@@ -363,10 +364,17 @@ groups:
                     params: []
                   type: query
 
-      # ══ ③d accesslog-write-fail：loki、存取軌跡寫入故障事件（島 J2）══
-      # ★現況＝無事件源：rev6 尚無存取軌跡中介層（`access_log_mw`／target `audit.access_log` 於 rust-api 零發射點；
-      #   島 J 未進場），本規則恆無資料（noDataState=OK＝不誤紅）。雙錨字面（target＋degraded="access_log_write"）
-      #   承母版留位；存取軌跡刀進場時依 as-built 重錨、或屆時判定不需而刪（承載＝BL-00043）。
+      # ══ ③d accesslog-write-fail：loki、存取日誌寫入故障事件（島 J2）══
+      # 事件錨＝rust-api/server/src/middleware/mod.rs 之 access_log_mw 寫入任務的失敗腿（008 刀 U8 起；ADR-00100 決定 5）：
+      #   在途件 PendingAccessLogWrite 之 report_failure 發 tracing::warn!，帶 target: "audit.access_log" 與欄
+      #   degraded = "access_log_write"（寫入回 Err 與在途件未結案即被丟棄兩途共經）；同腿 access_log_write_failed_total +1
+      #   （rust-api/server/src/obs.rs 之 access_log_write_failed 出口；Prometheus 可查、本規則取 loki 事件形）。
+      # ★同 target 而不帶 degraded 欄者不命中：身分或請求上下文缺席（含上下文位址不可解析）之跳過腿＝debug 級
+      #   （欄 identity_present／context_present）。
+      # ★未認證請求、Public 子 router 與兩道 fallback 不經記錄層＝零事件（ADR-00100 決定 1、7）。
+      # ★判讀＝RUNBOOK §11.4（寫入失敗計數與存取列缺漏之已知態）。
+      # ★只起 metrics 未起 obs 時本規則 health＝error（loki 源、查無 loki 主機＝環境未起；RUNBOOK §11.3 末條）。
+      #   雙錨字面（target＋degraded="access_log_write"）與 expr 不動。
       - uid: obs016-accesslog-write-fail
         title: accesslog-write-fail
         condition: C
@@ -376,7 +384,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'accesslog-write-fail：存取軌跡寫入故障（評估窗 5m 內事件 {{ $values.B }} 筆、判準 > 0）'
+          summary: 'accesslog-write-fail：存取日誌寫入故障（評估窗 5m 內事件 {{ $values.B }} 筆、判準 > 0）'
         data:
           - refId: A
             relativeTimeRange:
@@ -478,8 +486,13 @@ groups:
                   type: query
 
       # ══ ④ audit-capacity 稽核容量：pg_stat_user_tables_n_live_tup 四表 > 1,000,000（rev5:B-016；規則內可調）══
-      # ★四表實名＝稽核四表（`docs/ops/reference-src/archetype-map.json` 變體 B；前代為 purge 封閉白名單、rev6 尚無該 handler：
+      # ★四表實名＝稽核四表（`docs/ops/reference-src/archetype-map.json` 變體 B：
       #   sys_operation_log/sys_access_log/sys_login_attempt/session_event）；datname 錨定業務庫。
+      # ★四表＝手動清理 purgeAuditLog 四值白名單與 reaper audit-retention 固定表序之目標表
+      #   （rust-api/server/src/model/retention.rs 之 RetentionTable::ALL；依序 sys_operation_log／sys_access_log／sys_login_attempt／session_event）。
+      # ★處置路＝稽核頁清理（後端 purgeAuditLog；保留天數下限 30）或待 reaper audit-retention 下一輪（ADR-00101 決定 10）；
+      #   存取日誌每已認證請求一列＝本告警可能較早觸發（ADR-00100 後果）。
+      # ★判讀與處置＝RUNBOOK §11.4。
       # for: 0s（n_live_tup 慢變量、無 flapping 風險、即紅即投遞）。
       - uid: obs016-audit-capacity
         title: audit-capacity
@@ -535,15 +548,20 @@ groups:
 
       # ══ ⑤ reaper-heartbeat-timeout：time() - reaper_last_success_timestamp{mode="execute", reaper_job="token-reap"} > 172800 ══
       # ★門檻 172800 = 2 × 86400（REAPER_INTERVAL_SECS 預設一日）——寫死＋互設註解錨（三檔同步：
-      #   本檔＋compose 兩檔 reaper 段）：調 REAPER_INTERVAL_SECS MUST 同步改⑤/⑥兩門檻（維持 2×
+      #   本檔＋compose 兩檔 reaper 段）：調 REAPER_INTERVAL_SECS MUST 同步改⑤／⑥／⑦b 三門檻（維持 2×
       #   關係）。健康判定僅認 mode="execute"（rev4:FR-010⑤：dry-run 心跳不算數）。
       # ★rev4:017 rev4:T010 射程收斂：expr 補 reaper_job="token-reap" matcher——與⑥（audit-retention 組）
       #   射程互斥；舊組殘留序列（無 reaper_job label）不 match＝不誤紅
       #   （契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
       # ★noDataState=OK：未部署 jobs profile＝零序列＝視為健康、不誤紅（spec rev4:US1-AC4；
       #   「僅 dry-run 在而 execute 缺席」的誤配案由 ⑤b 承載、本 rule 不管）。
-      # ★現況＝無事件源：rust-api 無 reaper bin（compose jobs profile 之 `cargo run --bin reaper` 起了也跑不動）、
-      #   `reaper_last_success_timestamp` 零發射點＝本規則恆無資料（noDataState=OK＝恆綠；承載＝BL-00043）。
+      # 事件錨＝rust-api/server/src/bin/reaper.rs 之 push_heartbeat（008 刀 U10 起）於 token-reap 完跑後
+      #   PUT /metrics/job/reaper/reaper_job/token-reap（整組替換；body 帶 reaper_last_success_timestamp{mode}；
+      #   ADR-00101 決定 7）；job 失敗＝退出 1、不推心跳。pushgateway 無 token-reap 組（例：從未推過心跳、或該組已
+      #   DELETE）＝零序列＝noDataState=OK 恆綠。
+      # ★pushgateway 持久卷（docker-compose.yml pushgateway 段之 --persistence.file 與 pushgateway_data 卷）保留各組末次
+      #   PUT 之序列、不隨 jobs 停跑消失：jobs 曾跑而後停跑＝execute 時戳凍結、逾 172800 即紅（停跑偵測本意；⑥／⑦b 同理、
+      #   ⑦ 停在末次計數之判定）；刻意停用 jobs 而不欲告警＝DELETE /metrics/job/reaper/reaper_job/<job> 清該組。
       - uid: obs016-reaper-heartbeat-timeout
         title: reaper-heartbeat-timeout
         condition: C
@@ -599,11 +617,12 @@ groups:
       # ══ ⑤b reaper-mode-misconfig：dry-run 序列存在且 execute 序列缺席即紅（token-reap 組）══
       # 堵「常駐空轉假健康」（spec rev4:US1-AC4 誤配案）：`unless ignoring(mode)`——dry-run 心跳在而
       #   execute 心跳不在→回傳 dry-run 序列（timestamp 恆 > 0）→轉紅；execute 在（正常）或
-      #   兩者皆無（未部署）→空向量→noDataState=OK＝綠。mode 字面錨＝rev4:contracts/reaper-cli.md
-      #   （mode=dry-run／mode=execute）。正向與誤配全驗歸 rev4:US3/rev4:T026。
+      #   兩者皆無（未部署）→空向量→noDataState=OK＝綠。mode 字面錨＝rust-api/server/src/reaper.rs 之 mode_label
+      #   （dry-run／execute 兩字面之單一出處；008 刀 U10 起）＋rev4:contracts/reaper-cli.md（mode=dry-run／mode=execute）。
+      #   正向與誤配全驗歸 rev4:US3/rev4:T026。
       # ★rev4:017 rev4:T010 射程收斂：expr 兩側補 reaper_job="token-reap"——`ignoring(mode)` 對 reaper_job
       #   參與匹配＝per-job 配對、與⑥b 射程互斥。
-      # ★現況＝無事件源（同⑤；承載＝BL-00043）。
+      # ★事件源同⑤（token-reap 組）：一次性 dry-run 推 mode=dry-run 心跳即紅、loop 下一輪 execute 之 PUT 整組替換即復歸。
       - uid: obs016-reaper-mode-misconfig
         title: reaper-mode-misconfig
         condition: C
@@ -658,10 +677,11 @@ groups:
 
       # ══ ⑥ audit-retention-heartbeat-timeout：time() - reaper_last_success_timestamp{mode="execute", reaper_job="audit-retention"} > 172800 ══
       # ★rev4:017 rev4:T010 新增（契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）：鏡像⑤全結構。
-      # ★門檻 172800 = 2 × 86400（REAPER_INTERVAL_SECS 預設一日）——與⑤共用同一互錨（三檔同步：
-      #   本檔＋compose 兩檔 reaper 段）：調 REAPER_INTERVAL_SECS MUST 同步改⑤/⑥兩門檻（維持 2× 關係）。
-      # ★noDataState=OK：未起 jobs profile／零序列＝視為健康、不誤紅（⑤ 拍板沿用）。
-      # ★現況＝無事件源（同⑤；承載＝BL-00043）。
+      # ★門檻 172800 = 2 × 86400（REAPER_INTERVAL_SECS 預設一日）——與⑤／⑦b 共用同一互錨（三檔同步：
+      #   本檔＋compose 兩檔 reaper 段）：調 REAPER_INTERVAL_SECS MUST 同步改⑤／⑥／⑦b 三門檻（維持 2× 關係）。
+      # ★noDataState=OK：pushgateway 無 audit-retention 組＝零序列＝視為健康、不誤紅（⑤ 拍板沿用；持久卷留組與清組同⑤）。
+      # 事件錨＝同一 push_heartbeat（rust-api/server/src/bin/reaper.rs；008 刀 U11 起）於 audit-retention 完跑後
+      #   PUT /metrics/job/reaper/reaper_job/audit-retention（整組替換；ADR-00101 決定 7）；job 失敗＝退出 1、不推心跳。
       - uid: obs017-audit-retention-heartbeat-timeout
         title: audit-retention-heartbeat-timeout
         condition: C
@@ -718,7 +738,8 @@ groups:
       # ★rev4:017 rev4:T010 新增：鏡像⑤b 全結構、matcher 收斂 reaper_job="audit-retention"——`ignoring(mode)`
       #   對 reaper_job 參與匹配＝per-job 配對、與⑤b 射程互斥。復歸機制＝execute 心跳 PUT 整組
       #   替換汰換本組 dry-run 序列（契約＝specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
-      # ★現況＝無事件源（同⑤；承載＝BL-00043）。
+      # ★事件源同⑥（audit-retention 組）：一次性 dry-run（--job audit-retention、不帶 --execute）推 mode=dry-run 心跳即紅、
+      #   loop 下一輪 execute 之 PUT 整組替換即復歸。
       - uid: obs017-audit-retention-mode-misconfig
         title: audit-retention-mode-misconfig
         condition: C
@@ -761,6 +782,133 @@ groups:
                     type: gt
                     params:
                       - 0
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                    params: []
+                  type: query
+
+      # ══ ⑦ policy-reconcile-orphans：max(reaper_orphan_policies{reaper_job="policy-reconcile"}) > 0 ══
+      # 事件錨＝rust-api/server/src/bin/reaper.rs 之 push_heartbeat（008 刀 U12 起）於 policy-reconcile 完跑後
+      #   PUT /metrics/job/reaper/reaper_job/policy-reconcile（整組替換；ADR-00101 決定 7）；gauge reaper_orphan_policies{dimension}
+      #   三序列 menu／button／endpoint（rust-api/server/src/reaper.rs 之 record_orphan_gauges 依 OrphanCounts::by_dimension
+      #   設值、恆設含 0）；計數件＝sys_casbin_policy::orphan_counts（唯讀交易內一次計數）。job 失敗＝退出 1、不推心跳。
+      # ★孤兒授權列＝現役授權列（ptype p）中候選外或角色無主者、每列每維至多計一次；與「撤銷殘留」（撤銷後判定面降級窗內
+      #   仍放行）為兩件事。全新 seed（m0001～m0004）且 ROUTES 66 下三維皆 0＝不恆紅。
+      # ★max 跨維取最大＝annotation 不帶維名；逐維數看 reaper 結構化事件（target reaper、policy-reconcile 完跑 info）之
+      #   menu／button／endpoint 欄。
+      # ★有無 --execute 皆推 gauge（--execute 只決定心跳 mode 標籤、行為恆唯讀）＝dry-run 部署照判；復歸＝下一輪對賬 PUT
+      #   整組替換（jobs 停跑時持久卷留存末次計數＝本規則停在末次判定、清組同⑤）；處置只報不刪（ADR-00101 決定 6）；判讀與處置＝RUNBOOK §8.1。
+      # ★noDataState=OK：pushgateway 無 policy-reconcile 組（例：從未推過心跳、或該組已 DELETE）＝零序列＝恆綠。
+      - uid: obs017-policy-reconcile-orphans
+        title: policy-reconcile-orphans
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: 'policy-reconcile-orphans：授權對賬偵得孤兒授權列（三維最大計數 {{ $values.B }} 列、判準 > 0）'
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              expr: max(reaper_orphan_policies{reaper_job="policy-reconcile"})
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 0
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                    params: []
+                  type: query
+
+      # ══ ⑦b policy-reconcile-heartbeat-timeout：time() - reaper_last_success_timestamp{reaper_job="policy-reconcile"} > 172800 ══
+      # 事件錨同⑦（同一 push_heartbeat、policy-reconcile 組；body 帶 reaper_last_success_timestamp{mode}）。
+      # ★門檻 172800 = 2 × 86400（REAPER_INTERVAL_SECS 預設一日）——與⑤／⑥共用同一互錨（三檔同步：
+      #   本檔＋compose 兩檔 reaper 段）：調 REAPER_INTERVAL_SECS MUST 同步改⑤／⑥／⑦b 三門檻（維持 2× 關係）。
+      # ★健康判定不分 mode（與⑤／⑥之僅認 execute 不同）：對賬之 --execute 只決定心跳 mode 標籤、行為恆唯讀（ADR-00101
+      #   決定 6）＝execute 與 dry-run 心跳同證對賬已跑；PUT 整組替換＝本組至多一條 mode 序列。若只認 execute，排程漏帶
+      #   --execute、或停跑期間手跑一次 dry-run（PUT 抹掉 execute 序列）皆令本規則 noData 綠、停跑不響；故亦不設 mode-misconfig 規則。
+      # ★reaper_job="policy-reconcile" matcher 與⑤（token-reap 組）、⑥（audit-retention 組）射程互斥。noDataState=OK：
+      #   pushgateway 無 policy-reconcile 組＝零序列＝恆綠；組留存而 jobs 停跑＝逾 172800 即紅（同⑤）。
+      # ★uid 不取 title 全名：title 全名加 obs017- 前綴逾 Grafana 告警規則 uid 上限 40 字元（ADR-00101 決定 10）。
+      # ★判讀與處置＝RUNBOOK §8.1（本規則紅＝對賬沒在跑、孤兒授權列計數停在末次）。
+      - uid: obs017-reconcile-heartbeat-timeout
+        title: policy-reconcile-heartbeat-timeout
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: 'policy-reconcile-heartbeat-timeout：授權對賬心跳逾時（心跳距今 {{ $values.B }} 秒、判準 > 172800 = 2×86400）'
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              editorMode: code
+              expr: time() - reaper_last_success_timestamp{reaper_job="policy-reconcile"}
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 172800
                   operator:
                     type: and
                   query:

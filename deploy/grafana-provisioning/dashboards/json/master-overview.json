@@ -226,7 +226,7 @@
       "id": 5,
       "type": "stat",
       "title": "上次回收成功距今 (Reaper age)",
-      "description": "time() - reaper_last_success_timestamp{mode=\"execute\"}；reaper 上次 execute 成功至今秒數（告警⑤同錨：僅認 execute、172800=2×86400）。rev4 pushgateway 持久卷、重啟不失憶（rev4:FR-008）。rev4:US3 前序列缺席＝No data 屬預期。",
+      "description": "time() - reaper_last_success_timestamp{mode=\"execute\"}；reaper 上次 execute 成功至今秒數（告警⑤／⑥同錨（三 job 各一序列、以 reaper_job 區分）：僅認 execute、172800=2×86400；⑦b 同門檻而不分 mode）。pushgateway 持久卷（docker-compose.yml pushgateway 段之 --persistence.file 與 pushgateway_data 卷）、重啟不失憶（rev4:FR-008）：jobs 停跑後末次序列仍在、值持續增長（逾 172800 告警轉紅）。pushgateway 無心跳組（例：從未推過心跳、或該組已 DELETE）時序列缺席＝No data 屬預期。",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -285,7 +285,7 @@
             "uid": "prometheus"
           },
           "expr": "time() - reaper_last_success_timestamp{mode=\"execute\"}",
-          "legendFormat": "reaper age (execute)",
+          "legendFormat": "{{reaper_job}}",
           "instant": true,
           "range": false
         }

@@ -4,7 +4,7 @@
 > 凍結存證＝`specs/001-schema-baseline/contracts/schema-evolution.md`（該刀收刀當下的定稿、不再前進；兩者自 ADR-00041 之日起分岔，分岔由本檔與 git 史解釋）。
 > 形制承 ADR-00012（schema 定稿自 spec 目錄抽出至 reference-src 的同型處置）。
 > 檔＝`docs/ops/reference-src/schema-evolution.json`（單一登記檔、與快照同家——specs/
-> 下屬凍結史料、放彼處違時態語意）。消費者＝tools/schema-gate.py（gate1／gate2 合成）、tools/walkthrough-baseline.py（restore 之 seed 左源經 schema-gate 同一合成鏈；清理面各表之 `seed_*` 登記拒跑）、tools/docsync/snapshot.py（帳號快照之 seed 投影對賬）。
+> 下屬凍結史料、放彼處違時態語意）。消費者＝tools/schema-gate.py（gate1／gate2 合成）、`tools/schema-gate.py offline`（delta migration 之 seed DML 逐筆對賬）、tools/walkthrough-baseline.py（restore 之 seed 左源經 schema-gate 同一合成鏈；清理面各表之 `seed_*` 登記拒跑）、tools/docsync/snapshot.py（帳號快照之 seed 投影對賬）。
 > lineage：spec FR-008、brainstorm §7、ADR-00010；承 `rev5:contracts/schema-evolution.md`、形零改（research R7）。
 
 ## 1. 形（schema）
@@ -68,5 +68,6 @@
 - **append-only**：每筆一經合成生效即不可改（改帳＝漂移歷史）；寫錯＝新 entry 修正並於
   detail 註明 supersedes。
 - 登記時點＝該刀 migration 落地同刀（Day-1 紀律、`docs/ops/reference-src/schema-gates.md` §5）；
-  「migration 已跑、登記缺席」＝gate1 紅之常態語意（未登記漂移）。
+  「migration 已跑、登記缺席」＝gate1 紅之常態語意（未登記漂移）；migration 之 seed DML 未登記或與登記不符＝`offline` 即紅
+  （pre-commit 擋；`docs/ops/reference-src/schema-gates.md` §7）。
 - 基線翻案（重壓平）＝新刀立新 fixtures＋清空 entries＋新 ADR supersedes——不回改本檔形。

@@ -2,9 +2,9 @@
 id: "ADR-00076"
 title: 錯誤明細通道射程恰兩鍵——`biz.user.passwordPolicy` 攜違規碼清單、`biz.user.pwdSetTooFrequent` 攜剩餘秒數，經新變體 `AppError::BizData` 與信封之獨立攜明細出口上 wire；受眾判準＝明細是否只是操作者自陳輸入之評估結果；`5003` 與改密節流等其餘拒因恆純 key；違規子鍵譯文落 page 樹單一命名空間
 date: 2026-10-05
-status: accepted
+status: superseded
 supersedes: []
-superseded_by: []
+superseded_by: [ADR-00102]
 provenance: "007-user-password-admin 之 spec FR-004（唯二例外、變體 9→11）、FR-033（違規碼八枚、page 樹單一共用命名空間）、FR-035（剩餘秒數下取整）、FR-051（請求層明細轉譯只限兩鍵；I18N (i) 由 Amendment 改寫；002 wire 契約對應條與錯誤信封釘案同批改寫；msg-key-gate 同批擴）、FR-064（明細信封入 wire 裁判）；brainstorm §0 Q18、§1「BizData 明細通道」列、主線工程判斷①（ADR-00014 決定 1 只管 5003、密碼違規明細 2222 不在射程）；spec Assumptions 所記 clarify 步主線工程判斷（FR-033 單一共用命名空間）；plan 期主線定案（變體名與碼映射、兩鍵明細形、違規子鍵之 page 樹路徑與圈界歸屬、msg-key-gate 斷言 2 擴認）；藍本＝rev5:ADR 0064（射程二鍵、受眾判準、`from_err` 出口分離）與其 as-built rev5:server/src/error.rs（`BizData`）、rev5:server/src/envelope.rs（`from_err_with_data`）、rev5:server/src/handler/user.rs（`password_policy_err`／`pwd_set_too_frequent_err`）；`rev5:B-139`（明細鍵名與前端佔位分岔、明細靜默消失）；rev6 既有件＝rust-api/server/src/error.rs（九變體、`MSG_KEYS`）、rust-api/server/src/envelope.rs（`Res::from_err`、釘案 `error_envelope_data_null_not_omitted`、compile_fail doctest）、rust-api/server/tests/contract.rs（`assert_error_envelope`、`msg_roster_every_key_has_an_emitter`）、tools/msg-key-gate.py 斷言 1～3、base-web/src/service/request/index.ts 之 `translateBackendMsg`；上游約束＝憲法 §I.3、§III.2 `BASE-WEB-I18N-WIRING` (i)(ii)（I18N (i) 改寫字面由 ADR-00074 於本刀 U0 親決）、ADR-00014 決定 1 與翻案觸發器首條、ADR-00039（譯文之家三檔）、specs/002-system-settings/contracts/wire-settings.md §3 第 3 條；draft 於 plan 期落 feature branch、親決與 accepted 時點見本刀 research 之「ADR 配號與親決時點表」"
 tags: [wire, error, i18n, password, user-password-admin]
 ---

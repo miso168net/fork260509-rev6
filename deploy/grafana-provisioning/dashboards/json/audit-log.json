@@ -52,7 +52,7 @@
           "text": "",
           "value": ""
         },
-        "description": "輸入 trace_id 過濾 rust-api log（對應 sys_access_log / sys_operation_log 的 trace_id）。留空＝不過濾。"
+        "description": "輸入 trace_id 過濾 rust-api log；rev6 稽核列此欄恆空（sys_access_log／sys_operation_log／sys_login_attempt 之 trace_id 恆 NULL）、rust-api 結構化 log 亦不帶 trace_id 欄＝填值即無命中。留空＝不過濾。"
       }
     ]
   },
@@ -135,7 +135,7 @@
       "id": 3,
       "type": "logs",
       "title": "trace_id drill（rust-api、依 $trace_id 過濾）",
-      "description": "{compose_project=\"rev6-admin\", service=\"rust-api\"} |~ `^{` | json | fields_trace_id =~ `$trace_id`；★ trace_id 巢狀於 fields → loki | json 攤平為 fields_trace_id。$trace_id 留空時 regex `` 匹配全部行。對應 DB 審計列 sys_access_log.trace_id / sys_operation_log.trace_id（rev4:FR-006）。",
+      "description": "{compose_project=\"rev6-admin\", service=\"rust-api\"} |~ `^{` | json | fields_trace_id =~ `$trace_id`；★ 查詢形＝tracing 事件欄巢狀於 fields、loki | json 攤平為 fields_<欄名>（本面板取 fields_trace_id）。rev6 稽核列此欄恆空：sys_access_log／sys_operation_log／sys_login_attempt 之 trace_id 無料源、恆 NULL（session_event 無此欄），rust-api 結構化 log 亦不帶 trace_id 欄＝$trace_id 留空時空 regex `` 匹配全部行、填值即無命中。",
       "datasource": {
         "type": "loki",
         "uid": "loki"

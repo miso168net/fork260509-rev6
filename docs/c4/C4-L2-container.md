@@ -1,6 +1,6 @@
 # C4-L2 容器視圖
 
-dev stack 的容器拓樸（C4 第二層）；節點＝compose 三檔（`docker-compose.yml`／`.dev.yml`／`.example.yml`）的 17 個 service（GT-10 對賬：節點 ⊇ compose services），邊＝`depends_on`＋設定檔真源（prometheus scrape、grafana datasource、alloy→loki、dev SMTP）。host 埠不入本表、真表＝`docs/generated/reference/ports.md`（ADR-00001）。本圖零 AI 刻板型標註（目前無 AI 元件；C4-E1 規則隨 AI 功能刀啟用）。
+dev stack 的容器拓樸（C4 第二層）；節點＝compose 三檔（`docker-compose.yml`／`.dev.yml`／`.example.yml`）的 17 個 service（GT-10 對賬：節點 ⊇ compose services），邊＝`depends_on`＋設定檔與碼內真源（prometheus scrape、grafana datasource、alloy→loki、dev SMTP、reaper 心跳推送（碼內常數 `PUSHGATEWAY_URL_BASE`，`rust-api/server/src/bin/reaper.rs`））。host 埠不入本表、真表＝`docs/generated/reference/ports.md`（ADR-00001）。本圖零 AI 刻板型標註（目前無 AI 元件；C4-E1 規則隨 AI 功能刀啟用）。
 
 ```mermaid
 flowchart LR
@@ -22,6 +22,7 @@ flowchart LR
   postgres_exporter --> postgres
   redis_exporter --> redis
   reaper["reaper"] --> postgres
+  reaper -->|心跳推送| pushgateway
   example_dev["example-dev"]
 ```
 
@@ -42,5 +43,5 @@ flowchart LR
 | postgres_exporter | pg 指標 | metrics | → postgres |
 | redis_exporter | redis 指標 | metrics | → redis |
 | pushgateway | 批次指標接收 | metrics | — |
-| reaper | 清理 job（最小權限 DB 身分）；★現況：rev6 無 reaper bin 與 reaper role、起了也不運行（承載＝BL-00043） | jobs | → postgres |
+| reaper | 一次性維運 CLI（三 job＝token-reap／audit-retention／policy-reconcile；最小權限 DB 身分＝`reaper` role）；完跑後推心跳至 pushgateway | jobs | → postgres；→ pushgateway（心跳推送、best-effort、compose 無 depends_on） |
 | example-dev | soybean example 原版基線（對照用） | example.yml | — |

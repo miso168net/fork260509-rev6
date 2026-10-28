@@ -66,3 +66,8 @@
 | /systemManage/updateUserSessionPolicy | POST | Policy | update-user-session-policy | 否 |
 | /userCenter/getPasswordPolicy | GET | Authed | user-center-get-password-policy | 否 |
 | /userCenter/changePassword | POST | Authed | user-center-change-password | 否 |
+| /systemManage/getOperationLog | GET | Policy | get-operation-log | 否 |
+| /systemManage/getAccessLog | GET | Policy | get-access-log | 否 |
+| /systemManage/getLoginAttempt | GET | Policy | get-login-attempt | 否 |
+| /systemManage/getSessionEvent | GET | Policy | get-session-event | 否 |
+| /systemManage/purgeAuditLog | POST | Policy | purge-audit-log | 否 |

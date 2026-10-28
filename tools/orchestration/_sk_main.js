@@ -29,6 +29,10 @@ if (typeof FIX_SELFCHECK !== 'string' || FIX_SELFCHECK.length < 8) {
 
 const impls = []
 const reportsSoFar = function () { return impls.map(function (x) { return x.report }) }
+// ★implementer 之 status 與 escalations 於成功形與兩個 unresolved 形一律帶回：unresolved 形漏帶＝`done_with_escalation` 之清單外待辦
+//   只剩 journal 可查、主線只讀回傳即漏收（LL-00102）。
+const implStatuses = function () { return impls.map(function (x) { return x.status }) }
+const implEscalations = function () { return impls.reduce(function (a, x) { return a.concat(x.escalations || []) }, []) }
 for (let i = 0; i < IMPL_STAGES.length; i++) {
   const st = IMPL_STAGES[i]
   const who = 'implementer-' + (i + 1)
@@ -47,23 +51,23 @@ if (IMPL_STAGES.length === 0) log(START_LOG)
 phase('SpecReview')
 const c1 = await cycle('SpecReview', SPEC_REVIEW_PROMPT, 'spec')
 if (!c1.converged) {
-  return { unit: UNIT, status: 'unresolved', stage: 'SpecReview', reason: c1.reason, blockers: c1.blockers, rejected: c1.rejected, escalations: c1.escalations || [], escalatedBlockers: c1.escalated || [], implReports: reportsSoFar(), agentsSpawned: spawned }
+  return { unit: UNIT, status: 'unresolved', stage: 'SpecReview', reason: c1.reason, blockers: c1.blockers, rejected: c1.rejected, implStatuses: implStatuses(), escalations: implEscalations().concat(c1.escalations || []), escalatedBlockers: c1.escalated || [], implReports: reportsSoFar(), agentsSpawned: spawned }
 }
 log('規格對照審查收斂（' + c1.rounds + ' 輪' + ((c1.escalated || []).length ? '、' + c1.escalated.length + ' 項清單外升級主線〔RL-0025〕' : '') + '）→ 進碼品質審查')
 
 phase('CodeQualityReview')
 const c2 = await cycle('CodeQualityReview', QUALITY_REVIEW_PROMPT, 'quality')
 if (!c2.converged) {
-  return { unit: UNIT, status: 'unresolved', stage: 'CodeQualityReview', reason: c2.reason, blockers: c2.blockers, rejected: c2.rejected, escalations: (c1.escalations || []).concat(c2.escalations || []), escalatedBlockers: (c1.escalated || []).concat(c2.escalated || []), implReports: reportsSoFar(), specNotes: c1.notes, agentsSpawned: spawned }
+  return { unit: UNIT, status: 'unresolved', stage: 'CodeQualityReview', reason: c2.reason, blockers: c2.blockers, rejected: c2.rejected, implStatuses: implStatuses(), escalations: implEscalations().concat(c1.escalations || [], c2.escalations || []), escalatedBlockers: (c1.escalated || []).concat(c2.escalated || []), implReports: reportsSoFar(), specNotes: c1.notes, agentsSpawned: spawned }
 }
 
 return {
   unit: UNIT,
   status: 'ok',
-  implStatuses: impls.map(function (x) { return x.status }),
+  implStatuses: implStatuses(),
   implReports: reportsSoFar(),
   filesChanged: impls.reduce(function (a, x) { return a.concat(x.filesChanged || []) }, []),
-  escalations: impls.reduce(function (a, x) { return a.concat(x.escalations || []) }, []).concat(c1.escalations || [], c2.escalations || []),
+  escalations: implEscalations().concat(c1.escalations || [], c2.escalations || []),
   // ★RL-0025／ADR-00013：兩審查段中「成立但落允許清單外、零改動升級」的 blockers（主線收尾 commit 處理）；escalatedStages 標出處。
   escalatedBlockers: (c1.escalated || []).concat(c2.escalated || []),
   escalatedStages: [].concat((c1.escalated || []).length ? ['SpecReview'] : [], (c2.escalated || []).length ? ['CodeQualityReview'] : []),

@@ -11,8 +11,8 @@
                   版本兩向差；★使用者列之 password 欄只報「不等」、兩值以遮蔽字面呈現、不印雜湊原文）、只列有差者＋末行摘要
                   （走查**後**清理完跑；
                   ★rc 0 才算「環境已還原」——三閘綠不算，rev5:L-055／rev5:L-071 招牌徵狀＝三閘綠而全量紅）
-                  ★序列面例外一項：runtime-append 四表（RUNTIME_APPEND_TABLES、與 tools/schema-gate.py 同名常數同值）
-                    之 id 序列只比**存在性**、不比值——同 gate2 對其 setval 值正規化之口徑；這四支只進不退
+                  ★序列面例外一項：runtime-append 五表（RUNTIME_APPEND_TABLES、與 tools/schema-gate.py 同名常數同值）
+                    之 id 序列只比**存在性**、不比值——同 gate2 對其 setval 值正規化之口徑；這五支只進不退
                     （rust-api 測試守衛只清自寫列、序列不復位），逐值比則每跑一次全量測試 diff 即恆有差
   restore <檔>    走查後清理（RUNBOOK §9c 第 3 步之順序機器化；寫面恰為下列、次序固定）：
                   (a)遷移帳前置：結構安全帶之後、門鈴清前計數／①比對／⑥重啟句判準之現讀與一切寫入之前，以單句現讀
@@ -27,9 +27,9 @@
                   ①system_settings 對期望 seed（左源＝凍結 seed〔specs/001-schema-baseline/fixtures/seed.sql 之 COPY 段〕⊕ 演進
                     登記合成、見下「演進合成」）——值≠期望（含鍵缺／鍵多）即 fail-loud 指名、**不自動改值**（值還原走 002 刀
                     寫端＝人工前置）；值＝期望而審計欄 updated_at／updated_by 非 NULL 者歸 NULL（改回值≠改回痕）
-                  ②DELETE 清理面六表（RESTORE_TABLES＝會話三表＋sys_ip_rule＋sys_operation_log＋sys_pwd_custody）全表
+                  ②DELETE 清理面七表（RESTORE_TABLES＝會話三表＋sys_ip_rule＋sys_operation_log＋sys_pwd_custody＋sys_access_log）全表
                     ＋sys_user.session_id 歸 NULL
-                  ③五支 setval（RESTORE_SEQUENCES＝清理面有 id 序列之五表之序列；sys_pwd_custody 無序列）值自基準檔現讀
+                  ③六支 setval（RESTORE_SEQUENCES＝清理面有 id 序列之六表之序列；sys_pwd_custody 無序列）值自基準檔現讀
                   ③b角色／選單／使用者域寫面（接在③之後）：sys_user_role 以目標鍵集差刪除（現況有而目標無之對；其 user_id／
                     role_id 外鍵 ON DELETE RESTRICT 指 sys_user／sys_role、故先於上界刪除）→ BOUNDED_TABLES 五表（sys_role／
                     sys_menu／casbin_rule／sys_casbin_policy_archive／sys_user；sys_user 居末、其餘次序取名冊序）刪 id > 目標上界之
@@ -54,7 +54,7 @@
                     CASBIN_RESTART_HINT（MUST 重啟 rust-api、附可照抄之 compose restart 命令；判定面無外部通知管道）
                     ——提交後任一步失敗之路徑亦輸出；未動 casbin 者不輸出（sys_role、sys_user 回寫與指派回補不需重啟：角色成員與
                     首頁每請求自庫讀、帳號活性於登入與換發自庫讀）
-                  ★安全帶：基準檔清理面六表列數或 session／throttle／cpwd 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
+                  ★安全帶：基準檔清理面七表列數或 session／throttle／cpwd 前綴鍵數非 0＝拒絕執行 rc 2、零寫入（DELETE 全表
                     會毀掉基準資料——restore 只服務「走查前為空基準」之形；無空基準檔可用＝改跑 seed 模式）；角色／選單／使用者域
                     六表不套（其寫面不毀目標態之列）、改守前置：基準檔五表任一之上界高於其序列位置（nextval 已發出之最大值：
                     is_called 真＝last_value、假＝last_value-1）＝拒跑 rc 2、零寫入——取樣時已有顯式 id 殘列越過序列、走查以
@@ -63,17 +63,17 @@
   restore --seed  同上清理、但無須基準檔：目標態＝凍結 seed ⊕ 演進合成（合成射程＝system_settings＋角色／選單／使用者域六表；
                   BL-00075；走查外殘列——被殺測試留下之列與鍵——產生時通常無空基準 snapshot 可用；無基準檔＝無 (a) 遷移帳
                   前置、(b) 照驗）。與基準檔模式之差恰三處：
-                  (甲)安全帶改對合成目標：清理面六表之 COPY 段須在場且零列、五支序列之 setval 行須在場；角色／選單／使用者域
+                  (甲)安全帶改對合成目標：清理面七表之 COPY 段須在場且零列、六支序列之 setval 行須在場；角色／選單／使用者域
                     六表之 COPY 段與五支序列之 setval 行須在場（不論列數；段首缺欄、列欄數不符、id 非整數、授權列／角色列／使用者列
                     之值不合欄型＝凍結面受損；含遮蔽欄之表其錯誤訊息只引段內列序、不引列文）；
-                    演進帳拒跑判定只剩清理面六表（有其 seed_* 登記＝仍拒跑之演進形①、見下）；上界對序列之前置照套、對象改為
+                    演進帳拒跑判定只剩清理面七表（有其 seed_* 登記＝仍拒跑之演進形①、見下）；上界對序列之前置照套、對象改為
                     合成目標（COPY 列 id 最大值高於其 setval 位置＝凍結面受損或合成未推進序號 rc 2；真檔恰相等、自測釘住＝不觸發）
                   (乙)③只 setval sys_ip_rule_id_seq 一支（SEED_SETVAL_SEQUENCES＝清理面序列扣掉 runtime-append 者）、
-                    值自合成文字之 setval 行現讀；runtime-append 四支序列**不復位**；③b 目標＝合成目標：五表上界＝合成後
+                    值自合成文字之 setval 行現讀；runtime-append 五支序列**不復位**；③b 目標＝合成目標：五表上界＝合成後
                     COPY 列 id 最大值（零列記 0）、五支 setval 值＝合成後 setval 行（seed_add 新列推進者隨之）、指派鍵集＝COPY
                     鍵集、授權列＝casbin_rule COPY 全欄列、角色列與使用者列可變欄＝sys_role／sys_user COPY 之可變欄（同經
                     _seed_copy_rows 取段、依欄型轉型）
-                  (丙)⑤收尾比對之判準面＝清理面與角色／選單／使用者域對合成目標值（清理面六表 0 列、sys_ip_rule_id_seq＝seed 值、
+                  (丙)⑤收尾比對之判準面＝清理面與角色／選單／使用者域對合成目標值（清理面七表 0 列、sys_ip_rule_id_seq＝seed 值、
                     runtime-append 序列在場、三前綴 0 鍵；該域六表列數、五表上界與序列、指派鍵集、授權列／角色列／使用者列
                     可變欄）；其餘面（含遷移帳）無基準
                     可比＝不判——pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜
@@ -112,7 +112,7 @@
   system_settings（SYNTH_TABLES_BASELINE；其餘目標態取基準檔）；seed 模式＝其＋角色／選單／使用者域六表（SYNTH_TABLES_SEED）。
   射程外之表之登記（含未內建之 add_table）不餵、不擋。
   ★射程界：seed_* 演進（清理面各表除外）由合成承接、不須再擴本工具。仍拒跑之演進形恰兩種：①清理面各表（會話三表、IP 規則、
-    操作紀錄、經手表）之 seed_* 登記——seed 模式 rc 2 指名登記 id（整表清空以 seed 恆零列為前提；基準檔模式由清理面須零列之
+    操作紀錄、經手表、存取日誌）之 seed_* 登記——seed 模式 rc 2 指名登記 id（整表清空以 seed 恆零列為前提；基準檔模式由清理面須零列之
     安全帶承擔同一邊界）②合成面表之結構演進屬 schema 閘合成未內建之形（add_column 帶 default 或 NOT NULL）——與 gate2 同
     rc 2、於 tools/schema-gate.py 同一擴充點補齊即兩工具同時恢復。其餘拒跑屬前置不符（(a) 基準檔遷移帳≠現庫、(b) repo↔現庫
     遷移不同步）：重拍基準或套遷移即解；其餘結構類演進不使本工具拒跑（以欄名取值、新欄不入回寫射程、新表不入清理面）。
@@ -122,7 +122,7 @@
 安全帶拒跑（含目標態五表上界高於其序列位置）、基準檔遷移帳≠現庫（(a)；含現庫遷移帳撈取壞形）、合成射程有 seed_* 登記而 repo
 migration 清單≠現庫遷移帳或該清單不可解（(b)）、基準檔缺清理面之表或序列、seed 左源缺席或不可解、演進登記檔缺席或壞形、演進合成鏈
 載入失敗或合成失敗（GateError：pk 命中≠1、values 欄集不符、未內建之結構演進形等）、system_settings 值≠期望 seed、casbin_rule 現態
-撈取壞形；seed 模式另含凍結 seed 缺清理面或角色／選單／使用者域之 COPY 段或 setval 行、該面 COPY 段受損、清理面六表有 seed_* 演進
+撈取壞形；seed 模式另含凍結 seed 缺清理面或角色／選單／使用者域之 COPY 段或 setval 行、該面 COPY 段受損、清理面七表有 seed_* 演進
 登記；基準檔壞形含 v3／v2／v1 舊檔形）／64 用法錯（usage 走 stderr）。restore 之 0／1 即其收尾 diff 之 rc。
 
 唯讀紀律（self-test 逐字釘住）：snapshot／diff 唯讀——pg 只下 SELECT（含目錄視圖）、redis 只下 DBSIZE／--scan；
@@ -144,7 +144,8 @@ runtime-append 序列存在性口徑＝BL-00075（004 刀 U3；rev5 同名工具
 兩欄與重啟句（⑥）＝005 刀 U15（T088；rev5 同名工具無此面、無藍本）；授權列回補與角色列回寫（③b 擴面）、檔形 v3 兩欄與重啟句
 回補腿＝006 刀 U15（T072；同無藍本）；檔形 v4（遷移帳與使用者列兩欄、sys_user 入上界面）、(a) 遷移帳前置、repo migration 清單解析、
 使用者域寫面（指派回補、使用者列回寫）、清理面擴經手表與 cpwd 前綴、password 遮蔽、演進合成（schema-gate 同一合成鏈；兩模式 seed 左源與
-seed 模式目標態）與 (b) repo↔現庫遷移同步前置＝007 刀 U1（T005～T007；同無藍本）。
+seed 模式目標態）與 (b) repo↔現庫遷移同步前置＝007 刀 U1（T005～T007；同無藍本）。runtime-append 名冊與清理面擴
+sys_access_log（清理面七表、六支序列）＝008 刀 U1（ADR-00100 決定 8；同無藍本）。
 """
 import contextlib
 import copy
@@ -193,32 +194,36 @@ SQL_SEQUENCES = ("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=
 # seed 左源＝凍結 fixture 之 system_settings COPY 段（唯讀、REPO_ROOT 相對）
 SEED_FIXTURE = os.path.join("specs", "001-schema-baseline", "fixtures", "seed.sql")
 # 演進登記檔（形斷言權威＝tools/schema-gate.py）：期望 seed＝凍結 ⊕ 演進。本工具之 seed 左源＝凍結段經 schema-gate 之同一合成鏈
-# 施以合成射程內之登記（synthesize_seed）；清理面六表之 seed_* 登記於 seed 模式拒跑（check_seed_evolution：整表清空以 seed 恆零列為前提）
+# 施以合成射程內之登記（synthesize_seed）；清理面七表之 seed_* 登記於 seed 模式拒跑（check_seed_evolution：整表清空以 seed 恆零列為前提）
 SCHEMA_EVOLUTION = os.path.join("docs", "ops", "reference-src", "schema-evolution.json")
 SEED_EVOLUTION_KINDS = ("seed_add", "seed_update", "seed_delete")
 # 合成鏈之單一來源（gate2 期望 seed 之 normalize_seed_dump → apply_seed_entries、seed_add 序號推進含於其內）：連字檔名不可 import、
 # 執行期依路徑載入（REPO_ROOT 相對）；本工具不自持第二份 COPY 合成或序號推進——schema 閘之合成一擴充即兩工具同時生效
 SCHEMA_GATE = os.path.join("tools", "schema-gate.py")
-# runtime-append 四表→其 id 序列：與 tools/schema-gate.py 之 RUNTIME_APPEND_TABLES **同值**（連字檔名 CLI 不可 import、
-# 故自帶；自測以 importlib 依路徑載入該檔、對賬兩者逐項相等）。這四支序列只進不退——rust-api 測試守衛只清自寫列、
-# 不復位（004 刀 U3 廢序列復位守衛；LL-00017／LL-00022）——故 diff 對其只比存在性、seed 模式亦不 setval。
+# runtime-append 五表→其 id 序列：與 tools/schema-gate.py 之 RUNTIME_APPEND_TABLES **同值**（連字檔名 CLI 不可 import、
+# 故自帶；自測以 importlib 依路徑載入該檔、對賬兩者逐項相等；sys_access_log 依 ADR-00100 決定 8 入集）。這五支序列只進不退
+# ——rust-api 測試守衛只清自寫列、不復位（004 刀 U3 廢序列復位守衛；LL-00017／LL-00022）——故 diff 對其只比存在性、seed 模式
+# 亦不 setval。
 RUNTIME_APPEND_TABLES = {
     "session_event": "session_event_id_seq",
+    "sys_access_log": "sys_access_log_id_seq",
     "sys_login_attempt": "sys_login_attempt_id_seq",
     "sys_operation_log": "sys_operation_log_id_seq",
     "sys_token": "sys_token_id_seq",
 }
-# 清理面六表（DELETE 全表；次序即語句序）：會話三表＋sys_ip_rule（業務表、zero-seed）＋sys_operation_log＋sys_pwd_custody
-# （經手表：seed 零列、無序列＝不入 RESTORE_SEQUENCES）
-RESTORE_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log", "sys_pwd_custody")
+# 清理面七表（DELETE 全表；次序即語句序）：會話三表＋sys_ip_rule（業務表、zero-seed）＋sys_operation_log＋sys_pwd_custody
+# （經手表：seed 零列、無序列＝不入 RESTORE_SEQUENCES）＋sys_access_log（無外鍵、seed 零列＝整表清空前提成立；置尾＝既有語句序
+# 前綴不動）
+RESTORE_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log", "sys_pwd_custody",
+                  "sys_access_log")
 # 門鈴（BL-00094）：restore 以 SQL 直清 sys_ip_rule、不經規則寫端⇒執行中的 rust-api 判定面仍持舊規則集。
 # 清前列數非 0 時自動補按；★payload 不帶語意、收訊端只認頻道（rust-api `ipgate::IPGATE_INVALIDATE_CHANNEL` 之契約）。
 IPGATE_CHANNEL = "ipgate:invalidate"
 IPGATE_DOORBELL_PAYLOAD = "1"
 SQL_IP_RULE_ROWS = 'SELECT json_agg(t) FROM (SELECT count(*) AS n FROM "sys_ip_rule") t'
-# 基準檔模式 setval 之序列（清理面有 id 序列之五表、五支皆依基準檔現讀）；seed 模式只 setval 其中非 runtime-append 者
+# 基準檔模式 setval 之序列（清理面有 id 序列之六表、六支皆依基準檔現讀）；seed 模式只 setval 其中非 runtime-append 者
 RESTORE_SEQUENCES = ("sys_token_id_seq", "session_event_id_seq", "sys_login_attempt_id_seq",
-                     "sys_ip_rule_id_seq", "sys_operation_log_id_seq")
+                     "sys_ip_rule_id_seq", "sys_operation_log_id_seq", "sys_access_log_id_seq")
 SEED_SETVAL_SEQUENCES = tuple(s for s in RESTORE_SEQUENCES if s not in RUNTIME_APPEND_TABLES.values())
 # redis 清理前綴：會話、節流與改密節流（cpwd＝改密節流桶之獨立前綴）
 RESTORE_REDIS_PREFIXES = ("session", "throttle", "cpwd")
@@ -909,7 +914,7 @@ def seed_restore_target(seed_text):
 
 
 def seed_mode_baseline(live, target):
-    """seed 模式無基準檔：以現況為底、只把清理面與角色／選單／使用者域覆寫成 seed 目標值（清理面六表列數、五支序列、三前綴 0 鍵；
+    """seed 模式無基準檔：以現況為底、只把清理面與角色／選單／使用者域覆寫成 seed 目標值（清理面七表列數、六支序列、三前綴 0 鍵；
     該域六表列數、五表上界與序列、指派鍵集、授權列／角色列／使用者列可變欄）→ 交 diff_snapshots 比。其餘面（含遷移帳）恆等於現況
     ＝不入判準（無基準可比；該面之 pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜）。"""
     prefixes = {p: n for p, n in live["redis"]["prefixes"].items() if p not in RESTORE_REDIS_PREFIXES}
@@ -946,7 +951,7 @@ def seed_settings(seed_text):
 
 def check_seed_evolution(ledger_path, tables):
     """讀演進帳 → entries（供 synthesize_seed 合成與 repo↔現庫遷移同步前置判定）；`tables` 任一表有 seed_* 登記＝拒跑 rc 2、指名登記
-    id 與表。cmd_restore 只於 seed 模式傳清理面六表（RESTORE_TABLES；仍拒跑之演進形①）：其還原為 DELETE 全表、以 seed 恆零列為前提，
+    id 與表。cmd_restore 只於 seed 模式傳清理面七表（RESTORE_TABLES；仍拒跑之演進形①）：其還原為 DELETE 全表、以 seed 恆零列為前提，
     照清會把演進帳定義之 seed 列一併刪除；基準檔模式傳空（同一邊界由基準檔清理面須零列之安全帶承擔）。結構性 kind（add_column 等）不在
     此擋——合成面表之結構演進由合成鏈判（未內建形＝GateError）。登記檔缺席／非 JSON／entries 非 list 或含非物件項＝rc 2（形之完整
     斷言權威在 schema-gate、此處只驗讀帳所需）。"""
@@ -1104,8 +1109,8 @@ def _setval_sql(name, v):
 
 
 def restore_sql(snap, sequences=RESTORE_SEQUENCES, seed_surface=()):
-    """②③ 單交易寫句：審計欄歸 NULL → 清理面六表 DELETE＋session_id 歸 NULL → setval（值自目標態 snap 現讀；
-    基準檔模式＝RESTORE_SEQUENCES 五支、seed 模式＝SEED_SETVAL_SEQUENCES——runtime-append 序列不復位）→ seed_surface
+    """②③ 單交易寫句：審計欄歸 NULL → 清理面七表 DELETE＋session_id 歸 NULL → setval（值自目標態 snap 現讀；
+    基準檔模式＝RESTORE_SEQUENCES 六支、seed 模式＝SEED_SETVAL_SEQUENCES——runtime-append 序列不復位）→ seed_surface
     （③b 角色／選單／使用者域寫句、seed_surface_sql 產；cmd_restore 兩模式恆帶、接在 COMMIT 之前）。"""
     seqs = snap["sequences"]
     setvals = tuple(_setval_sql(n, seqs[n]) for n in sequences)
@@ -1304,7 +1309,7 @@ def _scrub_psql_error(text, snap):
 
 
 def cmd_restore(path, user, db, run=subprocess.run, seed_path=None, ledger_path=None, lib_path=None):
-    """path＝基準檔（目標態＝該檔、清理面五支＋角色／選單／使用者域五支序列依檔 setval、收尾＝對該檔 diff；寫入前另過 (a) 遷移帳前置）；
+    """path＝基準檔（目標態＝該檔、清理面六支＋角色／選單／使用者域五支序列依檔 setval、收尾＝對該檔 diff；寫入前另過 (a) 遷移帳前置）；
     path=None＝seed 模式（目標態＝凍結 seed ⊕ 演進合成之清理面與角色／選單／使用者域、清理面只 setval SEED_SETVAL_SEQUENCES＋該域
     五支、收尾＝兩面對合成目標值之比對）。兩模式之 system_settings 比對左源＝合成文字；合成射程有 seed_* 登記時另過 (b) repo↔現庫遷移
     同步前置（lib_path＝repo migration 清單料源、None＝真 repo）。讀帳、合成、前置判定與重啟句判準之現讀皆在任何寫入之前；重啟句於收尾
@@ -1384,7 +1389,7 @@ def usage(msg=None):
          f"      python3 {PROG} test\n"
          f"  snapshot＝走查前取三面基準寫 JSON；diff＝走查後重取現況逐值比對（rc 0 才算環境已還原；"
          f"runtime-append 表之序列只比存在性）；"
-         f"restore <檔>＝走查後清理（安全帶：清理面六表與三前綴之基準須為空、角色／選單／使用者域五表之基準上界須不高於其序列、"
+         f"restore <檔>＝走查後清理（安全帶：清理面七表與三前綴之基準須為空、角色／選單／使用者域五表之基準上界須不高於其序列、"
          f"基準檔遷移帳須等於現庫、合成射程有 seed_* 演進登記時 repo migration 清單須等於現庫遷移帳；system_settings 左源＝凍結 seed "
          f"⊕ 演進合成；該域刪上界以上列與鍵集差、補回被刪之 casbin_rule 列與指派對、回寫 sys_role／sys_user 可變欄）"
          f"＋收尾 diff（rc 即 diff 之 rc；動過 casbin_rule〔刪列、回補或改序列〕即輸出重啟 rust-api 句）；"
@@ -1424,7 +1429,7 @@ def main(argv, run=subprocess.run):
                  "空面與撈取截斷 rc 2、"
                  "psql 輸出不可解 rc 2、退出碼四態＋字面契約、用法、psql／redis 命令構造與 snapshot／diff 唯讀、"
                  "目錄 SQL 與 count 腿抗窄化、密碼不出 argv、print 全 flush；runtime-append 序列只比存在性＋"
-                 "名冊對賬 schema-gate；restore 寫面逐字＋次序、清理面六表（含經手表）五序列三前綴（含 cpwd）、"
+                 "名冊對賬 schema-gate；restore 寫面逐字＋次序、清理面七表（含經手表與存取日誌）六序列三前綴（含 cpwd）、"
                  "setval 自基準現讀、安全帶拒跑零呼叫、清理面缺席、settings 值≠期望 seed（含值≠合成值）零寫入、收尾 diff rc、"
                  "失敗即停、DEL 分批、seed 解析與空面、合成面外之登記與已內建之結構性登記兩模式不擋／"
                  "登記檔缺席壞形、合成射程內登記項壞形（缺 detail／id／kind）兩模式 rc 2 指名零呼叫（射程外壞形不餵不擋）、"
@@ -1933,12 +1938,12 @@ class TestDiffPure(unittest.TestCase):
         self.assertEqual(len(diff_snapshots(_snap(), live)), 1)   # 只差 is_called 也算差
 
     def test_runtime_append_sequences_compare_by_existence_only(self):
-        """★runtime-append 四表之 id 序列只比存在性、不比值（同 tools/schema-gate.py gate2 對其 setval 值正規化之口徑）：
-        這四支序列在測試與走查中只進不退（rust-api 測試守衛只清自寫列、序列不復位），逐值比＝每跑一次全量測試
-        diff 即恆紅、「rc 0 才算環境已還原」失去判別力。三腿：①四支值皆不同→全等 ②其一於現況或基準缺席→有差
+        """★runtime-append 五表之 id 序列只比存在性、不比值（同 tools/schema-gate.py gate2 對其 setval 值正規化之口徑）：
+        這五支序列在測試與走查中只進不退（rust-api 測試守衛只清自寫列、序列不復位），逐值比＝每跑一次全量測試
+        diff 即恆紅、「rc 0 才算環境已還原」失去判別力。三腿：①五支值皆不同→全等 ②其一於現況或基準缺席→有差
         ③名冊外序列（含 sys_ip_rule_id_seq＝業務表、序列值在比對面內）值不同→照報。"""
-        names = ("session_event_id_seq", "sys_login_attempt_id_seq", "sys_operation_log_id_seq",
-                 "sys_token_id_seq")
+        names = ("session_event_id_seq", "sys_access_log_id_seq", "sys_login_attempt_id_seq",
+                 "sys_operation_log_id_seq", "sys_token_id_seq")
 
         def seqs(**over):
             got = {s: {"last_value": 1, "is_called": False} for s in names + ("sys_ip_rule_id_seq",)}
@@ -1963,7 +1968,7 @@ class TestDiffPure(unittest.TestCase):
     def test_runtime_append_roster_equals_schema_gate_constant(self):
         """名冊對賬：本檔 RUNTIME_APPEND_TABLES 與 tools/schema-gate.py 同名常數逐項相等（連字檔名不可 import、
         故依路徑以 importlib 載入單檔）。schema-gate 擴集而本檔未跟＝新成員序列照舊逐值比、diff 恆紅；本檔多列
-        一支＝該序列之值漂移靜默不報——兩向皆由本案指名。另釘 restore 清理面與名冊之關係：四表全在清理面、
+        一支＝該序列之值漂移靜默不報——兩向皆由本案指名。另釘 restore 清理面與名冊之關係：五表全在清理面、
         清理面序列扣掉名冊恰剩 seed 模式唯一 setval 者。"""
         path = os.path.join(REPO_ROOT, "tools", "schema-gate.py")
         spec = importlib.util.spec_from_file_location("schema_gate_roster_source", path)
@@ -2771,12 +2776,13 @@ def _redis_write_offenders(cmds):
 
 RESTORE_FAKE_TABLES = {"sys_user": 3, "sys_token": 0, "session_event": 0, "sys_login_attempt": 0,
                        "sys_ip_rule": 0, "sys_operation_log": 0, "sys_pwd_custody": 0, "sys_access_log": 0,
-                       "system_settings": 2, "seaql_migrations": 7,
+                       "sys_user_email_verify": 0, "system_settings": 2, "seaql_migrations": 7,
                        "sys_role": 3, "sys_menu": 78, "casbin_rule": 163, "sys_casbin_policy_archive": 0,
                        "sys_user_role": 3}
 RESTORE_FAKE_SEQS = {"sys_user_id_seq": (3, "t"), "sys_token_id_seq": (1, "f"),
                      "session_event_id_seq": (1, "f"), "sys_login_attempt_id_seq": (1, "f"),
                      "sys_ip_rule_id_seq": (1, "f"), "sys_operation_log_id_seq": (1, "f"),
+                     "sys_access_log_id_seq": (1, "f"),
                      "sys_role_id_seq": (3, "t"), "sys_menu_id_seq": (78, "t"), "casbin_rule_id_seq": (163, "t"),
                      "sys_casbin_policy_archive_id_seq": (1, "f")}
 SEED_SETTINGS_TEXT = (
@@ -2787,8 +2793,9 @@ SEED_SETTINGS_TEXT = (
     "single_session_default\t2026-08-05 00:00:00+00\t\\N\t\\N\tenum:on,off\toff\t全站單一-session 預設\n"
     "\\.\n")
 
-# 清理面六表之測試側手寫名冊（不自受測常數 RESTORE_TABLES 衍生——常數縮水時跟著縮＝套套邏輯）
-CLEAR_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log", "sys_pwd_custody")
+# 清理面七表之測試側手寫名冊（不自受測常數 RESTORE_TABLES 衍生——常數縮水時跟著縮＝套套邏輯）
+CLEAR_TABLES = ("session_event", "sys_token", "sys_login_attempt", "sys_ip_rule", "sys_operation_log", "sys_pwd_custody",
+                "sys_access_log")
 # ③b 角色／選單／使用者域寫面於「目標＝seed 形（3／78／163／0／3、指派 3 對；授權列、角色列與使用者列＝樁值）」時之逐字期望（005 刀
 # U15、006 刀 U15、007 刀 U1；手寫、不自受測常數衍生）：指派鍵集差刪除先於五表、五表刪上界以上列（sys_user 居末）、授權列回補
 # （排在刪上界列之後）、指派回補（排在一切刪除之後）、角色列回寫、使用者列回寫、五支 setval——接在清理面 setval 之後、COMMIT 之前
@@ -2808,15 +2815,16 @@ BOUNDED_SURFACE_AT_SEED = (
     "SELECT setval('casbin_rule_id_seq', 163, true); "
     "SELECT setval('sys_casbin_policy_archive_id_seq', 1, false); "
     "SELECT setval('sys_user_id_seq', 3, true); ")
-# seed 模式左源樁：上段＋清理面六表之零列 COPY 段（經手表欄形同真檔、無 id）＋五支 setval 行。表名與序列名字面手寫、不自受測常數衍生
+# seed 模式左源樁：上段＋清理面七表之零列 COPY 段（經手表欄形同真檔、無 id）＋六支 setval 行。表名與序列名字面手寫、不自受測常數衍生
 # （常數縮水時樁跟著縮＝套套邏輯）；sys_ip_rule_id_seq 刻意取非預設值、證 setval 值自 seed 現讀而非寫死。
 SEED_RESTORE_TEXT = SEED_SETTINGS_TEXT + "".join(
     f"\nCOPY public.{t} (id, created_at) FROM stdin;\n\\.\n"
-    for t in CLEAR_TABLES[:5]) + "\nCOPY public.sys_pwd_custody (user_id, created_at, created_by) FROM stdin;\n\\.\n" + "".join(
+    for t in CLEAR_TABLES[:5]) + "\nCOPY public.sys_pwd_custody (user_id, created_at, created_by) FROM stdin;\n\\.\n" + (
+    "\nCOPY public.sys_access_log (id, created_at) FROM stdin;\n\\.\n") + "".join(
     f"\nSELECT pg_catalog.setval('public.{s}', {v});\n"
-    for s, v in (("session_event_id_seq", "1, false"), ("sys_ip_rule_id_seq", "7, true"),
-                 ("sys_login_attempt_id_seq", "1, false"), ("sys_operation_log_id_seq", "1, false"),
-                 ("sys_token_id_seq", "1, false"))) + (
+    for s, v in (("session_event_id_seq", "1, false"), ("sys_access_log_id_seq", "1, false"),
+                 ("sys_ip_rule_id_seq", "7, true"), ("sys_login_attempt_id_seq", "1, false"),
+                 ("sys_operation_log_id_seq", "1, false"), ("sys_token_id_seq", "1, false"))) + (
     # 角色／選單域五表（005 刀 U15）：形同真凍結 seed（3／78／163／0 列、指派 3 對、四支 setval；007 刀 U1 另加 sys_user 段與其
     # setval 行、見下）；表名與序列名手寫。
     # 006 刀 U15：casbin_rule 段擴全欄（欄序同真檔）、sys_role 段擴含七個可變欄（欄序刻意打亂、證依段首欄名取值）——值＝樁現況值
@@ -2888,7 +2896,7 @@ M0003_ENTRIES = tuple(
 
 
 class TestRestore(unittest.TestCase):
-    """restore 諸步：讀帳與演進合成→安全帶（清理面六表之基準須為空）→遷移帳前置（基準檔＝現庫）→repo↔現庫遷移同步前置（合成射程有
+    """restore 諸步：讀帳與演進合成→安全帶（清理面七表之基準須為空）→遷移帳前置（基準檔＝現庫）→repo↔現庫遷移同步前置（合成射程有
     seed_* 登記時）→system_settings 對期望 seed（凍結 ⊕ 演進合成；值不等 fail-loud、不改值）→pg 單交易（寫句恰為列舉、setval 自
     基準檔現讀）→redis 三前綴逐鍵指名 DEL（絕不 FLUSHDB）→收尾 diff 之 rc 即 restore 之 rc。"""
 
@@ -3030,12 +3038,14 @@ class TestRestore(unittest.TestCase):
             "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL; "
             "DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; "
             "DELETE FROM sys_ip_rule; DELETE FROM sys_operation_log; DELETE FROM sys_pwd_custody; "
+            "DELETE FROM sys_access_log; "
             "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
             "SELECT setval('sys_token_id_seq', 5, true); "
             "SELECT setval('session_event_id_seq', 1, false); "
             "SELECT setval('sys_login_attempt_id_seq', 1, false); "
             "SELECT setval('sys_ip_rule_id_seq', 1, false); "
             "SELECT setval('sys_operation_log_id_seq', 1, false); "
+            "SELECT setval('sys_access_log_id_seq', 1, false); "
             + BOUNDED_SURFACE_AT_SEED +
             "COMMIT;"])
         redis_cmds = [a[-1] for a in stub.log if "sh" in a]
@@ -3061,20 +3071,22 @@ class TestRestore(unittest.TestCase):
                                 "session_event_id_seq": {"last_value": 8, "is_called": False},
                                 "sys_login_attempt_id_seq": {"last_value": 7, "is_called": True},
                                 "sys_ip_rule_id_seq": {"last_value": 6, "is_called": True},
-                                "sys_operation_log_id_seq": {"last_value": 5, "is_called": False}},
+                                "sys_operation_log_id_seq": {"last_value": 5, "is_called": False},
+                                "sys_access_log_id_seq": {"last_value": 4, "is_called": True}},
                      redis={"dbsize": 0, "prefixes": {}})
         sql = restore_sql(snap)
         self.assertTrue(sql.endswith("SELECT setval('sys_token_id_seq', 9, true); "
                                      "SELECT setval('session_event_id_seq', 8, false); "
                                      "SELECT setval('sys_login_attempt_id_seq', 7, true); "
                                      "SELECT setval('sys_ip_rule_id_seq', 6, true); "
-                                     "SELECT setval('sys_operation_log_id_seq', 5, false); COMMIT;"),
+                                     "SELECT setval('sys_operation_log_id_seq', 5, false); "
+                                     "SELECT setval('sys_access_log_id_seq', 4, true); COMMIT;"),
                         msg=sql)
-        self.assertEqual(sql.count("setval("), 5)
+        self.assertEqual(sql.count("setval("), 6)
 
     def test_nonempty_baseline_refuses_rc2_before_any_docker_call(self):
         """★安全帶：基準檔清理面任一表列數或 session／throttle／cpwd 前綴鍵數非 0＝rc 2、零 docker 呼叫＝零寫入
-        （本案走會話三表與三前綴；sys_ip_rule／sys_operation_log／sys_pwd_custody 三表由擴面案走）。"""
+        （本案走會話三表與三前綴；sys_ip_rule／sys_operation_log／sys_pwd_custody／sys_access_log 四表由擴面案走）。"""
         for over in ({"tables": dict(RESTORE_FAKE_TABLES, sys_token=2)},
                      {"tables": dict(RESTORE_FAKE_TABLES, session_event=1)},
                      {"tables": dict(RESTORE_FAKE_TABLES, sys_login_attempt=4)},
@@ -3134,16 +3146,16 @@ class TestRestore(unittest.TestCase):
             self.assertEqual([a[-1] for a in stub.log], [SQL_MIGRATIONS, SQL_IP_RULE_ROWS, SQL_SETTINGS])
 
     def test_restore_rc_is_the_final_diff_rc(self):
-        """收尾 diff 之 rc 即 restore 之 rc：清理面與角色／選單／使用者域之外的殘留（sys_access_log 多一列）restore 不碰、收尾 diff
-        照報 rc 1；★sys_user 多一列（顯式 id 直植、序列未動）＝007 刀 U1 起入上界面＝刪列、收尾 rc 0（舊形「sys_user 多一列不碰、收尾
-        照報」翻轉）。"""
+        """收尾 diff 之 rc 即 restore 之 rc：清理面與角色／選單／使用者域之外的殘留（sys_user_email_verify 多一列；seed 零列）restore
+        不碰、收尾 diff 照報 rc 1；★sys_user 多一列（顯式 id 直植、序列未動）＝007 刀 U1 起入上界面＝刪列、收尾 rc 0（舊形「sys_user
+        多一列不碰、收尾照報」翻轉）。"""
         stub = _restore_stub()
         path = self._baseline(stub)
         self._dirty(stub)
-        stub.tables["sys_access_log"] = 1           # 清理面與該域之外的殘留：restore 不碰、收尾 diff 照報
+        stub.tables["sys_user_email_verify"] = 1    # 清理面與該域之外的殘留：restore 不碰、收尾 diff 照報
         rc, text = self._restore(path, stub)
         self.assertEqual(rc, RC_DIFF)
-        self.assertIn("表｜sys_access_log｜0｜1｜1", text)
+        self.assertIn("表｜sys_user_email_verify｜0｜1｜1", text)
         self.assertEqual((stub.tables["sys_token"], stub.keys), (0, ["plainkey"]))
         stub = _restore_stub()
         path = self._baseline(stub)
@@ -3281,23 +3293,25 @@ class TestRestore(unittest.TestCase):
             self.assertEqual(rc, RC_OK, msg=(seed_mode, text))
             self.assertEqual((stub.tables["sys_token"], stub.keys), (0, ["plainkey"]), msg=seed_mode)
 
-    def test_restore_surface_is_six_tables_five_sequences_and_three_prefixes(self):
-        """★擴面（BL-00075；004 刀 U3／007 刀 U1）：清理面＝會話三表＋sys_ip_rule＋sys_operation_log＋sys_pwd_custody（經手表：
-        全表清空、無序列＝不入 setval 名冊）與五支 id 序列、redis 三前綴（session／throttle／cpwd）。名冊與清列句逐字釘（多一表、少一表、
-        換序皆紅）；安全帶與清理面缺席判定同步涵蓋擴入之三表兩序列；走一趟後六表歸零、五支序列回到基準檔之值（基準檔模式仍依檔
-        setval——runtime-append 四支亦然）。"""
+    def test_restore_surface_is_seven_tables_six_sequences_and_three_prefixes(self):
+        """★擴面（BL-00075；004 刀 U3／007 刀 U1／008 刀 U1）：清理面＝會話三表＋sys_ip_rule＋sys_operation_log＋sys_pwd_custody（經手表：
+        全表清空、無序列＝不入 setval 名冊）＋sys_access_log（ADR-00100 決定 8；無外鍵、seed 零列、置尾）與六支 id 序列、redis 三前綴
+        （session／throttle／cpwd）。名冊與清列句逐字釘（多一表、少一表、換序皆紅）；安全帶與清理面缺席判定同步涵蓋會話三表以外之擴入各表與其序列；
+        走一趟後七表歸零、六支序列回到基準檔之值（基準檔模式仍依檔 setval——runtime-append 五支亦然）。"""
         self.assertEqual(RESTORE_TABLES, CLEAR_TABLES)
         self.assertEqual(RESTORE_SEQUENCES, ("sys_token_id_seq", "session_event_id_seq",
                                              "sys_login_attempt_id_seq", "sys_ip_rule_id_seq",
-                                             "sys_operation_log_id_seq"))
+                                             "sys_operation_log_id_seq", "sys_access_log_id_seq"))
         self.assertEqual(RESTORE_REDIS_PREFIXES, ("session", "throttle", "cpwd"))
         self.assertEqual(SQL_RESTORE_CLEAR, (
             "DELETE FROM session_event;", "DELETE FROM sys_token;", "DELETE FROM sys_login_attempt;",
             "DELETE FROM sys_ip_rule;", "DELETE FROM sys_operation_log;", "DELETE FROM sys_pwd_custody;",
+            "DELETE FROM sys_access_log;",
             "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL;"))
         for over in ({"tables": dict(RESTORE_FAKE_TABLES, sys_ip_rule=1)},
                      {"tables": dict(RESTORE_FAKE_TABLES, sys_operation_log=2)},
-                     {"tables": dict(RESTORE_FAKE_TABLES, sys_pwd_custody=1)}):
+                     {"tables": dict(RESTORE_FAKE_TABLES, sys_pwd_custody=1)},
+                     {"tables": dict(RESTORE_FAKE_TABLES, sys_access_log=1)}):
             stub = _restore_stub(**over)
             path = self._baseline(stub)
             with self.assertRaises(BaselineError, msg=over) as ctx:
@@ -3310,7 +3324,11 @@ class TestRestore(unittest.TestCase):
                              ({"tables": {k: v for k, v in RESTORE_FAKE_TABLES.items()
                                           if k != "sys_pwd_custody"}}, "sys_pwd_custody"),
                              ({"seqs": {k: v for k, v in RESTORE_FAKE_SEQS.items()
-                                        if k != "sys_operation_log_id_seq"}}, "sys_operation_log_id_seq")):
+                                        if k != "sys_operation_log_id_seq"}}, "sys_operation_log_id_seq"),
+                             ({"tables": {k: v for k, v in RESTORE_FAKE_TABLES.items()
+                                          if k != "sys_access_log"}}, "sys_access_log"),
+                             ({"seqs": {k: v for k, v in RESTORE_FAKE_SEQS.items()
+                                        if k != "sys_access_log_id_seq"}}, "sys_access_log_id_seq")):
             stub = _restore_stub(**over)
             path = self._baseline(stub)
             with self.assertRaises(BaselineError, msg=needle) as ctx:
@@ -3323,20 +3341,20 @@ class TestRestore(unittest.TestCase):
         stub.tables["sys_pwd_custody"] = 2
         rc, text = self._restore(path, stub)
         self.assertEqual(rc, RC_OK, msg=text)
-        self.assertEqual([stub.tables[t] for t in CLEAR_TABLES], [0] * 6)
+        self.assertEqual([stub.tables[t] for t in CLEAR_TABLES], [0] * 7)
         self.assertEqual(stub.seqs, RESTORE_FAKE_SEQS)
 
-    def test_seed_mode_clears_six_tables_and_setvals_only_the_ip_rule_sequence_from_seed(self):
+    def test_seed_mode_clears_seven_tables_and_setvals_only_the_ip_rule_sequence_from_seed(self):
         """★seed 模式（`restore --seed`；BL-00075 候選①）：無基準檔、目標態＝凍結 seed ⊕ 演進合成（本案演進帳空＝凍結 seed）。寫面逐字釘——清列句同基準檔
-        模式之六表；清理面之序列 setval **只有** sys_ip_rule_id_seq 一支、值自 seed 之 setval 行現讀（樁取 7,true 非預設值；
+        模式之七表；清理面之序列 setval **只有** sys_ip_rule_id_seq 一支、值自 seed 之 setval 行現讀（樁取 7,true 非預設值；
         角色／選單／使用者域五支序列屬 ③b、逐字見同句）；
-        runtime-append 四支序列不復位（走完仍是髒值）而收尾比對照樣 rc 0（只比存在性）。★清理面與該域之外不入 seed
+        runtime-append 五支序列不復位（走完仍是髒值）而收尾比對照樣 rc 0（只比存在性）。★清理面與該域之外不入 seed
         模式判準（無基準檔可比；該面之 pg 殘留由 tools/schema-gate.py check 之 gate2 逐列兜）。007 刀 U1：使用者域殘留（seed 指派被刪、
         新帳號列與其指派、seed 帳號欄值被改、經手表列、cpwd 鍵）一併還原至凍結 seed 目標（指派回補、使用者列回寫、sys_user 上界與序列）。"""
         stub = _restore_stub()
         self._dirty(stub)
         new = self._dirty_user_domain(stub)
-        stub.tables["sys_access_log"] = 1           # 清理面與該域之外：seed 模式不判
+        stub.tables["sys_user_email_verify"] = 1    # 清理面與該域之外：seed 模式不判
         rc, text = self._restore_seed(stub)
         self.assertEqual(rc, RC_OK, msg=text)
         sqls = [a[-1] for a in stub.log if "psql" in a]
@@ -3346,6 +3364,7 @@ class TestRestore(unittest.TestCase):
             "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL; "
             "DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; "
             "DELETE FROM sys_ip_rule; DELETE FROM sys_operation_log; DELETE FROM sys_pwd_custody; "
+            "DELETE FROM sys_access_log; "
             "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
             "SELECT setval('sys_ip_rule_id_seq', 7, true); "
             + BOUNDED_SURFACE_AT_SEED +
@@ -3355,7 +3374,7 @@ class TestRestore(unittest.TestCase):
             f"{REDIS_CLI} PUBLISH {IPGATE_CHANNEL} {IPGATE_DOORBELL_PAYLOAD}",   # ★門鈴排在 DEL 之前（L1-1）
             f"{REDIS_CLI} DEL session:denylist:sid-b session:sid-a:last_activity "
             f"'throttle:unlock:user:走查 探針' cpwd:{new}"])
-        self.assertEqual([stub.tables[t] for t in CLEAR_TABLES], [0] * 6)
+        self.assertEqual([stub.tables[t] for t in CLEAR_TABLES], [0] * 7)
         self.assertEqual((sorted(stub.user_roles), stub.ids["sys_user"]), (list(STUB_USER_ROLES), [1, 2, 3]))
         self.assertEqual(stub.user_row(2), STUB_USER_ROWS[2])
         self.assertEqual(stub.seqs, dict(RESTORE_FAKE_SEQS, sys_ip_rule_id_seq=(7, "t"),
@@ -3375,9 +3394,35 @@ class TestRestore(unittest.TestCase):
         self.assertEqual(rc, RC_DIFF, msg=text)
         self.assertIn("序列｜sys_operation_log_id_seq｜last_value=1,is_called=f｜（無）｜—", text)
 
+    def test_access_log_rows_and_advanced_sequence_are_cleared_in_both_modes(self):
+        """存取日誌（ADR-00100 決定 8；008 刀 U1）：基準 0 列而現況 sys_access_log 3 列、sys_access_log_id_seq 前進 → 兩模式 restore 皆
+        DELETE 全表清列、收尾 diff rc 0。基準檔模式另 setval 回基準檔之值（樁取 5,true 非預設值、證值自基準檔現讀）；seed 模式不復位
+        該序列（runtime-append 序列；走完仍是前進後之值、收尾只比存在性）。表名與序列名手寫。"""
+        stub = _restore_stub(seqs=dict(RESTORE_FAKE_SEQS, sys_access_log_id_seq=(5, "t")))
+        path = self._baseline(stub)
+        stub.tables["sys_access_log"] = 3
+        stub.seqs["sys_access_log_id_seq"] = (8, "t")
+        rc, text = self._restore(path, stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        tx = self._tx(stub)
+        self.assertIn("DELETE FROM sys_access_log; ", tx)
+        self.assertIn("SELECT setval('sys_access_log_id_seq', 5, true); ", tx)
+        self.assertEqual((stub.tables["sys_access_log"], stub.seqs["sys_access_log_id_seq"]), (0, (5, "t")))
+        self.assertIn("✓ 全等", text)
+        stub = _restore_stub()
+        stub.tables["sys_access_log"] = 3
+        stub.seqs["sys_access_log_id_seq"] = (3, "t")
+        rc, text = self._restore_seed(stub)
+        self.assertEqual(rc, RC_OK, msg=text)
+        tx = self._tx(stub)
+        self.assertIn("DELETE FROM sys_access_log; ", tx)
+        self.assertNotIn("sys_access_log_id_seq", tx)
+        self.assertEqual((stub.tables["sys_access_log"], stub.seqs["sys_access_log_id_seq"]), (0, (3, "t")))
+        self.assertIn("✓ 全等", text)
+
     def test_seed_mode_preconditions_refuse_before_any_write(self):
         """seed 模式之安全帶語意沿用（目標態換成凍結 seed ⊕ 演進合成）：①seed 於清理面任一表有列＝DELETE 全表會毀掉 seed 資料（含
-        經手表）②seed 缺清理面之 COPY 段或 setval 行（含經手表段）③演進帳有清理面六表（含 sys_pwd_custody）之 seed_* 登記（仍拒跑之
+        經手表）②seed 缺清理面之 COPY 段或 setval 行（含經手表段）③演進帳有清理面七表（含 sys_pwd_custody）之 seed_* 登記（仍拒跑之
         演進形①：整表清空面以 seed 恆零列為前提、不入合成；007 刀 U1 起 system_settings 改入合成、不在此拒）——皆 rc 2、零 docker
         呼叫；他表（合成面外之 sys_user_email_verify）登記不擋；④system_settings 值≠期望 seed＝fail-loud 指名、只讀過門鈴清前計數與
         settings 兩句、零寫入。"""
@@ -3565,7 +3610,7 @@ class TestRestore(unittest.TestCase):
         rc, text = self._restore(path, stub)
         self.assertEqual(rc, RC_OK, msg=text)
         tx = self._tx(stub)
-        self.assertTrue(tx.endswith("SELECT setval('sys_operation_log_id_seq', 1, false); "
+        self.assertTrue(tx.endswith("SELECT setval('sys_access_log_id_seq', 1, false); "
                                     + BOUNDED_SURFACE_AT_SEED + "COMMIT;"), msg=tx)
         order = [tx.index(s) for s in ("DELETE FROM sys_user_role WHERE", "DELETE FROM sys_role WHERE",
                                        "DELETE FROM sys_menu WHERE", "DELETE FROM casbin_rule WHERE",
@@ -3614,7 +3659,7 @@ class TestRestore(unittest.TestCase):
                          "DELETE FROM sys_user_role WHERE (user_id, role_id) NOT IN (VALUES (1, 2), (3, 1));")
 
     def test_safety_belt_does_not_refuse_role_menu_tables_that_have_rows(self):
-        """安全帶「列數非 0 即拒」只套清理面六表：基準檔五表／指派表有列（含 archive 2 列）與凍結 seed 之該面 COPY 有列
+        """安全帶「列數非 0 即拒」只套清理面七表：基準檔五表／指派表有列（含 archive 2 列）與凍結 seed 之該面 COPY 有列
         皆照常 restore、不出拒跑句。"""
         stub = _restore_stub(ids=dict(STUB_BOUNDED_IDS, sys_casbin_policy_archive=(1, 2)),
                              tables=dict(RESTORE_FAKE_TABLES, sys_casbin_policy_archive=2),
@@ -4112,8 +4157,8 @@ class TestRestore(unittest.TestCase):
 
     def test_user_domain_restores_to_baseline_with_exact_statements_in_fixed_order(self):
         """★US6 場景 3（T006①）：基準＝seed 三帳號、鍵集 [[1,1],[2,2],[3,3]]、經手表 0、cpwd 0；現況＝(2, 2) 被刪、新帳號列 id 4 與其
-        指派、seed 帳號 2 之 nick_name 與 password 被改、經手表一列、cpwd:4 一鍵 → restore 寫句逐字＝清理面六表 DELETE→session_id 歸
-        NULL→五支 setval→指派鍵集差刪除→五表刪上界以上列（sys_user 居末）→授權列回補→指派回補→角色列回寫→使用者列回寫→五支 setval，
+        指派、seed 帳號 2 之 nick_name 與 password 被改、經手表一列、cpwd:4 一鍵 → restore 寫句逐字＝清理面七表 DELETE→session_id 歸
+        NULL→六支 setval→指派鍵集差刪除→五表刪上界以上列（sys_user 居末）→授權列回補→指派回補→角色列回寫→使用者列回寫→五支 setval，
         收尾 diff rc 0；seed 指派按原值補回、新帳號列與其指派清除、序列回值、帳號 2 可變欄寫回基準值、經手表與 cpwd 鍵清除；輸出不含
         任何密碼欄值；不動 casbin＝不出重啟句。"""
         stub = _restore_stub()
@@ -4129,12 +4174,14 @@ class TestRestore(unittest.TestCase):
             "WHERE updated_at IS NOT NULL OR updated_by IS NOT NULL; "
             "DELETE FROM session_event; DELETE FROM sys_token; DELETE FROM sys_login_attempt; "
             "DELETE FROM sys_ip_rule; DELETE FROM sys_operation_log; DELETE FROM sys_pwd_custody; "
+            "DELETE FROM sys_access_log; "
             "UPDATE sys_user SET session_id = NULL WHERE session_id IS NOT NULL; "
             "SELECT setval('sys_token_id_seq', 1, false); "
             "SELECT setval('session_event_id_seq', 1, false); "
             "SELECT setval('sys_login_attempt_id_seq', 1, false); "
             "SELECT setval('sys_ip_rule_id_seq', 1, false); "
             "SELECT setval('sys_operation_log_id_seq', 1, false); "
+            "SELECT setval('sys_access_log_id_seq', 1, false); "
             + BOUNDED_SURFACE_AT_SEED + "COMMIT;"))
         self.assertEqual(sorted(stub.user_roles), list(STUB_USER_ROLES))
         self.assertEqual((stub.ids["sys_user"], stub.tables["sys_user"]), ([1, 2, 3], 3))

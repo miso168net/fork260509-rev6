@@ -69,7 +69,7 @@
 　②load-bearing 自驗（容器內看 rc＋`python3 tools/docsync lint`——cargo 綠與 lint 綠是兩件事；rust-api 動到 ROUTES〔增列、刪列或改序〕之單元另跑 `python3 -B tools/docsync test`＝LL-00060）
 　★③落帳（衍生工作→BACKLOG append、踩坑→LESSONS 一坑一檔（索引與 next-id 由 generate 產）、tasks 該單元涵蓋的 T 全勾、新拍板→ADR）——主動做、不等 user 問
 　④子庫 commit ⑤`git add <子庫>`→`python3 tools/docsync generate`→`git add docs/generated docs/arc42/ARCHITECTURE.md docs/ops/LESSONS.md tools/orchestration/_sk_rules.js`（後三件＝`docs/generated/` 之外的 GENERATED_FILES 成員；`_sk_rules.js` 於 RULES 改動時才變）
-　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」，rev5:L-022、RL-0008）。
+　⑥一顆外層 commit → 啟下一支（★派發前對其 tasks 逐條問「它 import／呼叫／宣告的東西存在嗎」、並逐條核驗收斷言〔DoD 子句、內文編號步驟、單元定義另加之命令〕之判定點與射程，rev5:L-022、RL-0008）。
 　★③必須早於⑤：STATE.md 帳面統計與 pins 由 generate 現讀，反序即產出舊值且無 diff 可察（rev5:L-018）。
 ★單元一支接一支連續跑完、**不停下來等 user 首肯**；唯三種情形停：①拍板級問題（判準＝RULES 名詞段「拍板級」）②到了需要 push/merge 的時點③觸及 §6 硬禁令。
 全單元完成 → final holistic review → finishing-a-development-branch（push/merge 需 user 同意）→ 收刀簿記三步（events append＋NOTES＋generate）→
@@ -117,7 +117,7 @@
   won't-fix／by-design 也立 ADR；as-built 不回灌 ADR（拍板歸 ADR、實作結果歸收刀事件）。
 - **ID 配號**：BL／LL／RL 取檔頭 `<!-- next: -->` 後 bump、永不回收；ADR 編號＝檔名、永不重用（GT-05）。ops 帳本之跨刀存活面（BACKLOG／LESSONS）寫刀名形「001 刀 U2」；「本刀」只用於該刀分支內的 tasks／NOTES／commit 訊息；一律不寫裸刀號（RL-0020）。
 - **前代編號**：一律 `rev5:`／`rev4:` 前綴；提及形（反引號或「」內）不算使用（RL-0046；GT-05）。
-- **勘誤**：`python3 tools/docsync errata <詞>` 機器枚舉全 repo（含兩子庫 pin 樹）逐處處置後才 commit（RL-0001）。
+- **勘誤**：`python3 tools/docsync errata <詞>` 機器枚舉全 repo（外層＝已追蹤與已 `git add` 之檔；兩子庫＝工作樹、含未追蹤之新檔）逐處處置後才 commit（RL-0001）。
 - **tmp 工作區**：`tmp/` 為 gitignored 工作區兼跨刀資產庫（RL-0032）；**受版控文件一律不得寫 `tmp/` 具名路徑**（RL-0077、GT-06 機器守）——指範本改指入庫落點（`tools/orchestration/EXAMPLE-*.py`）或寫成不綁路徑的描述，形制句用佔位形；既有違規拿掉路徑、不是更新路徑。
 - **lint 運作模式**：pre-commit 一次跑完、秒級（雙錨門檻＝`.githooks/pre-commit` 檔頭常數）；被擋的是 Claude、同回合修復（錯誤訊息附去處）；user 僅介入 lint 抓到真決策或調規拍板。
   閘名冊＝`docs/generated/GATES.md`；Day-1 豁免逐筆具名、帶解除謂詞、到期即紅（RL-0051／RL-0052）。

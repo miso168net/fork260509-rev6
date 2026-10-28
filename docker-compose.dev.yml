@@ -189,7 +189,8 @@ services:
   # ═══ rev4:016-observability rev4:T025 reaper dev override（比照 migrate：target＋共用 mask 卷＋
   #     entrypoint 整段 override——dev 映像 ENTRYPOINT＝watchexec、只改 command 會被當
   #     watcher 參數）═══
-  # ★現況：rev6 無 reaper bin（rust-api 零 reaper 目標）與 reaper role（migration m0001～m0003 零 reaper）——下列 loop 之 `cargo run --bin reaper` 起了也跑不動；承載＝BL-00043。
+  # ★現況：reaper bin＝`rust-api/server/src/bin/reaper.rs`（進場點）、job 本體住 lib `rust-api/server/src/reaper.rs`、三 job＝token-reap／audit-retention／policy-reconcile（ADR-00101 決定 1、12）；reaper role 由 `rust-api/migration/src/m0004_reaper_role_and_audit_purge.rs` 建（NOLOGIN、零密碼；ADR-00108）、設密與 LOGIN＝`deploy/setup-reaper-role.py`。
+  # ★走查期間與真庫測試期間不起 jobs profile（audit-retention execute 刪舊列並落自記列、與測試守衛及走查基準互擾）。
   reaper:
     build:
       target: dev
@@ -204,25 +205,27 @@ services:
       - ./rust-api:/app
       - rust_api_cargo_cache:/usr/local/cargo/registry
       - rust_api_target:/app/target
-    # 姿態分派（contracts/reaper-cli.md＋reaper-cli-audit-retention.md sidecar 節；quickstart S5／S7）：
-    #   up（sidecar 常駐）→ command=loop → 每輪先後跑兩 job（皆★明文帶 --execute）：先 token-reap
-    #     （--execute）、後 audit-retention（--job audit-retention --execute），兩命令以 `;` 分隔
-    #     ＝失敗互不阻斷（rev4:FR-009；shell 語意承載、對照 `&&` 形）；兩 job 跑完 sleep
+    # 姿態分派（ADR-00101 決定 11；藍本＝rev4 dev loop）：
+    #   up（sidecar 常駐）→ command=loop → 每輪依序跑三 job（皆★明文帶 --execute）：先 token-reap
+    #     （--execute、預設 job：第一命令不帶 --job＝即 token-reap）、次 audit-retention（--job audit-retention
+    #     --execute）、後 policy-reconcile（--job policy-reconcile --execute；--execute 只決定心跳 mode、行為恆唯讀），
+    #     三命令以 `;` 分隔＝失敗互不阻斷（rev4:FR-009；shell 語意承載、對照 `&&` 形）；三 job 跑完 sleep
     #     REAPER_INTERVAL_SECS 週期重跑（dry-run 屬手動驗證姿態、杜絕常駐空轉；bin 跑完即退、
     #     transient 失敗不中斷 loop——rev3 cleanup-job 母版形）。
-    #   docker compose run --rm reaper dry-run → 一次性 dry-run（零變動、推 mode=dry-run 心跳）。
+    #   docker compose run --rm reaper dry-run → 一次性 dry-run（零變動、推 mode=dry-run 心跳）；`dry-run` 分支只跑預設 job（token-reap）；
+    #     他 job 之一次性 dry-run 走透傳形 `docker compose run --rm reaper --job <名>`。
     #   docker compose run --rm reaper --execute → 一次性真刪（run args 蓋 command、* 分支透傳 bin）。
-    # ★REAPER_INTERVAL_SECS fallback 86400——與 rules.yml 告警⑤/⑥門檻 172800 互為 2× 錨
-    #   （寫死；涵蓋 token-reap 之⑤與 audit-retention 之⑥；調整 MUST 同步改⑤/⑥兩門檻——
-    #   三檔同步：本檔＋docker-compose.yml＋rules.yml；契約＝specs/rev4:016-observability/contracts/
-    #   reaper-cli.md＋specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
+    # ★REAPER_INTERVAL_SECS fallback 86400——與 rules.yml 告警⑤／⑥／⑦b 三門檻 172800 互為 2× 錨
+    #   （寫死；涵蓋 token-reap 之⑤、audit-retention 之⑥、policy-reconcile 之⑦b；調整 MUST 同步改三門檻——
+    #   三檔同步：本檔＋docker-compose.yml＋rules.yml；依據＝ADR-00101 決定 2、10、11；藍本＝
+    #   specs/rev4:016-observability/contracts/reaper-cli.md＋specs/rev4:017-audit-retention/contracts/alerting-retention.md）。
     # $$ → compose 不 interpolate、留給容器內 sh；$0=reaper-dispatch、$1 起＝command／run args。
     entrypoint:
       - sh
       - -c
       - |
         case "$${1:-}" in
-          loop) while true; do cargo run --bin reaper -- --execute; cargo run --bin reaper -- --job audit-retention --execute; sleep "$${REAPER_INTERVAL_SECS:-86400}"; done ;;
+          loop) while true; do cargo run --bin reaper -- --execute; cargo run --bin reaper -- --job audit-retention --execute; cargo run --bin reaper -- --job policy-reconcile --execute; sleep "$${REAPER_INTERVAL_SECS:-86400}"; done ;;
           dry-run) exec cargo run --bin reaper ;;
           *) exec cargo run --bin reaper -- "$$@" ;;
         esac

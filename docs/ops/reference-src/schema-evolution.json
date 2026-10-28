@@ -1,5 +1,5 @@
 {
-  "next_id": 10,
+  "next_id": 12,
   "entries": [
     {
       "id": "E-001",
@@ -72,6 +72,22 @@
       "table": "sys_menu",
       "detail": {"pk": {"id": 78}, "set": {"buttons": "[{\"code\": \"ipRule:add\", \"desc\": \"新增IP規則\"}, {\"code\": \"ipRule:edit\", \"desc\": \"編輯IP規則\"}, {\"code\": \"ipRule:delete\", \"desc\": \"刪除IP規則\"}, {\"code\": \"ipRule:restore\", \"desc\": \"恢復IP規則\"}, {\"code\": \"ipRule:unlock\", \"desc\": \"解鎖來源IP\"}]"}},
       "date": "2026-10-07"
+    },
+    {
+      "id": "E-010",
+      "knife": "008-audit-settings-pages",
+      "kind": "seed_update",
+      "table": "sys_menu",
+      "detail": {"pk": {"id": 77}, "set": {"buttons": "[{\"code\": \"audit:purge\", \"desc\": \"清理日誌\"}]"}},
+      "date": "2026-10-24"
+    },
+    {
+      "id": "E-011",
+      "knife": "008-audit-settings-pages",
+      "kind": "seed_add",
+      "table": "casbin_rule",
+      "detail": {"pk": ["id"], "values": {"id": 165, "ptype": "p", "v0": "R_SUPER", "v1": "audit:purge", "v2": "button", "v3": "", "v4": "", "v5": "", "protected": false, "created_at": "2026-08-05 00:00:00+00", "created_by": null}},
+      "date": "2026-10-24"
     }
   ]
 }

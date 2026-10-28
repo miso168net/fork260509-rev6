@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""msg key 跨端閘（003 刀 U9 立、007 刀 U6 斷言 2 擴認 `BizData`；spec FR-027、`docs/ops/reference-src/code-gate-contracts.md` §5、research R9；碼面閘＝RUNBOOK §12 碼面閘表列、GT-12 腿對賬）。
+"""msg key 跨端閘（003 刀 U9 立、007 刀 U6 斷言 2 擴認 `BizData`、008 刀 U7 明細型之家改逐鍵對映；spec FR-027、`docs/ops/reference-src/code-gate-contracts.md` §5、research R9；碼面閘＝RUNBOOK §12 碼面閘表列、GT-12 腿對賬）。
 
 用法：
   python3 tools/msg-key-gate.py [check] [--rust <error.rs>] [--locales <dir>] [--src <dir>]   左源 ⇔ 三檔 backend 子樹逐檔雙向全等＋Biz／BizData 構造點守衛（含明細通道射程守與佔位符對賬）＋前端 msg 字面消費點名冊
@@ -16,15 +16,17 @@
   動態構造（變數／`format!`／函式回傳；函式值形 `AppError::Biz`／`Self::Biz` 不帶括號者亦是、`use` 行除外）＝rc 1 指名檔:行。
   `enum AppError { … }` 本體內之變體宣告非構造、不計。match 樣式（`AppError::Biz(_) =>`／`AppError::Biz(k) =>`／`… if`／`= …`）
   非構造、不計。生產區間內 Biz 構造點零處＝比對面為空（rc 2）——排除過度或掃描根有誤時不得回綠。
-  ★明細通道（ADR-00076 決定 7）：BizData 構造點（`AppError::BizData(`／`Self::BizData(`／經 use 匯入之裸 `BizData(`；`::` 與 `(` 間容空白；
+  ★明細通道（ADR-00102 決定 7）：BizData 構造點（`AppError::BizData(`／`Self::BizData(`／經 use 匯入之裸 `BizData(`；`::` 與 `(` 間容空白；
   函式值形亦計＝動態）同判、計入上述構造點總數（BizData 零處屬常態、不另設空比對面）：其**首引數**（括號內頂層第一個逗號之前；第二引數
   之明細物件不解析）MUST 為 `Cow::Borrowed(字面｜msg_key::NAME)`；變體宣告、match／if-let 樣式與括號內只有 `_`／`..` 之樣式（如
-  `matches!(e, AppError::BizData(..))`）不計＝`rev5:L-064` 前例。射程守四句（閘常數 `BIZ_DATA_KEYS`＝射程二鍵→明細型名）：
+  `matches!(e, AppError::BizData(..))`）不計＝`rev5:L-064` 前例。射程守四句（閘常數 `BIZ_DATA_KEYS`＝射程三鍵→明細型名）：
   ①BizData 構造點之鍵 ⊆ `BIZ_DATA_KEYS`（他鍵＝射程未經 ADR 擴張）②已入 MSG_KEYS 之射程鍵生產區恰一處構造點（零處＝構造點蒸發、
   多處＝分岔）③未入 MSG_KEYS 之射程鍵構造點數為 0 ④射程鍵以 `Biz(` 純 key 形構造＝紅（明細靜默消失）；②③逐鍵依該鍵是否已入 MSG_KEYS 判。
-  佔位符對賬（`rev5:B-139` 之機器守）：已入 MSG_KEYS 之射程鍵，其明細型（`<error.rs 所在目錄>/handler/user.rs` 生產區間之同名具名欄位
-  struct；欄名依 struct 級 `#[serde(rename_all = "…")]` 換算序列化名）之鍵集＝三檔該鍵譯文 `{…}` 佔位符集（逐檔）；其餘鍵之譯文佔位符集
-  為空。明細型之家缺席、查無該型、非具名欄位形、rename_all 形或值不在解析射程、欄位帶 serde 屬性＝rc 2（寧結構紅、不算錯鍵集）。
+  佔位符對賬（`rev5:B-139` 之機器守）：已入 MSG_KEYS 之射程鍵，其明細型（逐鍵之家＝閘常數 `DETAIL_HOME`，相對 error.rs 所在目錄：
+  設密兩鍵＝`handler/user.rs`、清理下限鍵＝`handler/audit.rs`；各家各讀一次、取其生產區間之同名具名欄位 struct；欄名依 struct 級
+  `#[serde(rename_all = "…")]` 換算序列化名）之鍵集＝三檔該鍵譯文 `{…}` 佔位符集（逐檔）；其餘鍵之譯文佔位符集為空。`DETAIL_HOME` 與
+  `BIZ_DATA_KEYS` 鍵集不等（`detail_home_findings`、run_check 首段）、某家缺席、查無該型（皆指名該家與型）、非具名欄位形、rename_all 形或值
+  不在解析射程、欄位帶 serde 屬性＝rc 2（寧結構紅、不算錯鍵集）。
 斷言 3（前端 msg 字面消費點名冊；BL-00063）：`--src`（預設 base-web/src）下 `*.ts`／`*.vue`／`*.tsx`（排除頂層 `locales/`）剝註解（`//`、
   `/* */` 含 JSDoc；`.vue` 之 `<script>` 塊外只剝 `<!-- -->`；再同步判準＝`<script>` 開標籤認引號屬性、`'`／`"` 字串不跨行、regex literal
   整段跳過——引號配對錯位即註解與字串整塊互換、假紅假綠皆有）後之字串字面，凡 ①恰等於 MSG_KEYS 成員、或 ②為 wire 形（`.` 串接之識別字段）
@@ -34,7 +36,7 @@
   模板字面）不成 wire 形字面、不在射程；★反引號模板不解析 `${…}` 內之巢狀模板——巢狀內層含 `//` 時，內層反引號被當外層收尾、其後
   `//` 被當行註解遮到行尾，同行其後之真消費點漏計（射程外已知態）。
 退出碼：0 綠／1 違規（鍵集不等、動態 Biz／BizData 構造、解出鍵不在名冊、射程守四句、佔位符不等、前端消費點與名冊不等）／2 結構異常（檔缺席、
-  常數表或 MSG_KEYS 解析失敗、backend 節缺席或 brace 不配對、比對面為空〔含斷言 3 掃描根缺席或零源檔〕、佔位符對賬之明細型取不到〔見上〕；
+  常數表或 MSG_KEYS 解析失敗、backend 節缺席或 brace 不配對、比對面為空〔含斷言 3 掃描根缺席或零源檔〕、佔位符對賬之明細型取不到或家對映與射程表鍵集不等〔見上〕；
   self-test 案敗亦 2）／64 用法錯。
 依賴：Python 3 標準庫、零 docker。接線：pre-commit `msg-key-gate` 段（staged 含 rust-api／base-web pin bump 或本檔即跑 `check`）、
   pre-commit `for t in …` 自測迴圈與 bootstrap `run_tool_test`（`test`）、README 樹、RUNBOOK §12 碼面閘表。
@@ -70,16 +72,22 @@ RE_WILDCARD_ARGS = re.compile(r"^[\s_.,]*$")
 RE_PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
 RE_RENAME_ALL = re.compile(r'\brename_all\s*=\s*"([^"]*)"')
 RE_FIELD = re.compile(r"^(?:pub(?:\s*\([^)]*\))?\s+)?(?:r#)?([A-Za-z_]\w*)\s*:")
-# 斷言 2 明細通道射程（ADR-00076 決定 1／7）：攜明細之鍵 → 其明細型名。擴第三鍵＝新 ADR、同批改本表。
+# 斷言 2 明細通道射程（ADR-00102 決定 1／7）：攜明細之鍵 → 其明細型名。擴鍵＝新 ADR、同批改本表與 DETAIL_HOME。
 BIZ_DATA_KEYS = {
     "biz.user.passwordPolicy": "PasswordPolicyDetail",
     "biz.user.pwdSetTooFrequent": "PwdSetTooFrequentDetail",
+    "biz.audit.purgeBelowFloor": "PurgeBelowFloorDetail",
 }
-# 明細型之家（相對 error.rs 所在目錄；ADR-00076 決定 1：兩型與其組裝件同住）。
-DETAIL_HOME = os.path.join("handler", "user.rs")
-# 其 repo 根相對形（預設左源目錄＋DETAIL_HOME）：佔位符對賬之 rust 面、與右源 locale 跨子庫＝pre-commit submodule-sync 段閘面
-# 成員（對賬＝tools/docsync/tests/test_hook_wiring.py 之 gate_face_paths）。
-DEFAULT_DETAIL = os.path.join(os.path.dirname(DEFAULT_RUST), DETAIL_HOME)
+# 明細型之家逐鍵對映（相對 error.rs 所在目錄；ADR-00102 決定 1／7：明細型與其組裝件同住——設密兩鍵住使用者 handler、清理下限鍵住
+# 稽核 handler）。鍵集須＝BIZ_DATA_KEYS（`detail_home_findings`；不等＝rc 2）。
+DETAIL_HOME = {
+    "biz.user.passwordPolicy": os.path.join("handler", "user.rs"),
+    "biz.user.pwdSetTooFrequent": os.path.join("handler", "user.rs"),
+    "biz.audit.purgeBelowFloor": os.path.join("handler", "audit.rs"),
+}
+# 各家之 repo 根相對形（預設左源目錄＋DETAIL_HOME 值；去重排序之 tuple）：佔位符對賬之 rust 面、與右源 locale 跨子庫＝pre-commit
+# submodule-sync 段閘面成員（對賬＝tools/docsync/tests/test_hook_wiring.py 之 gate_face_paths 逐元素讀）。
+DEFAULT_DETAILS = tuple(sorted({os.path.join(os.path.dirname(DEFAULT_RUST), h) for h in DETAIL_HOME.values()}))
 # serde struct 級 rename_all 對欄名之換算（Rust 欄名為 snake_case；與 serde `RenameRule::apply_to_field` 同義）。
 SERDE_RENAME_RULES = {
     "lowercase": lambda f: f,
@@ -109,10 +117,12 @@ TS_REGEX_PREV_WORDS = frozenset(["return", "typeof", "case", "do", "else", "in",
 FRONTEND_MSG_CONSUMERS = {
     # 登入軟區判斷：同碼 2222 之拒因只靠 msg 分，收到本鍵即顯驗證碼欄並取題（003 刀 U8）
     ("views/_builtin/login/modules/pwd-login.vue", "biz.auth.captchaRequired"): 1,
-    # 請求層明細轉譯白名單兩鍵（ADR-00076）：toast 鏈依 msg 字面認出攜參鍵，違規碼清單逐碼轉人話後插入 `{violations}`（007 刀 U20）
+    # 請求層明細轉譯白名單三鍵（ADR-00102）：toast 鏈依 msg 字面認出攜參鍵，違規碼清單逐碼轉人話後插入 `{violations}`（007 刀 U20）
     ("service/request/index.ts", "biz.user.passwordPolicy"): 1,
     # 同上：設密冷卻剩餘秒數原值插入 `{remainingSeconds}`（007 刀 U20）
     ("service/request/index.ts", "biz.user.pwdSetTooFrequent"): 1,
+    # 同上：清理下限天數原值插入 `{minDays}`（008 刀 U7）
+    ("service/request/index.ts", "biz.audit.purgeBelowFloor"): 1,
 }
 
 
@@ -461,7 +471,7 @@ def scan_biz_text(text, rel, const_map, keys):
             findings.append(f"{rel}:{line}：Biz 構造鍵 `{key}` 不在 MSG_KEYS 名冊")
         if key in BIZ_DATA_KEYS:
             findings.append(f"{rel}:{line}：射程鍵 `{key}` 以 `Biz(` 純 key 形構造——明細靜默消失，須經 `AppError::BizData`"
-                            "（射程守④、ADR-00076 決定 7）")
+                            "（射程守④、ADR-00102 決定 7）")
     for m in RE_BIZDATA.finditer(bv):
         if any(a <= m.start() < b for a, b in excluded):
             continue
@@ -484,7 +494,7 @@ def scan_biz_text(text, rel, const_map, keys):
         if key not in BIZ_DATA_KEYS:
             roster_note = "" if key in keys else "，且不在 MSG_KEYS 名冊"
             findings.append(f"{rel}:{line}：BizData 構造鍵 `{key}` 在明細通道射程外{roster_note}（射程恰 {sorted(BIZ_DATA_KEYS)}；"
-                            "擴第三鍵＝新 ADR＝射程守①、ADR-00076 決定 7）")
+                            "擴射程＝新 ADR＝射程守①、ADR-00102 決定 7）")
             continue
         bd_sites.append((key, f"{rel}:{line}"))
     return count, findings, bd_sites
@@ -510,7 +520,7 @@ def scan_biz(root, const_map, keys):
 
 
 def bizdata_stage_findings(bd_sites, keyset):
-    """射程守②③（ADR-00076 決定 7；逐鍵依該鍵是否已入名冊判）：已入 MSG_KEYS 之射程鍵生產區恰一處構造點、
+    """射程守②③（ADR-00102 決定 7；逐鍵依該鍵是否已入名冊判）：已入 MSG_KEYS 之射程鍵生產區恰一處構造點、
     未入者零處。`bd_sites`＝scan_biz 第四值（只含已過射程守①之構造點）。"""
     out = []
     for key in BIZ_DATA_KEYS:
@@ -519,10 +529,10 @@ def bizdata_stage_findings(bd_sites, keyset):
         if key in keyset and len(locs) != 1:
             why = "構造點蒸發" if not locs else "構造點分岔"
             out.append(f"明細通道射程守②：`{key}` 已入 MSG_KEYS、生產區 BizData 構造點須恰一處，實得 {len(locs)} 處{where}——{why}"
-                       "（ADR-00076 決定 7）")
+                       "（ADR-00102 決定 7）")
         elif key not in keyset and locs:
             out.append(f"明細通道射程守③：`{key}` 未入 MSG_KEYS、生產區 BizData 構造點須為 0，實得 {len(locs)} 處{where}——"
-                       "鍵須隨其首發單元同批入名冊（ADR-00076 決定 7）")
+                       "鍵須隨其首發單元同批入名冊（ADR-00102 決定 7）")
     return out
 
 
@@ -530,6 +540,13 @@ def bizdata_stage_findings(bd_sites, keyset):
 
 def _pascal(field):
     return "".join(p[:1].upper() + p[1:] for p in field.split("_"))
+
+
+def detail_home_findings(biz_keys, homes):
+    """射程表（`BIZ_DATA_KEYS`）與明細型之家對映（`DETAIL_HOME`）之鍵集對賬（ADR-00102 決定 7）→ findings（空＝相等）：射程鍵查無其家＝
+    該鍵佔位符對賬無檔可讀；家對映多出之鍵＝射程外之死項。兩向逐鍵指名；`run_check` 首段呼叫、非空即結構異常（rc 2）。"""
+    return ([f"明細型之家對映缺射程鍵 `{k}`（BIZ_DATA_KEYS 有、DETAIL_HOME 無——該鍵佔位符對賬無家可讀）" for k in sorted(set(biz_keys) - set(homes))]
+            + [f"明細型之家對映多出射程外之鍵 `{k}`（DETAIL_HOME 有、BIZ_DATA_KEYS 無）" for k in sorted(set(homes) - set(biz_keys))])
 
 
 def placeholders(value):
@@ -586,7 +603,7 @@ def detail_serialized_keys(text, type_name, label):
 
 
 def placeholder_findings(entries_by_file, detail_keys):
-    """佔位符對賬（ADR-00076 決定 7；`contracts` msg-keys §2.3）：`detail_keys`＝{已入 MSG_KEYS 之射程鍵: 明細型序列化鍵集
+    """佔位符對賬（ADR-00102 決定 7；`contracts` msg-keys §2.3）：`detail_keys`＝{已入 MSG_KEYS 之射程鍵: 明細型序列化鍵集
     （查無明細型者為 None＝已報 rc 2、此處不比）}；其鍵之譯文佔位符集須逐檔＝明細鍵集，其餘鍵（非攜參鍵）譯文佔位符集須為空。"""
     out = []
     fmt = lambda s: "、".join(f"{{{x}}}" for x in sorted(s)) or "（無）"
@@ -738,6 +755,7 @@ def frontend_findings(points, roster, keyset):
 def run_check(rust_path, locales_dir, src_dir, roster):
     """回 (rc, 輸出行清單)。結構異常先於違規：任一 rc 2 即整體 rc 2（仍列出已查到的其餘問題）。"""
     lines, structural, violations = [], [], []
+    structural.extend(detail_home_findings(BIZ_DATA_KEYS, DETAIL_HOME))
     try:
         if not os.path.isfile(rust_path):
             raise StructuralError(f"左源檔缺席：{rust_path}")
@@ -770,21 +788,25 @@ def run_check(rust_path, locales_dir, src_dir, roster):
     if points == 0:
         structural.append(f"斷言 2 比對面為空：掃 {files} 檔生產區間、Biz 構造點零處"
                           "（掃描根有誤或 `#[cfg(test)]` 排除過度——守衛無實際比對面即假綠）")
-    # 佔位符對賬：已入名冊之射程鍵逐鍵取明細型序列化鍵集（明細型之家缺席或查無該型＝rc 2、該鍵不比）。
+    # 佔位符對賬：已入名冊之射程鍵依鍵取家（DETAIL_HOME）、各家各讀一次，再逐鍵取明細型序列化鍵集（某家缺席或查無該型＝rc 2、
+    # 指名該家與型、該鍵不比；查無其家之鍵已由首段 detail_home_findings 報 rc 2）。
     carried = [k for k in BIZ_DATA_KEYS if k in keyset]
-    detail_keys, home = {}, os.path.join(rust_dir, DETAIL_HOME)
-    home_text = None
-    if carried and not os.path.isfile(home):
-        structural.append(f"佔位符對賬：明細型之家缺席（{home}；射程鍵 {carried} 已入 MSG_KEYS）")
-    elif carried:
-        with open(home, encoding="utf-8") as fh:
-            home_text = fh.read()
+    detail_keys, home_texts = {}, {}
+    for home in sorted({DETAIL_HOME[k] for k in carried if k in DETAIL_HOME}):
+        path, label = os.path.join(rust_dir, home), home.replace(os.sep, "/")
+        if not os.path.isfile(path):
+            types = [BIZ_DATA_KEYS[k] for k in carried if DETAIL_HOME.get(k) == home]
+            structural.append(f"佔位符對賬：明細型之家缺席——{label}（{path}；其明細型 {types} 之鍵已入 MSG_KEYS）")
+            continue
+        with open(path, encoding="utf-8") as fh:
+            home_texts[home] = fh.read()
     for key in carried:
         detail_keys[key] = None
-        if home_text is None:
+        home = DETAIL_HOME.get(key)
+        if home not in home_texts:
             continue
         try:
-            detail_keys[key] = detail_serialized_keys(home_text, BIZ_DATA_KEYS[key], DETAIL_HOME.replace(os.sep, "/"))
+            detail_keys[key] = detail_serialized_keys(home_texts[home], BIZ_DATA_KEYS[key], home.replace(os.sep, "/"))
         except StructuralError as e:
             structural.append(str(e))
     violations.extend(placeholder_findings(entries_by_file, detail_keys))
@@ -811,7 +833,8 @@ def run_check(rust_path, locales_dir, src_dir, roster):
     pending = [k for k in BIZ_DATA_KEYS if k not in keyset]
     lines.append(f"{TAG} ✓ 明細通道射程守：BizData 構造點之鍵 ⊆ BIZ_DATA_KEYS（{len(BIZ_DATA_KEYS)} 鍵）；已入名冊之射程鍵 {carried} 各恰一處、"
                  f"未入名冊之射程鍵 {pending} 零構造點、射程鍵零 `Biz(` 純 key 形")
-    lines.append(f"{TAG} ✓ 佔位符對賬：攜參鍵 {len(carried)} 鍵譯文佔位符 ⇔ 明細型序列化鍵逐檔全等；"
+    lines.append(f"{TAG} ✓ 佔位符對賬：攜參鍵 {len(carried)} 鍵譯文佔位符 ⇔ 明細型序列化鍵逐檔全等（明細型之家 "
+                 f"{sorted(h.replace(os.sep, '/') for h in home_texts)}）；"
                  f"非攜參鍵 {len(keyset) - len(carried)} 鍵譯文零佔位符（{'／'.join(LOCALE_FILES)}）")
     lines.append(f"{TAG} ✓ 前端 msg 字面消費點 {sum(len(v) for v in fe_points.values())} 處（掃 {fe_files} 檔、排除 {FRONTEND_EXCLUDE}/；"
                  f"安全前綴 {safe}＝MSG_KEYS 頂層前綴 − locale 頂層鍵）⇔ 名冊 {len(roster)} 項逐項全等、每鍵在 MSG_KEYS")
@@ -985,16 +1008,17 @@ def write_locales(d, per_file, backend=True, tail=LOCALE_TAIL, values=None):
 
 
 # ─── 合成 BizData 樣本：斷言 2 明細通道（射程守四句＋佔位符對賬）之正例與反例 ───
-# 常數表恆含射程二鍵（`P`／`F`）、MSG_KEYS 依案取捨＝模擬「射程鍵分批入名冊」之各階段；明細型之家＝`handler/user.rs`
-# （本段以字面路徑寫檔＝與閘常數獨立對賬：閘常數若漂離契約所定之家，各案即讀不到明細型而紅）。
+# 常數表恆含射程三鍵（`P`／`F`／`D`）、MSG_KEYS 依案取捨＝模擬「射程鍵分批入名冊」之各階段；明細型之家逐鍵：`P`／`F`＝`handler/user.rs`、
+# `D`＝`handler/audit.rs`（本段以字面路徑寫檔＝與閘常數獨立對賬：閘常數若漂離契約所定之家，各案即讀不到明細型而紅）。
 # 綠案之兩組裝件刻意取兩形：passwordPolicy＝rustfmt 多行常數形（尾逗號＋第二引數內含括號與逗號＝首引數抽取之載體：不切首引數、
 # 或改取最後一個逗號即誤判 dynamic 而紅；平鋪取首逗號與深度追蹤等價、本載體不分辨兩者——見 `first_arg_end`）、
 # pwdSetTooFrequent＝單行字面形；欄名 `remaining_seconds` 經 `rename_all = "camelCase"` 換算為 `remainingSeconds`
 # （拿掉 rename_all 換算即綠案紅＝換算判準之反例載體）。樣本行尾 `// ㉑a` 類標記供案內定位行號（註解不入掃描面）。
 BD_CONSTS = (("A", "common.success"), ("C", "biz.auth.locked"),
-             ("P", "biz.user.passwordPolicy"), ("F", "biz.user.pwdSetTooFrequent"))
+             ("P", "biz.user.passwordPolicy"), ("F", "biz.user.pwdSetTooFrequent"), ("D", "biz.audit.purgeBelowFloor"))
 BD_VALUES = {"biz.user.passwordPolicy": "'密碼不符合安全政策：{violations}'",
-             "biz.user.pwdSetTooFrequent": "'設定過於頻繁，請於 {remainingSeconds} 秒後再試'"}
+             "biz.user.pwdSetTooFrequent": "'設定過於頻繁，請於 {remainingSeconds} 秒後再試'",
+             "biz.audit.purgeBelowFloor": "'清理保留天數不可低於 {minDays} 天'"}
 BD_HEAD = "use std::borrow::Cow;\nuse serde::Serialize;\nuse crate::error::{AppError, msg_key};\n"
 BD_PP_TYPE = ("#[derive(Serialize)]\n#[serde(rename_all = \"camelCase\")]\n"
               "pub struct PasswordPolicyDetail {\n    pub violations: Vec<&'static str>,\n}\n")
@@ -1009,6 +1033,15 @@ BD_FQ_SITE = ("pub(super) fn pwd_set_too_frequent_err(remaining_seconds: u64) ->
               "    AppError::BizData(Cow::Borrowed(\"biz.user.pwdSetTooFrequent\"), serde_json::to_value(PwdSetTooFrequentDetail { remaining_seconds }).unwrap_or_default())\n"
               "}\n")
 BD_USER_RS = BD_HEAD + BD_PP_TYPE + BD_FQ_TYPE + BD_PP_SITE + BD_FQ_SITE
+# 第三鍵之家（`handler/audit.rs`）：明細型與單一組裝點同住；組裝點取真檔之「先 let 明細、再構造」形（首引數仍為常數形）。
+BD_PB_TYPE = ("#[derive(Serialize)]\n#[serde(rename_all = \"camelCase\")]\n"
+              "pub struct PurgeBelowFloorDetail {\n    pub min_days: u64,\n}\n")
+BD_PB_SITE = ("pub(super) fn purge_below_floor_err() -> AppError {\n"
+              "    let detail =\n"
+              "        serde_json::to_value(PurgeBelowFloorDetail { min_days: PURGE_MIN_DAYS.unsigned_abs() })\n"
+              "            .unwrap_or_default();\n"
+              "    AppError::BizData(Cow::Borrowed(msg_key::D), detail)\n}\n")
+BD_AUDIT_RS = BD_HEAD + BD_PB_TYPE + BD_PB_SITE
 
 
 def write_rust_bd(d, roster, files):
@@ -1037,7 +1070,9 @@ def self_test():
     安全前綴隨 locale 頂層鍵變動／比對面為空）＋斷言 2 明細通道十一案（007 刀 U6；合法形綠／動態構造／射程外鍵／同鍵兩處／
     已入名冊零構造點／未入名冊有構造點／射程鍵走 `Biz(`／明細型缺 rename_all／明細型欄名改名〔含查無明細型 rc 2〕／純 key 鍵譯文含
     佔位符／樣式與宣告不計；射程守四句與佔位符對賬各有專案、拔掉任一判準即對應案紅）＋斷言 3 真 repo 請求層案（007 刀 U20；名冊之
-    `service/request/index.ts` 各項 ⇔ 真檔實掃綠、逐項拔真檔一處字面即 rc 1 只指名該項）；任一案敗＝rc 2、指名案號。"""
+    `service/request/index.ts` 各項 ⇔ 真檔實掃綠、逐項拔真檔一處字面即 rc 1 只指名該項）＋斷言 2 明細型之家逐鍵對映五案（008 刀 U7；
+    三鍵綠／新家明細型欄改名／新型移出其家〔含家缺席〕／第三鍵構造點零或兩處／兩表鍵集對賬〔含 run_check 首段接線〕）；任一案敗＝rc 2、
+    指名案號。"""
     all_keys = [v for _, v in SYN_CONSTS]
     cases = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -1134,20 +1169,21 @@ def self_test():
         # 真 repo 左源綠案：現行 error.rs 常數形解得出、Biz 構造點皆常數／字面形；右源以解出鍵集合成（三檔實體＝check 的事、pre-commit 段跑）
         # ——已入名冊之攜參鍵，其譯文佔位符取本閘對真明細型之解析（`detail_serialized_keys`；不抄譯文、不與 BD_VALUES 共變），其餘鍵取
         # LEAF_VALUE（零佔位符）。⑪b＝同一真左源配全零佔位符右源：攜參鍵三檔逐檔指名 rc 1（佔位符對賬於真左源確實生效、非恆綠；攜參鍵
-        # 集＝`BIZ_DATA_KEYS` 中已入名冊者、自 007 刀 U8 起恆非空；ADR-00076）。
+        # 集＝`BIZ_DATA_KEYS` 中已入名冊者、自 007 刀 U8 起恆非空；明細型依鍵取家＝`DETAIL_HOME`；ADR-00102）。
         real_rust = os.path.join(ROOT, DEFAULT_RUST)
         ok_real, rc, out, keys, bd_real, carried = False, None, [], [], [], {}
         ok_real_b, rc_b, out_b = False, None, []
         if os.path.isfile(real_rust):
             with open(real_rust, encoding="utf-8") as fh:
                 real_const, keys = parse_left(fh.read())
-            label = DETAIL_HOME.replace(os.sep, "/")
             try:
-                with open(os.path.join(os.path.dirname(real_rust), DETAIL_HOME), encoding="utf-8") as fh:
-                    home_text = fh.read()
-                carried = {k: detail_serialized_keys(home_text, t, label) for k, t in BIZ_DATA_KEYS.items() if k in keys}
-            except (OSError, StructuralError):
-                carried = {}  # 明細型之家或明細型取不到＝下方 check 自報 rc 2、本案紅
+                for k, t in BIZ_DATA_KEYS.items():
+                    if k not in keys:
+                        continue
+                    with open(os.path.join(os.path.dirname(real_rust), DETAIL_HOME[k]), encoding="utf-8") as fh:
+                        carried[k] = detail_serialized_keys(fh.read(), t, DETAIL_HOME[k].replace(os.sep, "/"))
+            except (OSError, KeyError, StructuralError):
+                carried = {}  # 依鍵取家：某家、家對映或明細型取不到＝下方 check 自報 rc 2、本案紅
             values = {k: "'明細 " + " ".join(f"{{{f}}}" for f in sorted(fs)) + "'" for k, fs in carried.items()}
             write_locales(os.path.join(tmp, "real", "langs"), {"*": keys}, values={"*": values})
             write_locales(os.path.join(tmp, "real_b", "langs"), {"*": keys})
@@ -1206,17 +1242,19 @@ def self_test():
                       rc_a == RC_STRUCT and any("斷言 3 比對面為空" in ln for ln in out_a)
                       and rc_b == RC_STRUCT and any("掃描根缺席" in ln for ln in out_b), rc_b, out_a + out_b))
 
-        # ── 斷言 2 明細通道（BizData 構造形＋射程守四句＋佔位符對賬；007 刀 U6、ADR-00076 決定 7；樣本見 BD_* 上方註）──
-        def bd_scenario(tag, roster, user_rs, values=None):
+        # ── 斷言 2 明細通道（BizData 構造形＋射程守四句＋佔位符對賬；007 刀 U6 立、ADR-00102 決定 7；樣本見 BD_* 上方註）──
+        def bd_scenario(tag, roster, user_rs, values=None, audit_rs=None):
+            # `user_rs`／`audit_rs` 為 None＝該家不寫檔（明細型之家缺席之反例）；`audit_rs` 缺省不寫＝第三鍵未入名冊之各案照舊。
             base = os.path.join(tmp, tag)
-            rust = write_rust_bd(os.path.join(base, "src"), roster, {"handler/user.rs": user_rs})
+            homes = {"handler/user.rs": user_rs, "handler/audit.rs": audit_rs}
+            rust = write_rust_bd(os.path.join(base, "src"), roster, {p: t for p, t in homes.items() if t is not None})
             write_locales(os.path.join(base, "langs"), {"*": [v for n, v in BD_CONSTS if n in roster]},
                           values={"*": BD_VALUES, **(values or {})})
             web = write_src(os.path.join(base, "web"), {"views/x.ts": "export const K = 'biz.auth.locked';\n"})
             return run_check(rust, os.path.join(base, "langs"), web, {("views/x.ts", "biz.auth.locked"): 1})
 
-        def flagged_lines(out):
-            return sorted(int(m.group(1)) for ln in out for m in [re.search(r"handler/user\.rs:(\d+)：", ln)] if m)
+        def flagged_lines(out, home="user"):
+            return sorted(int(m.group(1)) for ln in out for m in [re.search(rf"handler/{home}\.rs:(\d+)：", ln)] if m)
 
         full = ["A", "C", "P", "F"]
         rc, out = bd_scenario("c20", full, BD_USER_RS)
@@ -1260,7 +1298,7 @@ def self_test():
                       and not any("pwdSetTooFrequent" in ln and "射程守②" in ln for ln in out), rc, out))
         rc_a, out_a = bd_scenario("c25a", ["A", "C"], BD_HEAD + BD_PP_TYPE + BD_FQ_TYPE + BD_PP_SITE)
         rc_b, out_b = bd_scenario("c25b", ["A", "C"], BD_HEAD + BD_PP_TYPE + BD_FQ_TYPE)
-        cases.append(("㉕未入名冊之射程鍵有構造點 rc 1（射程守③）；零構造點綠（射程二鍵皆未入名冊之形）",
+        cases.append(("㉕未入名冊之射程鍵有構造點 rc 1（射程守③）；零構造點綠（射程三鍵皆未入名冊之形）",
                       rc_a == RC_VIOLATION and any("射程守③" in ln and "`biz.user.passwordPolicy`" in ln and "實得 1 處" in ln for ln in out_a)
                       and rc_b == RC_OK and any("其中 BizData 0 處" in ln for ln in out_b), rc_a, out_a + out_b))
         degrade = (BD_USER_RS
@@ -1303,7 +1341,7 @@ def self_test():
                       "use 行、測試區構造；總數亦不計＝只剩 error.rs 之 Biz 1 處）",
                       rc == RC_OK and any("Biz／BizData 構造點 1 處（其中 BizData 0 處" in ln for ln in out), rc, out))
 
-        # ── 斷言 3 真 repo 請求層案（007 刀 U20）：名冊中 `service/request/index.ts` 各項（明細轉譯白名單兩鍵）⇔ 真檔實掃逐項全等＝綠；
+        # ── 斷言 3 真 repo 請求層案（007 刀 U20）：名冊中 `service/request/index.ts` 各項（明細轉譯白名單三鍵）⇔ 真檔實掃逐項全等＝綠；
         # 再逐項於真檔副本拔該鍵一處字面（取剝註解視圖中該鍵首個消費點之位移、原文同位移改為空字串字面；註解內之同名字面不在視圖、
         # 拔不到）→ rc 1 且只指名該項＝名冊與請求層白名單分支於真檔上互鎖、非恆綠。左源與右源同⑪（真 error.rs＋合成 locale）；
         # 比對面只放請求層一檔、他檔之消費點不在本案。名冊無請求層項、真檔缺席或某項於真檔找不到消費點＝本案紅。
@@ -1332,6 +1370,61 @@ def self_test():
                 out_r = out_r + out_m
         cases.append((f"㉛斷言 3 真 repo 請求層：名冊 `{req_rel}` {len(req_roster)} 項 ⇔ 真檔實掃全等綠；逐項拔真檔一處字面即 rc 1、"
                       f"只指名該項（已拔 {pulled}）", ok_req and len(pulled) == len(req_roster) > 0, rc_r, out_r))
+
+        # ── 斷言 2 明細型之家逐鍵對映（008 刀 U7、ADR-00102 決定 7）：第三鍵 `D` 之家＝`handler/audit.rs`（樣本見 BD_PB_* 上方註）──
+        three = ["A", "C", "P", "F", "D"]
+        rc, out = bd_scenario("c32", three, BD_USER_RS, audit_rs=BD_AUDIT_RS)
+        cases.append(("㉜三鍵綠（`handler/audit.rs` 放第三鍵明細型與單一組裝點；構造點 Biz 1＋BizData 3＝4 處；攜參鍵 3 鍵逐鍵取家對賬）",
+                      rc == RC_OK and any("Biz／BizData 構造點 4 處（其中 BizData 3 處" in ln for ln in out)
+                      and any("佔位符對賬" in ln and "攜參鍵 3 鍵" in ln for ln in out), rc, out))
+        rc, out = bd_scenario("c33", three, BD_USER_RS, audit_rs=BD_AUDIT_RS.replace("pub min_days:", "pub floor_days:"))
+        hits = [ln for ln in out if "佔位符對賬" in ln and "`biz.audit.purgeBelowFloor`" in ln and "{floorDays}" in ln and "{minDays}" in ln]
+        cases.append(("㉝新家明細型欄改名 rc 1（min_days→{floorDays} 對 {minDays}、三檔逐檔指名；既有兩鍵之對賬不誤報）",
+                      rc == RC_VIOLATION and len(hits) == 3 and all(any(n in ln for ln in hits) for n in LOCALE_FILES)
+                      and not any("佔位符對賬" in ln and ("passwordPolicy" in ln or "pwdSetTooFrequent" in ln) for ln in out), rc, out))
+        rc_a, out_a = bd_scenario("c34a", three, BD_USER_RS + BD_PB_TYPE, audit_rs=BD_HEAD + BD_PB_SITE)
+        rc_b, out_b = bd_scenario("c34b", three, BD_USER_RS)
+        rc_c, out_c = bd_scenario("c34c", ["A", "C", "P", "F"], None)
+        absent = lambda out, home: [ln for ln in out if "明細型之家缺席" in ln and home in ln]
+        cases.append(("㉞新型移出其家（搬入 `handler/user.rs`）rc 2 指名 `handler/audit.rs` 與型；家缺席 rc 2 指名該家與其型、每家一則"
+                      "（b 稽核家缺席；c 使用者家缺席＝兩型併一則）",
+                      rc_a == RC_STRUCT
+                      and any("handler/audit.rs" in ln and "查無明細型" in ln and "PurgeBelowFloorDetail" in ln for ln in out_a)
+                      and not any("handler/user.rs" in ln and "結構異常" in ln for ln in out_a)
+                      and rc_b == RC_STRUCT and len(absent(out_b, "handler/audit.rs")) == 1
+                      and "PurgeBelowFloorDetail" in absent(out_b, "handler/audit.rs")[0] and not absent(out_b, "handler/user.rs")
+                      and rc_c == RC_STRUCT and len(absent(out_c, "handler/user.rs")) == 1
+                      and all(t in absent(out_c, "handler/user.rs")[0] for t in ("PasswordPolicyDetail", "PwdSetTooFrequentDetail")),
+                      rc_a, out_a + out_b + out_c))
+        dup_d = (BD_USER_RS
+                 + "pub fn dup_d() -> AppError { AppError::BizData(Cow::Borrowed(msg_key::D), serde_json::Value::Null) }  // ㉟a\n")
+        rc_a, out_a = bd_scenario("c35a", three, BD_USER_RS, audit_rs=BD_HEAD + BD_PB_TYPE)
+        rc_b, out_b = bd_scenario("c35b", three, dup_d, audit_rs=BD_AUDIT_RS)
+        others = lambda out: any("射程守②" in ln and ("passwordPolicy" in ln or "pwdSetTooFrequent" in ln) for ln in out)
+        cases.append(("㉟第三鍵構造點零處或兩處 rc 1（射程守②：a 稽核家只有明細型＝蒸發；b 另一處落使用者家＝分岔、兩處皆指名；既有兩鍵不誤報）",
+                      rc_a == RC_VIOLATION
+                      and any("射程守②" in ln and "`biz.audit.purgeBelowFloor`" in ln and "實得 0 處" in ln for ln in out_a)
+                      and rc_b == RC_VIOLATION
+                      and any("射程守②" in ln and "`biz.audit.purgeBelowFloor`" in ln and "實得 2 處" in ln and "handler/audit.rs:" in ln
+                              and f"handler/user.rs:{marker_line(dup_d, '㉟a')}" in ln for ln in out_b)
+                      and not others(out_a) and not others(out_b), rc_a, out_a + out_b))
+        # 兩表鍵集對賬：純函式一正兩反（家對映缺一鍵／射程表缺一鍵各指名該鍵）＋`run_check` 首段接線（暫換模組常數 `DETAIL_HOME`
+        # 為缺第三鍵之表、finally 還原；拔掉首段呼叫即本腿轉綠而紅）。
+        drop_home = {k: v for k, v in DETAIL_HOME.items() if k != "biz.audit.purgeBelowFloor"}
+        drop_biz = {k: v for k, v in BIZ_DATA_KEYS.items() if k != "biz.user.passwordPolicy"}
+        f_eq, f_home, f_biz = (detail_home_findings(BIZ_DATA_KEYS, DETAIL_HOME), detail_home_findings(BIZ_DATA_KEYS, drop_home),
+                               detail_home_findings(drop_biz, DETAIL_HOME))
+        real_home = DETAIL_HOME
+        globals()["DETAIL_HOME"] = drop_home
+        try:
+            rc, out = bd_scenario("c36", three, BD_USER_RS, audit_rs=BD_AUDIT_RS)
+        finally:
+            globals()["DETAIL_HOME"] = real_home
+        cases.append(("㊱`detail_home_findings` 兩表鍵集對賬（相等＝零 finding；家對映缺 `biz.audit.purgeBelowFloor`／射程表缺 "
+                      "`biz.user.passwordPolicy` 各恰一則指名該鍵；`run_check` 首段呼叫＝家對映缺鍵 rc 2）",
+                      f_eq == [] and len(f_home) == 1 and "`biz.audit.purgeBelowFloor`" in f_home[0]
+                      and len(f_biz) == 1 and "`biz.user.passwordPolicy`" in f_biz[0]
+                      and rc == RC_STRUCT and any("結構異常" in ln and f_home[0] in ln for ln in out), rc, f_eq + f_home + f_biz + out))
     failed = [c for c in cases if not c[1]]
     for name, ok, rc, out in cases:
         print(f"{TAG} {'✓' if ok else '✗'} self-test {name}（rc={rc}）")
