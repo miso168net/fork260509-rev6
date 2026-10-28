@@ -3,6 +3,7 @@
 
 | date | type | 標的 | summary | merge | adrs | BL（記／收） | arch |
 |---|---|---|---|---|---|---|---|
+| 2026-10-28 | feature_close | 008-audit-settings-pages | 008 audit-settings-pages 收單（rev6 第八刀）：島 J 稽核域入憲／稽核四源讀端與手動清理＋稽核頁／存取日誌記錄層／系統設定寫端同交易稽核與讀 wire 擴三欄＋系統設定頁／reaper 三 job（票回收・排程清理・授權對賬）與 m0004 reaper role／離線對賬腿／觀測層對賬兩告警；ROUTES 61→66、MSG_KEYS 68→70；憲法 1.8.1→1.9.1 | 6617244 | ADR-00099、ADR-00100、ADR-00101、ADR-00102、ADR-00103、ADR-00104、ADR-00105、ADR-00106、ADR-00107、ADR-00108、ADR-00109、ADR-00110、ADR-00111 | 收 BL-00043、BL-00045、BL-00133、BL-00139、BL-00148 | §5、§6、§7、§8、§10、§11、§12 |
 | 2026-10-19 | misc | governance｜maint-pre008-carriers | maint-pre008-carriers 收單（008 前 BACKLOG 體檢 v11 之承接批；user 2026-10-18 開工令「九項全掛」）：D0 文件類、U1 docsync 邏輯行口徑與 GT-12 子庫 HEAD 樹判別案、U2 rust-api 測試與碼註、U3 正則變異枚舉工具 tools/regex-mutants.py 並接線 RL-0080；final holistic review 11 筆皆修（轉 BL 0、won't-fix ADR 0）；BACKLOG 條數不變。 | 0a394ed | — | — | — |
 | 2026-10-17 | misc | governance｜maint-spec-compliance-007 | spec-compliance-007 規格對照輪收單（user 2026-10-16 發起、附屬 007 刀；review 事件同顆）：L7-2 轉 BL-00148 誕生——m0003×演進帳×凍結 seed 一致性只由需 docker 之閘承載；ADR-00098 經 review 事件 wontfix_adr 入帳；修單與 merge 見 review 事件。 | 8bb435a | — | 記 BL-00148 | — |
 | 2026-10-17 | review | 007-user-password-admin | findings 33（修 31／BL 1／ADR 1）；BL-00148、ADR-00098 | — | — | — | — |
@@ -76,6 +77,10 @@
 | 2026-09-03 | misc | governance | rev6 波 1 創世：守門五件（49f37d2）＋源倉 gitlink（881c621）＋啟動書搬入（7f34015）＋compose 3xxxx 與 deploy 遷入（8a20aaa）＋bootstrap 凍結斷言（4c24966）＋ADR-00001/00002（a31cb54）＋機密管線首建（ce6cfff／5e8e69f） | — | — | — | — |
 
 ## 備註（notes）
+
+### 2026-10-28｜feature_close｜008-audit-settings-pages
+
+執行單元 U0～U19（U19 主線為主）；U0 親決（ADR-00099 accepted＝憲法 1.9.0；ADR-00100～ADR-00102、ADR-00104、ADR-00105、ADR-00107、ADR-00108 accepted）；U18 CDP 三方對照與已知態觀察後 ADR-00103／ADR-00106 accepted、ADR-00081 superseded；T173 憲法 1.9.1 PATCH（ADR-00109）＝(ix)(x) 範圍欄實數化，對賬修改型三元組 57 跳過 6＋4→63 跳過 0＋4、新增型逐檔 26 跳過 3＋4→29 跳過 0＋4；反向確認兩條皆相符（①BL-00108 口徑＝字元切片參數之函式簽名行 common 6／entity 18／wire 21 與起點同值；函式名聯集現況三檔：兩支 lint 檔＋server/src/reaper.rs 測試模組之 &str 形 helper〔經 user 2026-10-28 裁定非字元級解析工具組之第三份〕 ②BL-00002 零 AI 元件、§9「目前無」句不動）；Day-1 登記三步綠（refresh 兩快照零差、offline rc 0、pristine 三步與真庫變異自證）；T178 全量閘（全量 1832 passed／2 ignored、碼面閘十支、typecheck、docsync）綠；T179 反例演練十一發逐發紅且寫回綠；子句表 1430 列逐列核不符 0、覆蓋 191 鍵缺 0；errata 終掃五十一詞現在式面 656 列逐條判讀（失準 2 已改）；final holistic review 18 筆＝確認 13（修 11、L4-1 依 user 改裁改送客端先算之 SCRAM 驗證碼＝ADR-00110、L5-3 記已知態＝ADR-00111）／駁回 5／轉 BL 0，收單後全量 1838 passed／2 ignored；LL-00116、LL-00117；收刀計數三則（重算至分支 HEAD a699c17，U19 收攏顆與 final review 收單顆兩顆各＝GT-12 警告 1、zh-cn 新字紅 0、誤擋 0）：ADR-00011 翻案觸發器①＝RULES fix scope 20／19 超限後第 1 刀（收刀時 STATE 現值）；ADR-00084「zh-cn.ts 新字未分類之紅」3 次（U7／U14／U15 各 1；本刀＝第 2 刀）；ADR-00052「一致性腿誤擋正常部分 commit」1 次（tasks 期 1、單元期 0）；RL-0052 一進一出紀錄 0（本刀未晉升 fix／review 範圍之 RL）；ADR-00097 翻案觸發器第一條重審＝維持（user 2026-10-28 裁定：工具留工作區、不入庫、不通則化）、第二條＝未觸發（本刀子句表工具誤判 0）；backlog_add 零（FR-066）
 
 ### 2026-10-19｜misc｜governance｜maint-pre008-carriers
 
