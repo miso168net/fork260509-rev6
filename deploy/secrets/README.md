@@ -68,7 +68,7 @@ python3 deploy/generate-secrets.py --force  # 亂數生成的十二支全重生�
 | `jwt_secret.txt` | leaf（base64 48） | ✓ | rust-api | `APP_JWT_JWT_SECRET_FILE` |
 | `refresh_token_secret.txt` | leaf（base64 48） | ✓ | rust-api | `APP_JWT_REFRESH_TOKEN_SECRET_FILE` |
 | `captcha_secret.txt` | leaf（base64 48） | ✓ | rust-api | `APP_CAPTCHA_SECRET_FILE`（rev4:007 captcha challenge HS256 密鑰） |
-| `reaper_password.txt` | leaf（hex 24） | ✓ | 設密部署腳本（rev4:016；**不進 compose**） | psql `ALTER ROLE reaper LOGIN PASSWORD ...`（stdin heredoc、密碼絕不進 migration） |
+| `reaper_password.txt` | leaf（hex 24） | ✓ | 設密部署腳本（rev4:016；**不進 compose**） | psql `ALTER ROLE reaper LOGIN PASSWORD '<SCRAM-SHA-256 驗證碼>'`（經 stdin；驗證碼由腳本本機先算、明文不進資料庫伺服器〔ADR-00110〕；密碼絕不進 migration） |
 | `grafana_admin_password.txt` | leaf（base64 24） | ✓ | grafana（rev4:016、profiles:obs/metrics） | `GF_SECURITY_ADMIN_PASSWORD: $__file{/run/secrets/grafana_admin_password}`（grafana file provider） |
 | `smtp_password.txt` | leaf（base64 24） | ✓ | rust-api | `APP_SMTP_PASSWORD_FILE`（rev4:020 SMTP 寄信；dev 亂數不消費——dev 走 mailpit 無認證；prod 真值＝Gmail app password、填法依 rev5:RUNBOOK §15.4 Gmail app password 段（rev6 §15.4＝值變更回寫程序）） |
 | `email_verify_secret.txt` | leaf（base64 48） | ✓ | rust-api | `APP_EMAIL_VERIFY_SECRET_FILE`（rev4:020 信箱驗證憑據 HS256 密鑰——與 jwt／refresh／captcha 隔離的第四把） |

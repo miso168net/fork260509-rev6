@@ -112,3 +112,5 @@
 | ADR-00107 | accepted | 2026-10-21 | 部分更新語意（續行 ADR-00091）——系統設定寫端重寫之觸發器重評：空字串語意維持（`description` 空字串＝設值、`settingValue` 空字串於 number 與二值 enum 型＝`2222`、不新增清空語意）；決定 8 逐域差異表之設定域改寫（同值出現＝照寫並落稽核 `update` 一列、請求上下文缺席＝`5000` 先於一切）；其餘決定原文續行 | — | ADR-00091 | — |
 | ADR-00108 | accepted | 2026-10-21 | delta migration m0004（rev6 第二支 delta）——建 `reaper` 最小權限 role（NOLOGIN、已存在即略過）＋GRANT（`sys_token` 與四稽核表 SELECT／DELETE、操作日誌 INSERT＋序列、授權域三表 SELECT）；選單 77 按鈕清單增 `audit:purge`、R_SUPER 按鈕授權列 165（不受保護）；演進帳 E-010／E-011、序號合成；權限面不入演進帳；BL-00148 離線對賬腿為其前置 | — | — | — |
 | ADR-00109 | accepted | 2026-10-28 | 憲法 Amendment 1.9.0→1.9.1——§III.2 ★`BASE-WEB-MANAGE-PAGE-WIRING` (ix)(x) 範圍欄預估值實數化（兌現 ADR-00099 回填義務） | — | — | — |
+| ADR-00110 | accepted | 2026-10-28 | reaper 設密腳本改送客端先算之 SCRAM-SHA-256 驗證碼——明文密碼不進資料庫伺服器 | — | — | — |
+| ADR-00111 | accepted | 2026-10-28 | 稽核頁清理請求在途時關閉浮層、改開他分頁清理之競態＝已知態（won't-fix） | — | — | — |

@@ -1,5 +1,5 @@
 <!-- 機器生成：python3 tools/docsync generate——嚴禁手改；差異由 pre-commit check 攔下 -->
-<!-- next: LL-00116 -->
+<!-- next: LL-00118 -->
 # LESSONS — 教訓索引（機器生成；一坑一檔住 LESSONS/LL-NNNNN-<slug>.md）
 
 配號＝本檔頭 next（自檔集最大號＋1 推導；ADR-00005）→ 建檔 → `python3 tools/docsync generate`。條目檔 frontmatter：`id`、`rule_id`（RL-NNNN 或 none：理由）、`promotion_surface`（rules／gate／code／none）、選填 `recurrence_of`；正文首行 `LL-NNNNN｜坑名`（GT-08 對賬）。
@@ -121,3 +121,5 @@
 | LL-00113 | 個人中心頁模板根層之修改型標記註解使該頁於開發模式成多根片段：版面 out-in 換頁過場無法完成，自個人中心點側欄他頁後內容區空白、重新整理才恢復——rev5 同形、兩代皆未察（008 刀 U18） | none：Vue 模板編譯與 Transition 之行為（框架事實），守法住本檔 | none | [LL-00113-template-root-comment-dev-fragment-blanks-next-page.md](LESSONS/LL-00113-template-root-comment-dev-fragment-blanks-next-page.md) |
 | LL-00114 | 設定頁數字框於送出被拒之回讀後以 key 重掛：仍有焦點之舊實例被移除時瀏覽器發失焦，naive-ui 失焦收尾以框內殘留之被拒值再發一次——自動重送一發，CDP 首跑因此真改出一列設定（008 刀 U18） | none：瀏覽器移除焦點元素時之失焦事件與 naive-ui 數字框失焦收尾（平台與元件庫行為之事實），守法住本檔 | none | [LL-00114-remount-of-focused-input-number-resends-rejected-value.md](LESSONS/LL-00114-remount-of-focused-input-number-resends-rejected-value.md) |
 | LL-00115 | 單元收單 commit 訊息漏記 spec 指定之逐單元必記項（收刀計數三則）：五顆漏記經後顆補記後，同刀後段兩顆再漏——到收刀彙記前之派發前清冊才揭出（008 刀 U19） | none：單刀 spec 指定之逐單元收單訊息必記項（008 刀 spec FR-067），非 RULES 條；守法住本檔 | none | [LL-00115-unit-close-commit-message-omits-spec-mandated-per-unit-counters.md](LESSONS/LL-00115-unit-close-commit-message-omits-spec-mandated-per-unit-counters.md) |
+| LL-00116 | 修補選項只對 finding 所舉之觸發形設計與驗證，未以受保護資產為單位枚舉外露路徑：reaper 設密之「明文密碼落伺服器日誌」只擋了失敗語句一路，`log_statement` 為 ddl／all 時設密成功照落明文（008 刀 final holistic review L4-1） | RL-0013 | none | [LL-00116-fix-option-scoped-to-finding-trigger-not-asset-exposure-paths.md](LESSONS/LL-00116-fix-option-scoped-to-finding-trigger-not-asset-exposure-paths.md) |
+| LL-00117 | 派發文自訂之計數判準收窄了 RULES 條（RL-0026 三形聯集→「完整呼叫形」），implementer 照派發文實作、兩道審查亦以派發文為準只列射程外建議（008 刀 final holistic review 碼修 run） | RL-0026 | none | [LL-00117-dispatch-text-narrowed-rule-reviewers-deferred-to-dispatch.md](LESSONS/LL-00117-dispatch-text-narrowed-rule-reviewers-deferred-to-dispatch.md) |

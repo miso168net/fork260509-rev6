@@ -6,13 +6,17 @@
 rc 逐分支與 stdout／stderr 分工皆逐位元組對應；唯一實作收斂＝落點解析改用共用庫
 deploy/secrets_common.py（同 preflight／decrypt／generate 先例，落點解析兩型失敗的訊息字面
 隨之收斂到共用庫版本，rc 與串流不變）。
+★ADR-00110 起之兩處偏離（皆為堵明文密碼外露、有意為之）：①設密那一發之 stdin payload 改送本機算出之
+SCRAM-SHA-256 驗證碼（明文不進資料庫伺服器）②密碼剝尾端換行後為空、或含非 ASCII 位元組＝前置拒跑、
+零 docker 調用。其餘（兩發 argv 序列、自驗 stdin、rc 逐分支、串流分工）照舊逐位元組對應。
 
 分工（rev4:016-observability data-model §5、rev4:research R5、rev4:ADR 0072）：
   migration m0004（ADR-00108；藍本 rev4:m012／rev4:m013）＝CREATE ROLE reaper NOLOGIN＋GRANT（零密碼）；
   本腳本＝ALTER ROLE reaper LOGIN PASSWORD（密碼讀自 $SECRETS_DIR/reaper_password.txt；★rev4:019
   rev4:US3 起落點由 repo 根 .env 的 SECRETS_DIR 決定、未設才回退 repo 內 deploy/secrets——解析口徑見共用庫）。
-密碼紀律（rev4:FR-013）：SQL 走 psql stdin——密碼零進 host process list、零進版本庫；
-  輸出只印狀態不印值。可重跑（ALTER ROLE 冪等）。
+密碼紀律（rev4:FR-013）：SQL 走 psql stdin——密碼零進 host process list、零進版本庫；明文亦不進
+  資料庫伺服器（設密 SQL 只帶本機算出之 SCRAM-SHA-256 驗證碼；ADR-00110）；輸出只印狀態不印值。
+  可重跑（ALTER ROLE 冪等；每次重算之驗證碼鹽值不同、登入等效）。
 前置：stack 已 up（postgres healthy）＋m0004 已套用（role 不存在→psql 非零退出 fail-loud）
   ＋deploy/generate-secrets.py 已產 reaper_password.txt。
 
@@ -23,7 +27,7 @@ deploy/secrets_common.py（同 preflight／decrypt／generate 先例，落點解
   test        跑自帶測試（unittest、離線、stdlib-only、不需 docker；一律隔離暫存目錄，
               SECRETS_DIR 與密碼字面一律寫死於測試內、絕不取自環境——防碰真落點）。
 
-退出碼：正常結束 0；落點解析失敗／密碼檔缺席或空／自驗回值非 1 皆 1；用法錯誤 64
+退出碼：正常結束 0；落點解析失敗／密碼檔缺席或空（含剝尾端換行後為空）／密碼含非 ASCII／自驗回值非 1 皆 1；用法錯誤 64
         （EX_USAGE；沿 deploy/preflight-secrets.py 家族慣例——舊 .sh 無引數面故無此碼，
         詳見 main() 註解）；docker 不可得 127（＝shell 的 command-not-found 碼）；
         docker 本身非零＝原樣透傳（兩發各自透傳）。
@@ -34,10 +38,14 @@ deploy/secrets_common.py（同 preflight／decrypt／generate 先例，落點解
   這個人為紀律達成同一件事，python 版把它變成呼叫形參的結構性保證：想把密碼放進 argv 得先
   改掉函式簽章，不會是手滑。
 """
+import base64
 import contextlib
+import hashlib
+import hmac
 import importlib.util
 import io
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -85,18 +93,24 @@ VERIFY_SH = ('read -r RPW; PGPASSWORD="$RPW" '
              'psql -h postgres -U reaper -d soybean_admin_rust -Atc "SELECT 1"')
 VERIFY_ARGV_TAIL = ("exec", "-T", "postgres", "sh", "-c", VERIFY_SH)
 
-# ALTER ROLE 的 SQL 形（逐字紀律）：舊檔 heredoc 本體＝
-#   ALTER ROLE reaper LOGIN PASSWORD '${PW}';
-# 加結尾換行。★密碼**原樣**嵌在單引號內、不做任何跳脫——這是舊檔行為，照抄不動：
-#   ①由來（rev5:L-004 先查再動）：密碼由 deploy/generate-secrets.py 以 `openssl rand -hex 24`
-#     產生，值域＝[0-9a-f]，單引號／反斜線結構性不可能出現；
-#   ②rev5:B-037 U2 明載「ALTER ROLE 的 SQL 形一個字元都不能漂」，效果等價由主線真 stack 一輪另驗，
-#     此處任何「順手補跳脫」都會讓新舊 stdin payload 分岔、且真 stack 那輪失去可比基準。
-#   ★已知極限（等價矩陣情境④實證、非本工具處理面）：手改成含單引號的密碼會產出語法破裂的
-#     SQL、psql 非零退出（fail-loud、不是靜默錯設），與舊檔同一行為。要改成 dollar-quoting
-#     屬**行為變更**，須走 ADR 拍板、不在等價重寫射程內。
+# ALTER ROLE 的 SQL 形（ADR-00110）：
+#   ALTER ROLE reaper LOGIN PASSWORD '<SCRAM-SHA-256 驗證碼>';
+# 加結尾換行。★明文密碼不進 SQL：本機先以 SCRAM-SHA-256（RFC 5802／RFC 7677）算出驗證碼，伺服器收到驗證碼形之
+#   字串即原樣存入 rolpassword、不再雜湊（同 psql `\password`；PostgreSQL ALTER ROLE 文件之建議）。明文從頭到尾
+#   不離開本行程——伺服器之失敗語句日誌（log_min_error_statement）、語句日誌（log_statement 為 ddl／all）、慢查詢
+#   日誌與 pg_stat_activity 皆無從記到明文；日誌至多見驗證碼本身（＝庫內所存之值）。
+#   ★舊形（rev5:B-037 U2 之逐字紀律：明文原樣嵌在單引號內）於語句失敗時把明文以 STATEMENT 行寫進伺服器日誌，
+#   log_statement 為 ddl／all 時成功亦寫——ADR-00110 翻此紀律。
+#   ★驗證碼字元集＝`SCRAM-SHA-256`、`$`、`:`、十進位數字與 base64（`A-Za-z0-9+/=`），零單引號：密碼含單引號／
+#   反斜線亦不致 SQL 破裂（舊「已知極限」隨之解除）。
+#   ★密碼限 ASCII（cmd_setup 前置拒跑）：libpq 登入時對非 ASCII 密碼先做 SASLprep 正規化、ASCII 原樣送；本腳本
+#   不實作 SASLprep，非 ASCII 密碼算出之驗證碼可能與登入端不合。產生器之值域＝[0-9a-f]（`openssl rand -hex 24`）。
 SQL_ALTER_HEAD = b"ALTER ROLE reaper LOGIN PASSWORD '"
 SQL_ALTER_TAIL = b"';\n"
+
+# SCRAM-SHA-256 之迭代數與鹽長＝PostgreSQL 伺服器自算時之預設（scram_iterations 4096、鹽 16 位元組）。
+SCRAM_ITERATIONS = 4096
+SCRAM_SALT_LEN = 16
 
 # 自驗期望回值（`[ "$RESULT" = "1" ]`）。
 VERIFY_EXPECT = b"1"
@@ -120,9 +134,23 @@ def verify_argv():
     return list(COMPOSE_ARGV) + list(VERIFY_ARGV_TAIL)
 
 
+def scram_sha256_verifier(pw, salt, iterations=SCRAM_ITERATIONS):
+    """pw（位元組）之 SCRAM-SHA-256 驗證碼＝`SCRAM-SHA-256$<迭代數>:<鹽>$<StoredKey>:<ServerKey>`（後三者 base64）。
+
+    RFC 5802 §3：SaltedPassword＝PBKDF2-HMAC-SHA-256(pw, salt, 迭代數, 32)；StoredKey＝SHA-256(HMAC(SaltedPassword,
+    "Client Key"))；ServerKey＝HMAC(SaltedPassword, "Server Key")——即 PostgreSQL rolpassword 之 SCRAM 儲存形。
+    """
+    salted = hashlib.pbkdf2_hmac("sha256", pw, salt, iterations, 32)
+    client_key = hmac.new(salted, b"Client Key", hashlib.sha256).digest()
+    server_key = hmac.new(salted, b"Server Key", hashlib.sha256).digest()
+    return b"SCRAM-SHA-256$%d:%s$%s:%s" % (iterations, base64.b64encode(salt),
+                                            base64.b64encode(hashlib.sha256(client_key).digest()),
+                                            base64.b64encode(server_key))
+
+
 def alter_role_sql(pw):
-    """設密 SQL payload（位元組）＝舊檔 heredoc 本體逐位元組；pw 原樣嵌入（見上方註解）。"""
-    return SQL_ALTER_HEAD + pw + SQL_ALTER_TAIL
+    """設密 SQL payload（位元組）：pw 之 SCRAM-SHA-256 驗證碼（鹽＝每次新取之 16 位元組亂數）嵌在單引號內（見上方註解）。"""
+    return SQL_ALTER_HEAD + scram_sha256_verifier(pw, os.urandom(SCRAM_SALT_LEN)) + SQL_ALTER_TAIL
 
 
 def verify_stdin(pw):
@@ -220,9 +248,15 @@ def cmd_setup(root=None, env=None):
     pw_file = os.path.join(secrets_dir, PW_NAME)
     try:
         pw = read_password(pw_file)
-        if pw is None:
+        # ★剝尾端換行後為空＝同「缺席或為空」（ADR-00110）：舊形送 `PASSWORD ''` 由伺服器清密碼；改送驗證碼後會存成
+        #   「空密碼之驗證碼」，容許空密碼之客端即可登入——故前置拒跑、零 docker 調用。
+        if not pw:
             print(f"錯誤：{pw_file} 缺席或為空（先跑 python3 deploy/decrypt-secrets.py；"
                   "無加密檔情境＝generate-secrets.py）", file=sys.stderr)
+            return 1
+        if not pw.isascii():
+            print(f"錯誤：{pw_file} 之密碼含非 ASCII 位元組——設密驗證碼於本機計算、本腳本不實作 SASLprep"
+                  "（ADR-00110）；改用 ASCII 密碼（generate-secrets.py 產 hex）", file=sys.stderr)
             return 1
         set_password(pw, root)
         verify_login(pw, root)
@@ -274,7 +308,8 @@ DOCKER_STUB = (
 # fixture 密碼字面一律**執行期串接**（同 deploy/generate-secrets.py 慣例）：源碼裡不留成形的
 # 密碼字面，憑證掃描面（.githooks/pre-commit 的 betterleaks 樣式層＋tools/docsync GT-07）零誤報。
 _PW_PLAIN = "fixture" + "-" + "reaper" + "-pw"
-# 特殊字元組（quoting 等價的關鍵情境）：單引號／反斜線／空白／錢字號／反引號／雙引號全上。
+# 特殊字元組：單引號／反斜線／空白／錢字號／反引號／雙引號全上（設密 payload 改送驗證碼後〔ADR-00110〕，仍是自驗
+# stdin 逐位元組原樣與讀取面之關鍵情境；兩個 fixture 皆含 base64 字元集外之字元，「payload 不含明文」之斷言才有判別力）。
 _PW_TRICKY = "a" + "'" + "b" + "\\" + "c d" + "$" + "e" + "`" + 'f"g'
 
 
@@ -346,6 +381,21 @@ def _flat(argv_list):
     """
     assert argv_list[0] == "docker", argv_list
     return b"\0".join(a.encode("utf-8") for a in argv_list[1:])
+
+
+# 設密 payload 之形（ADR-00110）：鹽 16 位元組＝base64 24 字（尾兩個 `=`）、StoredKey／ServerKey 各 32 位元組＝44 字。
+_ALTER_RE = re.compile(rb"ALTER ROLE reaper LOGIN PASSWORD 'SCRAM-SHA-256\$4096:([A-Za-z0-9+/]{22}==)"
+                       rb"\$[A-Za-z0-9+/]{43}=:[A-Za-z0-9+/]{43}=';\n")
+
+
+def _assert_alter_payload(tc, payload, pw):
+    """設密 payload 須整段符合 _ALTER_RE、不含 pw，且＝以 payload 自帶之鹽對 pw 重算之形；回該鹽。"""
+    m = _ALTER_RE.fullmatch(payload)
+    tc.assertIsNotNone(m, msg=payload)
+    tc.assertNotIn(pw, payload)
+    salt = base64.b64decode(m.group(1))
+    tc.assertEqual(payload, SQL_ALTER_HEAD + scram_sha256_verifier(pw, salt) + SQL_ALTER_TAIL)
+    return salt
 
 
 def _seed_pw(secrets_dir, blob):
@@ -439,7 +489,8 @@ class TestLiteralsPinned(unittest.TestCase):
     """★介面字面逐字釘死：以被測常數組出期望值＝套套邏輯（常數漂了斷言跟著漂、全綠存活）。
 
     這四組字面（密碼檔名、compose 前綴、兩發 argv 尾、ALTER ROLE 的 SQL 形）就是 rev5:B-037 U2
-    明載「一個字元都不能漂」的標的，逐字列出。
+    明載「一個字元都不能漂」的標的，逐字列出（ALTER ROLE 的 SQL 形自 ADR-00110 起改為驗證碼形，外框與驗證碼格式照樣
+    逐字釘）。
     """
 
     def test_pw_name_is_pinned(self):
@@ -471,28 +522,52 @@ class TestLiteralsPinned(unittest.TestCase):
             'psql -h postgres -U reaper -d soybean_admin_rust -Atc "SELECT 1"'])
 
     def test_alter_role_sql_shape_is_pinned(self):
-        """SQL 形逐位元組：前綴、單引號、分號、結尾換行——舊檔 heredoc 本體的鏡像。"""
-        self.assertEqual(alter_role_sql(b"XX"),
-                         b"ALTER ROLE reaper LOGIN PASSWORD 'XX';\n")
+        """SQL 形逐位元組（ADR-00110）：前綴、單引號、`SCRAM-SHA-256$4096:<鹽>$<StoredKey>:<ServerKey>`、分號、結尾
+        換行；驗證碼＝以自帶之鹽重算之形、不含明文；兩次呼叫之鹽不同（每次新取亂數）。"""
+        self.assertEqual(SQL_ALTER_HEAD, b"ALTER ROLE reaper LOGIN PASSWORD '")
+        self.assertEqual(SQL_ALTER_TAIL, b"';\n")
+        pw = _PW_PLAIN.encode("utf-8")
+        first = _assert_alter_payload(self, alter_role_sql(pw), pw)
+        self.assertNotEqual(first, _assert_alter_payload(self, alter_role_sql(pw), pw))
 
     def test_password_never_appears_in_any_argv(self):
-        """★密碼零進 argv（本工具主要收益的機器化）：兩發 argv 都與密碼無關（純函式、不收 pw）。"""
+        """★密碼零進 argv（本工具主要收益的機器化）：兩發 argv 都與密碼無關（純函式、不收 pw）；設密 payload 亦不含
+        明文（ADR-00110）、明文只在自驗 stdin。"""
         pw = _PW_PLAIN.encode("utf-8")
         for argv in (psql_argv(), verify_argv()):
             for token in argv:
                 self.assertNotIn(_PW_PLAIN, token, msg=argv)
-        self.assertIn(pw, alter_role_sql(pw))      # 密碼只在 payload 裡
+        self.assertNotIn(pw, alter_role_sql(pw))   # 設密 payload 只帶驗證碼
         self.assertIn(pw, verify_stdin(pw))
 
 
 class TestPurePredicates(unittest.TestCase):
     """純函式面：密碼讀取語意與 payload 組裝（不碰檔案系統以外的東西、零 docker）。"""
 
-    def test_alter_role_sql_embeds_password_verbatim(self):
-        """★特殊字元原樣嵌入、零跳脫（舊檔行為，照抄不動；等價矩陣情境④的單元面）。"""
+    def test_alter_role_sql_carries_verifier_not_password(self):
+        """★特殊字元密碼（單引號／反斜線／空白等）：設密 payload 只帶驗證碼、零明文位元組，形仍完整（舊形之 SQL 破裂
+        極限隨 ADR-00110 解除）。"""
         pw = _PW_TRICKY.encode("utf-8")
-        self.assertEqual(alter_role_sql(pw),
-                         b"ALTER ROLE reaper LOGIN PASSWORD '" + pw + b"';\n")
+        _assert_alter_payload(self, alter_role_sql(pw), pw)
+
+    def test_scram_verifier_matches_rfc7677_vector(self):
+        """★驗證碼之已知答案（RFC 7677 §3 範例：密碼 pencil、鹽 W22ZaJ0SNY7soEsUEjb6gQ==、迭代 4096）：取本函式產出之
+        StoredKey／ServerKey 走伺服器端驗證——ClientKey＝範例 ClientProof XOR HMAC(StoredKey, AuthMessage) 須使
+        SHA-256(ClientKey)＝StoredKey，且 HMAC(ServerKey, AuthMessage)＝範例 ServerSignature。向量字面一律執行期串接。"""
+        salt_b64 = "W22ZaJ0SNY7s" + "oEsUEjb6gQ=="
+        verifier = scram_sha256_verifier(("pen" + "cil").encode("ascii"), base64.b64decode(salt_b64))
+        scheme, iter_salt, keys = verifier.split(b"$")
+        self.assertEqual((scheme, iter_salt), (b"SCRAM-SHA-256", b"4096:" + salt_b64.encode("ascii")))
+        stored, server = (base64.b64decode(k) for k in keys.split(b":"))
+        nonce = "rOprNGfwEbeRWgbNEkqO" + "%hvYDpWUa2RaTCAfuxFIlj)hNlF$k0"
+        auth = ("n=user,r=rOprNGfwEbeRWgbNEkqO,r=" + nonce + ",s=" + salt_b64 + ",i=4096,c=biws,r="
+                + nonce).encode("ascii")
+        proof = base64.b64decode("dHzbZapWIk4jUhN+" + "Ute9ytag9zjfMHgsqmmiz7AndVQ=")
+        signature = hmac.new(stored, auth, hashlib.sha256).digest()
+        client_key = bytes(a ^ b for a, b in zip(proof, signature))
+        self.assertEqual(hashlib.sha256(client_key).digest(), stored)
+        self.assertEqual(base64.b64encode(hmac.new(server, auth, hashlib.sha256).digest()),
+                         ("6rriTRBi23WpRR/w" + "tup+mMhUZUn/dB5nLTJRsjl95G4=").encode("ascii"))
 
     def test_verify_stdin_appends_exactly_one_newline(self):
         """`printf '%s\\n'` 語意：恰補一個換行、不多不少。"""
@@ -521,8 +596,8 @@ class TestPurePredicates(unittest.TestCase):
             self.assertIsNone(read_password(_seed_pw(d, b"")))
 
     def test_read_password_newline_only_is_empty_bytes(self):
-        """★只有換行的檔：size>0 過得了 `-s`，剝完是空字串——舊檔會照送空密碼，此處同行為
-        （不擅自升級成錯誤，那是行為變更）。"""
+        """★只有換行的檔：size>0 過得了 `-s`，剝完是空字串（讀取面照舊回空位元組）；流程面自 ADR-00110 起
+        視同「缺席或為空」拒跑（見 test_newline_only_password_file_same_branch）。"""
         with tempfile.TemporaryDirectory() as d:
             self.assertEqual(read_password(_seed_pw(d, b"\n\n")), b"")
 
@@ -538,7 +613,7 @@ class TestFlowWithStub(unittest.TestCase):
             self.assertEqual(rc, 0, msg=err)
             self.assertEqual(len(calls), 2, msg=calls)
             self.assertEqual(calls[0][0], _flat(psql_argv()))
-            self.assertEqual(calls[0][1], alter_role_sql(pw))
+            _assert_alter_payload(self, calls[0][1], pw)
             self.assertEqual(calls[1][0], _flat(verify_argv()))
             self.assertEqual(calls[1][1], verify_stdin(pw))
             self.assertEqual(out, "ok: role reaper 已設 LOGIN＋密碼（值不回顯）\n"
@@ -563,15 +638,36 @@ class TestFlowWithStub(unittest.TestCase):
             self.assertEqual(calls, [])
             self.assertIn("缺席或為空", err)
 
-    def test_special_chars_payload_is_byte_verbatim(self):
-        """④單引號／反斜線／空白等特殊字元：兩發 payload 逐位元組原樣（quoting 零加工）。"""
+    def test_newline_only_password_file_same_branch(self):
+        """剝尾端換行後為空（只有換行的檔）：與缺席同分支、同訊息、rc 1、零 docker 調用（ADR-00110：改送驗證碼後，
+        空密碼會存成「空密碼之驗證碼」，不再由伺服器清密碼）。"""
+        with tempfile.TemporaryDirectory() as d:
+            rc, calls, out, err, _root = _run_case(d, pw_blob=b"\n\n")
+            self.assertEqual(rc, 1)
+            self.assertEqual(calls, [])
+            self.assertEqual(out, "")
+            self.assertIn("缺席或為空", err)
+
+    def test_non_ascii_password_is_refused_before_docker(self):
+        """密碼含非 ASCII 位元組：rc 1、零 docker 調用、指名成因（ADR-00110：本腳本不實作 SASLprep）；訊息不含密碼。"""
+        pw = ("fixture" + "-" + "\u5bc6" + "-pw").encode("utf-8")
+        with tempfile.TemporaryDirectory() as d:
+            rc, calls, out, err, _root = _run_case(d, pw_blob=pw + b"\n")
+            self.assertEqual(rc, 1)
+            self.assertEqual(calls, [])
+            self.assertEqual(out, "")
+            self.assertIn("非 ASCII", err)
+            self.assertNotIn(pw.decode("utf-8"), err)
+
+    def test_special_chars_first_payload_is_verifier_second_is_verbatim(self):
+        """④單引號／反斜線／空白等特殊字元：第一發 payload＝驗證碼形、零明文（ADR-00110），第二發（自驗 stdin）
+        逐位元組原樣（quoting 零加工）。"""
         with tempfile.TemporaryDirectory() as d:
             pw = _PW_TRICKY.encode("utf-8")
             rc, calls, _out, err, _root = _run_case(
                 d, pw_blob=pw + b"\n", stub_env={"RV6_STUB_OUT_2": "1\n"})
             self.assertEqual(rc, 0, msg=err)
-            self.assertEqual(calls[0][1],
-                             b"ALTER ROLE reaper LOGIN PASSWORD '" + pw + b"';\n")
+            _assert_alter_payload(self, calls[0][1], pw)
             self.assertEqual(calls[1][1], pw + b"\n")
 
     def test_first_docker_nonzero_is_passed_through(self):
